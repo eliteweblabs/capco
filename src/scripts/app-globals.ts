@@ -352,7 +352,7 @@ if (!String.prototype.startsWith) {
   inputWrappers.forEach((wrapper) => {
     const iconName = wrapper.getAttribute("data-icon");
     if (!iconName) return;
-    const input = wrapper.querySelector("input");
+    const input = wrapper.querySelector("input") || wrapper.querySelector("textarea");
     if (!input) return;
     const inputFontSize = getComputedStyle(input).fontSize;
     (wrapper as HTMLElement).style.fontSize = inputFontSize;
@@ -365,11 +365,12 @@ if (!String.prototype.startsWith) {
     const svgElement = tempDiv.firstElementChild as SVGElement;
     if (!svgElement) return;
     const isRight = wrapper.classList.contains("icon-right");
+    const isTextarea = input.tagName === "TEXTAREA";
     svgElement.style.position = "absolute";
     svgElement.style.left = isRight ? "" : "calc(1rem - 5px)";
     svgElement.style.right = isRight ? "calc(1rem - 5px)" : "";
-    svgElement.style.top = "50%";
-    svgElement.style.transform = "translateY(-50%)";
+    svgElement.style.top = isTextarea ? "1rem" : "50%";
+    svgElement.style.transform = isTextarea ? "none" : "translateY(-50%)";
     svgElement.style.pointerEvents = "none";
     svgElement.style.zIndex = "1";
     svgElement.style.opacity = "0.5";

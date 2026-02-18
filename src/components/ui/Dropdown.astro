@@ -109,6 +109,54 @@ const { id, title = "", onOpenCallback, focusSelector } = Astro.props;
         });
       });
     });
+
+    // When dropdown open: show X on trigger; when closed: show default icon. Wire X to close.
+    document.querySelectorAll(".auth-icon-close").forEach(function (closeEl) {
+      var trigger = closeEl.closest("[data-popover-target], [data-dropdown-toggle]");
+      if (!trigger) return;
+      var panelId = trigger.getAttribute("data-popover-target") || trigger.getAttribute("data-dropdown-toggle");
+      var panel = panelId ? document.getElementById(panelId) : null;
+      if (!panel) return;
+
+      function closePopover() {
+        var inst = window.FlowbiteInstances && window.FlowbiteInstances.getInstance("Popover", panelId);
+        if (inst && typeof inst.hide === "function") {
+          inst.hide();
+        } else {
+          panel.classList.add("opacity-0", "invisible");
+          setTimeout(function () { panel.classList.add("hidden"); }, 150);
+        }
+      }
+
+      closeEl.addEventListener("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        closePopover();
+      });
+
+      function updateTrigger(isOpen) {
+        var defaultEl = trigger.querySelector(".auth-icon-default");
+        if (defaultEl && closeEl) {
+          if (isOpen) {
+            defaultEl.style.opacity = "0";
+            defaultEl.style.pointerEvents = "none";
+            closeEl.style.opacity = "1";
+            closeEl.style.pointerEvents = "auto";
+          } else {
+            defaultEl.style.opacity = "1";
+            defaultEl.style.pointerEvents = "auto";
+            closeEl.style.opacity = "0";
+            closeEl.style.pointerEvents = "none";
+          }
+        }
+      }
+
+      var observer = new MutationObserver(function () {
+        updateTrigger(!panel.classList.contains("hidden") && !panel.classList.contains("invisible"));
+      });
+      observer.observe(panel, { attributes: true, attributeFilter: ["class"] });
+      updateTrigger(!panel.classList.contains("hidden") && !panel.classList.contains("invisible"));
+    });
   });
 </script>
 

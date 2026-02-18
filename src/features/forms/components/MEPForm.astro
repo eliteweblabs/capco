@@ -1,29 +1,14 @@
 ---
 import { getMepFormConfig } from "../../../lib/forms/form-config-from-site";
+import { buildFormInitialDataFromUser } from "../../../lib/forms/form-initial-data-from-user";
 import ConfigForm from "@/features/forms/components/ConfigForm.astro";
 
 // Session and company data are set in middleware for this route (sessionOptionalRoutes) to avoid top-level await
 const user = Astro.locals.user;
-const isAuthenticated = !!user;
 const globalCompanyName = (Astro.locals as any).globalCompanyName ?? "Company";
 const virtualAssistantName = (Astro.locals as any).virtualAssistantName;
 const mepFormConfig = await getMepFormConfig(globalCompanyName, virtualAssistantName);
-
-// Pre-fill user data if authenticated
-const initialData =
-  isAuthenticated && user
-    ? {
-        email: user.email,
-        firstName:
-          user.user_metadata?.firstName || user.user_metadata?.full_name?.split(" ")[0] || "",
-        lastName:
-          user.user_metadata?.lastName || user.user_metadata?.full_name?.split(" ")[1] || "",
-        phone: user.user_metadata?.phone || user.phone || "",
-        isAuthenticated: true,
-      }
-    : {
-        isAuthenticated: false,
-      };
+const initialData = buildFormInitialDataFromUser(user);
 ---
 
 <ConfigForm config={mepFormConfig} {initialData} />

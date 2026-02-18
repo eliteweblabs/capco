@@ -29,10 +29,16 @@ export function createMultiStepFormHandler(
     customValidators?: Record<string, (stepNumber: number) => Promise<boolean>>;
     onStepChange?: (stepNumber: number) => void;
     formConfig?: any; // Add formConfig to access registerUser flag
+    /** Pre-filled data (e.g. from logged-in user). Used as fallback for data-form-session-meta when steps are skipped. */
+    initialData?: Record<string, any>;
+    /** First step to show (for forms with skip conditions). Default 1. */
+    initialStep?: number;
   } = {}
 ): MultiStepFormHandler {
-  let currentStep = 1;
+  const initialStep = options.initialStep ?? 1;
+  let currentStep = initialStep;
   let isSubmitting = false;
+  const { initialData = {} } = options;
 
   const form = document.getElementById(formId) as HTMLFormElement;
 
@@ -113,7 +119,7 @@ export function createMultiStepFormHandler(
     });
   }
 
-  // Get firstName/lastName from form: either direct inputs or parsed from fullName
+  // Get firstName/lastName from form: either direct inputs, parsed from fullName, or initialData (logged-in users who skip steps)
   function getFirstNameLastName(): { firstName: string; lastName: string } {
     const firstInput = form.querySelector('[name="firstName"]') as HTMLInputElement;
     const lastInput = form.querySelector('[name="lastName"]') as HTMLInputElement;
@@ -126,6 +132,12 @@ export function createMultiStepFormHandler(
     }
     if (firstInput?.value?.trim()) return { firstName: firstInput.value.trim(), lastName: "" };
     if (lastInput?.value?.trim()) return { firstName: "", lastName: lastInput.value.trim() };
+    // Fallback: initialData (e.g. logged-in user who skipped name step)
+    const initFirst = (initialData.firstName ?? initialData.user_metadata?.firstName ?? "").toString().trim();
+    const initLast = (initialData.lastName ?? initialData.user_metadata?.lastName ?? "").toString().trim();
+    const initFull = (initialData.fullName ?? "").toString().trim();
+    if (initFirst || initLast) return { firstName: initFirst, lastName: initLast };
+    if (initFull) return parseFullNameToFirstAndLast(initFull);
     return { firstName: "", lastName: "" };
   }
 
@@ -150,6 +162,11 @@ export function createMultiStepFormHandler(
       } else {
         const input = form.querySelector(`[name="${fieldName}"]`) as HTMLInputElement;
         value = input?.value?.trim() || "";
+        // Fallback: initialData (e.g. logged-in user who skipped earlier steps)
+        if (!value) {
+          const fromData = initialData[fieldName] ?? initialData.user_metadata?.[fieldName];
+          if (fromData != null) value = String(fromData).trim();
+        }
       }
       if (value) {
         span.textContent = value;
@@ -1701,6 +1718,8 @@ export function initializeMultiStepForm(
       console.log(`[MULTISTEP-FORM] Step changed to: ${stepNumber}`);
     },
     formConfig: formConfig, // Pass formConfig to enable registerUser flag
+    initialData, // Pass for data-form-session-meta fallback when logged-in users skip steps
+    initialStep: firstStep, // Show correct step from init (avoids step 1 + next step both running)
   });
 
   // Override showStep to respect skip logic
@@ -1722,11 +1741,7 @@ export function initializeMultiStepForm(
     originalShowStep(stepNumber);
   };
 
-  // Initialize and show first valid step
-  handler.init();
-  if (firstStep !== 1) {
-    handler.showStep(firstStep);
-  }
+  handler.init(); // init now uses initialStep so correct step shows from start
 
   // Expose handler on form so focus listener can call setActiveStepByFocus when user scrolls up to edit
   (form as HTMLFormElement & { multiStepHandler?: MultiStepFormHandler }).multiStepHandler =

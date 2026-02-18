@@ -73,6 +73,10 @@ export const GLOBAL_BUTTON_DEFAULTS = {
     variant: "outline" as const,
     size: "md" as const,
   },
+  action: {
+    variant: "secondary" as const,
+    size: "md" as const,
+  },
 };
 
 export interface FormFieldConfig {
@@ -83,6 +87,7 @@ export interface FormFieldConfig {
     | "email"
     | "tel"
     | "password"
+    | "number"
     | "textarea"
     | "hidden"
     | "component"
@@ -132,10 +137,16 @@ export interface FormFieldConfig {
     field: string; // Field name to check (e.g., "fuelSource")
     value: string | string[]; // Value(s) that must match to show this field
   };
+  // Project form / context-aware forms: role & status filtering
+  allow?: string[];
+  hideAtStatus?: number[];
+  readOnlyAtStatus?: number[];
+  dataField?: string;
+  dataScrap?: boolean;
 }
 
 export interface FormButtonConfig {
-  type: "next" | "prev" | "skip" | "submit" | "choice" | "slider";
+  type: "next" | "prev" | "skip" | "submit" | "choice" | "slider" | "action";
   label?: string; // Optional button label
   validLabel?: string; // Label to show when field is valid (for dynamic labels based on validation)
   validIcon?: string; // Icon to show when valid (e.g. "enter" for next, default "check"). Must exist in SimpleIcon.
@@ -154,6 +165,9 @@ export interface FormButtonConfig {
   disabled?: boolean; // Whether button is disabled initially
   tooltipText?: string; // Tooltip text on hover
   tooltipPosition?: "top" | "bottom" | "left" | "right"; // Tooltip position (default: top)
+  /** Project form: role & status filtering */
+  allow?: string[];
+  hideAtStatus?: number[];
   // Slider (for button-group items that render as a range/slider)
   min?: number;
   max?: number;

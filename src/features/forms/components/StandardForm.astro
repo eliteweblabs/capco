@@ -49,8 +49,8 @@ const fid = (id: string) => (fieldIdPrefix ? `${fieldIdPrefix}${id}` : id);
 const config = normalizeFormConfig(rawConfig);
 const FormOrDiv = wrapInForm ? "div" : "form";
 
-const { multiStepInputClasses } = globalClasses();
-const appendedMultiStepInputClasses = multiStepInputClasses;
+const { globalInputClasses } = globalClasses();
+const appendedGlobalInputClasses = `${globalInputClasses}`;
 
 const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
   value: carrier.id,
@@ -90,6 +90,9 @@ function getHiddenValue(name: string): string {
   const fromConfig = config.hiddenFields?.find((f) => f.name === name);
   return fromConfig?.value ?? "";
 }
+
+const iconLeftPadding = "pl-10 sm:pl-12 md:pl-14 lg:pl-16";
+const iconRightPadding = "pr-10 sm:pr-12 md:pr-14 lg:pr-16";
 ---
 
 <div data-standard-form class={containerClass} data-skip-init={wrapInForm}>
@@ -157,8 +160,18 @@ function getHiddenValue(name: string): string {
               );
             }
             if (field.component === "PhoneAndSMS") {
+              const phoneWrapperClass = field.icon
+                ? [
+                    wrapperClass,
+                    "input-with-icon relative",
+                    field.iconPosition === "right" ? "icon-right" : "icon-left",
+                  ].join(" ")
+                : wrapperClass;
+              const phoneInputClasses = field.icon
+                ? `${appendedGlobalInputClasses} ${field.iconPosition === "left" ? iconLeftPadding : iconRightPadding}`
+                : appendedGlobalInputClasses;
               return (
-                <div class={wrapperClass}>
+                <div class={phoneWrapperClass} data-icon={field.icon || undefined}>
                   <PhoneAndSMS
                     id={fid(field.id)}
                     name={field.name}
@@ -168,7 +181,7 @@ function getHiddenValue(name: string): string {
                     showSMS={field.componentProps?.showSMS ?? true}
                     smsChecked={initialData.smsAlerts ?? false}
                     selectedCarrier={initialData.mobileCarrier ?? ""}
-                    globalInputClasses={appendedMultiStepInputClasses}
+                    globalInputClasses={phoneInputClasses}
                   />
                 </div>
               );
@@ -191,7 +204,7 @@ function getHiddenValue(name: string): string {
                     id={selId}
                     name={field.name}
                     required={field.required}
-                    class={appendedMultiStepInputClasses}
+                    class={appendedGlobalInputClasses}
                   >
                     <option value="">{field.placeholder || "Select..."}</option>
                     {opts.map((o: { value: string; label: string }) => (
@@ -212,7 +225,7 @@ function getHiddenValue(name: string): string {
                     title={field.label || "Select an option"}
                     options={mobileCarrierOptions}
                     selectedValue=""
-                    globalInputClasses={appendedMultiStepInputClasses}
+                    globalInputClasses={appendedGlobalInputClasses}
                     {...field.componentProps}
                   />
                 </div>
@@ -221,7 +234,12 @@ function getHiddenValue(name: string): string {
             if (field.component === "SlideToggle") {
               return (
                 <div class={`${wrapperClass} flex items-center justify-center py-4`}>
-                  <SlideToggle id={fid(field.id)} name={field.name} {...field.componentProps} />
+                  <SlideToggle
+                    id={fid(field.id)}
+                    name={field.name}
+                    globalInputClasses={appendedGlobalInputClasses}
+                    {...field.componentProps}
+                  />
                 </div>
               );
             }
@@ -231,7 +249,7 @@ function getHiddenValue(name: string): string {
                   <InlineAddressSearch
                     id={fid(field.id)}
                     name={field.name}
-                    globalInputClasses={appendedMultiStepInputClasses}
+                    globalInputClasses={appendedGlobalInputClasses}
                     {...field.componentProps}
                   />
                 </div>
@@ -306,8 +324,18 @@ function getHiddenValue(name: string): string {
           if (field.type === "textarea") {
             const textareaVal = initialData[field.name] ?? "";
             const txtId = fid(field.id);
+            const textareaWrapperClass = field.icon
+              ? [
+                  wrapperClass,
+                  "input-with-icon relative",
+                  field.iconPosition === "right" ? "icon-right" : "icon-left",
+                ].join(" ")
+              : wrapperClass;
+            const textareaInputClasses = field.icon
+              ? `${appendedGlobalInputClasses} ${field.iconPosition === "left" ? iconLeftPadding : iconRightPadding}`
+              : appendedGlobalInputClasses;
             return (
-              <div class={wrapperClass}>
+              <div class={textareaWrapperClass} data-icon={field.icon || undefined}>
                 {field.label && (
                   <label
                     for={txtId}
@@ -317,7 +345,7 @@ function getHiddenValue(name: string): string {
                   </label>
                 )}
                 {/* prettier-ignore */}
-                <textarea id={txtId} name={field.name} placeholder={field.placeholder} required={field.required} rows={field.rows || 4} autocomplete={field.autocomplete} class={appendedMultiStepInputClasses} data-error={field.errorMessage} data-validate={field.validate} data-validate-message={field.validateMessage}>{textareaVal}</textarea>
+                <textarea id={txtId} name={field.name} placeholder={field.placeholder} required={field.required} rows={field.rows || 4} autocomplete={field.autocomplete} class={textareaInputClasses} data-error={field.errorMessage} data-validate={field.validate} data-validate-message={field.validateMessage}>{textareaVal}</textarea>
               </div>
             );
           }
@@ -336,16 +364,26 @@ function getHiddenValue(name: string): string {
                 ]}
                 data-icon={field.icon}
               >
+                {field.label && (
+                  <label
+                    for={iconId}
+                    class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
+                  </label>
+                )}
                 <input
                   type={field.type as "text" | "email" | "tel" | "password"}
                   id={iconId}
                   name={field.name}
+                  value={initialData[field.name] ?? field.value ?? ""}
                   placeholder={field.placeholder}
                   required={field.required}
                   autocomplete={field.autocomplete}
                   minlength={field.minlength}
                   autofocus={field.autofocus}
-                  class={`${appendedMultiStepInputClasses} pl-10`}
+                  readonly={(field.componentProps as any)?.readonly}
+                  class={`${appendedGlobalInputClasses} ${field.iconPosition === "left" ? iconLeftPadding : iconRightPadding}`}
                   data-error={field.errorMessage}
                   data-validate={field.validate}
                   data-validate-message={field.validateMessage}
@@ -378,7 +416,7 @@ function getHiddenValue(name: string): string {
                 minlength={field.minlength}
                 autofocus={field.autofocus}
                 readonly={(field.componentProps as any)?.readonly}
-                class={appendedMultiStepInputClasses}
+                class={`${appendedGlobalInputClasses} ${field.iconPosition === "left" ? iconLeftPadding : iconRightPadding}`}
                 data-error={field.errorMessage}
                 data-validate={field.validate}
                 data-validate-message={field.validateMessage}

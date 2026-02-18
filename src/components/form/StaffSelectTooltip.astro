@@ -124,32 +124,45 @@ const displayText = buttonText || selectedOption?.label || placeholder;
         data-project-id={projectId}
         data-meta="assignedToId"
         data-meta-value={selectedValue}
-        class="inline-flex items-center justify-center"
+        class="relative inline-flex items-center justify-center"
         title={title || "Assign to Staff"}
-        data-dropdown-toggle={`${id}-dropdown`}
-        data-dropdown-trigger="click"
+        data-popover-trigger="click"
+        data-popover-target={`${id}-dropdown`}
+        data-popover-placement="bottom"
+        data-popover-toggle={`${id}-dropdown`}
         aria-haspopup="true"
         aria-expanded="false"
       >
-        {project?.assignedToProfile ? (
-          <UserIcon {...componentProps} />
-        ) : selectedValue ? (
-          <Button
-            variant={buttonVariant || "outline"}
-            class={buttonClass || ""}
-            size="sm"
-            icon={icon || "user"}
-            iconPosition="left"
-            iconClasses="m-0 p-2"
-          >
-            {displayText}
-          </Button>
-        ) : (
-          <span class="group relative inline-block h-8 w-8">
-            <span class="sr-only">Open user menu</span>
-            <SimpleIcon name="user" class="avatar-fallback inline-block h-6 w-6" />
-          </span>
-        )}
+        <span class="auth-icon-default">
+          {project?.assignedToProfile ? (
+            <UserIcon {...componentProps} />
+          ) : selectedValue ? (
+            <Button
+              variant={buttonVariant || "outline"}
+              class={buttonClass || ""}
+              size="sm"
+              icon={icon || "user"}
+              iconPosition="left"
+              iconClasses="m-0 p-2"
+            >
+              {displayText}
+            </Button>
+          ) : (
+            <span class="group relative inline-block h-8 w-8">
+              <span class="sr-only">Open user menu</span>
+              <SimpleIcon name="user" class="avatar-fallback inline-block h-6 w-6" />
+            </span>
+          )}
+        </span>
+        <span
+          class="auth-icon-close absolute inset-0 flex items-center justify-center transition-opacity"
+          aria-hidden="true"
+          style="opacity: 0; pointer-events: none;"
+        >
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </span>
       </button>
     ) : (
       <Button
@@ -170,9 +183,8 @@ const displayText = buttonText || selectedOption?.label || placeholder;
       </Button>
     )
   }
-  <Dropdown id={id} title={title} closeButton={false} onOpenCallback={`staffSelectInject_${id}`}>
-    <div class="min-w-[20rem] max-w-2xl" data-staff-dropdown-panel role="dialog" aria-label={title}>
-    </div>
+  <Dropdown id={id} title={title} onOpenCallback={`staffSelectInject_${id}`}>
+    <div data-staff-dropdown-panel role="dialog" aria-label={title}></div>
   </Dropdown>
 </div>
 

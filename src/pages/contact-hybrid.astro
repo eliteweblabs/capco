@@ -8,12 +8,14 @@ import App from "../components/ui/App.astro";
 import VapiChatInterface from "../components/chat/VapiChatInterface.astro";
 import MultiStepForm from "../features/forms/components/MultiStepForm.astro";
 import { getContactFormConfig } from "../lib/forms/form-config-from-site";
+import { buildFormInitialDataFromUser } from "../lib/forms/form-initial-data-from-user";
 import { checkAuth } from "../lib/auth";
 import { globalCompanyData } from "../pages/api/global/global-company-data";
 
 const { currentUser } = await checkAuth(Astro.cookies);
 const { globalCompanyName, virtualAssistantName } = await globalCompanyData();
 const contactFormConfig = await getContactFormConfig(globalCompanyName, virtualAssistantName);
+const contactInitialData = buildFormInitialDataFromUser(currentUser);
 ---
 
 <App title={`Contact ${globalCompanyName}`} {currentUser} mask="top-left">
@@ -307,7 +309,7 @@ const contactFormConfig = await getContactFormConfig(globalCompanyName, virtualA
         <span>Back to options</span>
       </button>
 
-      <MultiStepForm config={contactFormConfig} containerClass="w-full max-w-4xl mx-auto px-16" />
+      <MultiStepForm config={contactFormConfig} initialData={contactInitialData} containerClass="w-full max-w-4xl mx-auto px-16" />
     </div>
   </div>
 </App>

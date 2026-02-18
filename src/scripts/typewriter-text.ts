@@ -162,12 +162,15 @@ function initializeTypewriterInstance(element: HTMLElement, text: string): void 
                 instance.type("&nbsp;");
               }
             } else {
-              // Word: wrap in typewriter-word to prevent mid-word breaks
-              instance.type('<span class="typewriter-word">');
-              for (const char of part) {
-                instance.type(`<span class="typewriter-char">${escapeHtml(char)}</span>`);
-              }
-              instance.type("</span>");
+              // Word: wrap in typewriter-word to prevent mid-word breaks. Build full HTML in one go
+              // so the parser creates correct structure (incremental type() was causing empty bookend spans).
+              const wordHtml =
+                '<span class="typewriter-word">' +
+                [...part]
+                  .map((c) => `<span class="typewriter-char">${escapeHtml(c)}</span>`)
+                  .join("") +
+                "</span>";
+              instance.type(wordHtml);
             }
           });
         }
@@ -416,13 +419,13 @@ function triggerActiveStepTypewriter(root?: Element | null): void {
   // On CMS contact page there's no form-container; contact form is inline.
   // Prefer contact form over login (dropdown) when both have active steps.
   let activeStep: Element | null = null;
-  if (!root) {
-    const contactForm = document.getElementById("multi-step-contact-form");
-    const contactActive = contactForm?.querySelector(".step-content.active");
-    if (contactActive && !isStepInHiddenContainer(contactActive)) {
-      activeStep = contactActive;
-    }
-  }
+  // if (!root) {
+  //   const contactForm = document.getElementById("contact-form");
+  //   const contactActive = contactForm?.querySelector(".step-content.active");
+  //   if (contactActive && !isStepInHiddenContainer(contactActive)) {
+  //     activeStep = contactActive;
+  //   }
+  // }
   if (!activeStep) {
     const allActiveSteps = scope.querySelectorAll(".step-content.active");
     for (const step of allActiveSteps) {
@@ -528,21 +531,20 @@ document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener("keypress", handleEnterSkip, true);
 
   // When contact form container is revealed (loses .hidden), trigger typewriter
-  const formContainer = document.getElementById("form-container");
-  if (formContainer) {
-    const revealObserver = new MutationObserver((mutations) => {
-      for (const m of mutations) {
-        if (m.attributeName === "class" && !formContainer.classList.contains("hidden")) {
-          initTypewriterTexts();
-          const contactForm =
-            formContainer.querySelector("form#multi-step-contact-form") ?? formContainer;
-          setTimeout(() => triggerActiveStepTypewriter(contactForm), 150);
-          break;
-        }
-      }
-    });
-    revealObserver.observe(formContainer, { attributes: true, attributeFilter: ["class"] });
-  }
+  // const formContainer = document.getElementById("form-container");
+  // if (formContainer) {
+  //   const revealObserver = new MutationObserver((mutations) => {
+  //     for (const m of mutations) {
+  //       if (m.attributeName === "class" && !formContainer.classList.contains("hidden")) {
+  //         initTypewriterTexts();
+  //         const contactForm = formContainer;
+  //         setTimeout(() => triggerActiveStepTypewriter(contactForm), 150);
+  //         break;
+  //       }
+  //     }
+  //   });
+  //   revealObserver.observe(formContainer, { attributes: true, attributeFilter: ["class"] });
+  // }
 });
 
 export { initTypewriterTexts, triggerActiveStepTypewriter, skipActiveTypewriterToEnd };

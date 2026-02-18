@@ -1,10 +1,17 @@
 ---
 import { globalCompanyData } from "../../../pages/api/global/global-company-data";
-const { globalCompanyName, virtualAssistantName } = await globalCompanyData();
-
 import ConfigForm from "./ConfigForm.astro";
 import { getContactFormConfig } from "../../../lib/forms/form-config-from-site";
+import { buildFormInitialDataFromUser } from "../../../lib/forms/form-initial-data-from-user";
+
+const { globalCompanyName, virtualAssistantName } = await globalCompanyData();
 const contactFormConfig = await getContactFormConfig(globalCompanyName, virtualAssistantName);
+
+interface Props {
+  currentUser?: any;
+}
+const { currentUser } = Astro.props;
+const initialData = buildFormInitialDataFromUser(currentUser);
 ---
 
-<ConfigForm config={contactFormConfig} />
+<ConfigForm config={contactFormConfig} initialData={initialData} />

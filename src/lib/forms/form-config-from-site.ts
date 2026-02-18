@@ -3,13 +3,10 @@
  * Replaces standalone TS config files (register-form-config, login-form-config, etc.)
  */
 
-import type {
-  MultiStepFormConfig,
-  FormFieldConfig,
-} from "../multi-step-form-config";
+import type { MultiStepFormConfig, FormFieldConfig } from "../multi-step-form-config";
 import { GLOBAL_BUTTON_DEFAULTS } from "../multi-step-form-config";
 import type { FormElementConfig } from "../project-form-config";
-import { getFilteredUserFormElements } from "../user-form-config";
+import { getFilteredUserFormElements } from "../__user-form-config";
 import { getSiteConfig } from "../content";
 
 /**
@@ -59,94 +56,25 @@ function replacePlaceholders(obj: any, vars: Record<string, string>): any {
 export async function getRegisterFormConfig(): Promise<MultiStepFormConfig> {
   const config = await getSiteConfig();
   const json = (config as any).registerForm;
-  if (json) {
-    const merged = mergeFormButtonDefaults(config, json);
-    return { ...json, buttonDefaults: merged } as MultiStepFormConfig;
+  if (!json) {
+    throw new Error(
+      "registerForm is missing from site config. Add it to config.json (or SITE_CONFIG)"
+    );
   }
-  // Fallback: minimal default (matches original structure)
-  return {
-    formId: "multi-step-register-form",
-    formAction: "/api/auth/register",
-    formMethod: "post",
-    totalSteps: 8,
-    progressBar: false,
-    registerUser: true,
-    authRedirect: [{ name: "Dashboard", url: "/project/dashboard" }],
-    buttonDefaults: {
-      next: {
-        type: "next",
-        variant: "secondary",
-        size: "md",
-        icon: "arrow-right",
-        iconPosition: "right",
-        label: "next",
-      },
-      prev: {
-        type: "prev",
-        variant: "anchor",
-        size: "md",
-        icon: "arrow-left",
-        iconPosition: "left",
-        label: "back",
-      },
-      submit: {
-        type: "submit",
-        variant: "secondary",
-        size: "md",
-        icon: "arrow-right",
-        iconPosition: "right",
-        label: "create account",
-      },
-    },
-    hiddenFields: [{ name: "role", value: "Client" }],
-    steps: [],
-  } as MultiStepFormConfig;
+  const merged = mergeFormButtonDefaults(config, json);
+  return { ...json, buttonDefaults: merged } as MultiStepFormConfig;
 }
 
 export async function getLoginFormConfig(): Promise<MultiStepFormConfig> {
   const config = await getSiteConfig();
   const json = (config as any).loginForm;
-  if (json) {
-    const merged = mergeFormButtonDefaults(config, json);
-    return { ...json, buttonDefaults: merged } as MultiStepFormConfig;
+  if (!json) {
+    throw new Error(
+      "loginForm is missing from site config. Add it to config.json (or SITE_CONFIG)"
+    );
   }
-  return {
-    formId: "multi-step-login-form",
-    formAction: "/api/auth/signin",
-    formMethod: "post",
-    totalSteps: 2,
-    progressBar: false,
-    registerUser: false,
-    authRedirect: [{ name: "Dashboard", url: "/project/dashboard" }],
-    hiddenFields: [{ name: "redirect", value: "/project/dashboard" }],
-    buttonDefaults: {
-      next: {
-        type: "next",
-        variant: "secondary",
-        size: "md",
-        icon: "arrow-right",
-        iconPosition: "right",
-        label: "next",
-      },
-      prev: {
-        type: "prev",
-        variant: "anchor",
-        size: "md",
-        icon: "arrow-left",
-        iconPosition: "left",
-        label: "back",
-      },
-      submit: {
-        type: "submit",
-        variant: "secondary",
-        size: "md",
-        icon: "arrow-right",
-        iconPosition: "right",
-        label: "sign in",
-      },
-    },
-    steps: [],
-  } as MultiStepFormConfig;
+  const merged = mergeFormButtonDefaults(config, json);
+  return { ...json, buttonDefaults: merged } as MultiStepFormConfig;
 }
 
 export async function getContactFormConfig(
@@ -164,6 +92,43 @@ export async function getContactFormConfig(
   const result = replacePlaceholders(JSON.parse(JSON.stringify(base)), vars) as MultiStepFormConfig;
   result.buttonDefaults = mergeFormButtonDefaults(config, result);
   return result;
+}
+
+export async function getProjectFormConfig(
+  userRole?: string | null,
+  isNewProject?: boolean,
+  projectStatus?: number | null
+): Promise<MultiStepFormConfig | null> {
+  const config = await getSiteConfig();
+  const pf = (config as any).projectForm;
+  if (!pf || !pf.steps?.length) return null;
+
+  const merged = mergeFormButtonDefaults(config, pf);
+  const step = pf.steps[0];
+  const fields = (step?.fields ?? []).filter((f: any) => {
+    if (f.allow?.length && userRole) {
+      const r = userRole.toLowerCase();
+      if (!f.allow.some((a: string) => a.toLowerCase() === r)) return false;
+    }
+    const status = isNewProject ? 0 : projectStatus;
+    if (f.hideAtStatus?.length && status != null && f.hideAtStatus.includes(status)) return false;
+    return true;
+  });
+  const buttons = (step?.buttons ?? []).filter((b: any) => {
+    if (b.allow?.length && userRole) {
+      const r = userRole.toLowerCase();
+      if (!b.allow.some((a: string) => a.toLowerCase() === r)) return false;
+    }
+    const status = isNewProject ? 0 : projectStatus;
+    if (b.hideAtStatus?.length && status != null && b.hideAtStatus.includes(status)) return false;
+    return true;
+  });
+
+  return {
+    ...pf,
+    buttonDefaults: merged,
+    steps: [{ ...step, fields, buttons }],
+  } as MultiStepFormConfig;
 }
 
 export async function getMepFormConfig(
@@ -195,6 +160,10 @@ function mapUserElementToField(el: FormElementConfig): FormFieldConfig | null {
     required: el.required,
     columns: (el.columns as 1 | 2) || 1,
     componentProps: { ...(el.componentProps || {}), readOnly: (el as any).readOnly },
+    ...(el.icon && {
+      icon: el.icon,
+      iconPosition: (el.iconPosition as "left" | "right") || "left",
+    }),
   };
   switch (el.elementType) {
     case "avatar":
@@ -235,12 +204,7 @@ export async function getProfileFormConfig(
   isAdminEdit?: boolean,
   includeAllModes?: boolean
 ): Promise<MultiStepFormConfig> {
-  const elements = await getFilteredUserFormElements(
-    userRole,
-    isAdminEdit,
-    false,
-    includeAllModes
-  );
+  const elements = await getFilteredUserFormElements(userRole, isAdminEdit, false, includeAllModes);
   const fields: FormFieldConfig[] = [];
   for (const el of elements) {
     const field = mapUserElementToField(el);

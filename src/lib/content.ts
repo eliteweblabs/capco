@@ -127,6 +127,7 @@ function mergeJsonConfig(
   if (jsonConfig.contactForm) config.contactForm = jsonConfig.contactForm;
   if (Array.isArray(jsonConfig.userForm)) config.userForm = jsonConfig.userForm;
   if (jsonConfig.statuses) config.statuses = jsonConfig.statuses;
+  if (jsonConfig.formButtonDefaults) config.formButtonDefaults = jsonConfig.formButtonDefaults;
   if (jsonConfig.site) config.site = { ...config.site, ...jsonConfig.site };
   if (jsonConfig.branding) config.branding = { ...config.branding, ...jsonConfig.branding };
 }

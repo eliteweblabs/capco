@@ -76,3 +76,5 @@ view-source:https://upload.wikimedia.org/wikipedia/commons/d/d5/Slack_icon_2019.
 - use unsplash images always in demo shortcodes
 
 - always add displayOrder to all tables that have an interactive component in the cms... Pages, Testimonials, Users, etc.
+
+- do not use fallbacks

@@ -133,10 +133,101 @@ function filterAndTransformElements(
   return out;
 }
 
+/** Convert unified MultiStepFormConfig (steps[].fields + buttons) to FormElementConfig[] for ProjectForm.astro */
+function unifiedToFormElements(pf: any): FormElementConfig[] {
+  const steps = pf?.steps;
+  if (!Array.isArray(steps) || steps.length === 0) return [];
+
+  const elements: FormElementConfig[] = [];
+  const step = steps[0];
+  const fields = step?.fields ?? [];
+  const buttons = step?.buttons ?? [];
+
+  for (const f of fields) {
+    const field = f as Record<string, any>;
+    const el: FormElementConfig = {
+      id: field.id,
+      name: field.name,
+      label: field.label,
+      placeholder: field.placeholder,
+      required: field.required,
+      allow: field.allow,
+      hideAtStatus: field.hideAtStatus,
+      readOnlyAtStatus: field.readOnlyAtStatus,
+      columns: field.columns ?? 1,
+      dataField: field.dataField,
+      dataScrap: field.dataScrap,
+    } as FormElementConfig;
+
+    if (field.type === "button-group") {
+      el.type = "button-group";
+      el.elementType = "button-group";
+      el.options = field.options;
+      el.groupType = field.toggleType ?? "radio";
+      el.cssClass = field.classes;
+    } else if (field.type === "component") {
+      el.type = "field";
+      el.component = field.component;
+      el.componentProps = field.componentProps;
+      if (field.component === "UnitSlider") {
+        el.elementType = "component";
+        el.min = field.min;
+        el.max = field.max;
+        el.step = field.step;
+        el.value = field.value;
+      } else if (field.component === "GoogleAddressAutocomplete" || field.id === "address-input") {
+        el.elementType = "component";
+        el.id = "address-input";
+        el.component = field.component === "GoogleAddressAutocomplete" ? "GoogleAddressAutocomplete" : "GoogleAddressAutocomplete";
+      } else if (field.component === "SlideToggle") {
+        el.elementType = "checkbox";
+      } else {
+        el.elementType = "component";
+      }
+    } else if (field.type === "textarea") {
+      el.type = "field";
+      el.elementType = "textarea";
+    } else {
+      el.type = "field";
+      el.elementType = field.type === "number" ? "number" : "text";
+      el.min = field.min;
+      el.max = field.max;
+      el.step = field.step;
+    }
+    elements.push(el);
+  }
+
+  for (const b of buttons) {
+    const btn = b as Record<string, any>;
+    elements.push({
+      id: btn.id,
+      name: btn.name ?? btn.id,
+      type: "action",
+      elementType: btn.type === "submit" ? "submit" : "button",
+      label: btn.label,
+      icon: btn.icon,
+      iconPosition: btn.iconPosition,
+      variant: btn.variant,
+      cssClass: btn.classes,
+      action: btn.action,
+      allow: btn.allow,
+      hideAtStatus: btn.hideAtStatus,
+    } as FormElementConfig);
+  }
+  return elements;
+}
+
 async function getElementsFromConfig(): Promise<FormElementConfig[]> {
   const config = await getSiteConfig();
   const pf = (config as any).projectForm;
-  const arr = Array.isArray(pf) ? pf : pf?.unifiedFormElements;
+
+  if (Array.isArray(pf)) {
+    return pf.length > 0 ? pf : [];
+  }
+  if (pf?.steps) {
+    return unifiedToFormElements(pf);
+  }
+  const arr = pf?.unifiedFormElements;
   return Array.isArray(arr) && arr.length > 0 ? arr : [];
 }
 

@@ -1,6 +1,6 @@
 ---
 /**
- * ProfileTabForm - Tabbed profile edit form (General, Social, Settings, Team)
+ * ProfileTabForm - Tabbed profile edit form (Profile, Settings, Social, Team)
  * Extracted from profile.astro for reuse on profile page and admin user editing.
  *
  * @example Self-edit (profile page)
@@ -92,7 +92,7 @@ const profileInitialData = {
   _avatarIdPrefix: formIdPrefix,
 };
 
-const validTabs = ["general", "social", "team", ...(showSettingsTab ? ["settings"] : [])];
+const validTabs = ["general", ...(showSettingsTab ? ["settings"] : []), "social", "team"];
 const tabIndex = validTabs.indexOf(activeTab) >= 0 ? validTabs.indexOf(activeTab) : 0;
 ---
 
@@ -107,10 +107,10 @@ const tabIndex = validTabs.indexOf(activeTab) >= 0 ? validTabs.indexOf(activeTab
         urlParam="tab"
         switchHandler={switchHandler}
         items={[
+          { id: "tab-general", label: "Profile", variant: "tab" as const, showLabel: true },
           ...(showSettingsTab
             ? [{ id: "tab-settings", label: "Settings", variant: "tab" as const, showLabel: true }]
             : []),
-          { id: "tab-general", label: "General", variant: "tab" as const, showLabel: true },
           { id: "tab-social", label: "Social", variant: "tab" as const, showLabel: true },
           { id: "tab-team", label: "Team", variant: "tab" as const, showLabel: true },
         ]}
@@ -119,6 +119,20 @@ const tabIndex = validTabs.indexOf(activeTab) >= 0 ? validTabs.indexOf(activeTab
   }
 
   <div id={p("profile-tab-content")}>
+    <div
+      class={`color-background rounded-lg bg-gray-50 p-4 dark:bg-gray-800 ${!generalOnly && activeTab !== "general" ? "hidden" : ""}`}
+      id={p("general")}
+      role={generalOnly ? undefined : "tabpanel"}
+      aria-labelledby={generalOnly ? undefined : "tab-general"}
+    >
+      <ConfigForm
+        config={profileFormConfig}
+        initialData={profileInitialData}
+        wrapInForm={true}
+        containerClass=""
+        fieldIdPrefix={formIdPrefix}
+      />
+    </div>
     {
       !generalOnly && showSettingsTab && (
         <div
@@ -205,21 +219,6 @@ const tabIndex = validTabs.indexOf(activeTab) >= 0 ? validTabs.indexOf(activeTab
         </div>
       )
     }
-
-    <div
-      class={`color-background rounded-lg bg-gray-50 p-4 dark:bg-gray-800 ${!generalOnly && activeTab !== "general" ? "hidden" : ""}`}
-      id={p("general")}
-      role={generalOnly ? undefined : "tabpanel"}
-      aria-labelledby={generalOnly ? undefined : "tab-general"}
-    >
-      <ConfigForm
-        config={profileFormConfig}
-        initialData={profileInitialData}
-        wrapInForm={true}
-        containerClass=""
-        fieldIdPrefix={formIdPrefix}
-      />
-    </div>
 
     {
       !generalOnly && (

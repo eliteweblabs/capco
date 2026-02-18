@@ -4,7 +4,7 @@
  */
 
 import { getFilteredUnifiedFormElements as getProjectFormElements } from "./project-form-config";
-import { getFilteredUserFormElements } from "./user-form-config";
+import { getFilteredUserFormElements } from "./__user-form-config";
 import type { FormElementConfig } from "./project-form-config";
 
 export type { FormElementConfig } from "./project-form-config";
