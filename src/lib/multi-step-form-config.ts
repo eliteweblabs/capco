@@ -47,6 +47,7 @@ export const GLOBAL_BUTTON_DEFAULTS = {
     icon: "arrow-right",
     iconPosition: "right" as const,
     label: "next",
+    responsive: false,
   },
   prev: {
     variant: "anchor" as const,
@@ -54,28 +55,34 @@ export const GLOBAL_BUTTON_DEFAULTS = {
     icon: "arrow-left",
     iconPosition: "left" as const,
     label: "back",
+    responsive: false,
   },
   skip: {
     variant: "outline" as const,
     size: "md" as const,
+    responsive: false,
   },
   submit: {
     variant: "primary" as const,
     size: "lg" as const,
     icon: "check",
     iconPosition: "right" as const,
+    responsive: false,
   },
   choice: {
     variant: "outline" as const,
     size: "md" as const,
+    responsive: false,
   },
   slider: {
     variant: "outline" as const,
     size: "md" as const,
+    responsive: false,
   },
   action: {
     variant: "secondary" as const,
     size: "md" as const,
+    responsive: false,
   },
 };
 

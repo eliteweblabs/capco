@@ -23,6 +23,8 @@ export interface ButtonStyleConfig {
   className?: string;
   icon?: boolean;
   focus?: boolean;
+  /** When true, scales larger at breakpoints: 5% sm, 10% md, 15% lg, 20% xl */
+  responsive?: boolean;
 }
 
 export function getButtonClasses(config: ButtonStyleConfig = {}): string {
@@ -113,11 +115,19 @@ export function generateButtonHTML(
   dataAttributes: Record<string, string> = {}
 ): string {
   const buttonClasses = getButtonClasses(config);
+  const { responsive = false } = config;
 
   // Build data attributes
   const dataAttrs = Object.entries(dataAttributes)
     .map(([key, value]) => `data-${key}="${value}"`)
     .join(" ");
 
-  return `<button class="${buttonClasses}" ${dataAttrs}>${text}</button>`;
+  const buttonHTML = `<button class="${buttonClasses}" ${dataAttrs}>${text}</button>`;
+
+  if (responsive) {
+    const wrapperClass =
+      "inline-block origin-center sm:scale-[1.05] md:scale-[1.10] lg:scale-[1.15] xl:scale-[1.20]";
+    return `<span class="${wrapperClass}">${buttonHTML}</span>`;
+  }
+  return buttonHTML;
 }
