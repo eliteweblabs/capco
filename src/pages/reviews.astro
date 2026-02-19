@@ -4,13 +4,16 @@
  * Multi-step form from JSON config. Optionally links to Google review.
  * Note: Google does not allow programmatic submission - users must leave
  * reviews directly on Google. We save to our DB and provide a link.
+ * Pre-fills authorName and email when user is authenticated.
  */
-import App from "../components/ui/App.astro";
 import MultiStepForm from "../features/forms/components/MultiStepForm.astro";
 import { getReviewFormConfig } from "../lib/forms/form-config-from-site";
+import { buildFormInitialDataFromUser } from "../lib/forms/form-initial-data-from-user";
 import { globalCompanyData } from "../pages/api/global/global-company-data";
 import { getSiteConfig } from "../lib/content";
 import SimpleIcon from "../components/common/SimpleIcon.astro";
+import { checkAuth } from "../lib/auth";
+import LayoutFullForm from "../components/layouts/LayoutFullForm.astro";
 
 const { globalCompanyName } = await globalCompanyData();
 const reviewFormConfig = await getReviewFormConfig(globalCompanyName);
@@ -20,42 +23,45 @@ const googlePlaceId = reviewForm.googlePlaceId || "";
 const googleReviewUrl = googlePlaceId
   ? `https://search.google.com/local/writereview?placeid=${googlePlaceId}`
   : "";
+
+const { currentUser } = await checkAuth(Astro.cookies);
+const baseInitialData = buildFormInitialDataFromUser(currentUser);
+const initialData = baseInitialData.isAuthenticated
+  ? {
+      ...baseInitialData,
+      authorName:
+        baseInitialData.fullName ||
+        `${baseInitialData.firstName || ""} ${baseInitialData.lastName || ""}`.trim() ||
+        baseInitialData.email ||
+        "",
+    }
+  : {};
 ---
 
-<App title={`Leave a Review - ${globalCompanyName}`}>
-  <div class="container mx-auto px-4 py-12">
-    <div class="mx-auto max-w-2xl">
-      <div class="mb-8 text-center">
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white md:text-4xl">
-          Leave a Review
-        </h1>
-        <p class="mt-2 text-lg text-gray-600 dark:text-gray-400">
-          Share your experience with {globalCompanyName}. Your feedback helps us improve.
+<LayoutFullForm title={`Leave a Review - ${globalCompanyName}`}>
+  <MultiStepForm
+    config={reviewFormConfig}
+    containerClass="w-full max-w-2xl mx-auto"
+    initialData={initialData}
+  />
+
+  {
+    googleReviewUrl && (
+      <div class="mt-12 rounded-xl border border-gray-200 bg-gray-50 p-6 dark:border-gray-700 dark:bg-gray-800">
+        <p class="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+          Prefer to leave a review directly on Google?
         </p>
+        <a
+          href={googleReviewUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-gray-700 shadow-sm transition hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+        >
+          <SimpleIcon name="google" class="h-5 w-5" />
+          <span>Leave a review on Google</span>
+          <SimpleIcon name="external-link" class="h-4 w-4" />
+        </a>
       </div>
-
-      <MultiStepForm
-        config={reviewFormConfig}
-        containerClass="w-full max-w-2xl mx-auto"
-      />
-
-      {googleReviewUrl && (
-        <div class="mt-12 rounded-xl border border-gray-200 bg-gray-50 p-6 dark:border-gray-700 dark:bg-gray-800">
-          <p class="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-            Prefer to leave a review directly on Google?
-          </p>
-          <a
-            href={googleReviewUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-gray-700 shadow-sm transition hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-          >
-            <SimpleIcon name="google" class="h-5 w-5" />
-            <span>Leave a review on Google</span>
-            <SimpleIcon name="external-link" class="h-4 w-4" />
-          </a>
-        </div>
-      )}
-    </div>
-  </div>
-</App>
+    )
+  }
+</LayoutFullForm>

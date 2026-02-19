@@ -82,6 +82,15 @@
       "allow": ["Admin"]
     },
     {
+      "id": "contact-submissions",
+      "label": "Contact Submissions",
+      "type": "link",
+      "href": "/admin/contact-submissions",
+      "icon": "envelope",
+      "position": 6.6,
+      "allow": ["Admin"]
+    },
+    {
       "id": "global-functions",
       "label": "Global Functions",
       "type": "link",
@@ -1566,11 +1575,10 @@
     "totalSteps": 8,
     "progressBar": false,
     "responseType": "toast",
-
     "steps": [
       {
         "stepNumber": 1,
-        "title": "<span data-typewriter-pause=\"1360\"></span>Hi, I'm {{virtualAssistantName}}...<br><br>{{globalCompanyName}}'s project assistant. <br><br>Let's start with your name!",
+        "title": "<span data-typewriter-pause=\"1360\"></span>Hi, I'm {{virtualAssistantName}}...<br><br>{{globalCompanyName}}'s project assistant. Let's start with your name!",
         "fieldLayout": "single",
         "response": false,
         "fields": [
@@ -1676,7 +1684,8 @@
       },
       {
         "stepNumber": 4,
-        "title": "<span data-form-session-meta='firstName' data-default='friend'>friend</span>, do you wish to opt in to SMS?<br><br>Not for marketing, communication and project updates only.",
+        "title": "<span data-form-session-meta='firstName' data-default='friend'>friend</span>, do you wish to opt in to SMS",
+        "moreInfoTooltip": "Not for marketing, communication and project updates only.",
         "skipCondition": "noValidPhone",
         "response": true,
         "fields": [
@@ -1826,7 +1835,7 @@
     "formAction": "/api/reviews/submit",
     "formMethod": "post",
     "totalSteps": 4,
-    "progressBar": true,
+    "progressBar": false,
     "responseType": "toast",
     "successMessage": {
       "title": "Thank you!",
@@ -1838,7 +1847,7 @@
       {
         "stepNumber": 1,
         "title": "Leave a Review",
-        "subtitle": "Your feedback helps us improve. Share your experience with {{globalCompanyName}}.",
+        "moreInfoTooltip": "Your feedback helps us improve. Share your experience with {{globalCompanyName}}.",
         "response": true,
         "fields": [
           {
@@ -1877,34 +1886,42 @@
           { "type": "next", "dataNext": 3 }
         ]
       },
+
       {
         "stepNumber": 3,
-        "title": "How would you rate your experience?",
-        "subtitle": "1 = Poor, 5 = Excellent",
+        "title": "How would you rate your experience",
+        "moreInfoTooltip": "1 = Poor, 5 = Excellent",
         "response": true,
         "fields": [
           {
             "type": "hidden",
             "id": "review-rating-value",
-            "name": "rating"
+            "name": "rating",
+            "required": false
           },
           {
-            "id": "review-rating",
+            "type": "range",
+            "id": "review-rating-slider",
             "name": "rating",
-            "type": "button-group",
-            "required": true,
-            "errorMessage": "Please select a rating",
-            "buttons": [
-              { "id": "rating-1", "label": "1", "dataValue": "1", "dataNext": 4 },
-              { "id": "rating-2", "label": "2", "dataValue": "2", "dataNext": 4 },
-              { "id": "rating-3", "label": "3", "dataValue": "3", "dataNext": 4 },
-              { "id": "rating-4", "label": "4", "dataValue": "4", "dataNext": 4 },
-              { "id": "rating-5", "label": "5", "dataValue": "5", "dataNext": 4 }
-            ]
+            "required": false,
+            "min": 1,
+            "max": 5,
+            "step": 1,
+            "label": ""
           }
         ],
-        "buttons": [{ "type": "prev", "label": "back", "dataPrev": 2 }]
+        "buttons": [
+          {
+            "type": "prev",
+            "dataPrev": 2
+          },
+          {
+            "type": "next",
+            "dataNext": 4
+          }
+        ]
       },
+
       {
         "stepNumber": 4,
         "title": "Tell us more",

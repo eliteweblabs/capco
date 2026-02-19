@@ -1,0 +1,131 @@
+---
+/**
+ * Admin Contact Form Submissions Page
+ * List and manage contact form submissions from the public contact form
+ */
+import { checkAuth } from "../../lib/auth";
+import { supabaseAdmin } from "../../lib/supabase-admin";
+import LayoutDefault from "../../components/layouts/LayoutDefault.astro";
+import DeleteConfirmButton from "../../components/ui/DeleteConfirmButton.astro";
+import SimpleIcon from "../../components/common/SimpleIcon.astro";
+
+const { currentUser } = await checkAuth(Astro.cookies);
+
+if (!currentUser) {
+  return Astro.redirect("/auth/login");
+}
+
+let submissions: any[] = [];
+if (supabaseAdmin) {
+  const { data, error } = await supabaseAdmin
+    .from("contactSubmissions")
+    .select("*")
+    .order("submittedAt", { ascending: false });
+  if (!error) submissions = data || [];
+}
+---
+
+<LayoutDefault title="Contact Submissions" description="Manage contact form submissions from the public form">
+  <div class="mx-auto max-w-6xl px-4 py-8">
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Contact Form Submissions</h1>
+      <p class="mt-1 text-gray-600 dark:text-gray-400">
+        Submissions from the public contact form. View details and delete when resolved.
+      </p>
+      <a
+        href="/contact"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="mt-4 inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400"
+      >
+        <SimpleIcon name="external-link" class="h-4 w-4" />
+        View public contact form
+      </a>
+    </div>
+
+    <div class="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-900">
+      {submissions.length === 0 ? (
+        <div class="p-12 text-center text-gray-500 dark:text-gray-400">
+          No contact submissions yet. Share the <a href="/contact" class="text-primary-600 hover:underline">contact form</a> with visitors.
+        </div>
+      ) : (
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead class="bg-gray-50 dark:bg-gray-800">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                Name
+              </th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                Contact
+              </th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                Company
+              </th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                Message
+              </th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                Date
+              </th>
+              <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+            {submissions.map((s) => (
+              <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                <td class="whitespace-nowrap px-4 py-3">
+                  <div class="font-medium text-gray-900 dark:text-white">
+                    {s.firstName} {s.lastName}
+                  </div>
+                </td>
+                <td class="px-4 py-3">
+                  <div class="text-sm text-gray-900 dark:text-white">
+                    <a href={`mailto:${s.email}`} class="text-primary-600 hover:underline dark:text-primary-400">
+                      {s.email}
+                    </a>
+                  </div>
+                  {s.phone && (
+                    <div class="text-sm text-gray-500 dark:text-gray-400">{s.phone}</div>
+                  )}
+                </td>
+                <td class="px-4 py-3">
+                  <span class="text-gray-700 dark:text-gray-300">{s.company || "—"}</span>
+                </td>
+                <td class="max-w-xs px-4 py-3">
+                  <p class="truncate text-gray-700 dark:text-gray-300" title={s.message}>
+                    {s.message}
+                  </p>
+                </td>
+                <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                  {new Date(s.submittedAt).toLocaleDateString()}
+                </td>
+                <td class="px-4 py-3 text-right">
+                  <div class="flex items-center justify-end gap-1">
+                    <DeleteConfirmButton
+                      id={`delete-contact-${s.id}`}
+                      itemType="contact submission"
+                      apiEndpoint="/api/contact-submissions"
+                      deleteMethod="DELETE"
+                      deleteQueryParam="id"
+                      onDeleteCallback="handleContactDeleted"
+                      tooltipText="Delete submission"
+                      size="sm"
+                      variant="icon"
+                      dataAttributes={{ id: s.id }}
+                    />
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  </div>
+</LayoutDefault>
+
+<script define:vars={{ submissions }}>
+  window.handleContactDeleted = () => window.location.reload();
+</script>

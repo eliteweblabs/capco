@@ -164,6 +164,14 @@ const LEGACY_BUILTIN: Record<string, Omit<AsideNavItem, "id">> = {
     position: 6,
     allow: ["Admin"],
   },
+  "contact-submissions": {
+    label: "Contact Submissions",
+    type: "link",
+    href: "/admin/contact-submissions",
+    icon: "envelope",
+    position: 6.6,
+    allow: ["Admin"],
+  },
   "global-functions": {
     label: "Global Functions",
     type: "link",
