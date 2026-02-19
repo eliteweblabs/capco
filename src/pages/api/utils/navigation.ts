@@ -188,18 +188,18 @@ export const navigation = async (
         // If current page, force primary background
         const buttonStyleMap: Record<string, string> = {
           primary:
-            "hover:scale-101 hover:shadow-xl rounded-full border-2 border-primary-500 bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600 shadow-lg",
+            "hover:scale-101 rounded-full border-2 border-primary-500 bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600",
           secondary:
-            "hover:scale-101 hover:shadow-xl rounded-full border-2 border-secondary-500 bg-secondary-500 text-white hover:bg-secondary-600 dark:bg-secondary-500 dark:hover:bg-secondary-600 shadow-lg",
+            "ring-2 ring-inset ring-[currentColor] hover:scale-101 rounded-full border-2 border-secondary-500 bg-secondary-500 text-white hover:bg-secondary-600 dark:bg-secondary-500 dark:hover:bg-secondary-600",
           outline:
-            "hover:scale-101 hover:shadow-xl rounded-full border-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white dark:border-primary-400 dark:text-primary-400 dark:hover:bg-primary-600 dark:hover:text-white backdrop-blur-md",
+            "hover:scale-101 rounded-full border-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white dark:border-primary-400 dark:text-primary-400 dark:hover:bg-primary-600 dark:hover:text-white backdrop-blur-md",
           ghost:
             "rounded-full text-primary-500 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/20",
         };
 
         // If this is the current page button, use primary style with background
         const styleClasses = item.isPrimary
-          ? "hover:scale-101 hover:shadow-xl rounded-full border-2 border-primary-500 bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600 shadow-lg"
+          ? "hover:scale-101 rounded-full border-2 border-primary-500 bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600"
           : buttonStyleMap[item.buttonStyle] || buttonStyleMap.primary;
         const baseClasses =
           "font-secondary relative inline-flex items-center justify-center font-medium transition-all duration-200";
