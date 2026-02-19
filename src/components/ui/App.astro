@@ -129,6 +129,10 @@ if (
   iconSrc = "/favicon.svg";
 }
 
+// Apple Touch Icon: Safari/iOS does NOT support data URIs - must use a URL to PNG
+const appleTouchIconSrc =
+  iconSrc.startsWith("data:") ? "/favicon.png" : iconSrc.includes(".png") ? iconSrc : "/favicon.png";
+
 // OG Image URL for social sharing - prefer project featured image when on project page, else CMS setting
 const ogImageSrc = project?.featuredImageData?.publicUrl || ogImage || "";
 const ogImageType = ogImageSrc?.includes(".gif")
@@ -750,7 +754,7 @@ const isAdmin = currentUser?.profile?.role === "Admin";
     />
 
     <!-- Favicons and App Icons -->
-    <link rel="apple-touch-icon" sizes="180x180" href={iconSrc} />
+    <link rel="apple-touch-icon" sizes="180x180" href={appleTouchIconSrc} />
     <link
       rel="icon"
       type={globalCompanyIcon?.includes("<svg") || globalCompanyIcon?.includes("<?xml")
@@ -1066,8 +1070,10 @@ const isAdmin = currentUser?.profile?.role === "Admin";
     {/* Cache indicator: dev/test only (localhost or ?cacheIndicator=1) */}
     {isAdmin && <CacheIndicator />}
 
-    <!-- Flowbite JavaScript -->
-    <script src="https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js"></script>
+    <!-- Flowbite JavaScript (bundled from npm - avoids CDN/CSP issues on production) -->
+    <script>
+      import "../../scripts/flowbite-init";
+    </script>
 
     <script>
       import "../../scripts/app-globals";

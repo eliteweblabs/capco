@@ -76,6 +76,7 @@ export default defineConfig({
         "cropperjs",
         "@floating-ui/dom",
         "@supabase/supabase-js",
+        "flowbite",
         "libphonenumber-js",
         "typeit",
       ],
