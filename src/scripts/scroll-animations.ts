@@ -103,15 +103,21 @@ class ScrollAnimations {
           if (entry.isIntersecting) {
             const element = entry.target as HTMLElement;
 
-            // Add visible class with optional delay
-            const delay = element.dataset.animateDelay;
-            if (delay) {
-              setTimeout(() => {
+            const applyVisible = () => {
+              const delay = element.dataset.animateDelay;
+              if (delay) {
+                setTimeout(() => element.classList.add("is-visible"), parseInt(delay));
+              } else {
                 element.classList.add("is-visible");
-              }, parseInt(delay));
-            } else {
-              element.classList.add("is-visible");
-            }
+              }
+            };
+
+            // Defer by one frame so the browser paints the initial state (opacity 0, transform)
+            // before adding is-visible. Fixes above-the-fold elements that would otherwise
+            // never visibly animate because the observer fires before the first paint.
+            requestAnimationFrame(() => {
+              requestAnimationFrame(applyVisible);
+            });
 
             // Stop observing if once is true
             if (this.options.once && this.observer) {
