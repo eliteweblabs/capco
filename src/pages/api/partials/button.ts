@@ -15,7 +15,6 @@ export const POST: APIRoute = async ({ request }) => {
       disabled,
       loading,
       fullWidth,
-      responsive,
     } = body;
 
     // Use the centralized button styling function
@@ -25,7 +24,6 @@ export const POST: APIRoute = async ({ request }) => {
         variant: variant || "primary",
         size: size || "sm",
         fullWidth: fullWidth || false,
-        responsive: responsive || false,
       },
       dataAttributes || {}
     );

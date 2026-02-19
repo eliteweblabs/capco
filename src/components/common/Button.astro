@@ -43,8 +43,6 @@ export interface Props {
   dataAttributes?: Record<string, string>;
   selectedClasses?: string;
   style?: string;
-  /** When true, scales button larger at breakpoints: 5% at sm, 10% at md, 15% at lg, 20% at xl */
-  responsive?: boolean;
 }
 
 // Check if this is being used as a partial (X-headers present) or regular component
@@ -91,7 +89,6 @@ const onclick = Astro.props.onclick || Astro.request.headers.get("x-button-oncli
 const buttonText = Astro.request.headers.get("x-button-text") || "";
 const selectedClasses = Astro.props.selectedClasses || "";
 const style = Astro.props.style || Astro.request.headers.get("x-button-style") || "";
-const responsive = Astro.props.responsive || Astro.request.headers.get("x-button-responsive") === "true" || false;
 
 // Handle data attributes from both props and headers
 let dataAttributes = Astro.props.dataAttributes || {};
@@ -106,11 +103,6 @@ if (isPartial) {
 
 // Use shared button styling logic (icon: true when icon-only so size classes are h/w, not padding)
 const isIconOnly = Astro.props.iconOnly === true || variant === "icon";
-// When responsive: wrap in scale container so entire button (padding, border, text) scales
-// rather than conflicting with variant's hover:scale-101
-const responsiveWrapperClass = responsive
-  ? "inline-block origin-center sm:scale-[1.05] md:scale-[1.10] lg:scale-[1.15] xl:scale-[1.20]"
-  : "";
 const buttonClasses = getButtonClasses({
   variant: variant as any,
   size: size as any,
@@ -173,90 +165,7 @@ const attributes = {
 ---
 
 {
-  responsive ? (
-    <span class={responsiveWrapperClass}>
-      {isLink ? (
-        <a title={title} {...attributes} data-size={size}>
-          {loading && (
-            <svg class="-ml-1 mr-2 h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle
-                class="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                stroke-width="4"
-              />
-              <path
-                class="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              />
-            </svg>
-          )}
-      {icon && iconPosition === "left" && !loading && (
-        <SimpleIcon name={icon} size={iconSize} class={`${iconClasses || "mr-2"} icon-default`} />
-      )}
-      {buttonText ? (
-        buttonText
-      ) : (
-        // <span class="button-text">
-        <slot />
-        // </span>
-      )}
-      {icon && iconPosition === "right" && !loading && (
-        <SimpleIcon name={icon} size={iconSize} class={`${iconClasses || "ml-2"} icon-default`} />
-      )}
-      {dataAttributes?.["data-count"] && parseInt(dataAttributes["data-count"]) > 0 && (
-        <span class="dark:bg-background-dark absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full border border-primary-500 bg-gray-100 text-xs font-medium text-primary-500 dark:border-primary-400 dark:text-primary-400">
-          {dataAttributes["data-count"]}
-        </span>
-      )}
-    </a>
-  ) : (
-    <button type={type as "button" | "submit" | "reset"} {...attributes} data-size={size}>
-      {isAntispam && <span class="antispam-progress" aria-hidden="true" />}
-      {loading && (
-        <svg class="-ml-1 mr-2 h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-          <circle
-            class="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            stroke-width="4"
-          />
-          <path
-            class="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-          />
-        </svg>
-      )}
-      {icon && iconPosition === "left" && !loading && (
-        <SimpleIcon name={icon} size={iconSize} class={`${iconClasses || "mr-2"} icon-default`} />
-      )}
-      {buttonText ? (
-        buttonText
-      ) : isAntispam ? (
-        <span class="antispam-button-text"><slot /></span>
-      ) : (
-        <slot />
-      )}
-      {icon && iconPosition === "right" && !loading && (
-        <SimpleIcon name={icon} size={iconSize} class={`${iconClasses || "ml-2"} icon-default`} />
-      )}
-      {dataAttributes?.["data-count"] && parseInt(dataAttributes["data-count"]) > 0 && (
-        <span class="bg-background dark:bg-background-dark absolute right-0 top-0 flex h-5 w-5 items-center justify-center rounded-full border border-primary bg-gray-100 text-xs font-medium text-primary-500 dark:border-primary dark:text-primary-400">
-          {dataAttributes["data-count"]}
-        </span>
-      )}
-    </button>
-  )}
-    </span>
-  ) : (
-    <>
-      {isLink ? (
+  (isLink ? (
         <a title={title} {...attributes} data-size={size}>
           {loading && (
             <svg class="-ml-1 mr-2 h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -299,9 +208,7 @@ const attributes = {
             </span>
           )}
         </button>
-      )}
-    </>
-  )
+      ))
 }
 
 <style>

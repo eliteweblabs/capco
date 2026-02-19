@@ -1,0 +1,115 @@
+---
+/**
+ * IconTooltip4Block - 4-column XL icon grid with tooltip text
+ *
+ * Displays 4 items as large icons; title + description appear in tooltips on hover/tap.
+ * Supports both JSON array and flat props for CMS shortcode usage.
+ *
+ * @example Direct usage:
+ * <IconTooltip4Block items={[
+ *   { icon: "building", title: "General Contracting", description: "Full project delivery from preconstruction to closeout" },
+ *   ...
+ * ]} />
+ *
+ * @example CMS shortcode:
+ * <IconTooltip4Block
+ *   item1Icon="building"
+ *   item1Title="General Contracting"
+ *   item1Description="Full project delivery from preconstruction to closeout"
+ *   item2Icon="bar-chart-3"
+ *   item2Title="Construction Management"
+ *   item2Description="Schedule, budget, and quality oversight"
+ *   ...
+ * />
+ */
+import SimpleIcon from "../common/SimpleIcon.astro";
+import Tooltip from "../ui/Tooltip.astro";
+import { parseJsonProp, buildArrayFromFlatProps } from "./BlockRegistry";
+
+interface IconTooltipItem {
+  icon?: string;
+  title: string;
+  description?: string;
+}
+
+interface Props {
+  // Items as JSON string or array
+  items?: string | IconTooltipItem[];
+
+  // Flat props for 4 items (CMS shortcode support)
+  item1Icon?: string;
+  item1Title?: string;
+  item1Description?: string;
+  item2Icon?: string;
+  item2Title?: string;
+  item2Description?: string;
+  item3Icon?: string;
+  item3Title?: string;
+  item3Description?: string;
+  item4Icon?: string;
+  item4Title?: string;
+  item4Description?: string;
+
+  className?: string;
+  id?: string;
+}
+
+const props = Astro.props;
+const { className = "", id } = props;
+
+// Build items array from either JSON or flat props
+let items: IconTooltipItem[] = [];
+if (props.items) {
+  items = parseJsonProp<IconTooltipItem[]>(props.items, []);
+} else {
+  items = buildArrayFromFlatProps<IconTooltipItem>(
+    props,
+    "item",
+    ["icon", "title", "description"],
+    4
+  );
+}
+
+// Limit to 4 items
+items = items.slice(0, 4);
+
+// Default icons if missing
+const defaultIcons = ["building", "bar-chart-3", "shield", "check-circle"];
+items = items.map((item, i) => ({
+  ...item,
+  icon: item.icon || defaultIcons[i] || "info-circle",
+}));
+---
+
+<section {id} class:list={["icon-tooltip-4-block py-12 md:py-16", className]}>
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div class="grid grid-cols-2 gap-8 xl:grid-cols-4">
+      {
+        items.map((item) => {
+          const tooltipText = item.description
+            ? `${item.title} — ${item.description}`
+            : item.title;
+          return (
+            <div class="flex justify-center" role="group">
+              <Tooltip
+                text={tooltipText}
+                position="top"
+                mobileClickable
+                touchable={true}
+                className="inline-flex"
+                tooltipClass="whitespace-normal max-w-[280px] text-left"
+              >
+                <div
+                  class="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary-100 text-primary-600 transition-colors hover:bg-primary-200 dark:bg-primary-900/30 dark:text-primary-400 dark:hover:bg-primary-900/50 xl:h-24 xl:w-24"
+                  aria-label={item.title}
+                >
+                  <SimpleIcon name={item.icon!} size="xl" class="h-10 w-10 xl:h-12 xl:w-12" />
+                </div>
+              </Tooltip>
+            </div>
+          );
+        })
+      }
+    </div>
+  </div>
+</section>
