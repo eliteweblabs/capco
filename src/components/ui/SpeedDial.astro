@@ -13,7 +13,7 @@ import Button from "../common/Button.astro";
 // Speed dial component for quick actions
 ---
 
-<div id="speed-dial" data-dial-init class="group">
+<div id="speed-dial" class="group">
   <div
     id="speed-dial-menu"
     class="speed-dial-menu mb-4 flex hidden flex-col items-center space-y-2"
@@ -153,7 +153,7 @@ import Button from "../common/Button.astro";
     tutorialButton.style.display = "none";
   }
 
-  document.addEventListener("DOMContentLoaded", function () {
+  function initSpeedDial() {
     const speedDialButton = document.querySelector('[data-dial-toggle="speed-dial-menu"]');
     const speedDialMenu = document.getElementById("speed-dial-menu");
     const speedDial = document.getElementById("speed-dial");
@@ -395,7 +395,13 @@ import Button from "../common/Button.astro";
         // The stopPropagation above prevents the document click handler from hiding the menu
       }
     });
-  });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initSpeedDial);
+  } else {
+    initSpeedDial();
+  }
 
   // Check for tutorials on load and hide tutorial button if none exist
   function checkTutorials() {
