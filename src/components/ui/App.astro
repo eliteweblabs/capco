@@ -190,37 +190,223 @@ import AdminVoiceAssistantWidget from "../admin/AdminVoiceAssistantWidget.astro"
 import CacheIndicator from "./CacheIndicator.astro";
 import CMSPreloader from "./CMSPreloader.astro";
 const isAdmin = currentUser?.profile?.role === "Admin";
-
-// Console suppression: ON by default. Set PUBLIC_SUPPRESS_CONSOLE_NOISE=false to disable (e.g. when debugging).
-const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "false";
 ---
 
 <!doctype html>
 <html lang="en">
   <head>
-    <!-- Console suppression: ONLY filters console output. No fetch/XHR/error overrides (those broke production). -->
-    <script is:inline define:vars={{ suppressConsoleNoise }}>
-      if (suppressConsoleNoise) {
-        (function () {
-          const ow = console.warn, oe = console.error, ol = console.log;
-          const skip = function (s) {
-            return !s || s.includes("_cf_bm") || s.includes("__cf_bm") || (s.includes("Cookie") && s.includes("rejected")) || s.includes("invalid domain") || s.includes("NS_BINDING_ABORTED") || s.includes("Avatar failed to load") || s.includes("rate limit");
+    <!-- Console suppression MUST run first so it catches all subsequent script output -->
+    <script is:inline>
+      // Aggressively suppress harmless console errors in development
+      (function () {
+        const isDev =
+          window.location.hostname === "localhost" ||
+          window.location.hostname === "127.0.0.1" ||
+          window.location.hostname.startsWith("192.168.");
+
+        if (!isDev) return;
+
+        // Suppress Cloudflare cookie warnings and errors
+        const originalWarn = console.warn;
+        const originalError = console.error;
+        const originalLog = console.log;
+
+        // Override console.warn
+        console.warn = function (...args) {
+          const message = String(args[0] || "");
+          const fullMessage = args.join(" ");
+
+          // Suppress Cloudflare cookie warnings
+          if (
+            message.includes("_cf_bm") ||
+            message.includes("__cf_bm") ||
+            (fullMessage.includes("Cookie") && fullMessage.includes("rejected")) ||
+            fullMessage.includes("invalid domain") ||
+            fullMessage.includes("NS_BINDING_ABORTED") ||
+            fullMessage.includes("OpaqueResponseBlocking") ||
+            fullMessage.includes("Ignoring Event: localhost") ||
+            fullMessage.includes("Avatar failed to load") ||
+            fullMessage.includes("rate limit")
+          ) {
+            return; // Silent fail
+          }
+          originalWarn.apply(console, args);
+        };
+
+        // Override console.error
+        console.error = function (...args) {
+          const message = String(args[0] || "");
+          const fullMessage = args.join(" ");
+
+          // Suppress Cloudflare cookie errors
+          if (
+            message.includes("_cf_bm") ||
+            message.includes("__cf_bm") ||
+            (fullMessage.includes("Cookie") && fullMessage.includes("rejected")) ||
+            fullMessage.includes("invalid domain") ||
+            fullMessage.includes("NS_BINDING_ABORTED")
+          ) {
+            return; // Silent fail
+          }
+          originalError.apply(console, args);
+        };
+
+        // Override console.log to suppress network errors
+        console.log = function (...args) {
+          // const message = String(args[0] || ""); // Unused
+          const fullMessage = args.join(" ");
+
+          if (
+            fullMessage.includes("NS_BINDING_ABORTED") ||
+            fullMessage.includes("net::ERR_") ||
+            fullMessage.includes("_cf_bm") ||
+            fullMessage.includes("__cf_bm")
+          ) {
+            return; // Silent fail
+          }
+          originalLog.apply(console, args);
+        };
+
+        // Suppress unhandled promise rejections for aborted requests
+        window.addEventListener("unhandledrejection", function (event) {
+          const reason = event.reason;
+          const message = reason?.message || String(reason || "");
+
+          if (
+            message.includes("aborted") ||
+            message.includes("NS_BINDING_ABORTED") ||
+            message.includes("AbortError") ||
+            reason?.name === "AbortError"
+          ) {
+            event.preventDefault(); // Prevent console error
+            return;
+          }
+        });
+
+        // Suppress global error events for network errors
+        window.addEventListener(
+          "error",
+          function (event) {
+            const message = event.message || "";
+            const filename = event.filename || "";
+            const target = event.target;
+
+            // Suppress errors related to aborted requests, cookies, or failed image loads
+            if (
+              message.includes("NS_BINDING_ABORTED") ||
+              message.includes("_cf_bm") ||
+              message.includes("__cf_bm") ||
+              (message.includes("Cookie") && message.includes("rejected")) ||
+              (filename.includes("supabase.co") && message.includes("Failed")) ||
+              (target &&
+                target.tagName === "IMG" &&
+                target.src &&
+                target.src.includes("supabase.co/storage"))
+            ) {
+              event.preventDefault();
+              event.stopPropagation();
+              return false;
+            }
+          },
+          true
+        ); // Use capture phase to catch early
+
+        // Intercept fetch to suppress aborted request errors and failed avatar requests
+        const originalFetch = window.fetch;
+        window.fetch = function (...args) {
+          const url = typeof args[0] === "string" ? args[0] : args[0]?.url || "";
+          const method = args[1]?.method || "GET";
+
+          // Suppress HEAD requests to Supabase storage avatars (we know they'll fail)
+          if (
+            method === "HEAD" &&
+            url.includes("supabase.co/storage") &&
+            url.includes("/avatars/")
+          ) {
+            return Promise.resolve(new Response(null, { status: 404, statusText: "Not Found" }));
+          }
+
+          let fetchPromise = originalFetch.apply(this, args);
+
+          // Wrap to catch and suppress abort errors
+          fetchPromise = fetchPromise.catch(function (error) {
+            if (
+              error?.name === "AbortError" ||
+              error?.message?.includes("aborted") ||
+              error?.message?.includes("NS_BINDING_ABORTED")
+            ) {
+              // Return a silent rejection
+              return Promise.reject(new Error("Request aborted (suppressed)"));
+            }
+            throw error;
+          });
+
+          // Also suppress 400 responses for avatar images
+          fetchPromise = fetchPromise.then(function (response) {
+            if (
+              !response.ok &&
+              response.status === 400 &&
+              url.includes("supabase.co/storage") &&
+              url.includes("/avatars/")
+            ) {
+              // Return a silent failure - don't throw, just return a 404-like response
+              return new Response(null, { status: 404, statusText: "Not Found" });
+            }
+            return response;
+          });
+
+          return fetchPromise;
+        };
+
+        // Intercept XMLHttpRequest to suppress aborted errors and failed avatar requests
+        const originalXHROpen = XMLHttpRequest.prototype.open;
+        const originalXHRSend = XMLHttpRequest.prototype.send;
+
+        XMLHttpRequest.prototype.open = function (...args) {
+          this._suppressAbortError = false;
+          this._url = args[1]; // Store URL for later check
+          return originalXHROpen.apply(this, args);
+        };
+
+        XMLHttpRequest.prototype.send = function (...args) {
+          const xhr = this;
+          const url = xhr._url || "";
+
+          // Suppress 400 errors for avatar images
+          const originalOnLoad = xhr.onload;
+          xhr.onload = function (event) {
+            if (
+              xhr.status === 400 &&
+              url.includes("supabase.co/storage") &&
+              url.includes("/avatars/")
+            ) {
+              // Silently fail - don't trigger error handlers
+              return;
+            }
+            if (originalOnLoad) {
+              originalOnLoad.call(xhr, event);
+            }
           };
-          console.warn = function () {
-            if (skip([].join.call(arguments, " "))) return;
-            ow.apply(console, arguments);
+
+          const originalOnError = xhr.onerror;
+          xhr.onerror = function (event) {
+            // Suppress errors for avatar images
+            if (url.includes("supabase.co/storage") && url.includes("/avatars/")) {
+              return;
+            }
+            // Suppress aborted errors
+            if (xhr.status === 0 && xhr.readyState === 0) {
+              // Likely an aborted request
+              return;
+            }
+            if (originalOnError) {
+              originalOnError.call(xhr, event);
+            }
           };
-          console.error = function () {
-            if (skip([].join.call(arguments, " "))) return;
-            oe.apply(console, arguments);
-          };
-          console.log = function () {
-            var s = [].join.call(arguments, " ");
-            if (s && (s.includes("NS_BINDING_ABORTED") || s.includes("net::ERR_") || s.includes("_cf_bm") || s.includes("__cf_bm"))) return;
-            ol.apply(console, arguments);
-          };
-        })();
-      }
+
+          return originalXHRSend.apply(this, args);
+        };
+      })();
     </script>
 
     <!-- Theme detection - MUST be first to be available for all components -->
@@ -485,8 +671,6 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
           secondaryFont,
         });
       })();
-
-      console.log("[App] ✅ Dynamic colors and fonts injected immediately: DONE");
     </script>
 
     <meta charset="utf-8" />
@@ -724,7 +908,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
 
     <FeedbackPanel {currentUser} />
 
-    <div class="flex min-h-dvh flex-col overflow-hidden md:min-h-0" data-template={layout}>
+    <div class="flex h-dvh flex-col overflow-hidden md:min-h-0" data-template={layout}>
       <Navbar
         {globalIconButtonClasses}
         {desktopNavigationHTML}
@@ -774,35 +958,68 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
 
           {
             !isAuthPageResult && layout !== "fullform" && (
-              <div class="my-6 text-xs">
-                <ul class="align-center flex justify-center">
-                  <li>
-                    <Tooltip
-                      text={`${new Date().getFullYear().toString()} ${globalCompanyName}. All rights reserved.`}
-                    >
-                      <span class="me-6 no-underline hover:underline">©</span>
-                    </Tooltip>
-                  </li>
-                  <li>
-                    <a href="/privacy" class="me-6 no-underline hover:underline">
-                      {" "}
-                      privacy{" "}
-                    </a>
-                  </li>
-                  <li>
-                    <a href="/terms" class="me-6 no-underline hover:underline">
-                      {" "}
-                      terms{" "}
-                    </a>
-                  </li>
-                  <li>
-                    <a href="/cookies" class="no-underline hover:underline">
-                      {" "}
-                      cookie{" "}
-                    </a>
-                  </li>
-                </ul>
-              </div>
+              <>
+                <section class="logo-cloud-block mx-auto max-w-md">
+                  <div class="relative w-full min-w-0 overflow-hidden" style="--marquee-gap: 1rem">
+                    <div class="pointer-events-none flex flex-nowrap gap-[var(--marquee-gap)]">
+                      <img
+                        alt="SBA"
+                        class="h-10 w-auto flex-shrink-0 opacity-60 mix-blend-multiply grayscale transition-all hover:opacity-100 hover:grayscale-0 dark:mix-blend-normal dark:invert"
+                        src="https://fhqglhcjlkusrykqnoel.supabase.co/storage/v1/object/public/project-media/global/1770771616380-sba.svg"
+                      />
+                      <img
+                        alt="VIP"
+                        class="h-10 w-auto flex-shrink-0 opacity-60 mix-blend-multiply grayscale transition-all hover:opacity-100 hover:grayscale-0 dark:mix-blend-normal dark:invert"
+                        src="https://fhqglhcjlkusrykqnoel.supabase.co/storage/v1/object/public/project-media/global/1770762813165-logos-vip_logo.png"
+                      />
+                      <img
+                        alt="Security Bond Professionals"
+                        class="h-10 w-auto flex-shrink-0 opacity-60 mix-blend-multiply grayscale transition-all hover:opacity-100 hover:grayscale-0 dark:mix-blend-normal dark:invert"
+                        src="https://fhqglhcjlkusrykqnoel.supabase.co/storage/v1/object/public/project-media/global/1770762807136-logos-Screenshot_2025-12-27_144555.png"
+                      />
+                      <img
+                        alt="SAM Gov"
+                        class="h-10 w-auto flex-shrink-0 opacity-60 mix-blend-multiply grayscale transition-all hover:opacity-100 hover:grayscale-0 dark:mix-blend-normal dark:invert"
+                        src="https://fhqglhcjlkusrykqnoel.supabase.co/storage/v1/object/public/project-media/global/1770771613443-SamGovLogo.svg"
+                      />
+                      <img
+                        alt="Federal Airline Association"
+                        class="h-10 w-auto flex-shrink-0 opacity-60 mix-blend-multiply grayscale transition-all hover:opacity-100 hover:grayscale-0 dark:mix-blend-normal dark:invert"
+                        src="https://fhqglhcjlkusrykqnoel.supabase.co/storage/v1/object/public/project-media/global/1770771611769-logo-faa.svg"
+                      />
+                    </div>
+                  </div>
+                </section>
+                <div class="my-6 text-xs">
+                  <ul class="align-center flex justify-center">
+                    <li>
+                      <Tooltip
+                        text={`${new Date().getFullYear().toString()} ${globalCompanyName}. All rights reserved.`}
+                      >
+                        <span class="me-6 no-underline hover:underline">©</span>
+                      </Tooltip>
+                    </li>
+                    <li>
+                      <a href="/privacy" class="me-6 no-underline hover:underline">
+                        {" "}
+                        privacy{" "}
+                      </a>
+                    </li>
+                    <li>
+                      <a href="/terms" class="me-6 no-underline hover:underline">
+                        {" "}
+                        terms{" "}
+                      </a>
+                    </li>
+                    <li>
+                      <a href="/cookies" class="no-underline hover:underline">
+                        {" "}
+                        cookie{" "}
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </>
             )
           }
         </div>

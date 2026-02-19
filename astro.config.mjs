@@ -60,11 +60,16 @@ export default defineConfig({
           if (id === "gray-matter") return true;
           return false;
         },
+        onwarn(warning, warn) {
+          // Suppress "Generated an empty chunk" – common with Astro islands that only use define:vars
+          if (warning.message?.includes?.("Generated an empty chunk")) return;
+          warn(warning);
+        },
       },
-    ssr: {
-      // Bundle everything for SSR – prevents ERR_MODULE_NOT_FOUND in standalone deploy
-      noExternal: true,
-    },
+      ssr: {
+        // Bundle everything for SSR – prevents ERR_MODULE_NOT_FOUND in standalone deploy
+        noExternal: true,
+      },
     },
     optimizeDeps: {
       include: [
