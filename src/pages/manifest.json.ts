@@ -7,9 +7,11 @@ import type { APIRoute } from "astro";
 import { globalCompanyData } from "./api/global/global-company-data";
 
 function deriveShortName(fullName: string): string {
-  const words = fullName.trim().split(/\s+/);
+  const trimmed = fullName.trim();
+  if (!trimmed || trimmed === "Company Name Not Set") return "App";
+  const words = trimmed.split(/\s+/);
   if (words[0] && words[0].length >= 4) return words[0];
-  return words.slice(0, 2).join(" ").slice(0, 12) || fullName.slice(0, 12) || "App";
+  return words.slice(0, 2).join(" ").slice(0, 12) || trimmed.slice(0, 12) || "App";
 }
 
 export const GET: APIRoute = async ({ request }) => {
@@ -17,7 +19,9 @@ export const GET: APIRoute = async ({ request }) => {
     const data = await globalCompanyData();
     const base = new URL(request.url).origin;
 
-    const name = data.globalCompanyName || "Company Name Not Set";
+    const rawName = data.globalCompanyName?.trim();
+    const isUnset = !rawName || rawName === "Company Name Not Set";
+    const name = isUnset ? "App" : rawName;
     const shortName = deriveShortName(name);
     const themeColor = data.primaryColor || "#825BDD";
     const description = data.globalCompanySlogan || "Fire protection project management";

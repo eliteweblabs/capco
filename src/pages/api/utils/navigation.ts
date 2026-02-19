@@ -40,6 +40,7 @@ export const navigation = async (
     const { supabaseAdmin } = await import("../../../lib/supabase-admin");
     if (supabaseAdmin) {
       const clientId = process.env.RAILWAY_PROJECT_NAME || null;
+      const { quoteClientIdForPostgrest } = await import("../../../lib/content");
       let query = supabaseAdmin
         .from("cmsPages")
         .select(
@@ -50,7 +51,7 @@ export const navigation = async (
 
       // Filter by clientId: show global (null) or matching clientId
       if (clientId) {
-        query = query.or(`clientId.is.null,clientId.eq.${clientId}`);
+        query = query.or(`clientId.is.null,clientId.eq.${quoteClientIdForPostgrest(clientId)}`);
       }
       // If no clientId set, show all pages (no filter)
 
@@ -71,7 +72,7 @@ export const navigation = async (
           .eq("isActive", true)
           .eq("includeInNavigation", true);
         if (clientId) {
-          fallbackQuery = fallbackQuery.or(`clientId.is.null,clientId.eq.${clientId}`);
+          fallbackQuery = fallbackQuery.or(`clientId.is.null,clientId.eq.${quoteClientIdForPostgrest(clientId)}`);
         }
         const fallbackResult = await fallbackQuery.order("title");
         cmsPages = fallbackResult.data;

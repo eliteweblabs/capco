@@ -58,9 +58,9 @@ const currentRole = (currentUser as any)?.profile?.role;
     id="navbar-content"
     class="flex h-16 min-w-0 justify-between gap-1 py-3 transition-opacity duration-200"
   >
-    <div class="flex min-w-0 flex-shrink-0 items-center gap-1">
+    <div class="flex min-w-0 flex-shrink-0 items-center gap-1 pl-4">
       <ToggleSidebar {currentUser} />
-      <Logo link="/" file="svg" className="mr-2 flex md:mr-4" />
+      <Logo link="/" file="svg" className="flex" />
     </div>
 
     {
@@ -74,28 +74,31 @@ const currentRole = (currentUser as any)?.profile?.role;
       )
     }
 
-    <div class="flex flex-shrink-0 items-center gap-2">
+    <div class="flex flex-shrink-0 items-center pr-4">
+      <ShareWidget direction="left" globalIconButtonClasses={globalIconButtonClasses} />
+
       {
         currentUser && currentRole !== "Client" && project && (
-          <button
-            type="button"
-            id="punchlist-drawer-toggle"
-            title="View Punchlist"
-            data-drawer-target="punchlist-drawer"
-            data-drawer-show="punchlist-drawer"
-            data-drawer-placement="right"
-            aria-controls="punchlist-drawer"
-            class={globalIconButtonClasses}
-          >
-            <SimpleIcon name="menu-check" size="md" />
-            <span class="sr-only">View Punchlist</span>
-          </button>
-              <PunchlistDrawer
-      {globalIconButtonClasses}
-      currentUser={currentUser}
-      project={project}
-    />
-
+          <>
+            <button
+              type="button"
+              id="punchlist-drawer-toggle"
+              title="View Punchlist"
+              data-drawer-target="punchlist-drawer"
+              data-drawer-show="punchlist-drawer"
+              data-drawer-placement="right"
+              aria-controls="punchlist-drawer"
+              class={globalIconButtonClasses}
+            >
+              <SimpleIcon name="menu-check" size="md" />
+              <span class="sr-only">View Punchlist</span>
+            </button>
+            <PunchlistDrawer
+              {globalIconButtonClasses}
+              currentUser={currentUser}
+              project={project}
+            />
+          </>
         )
       }
       {
@@ -120,7 +123,12 @@ const currentRole = (currentUser as any)?.profile?.role;
                 style="opacity: 0; pointer-events: none;"
               >
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </span>
               <span class="sr-only">Notifications</span>
@@ -136,8 +144,6 @@ const currentRole = (currentUser as any)?.profile?.role;
       }
 
       <ThemeToggle {currentUser} {session} {isBackend} {globalIconButtonClasses} />
-   
-    
 
       <AuthIcon
         id="account"

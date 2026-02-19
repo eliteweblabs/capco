@@ -94,7 +94,7 @@ async function loadCompanyData() {
 
     // Return data in same format as globalCompanyData()
     return {
-      globalCompanyName: get("companyName", "RAILWAY_PROJECT_NAME", "company_name") || "Company Name Not Set",
+      globalCompanyName: get("companyName", "RAILWAY_PROJECT_NAME") || "",
       globalCompanySlogan: get("slogan"),
       globalCompanyIcon: get("icon", "GLOBAL_COMPANY_ICON_SVG", "icon"),
       globalCompanyAddress: get("address", "GLOBAL_COMPANY_ADDRESS"),
@@ -145,9 +145,9 @@ async function processManifest() {
   // Get environment variables with fallbacks (used when CMS data unavailable)
   const getEnvVar = (key, fallback = "") => process.env[key] || fallback;
 
-  // Load global company data from CMS first, then env vars
+  // Load global company data from CMS first, then env vars; use "App" when unset
   const globalCompanyName =
-    companyData?.globalCompanyName || getEnvVar("RAILWAY_PROJECT_NAME", "Company Name Not Set");
+    companyData?.globalCompanyName?.trim() || getEnvVar("RAILWAY_PROJECT_NAME") || "App";
   const globalCompanySlogan =
     companyData?.globalCompanySlogan ||
     getEnvVar("GLOBAL_COMPANY_SLOGAN", "Professional Fire Protection Plan Review & Approval");
@@ -162,9 +162,11 @@ async function processManifest() {
 
   // Derive short name for PWA (12 chars or less; use first meaningful word(s))
   const shortName = (() => {
-    const words = globalCompanyName.trim().split(/\s+/);
+    const trimmed = globalCompanyName.trim();
+    if (!trimmed || trimmed === "App") return "App";
+    const words = trimmed.split(/\s+/);
     if (words[0] && words[0].length >= 4) return words[0];
-    return words.slice(0, 2).join(" ").slice(0, 12) || globalCompanyName.slice(0, 12) || "App";
+    return words.slice(0, 2).join(" ").slice(0, 12) || trimmed.slice(0, 12) || "App";
   })();
 
   // Load site config for PWA shortcuts (optional)

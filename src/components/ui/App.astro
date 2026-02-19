@@ -48,11 +48,8 @@ const {
   supabaseUrl = undefined,
   projects = undefined,
   id = undefined,
-  statusData = undefined,
   mainClasses = "",
-  layout = "default",
-  mask = "center",
-  horizontalScroll = false,
+  layout = undefined,
   hideFooter = false,
 } = Astro.props;
 
@@ -70,11 +67,7 @@ import { globalCompanyData } from "../../pages/api/global/global-company-data";
 const {
   globalCompanyName,
   globalCompanySlogan,
-  globalCompanyAddress,
   globalCompanyPhone,
-  globalCompanyEmail,
-  globalCompanyWebsite,
-  globalCompanyLogo,
   primaryColor,
   secondaryColor,
   backgroundColor,
@@ -89,25 +82,20 @@ const {
 } = await globalCompanyData();
 
 const safeTitle = stripHtml(title) || Astro.url.pathname.replace(/\//g, " ").trim() || "Home";
-const pathname = Astro.url.pathname;
 const safeDescription = stripHtml(description || globalCompanySlogan || "");
 
 import { checkAuth } from "../../lib/auth";
-const { currentUser, session, supabase, refreshToken, accessToken } = await checkAuth(
+const { currentUser, session } = await checkAuth(
   Astro.cookies
 );
 import { globalClasses } from "../../pages/api/global/global-classes";
 const { globalInputClasses, primaryTextClasses, secondaryTextClasses, globalIconButtonClasses } =
   globalClasses();
 
-// Get theme from cookie (set by client-side script)
-// Note: Cookie is set client-side, so on first load it may not exist yet
-const themeCookie = Astro.cookies.get("theme");
-const serverTheme = themeCookie?.value || "light"; // Default to light
-
-// Debug logging
-
 // Derived properties (needed for assigned fetch)
+// Derived properties (8 props → 13 total)
+const isAuth = currentUser ? true : false;
+const currentUrl = Astro.url.pathname;
 const currentRole = currentUser?.profile?.role;
 
 // Fetch assigned projects (count + preview) for Staff/Admin — lightweight endpoint, no profiles/files
@@ -129,10 +117,7 @@ if (currentUser && (currentRole === "Admin" || currentRole === "Staff")) {
   }
 }
 
-// Derived properties (8 props → 13 total)
-const isAuth = currentUser ? true : false;
-const projectId = project?.id || undefined;
-const currentUrl = Astro.url.pathname;
+
 
 // Icon sources - convert SVG to data URI; fallback to public favicon so we never use empty href
 let iconSrc: string;
@@ -716,7 +701,7 @@ const isAdmin = currentUser?.profile?.role === "Admin";
     <meta name="theme-color" content={primaryColor} />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-project-title" content={globalCompanyName} />
+    <meta name="apple-mobile-web-app-title" content={globalCompanyName && globalCompanyName !== "Company Name Not Set" ? globalCompanyName : "App"} />
     <meta name="generator" content={Astro.generator} />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <meta http-equiv="Cross-Origin-Embedder-Policy" content="unsafe-none" />
@@ -903,6 +888,43 @@ const isAdmin = currentUser?.profile?.role === "Admin";
           document.addEventListener(TRANSITION_BEFORE_PREPARATION, (event: Event) => { /* no-op */ });
         // </script>
       // )} */} -->
+
+    <!-- CMS Preloader: inline in head so it runs early; hides 2s after DOMContentLoaded -->
+    <script is:inline>
+      (function () {
+        var DISPLAY_MS = 2000;
+        function init() {
+          var preloader = document.getElementById("cms-preloader");
+          if (preloader) {
+            window.cmsPreloader = {
+              show: function () {
+                preloader.classList.remove("opacity-0", "pointer-events-none");
+                preloader.classList.add("opacity-100");
+              },
+              hide: function () {
+                preloader.classList.remove("opacity-100");
+                preloader.classList.add("opacity-0", "pointer-events-none");
+              },
+              toggle: function () {
+                if (preloader.classList.contains("opacity-0")) {
+                  window.cmsPreloader.show();
+                } else {
+                  window.cmsPreloader.hide();
+                }
+              },
+            };
+            setTimeout(function () {
+              window.cmsPreloader.hide();
+            }, DISPLAY_MS);
+          }
+        }
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", init);
+        } else {
+          init();
+        }
+      })();
+    </script>
   </head>
 
   <body

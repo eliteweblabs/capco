@@ -12,6 +12,13 @@ import { join } from "path";
 import matter from "gray-matter";
 import { supabaseAdmin } from "./supabase-admin";
 
+/** Quote clientId for PostgREST when it contains spaces, commas, or double quotes */
+export function quoteClientIdForPostgrest(clientId: string): string {
+  return clientId.includes(" ") || clientId.includes(",") || clientId.includes('"')
+    ? `"${clientId.replace(/"/g, '""')}"`
+    : clientId;
+}
+
 // Cache for performance (TTL: 2 min in production; dev skips cache for live updates)
 const cache = new Map<string, any>();
 const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
@@ -374,7 +381,7 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
 
       // Filter by clientId: show global (null) or matching clientId
       if (clientId) {
-        query = query.or(`clientId.is.null,clientId.eq.${clientId}`);
+        query = query.or(`clientId.is.null,clientId.eq.${quoteClientIdForPostgrest(clientId)}`);
       }
       // If no clientId set, show all pages (no filter)
 
@@ -394,12 +401,13 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
         };
         normalizedTemplate = templateMap[normalizedTemplate] ?? normalizedTemplate;
 
+        // Ensure main content is never overwritten by frontmatter spread
         const pageContent: PageContent = {
           title: dbPage.title || slug,
           description: dbPage.description || "",
           template: normalizedTemplate,
-          content: dbPage.content || "",
           ...(dbPage.frontmatter || {}),
+          content: dbPage.content || (dbPage.frontmatter?.content as string) || "",
         };
         cache.set(cacheKey, pageContent);
         // console.log(`✅ [CONTENT] Loaded ${slug} from database (CMS)`, {
