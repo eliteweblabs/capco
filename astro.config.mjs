@@ -56,13 +56,15 @@ export default defineConfig({
       target: "es2018",
       rollupOptions: {
         external: (id) => {
-          // content.ts and gray-matter use Node APIs (fs, path) – exclude from client bundle
-          if (id === "gray-matter" || id.includes("/lib/content") || id.includes("content.ts")) {
-            return true;
-          }
+          // gray-matter uses Node APIs – exclude from client bundle
+          if (id === "gray-matter") return true;
           return false;
         },
       },
+    ssr: {
+      // Bundle everything for SSR – prevents ERR_MODULE_NOT_FOUND in standalone deploy
+      noExternal: true,
+    },
     },
     optimizeDeps: {
       include: [

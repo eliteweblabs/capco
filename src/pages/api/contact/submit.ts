@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { createClient } from "@supabase/supabase-js";
 import { globalCompanyData } from "../global/global-company-data";
 import { SMS_UTILS } from "../../../lib/sms-utils";
+import { supabaseAdmin } from "../../../lib/supabase-admin";
 
 /**
  * Contact Form Submission Handler
@@ -168,6 +169,46 @@ CREATE INDEX "idx_contactSubmissions_submittedAt" ON "contactSubmissions"("submi
     }
 
     console.log("[CONTACT] Submission saved:", data);
+
+    // Send in-app notifications to all Admin users
+    if (supabaseAdmin) {
+      try {
+        const { data: admins } = await supabaseAdmin
+          .from("profiles")
+          .select("id")
+          .eq("role", "Admin");
+
+        const adminIds = admins?.map((a) => a.id).filter(Boolean) || [];
+
+        if (adminIds.length > 0) {
+          const baseUrl = new URL(request.url).origin;
+          const notifications = adminIds.map((userId) => ({
+            userId,
+            title: "New Contact Form Submission",
+            message: `${firstName} ${lastName} (${email}): ${message.slice(0, 100)}${message.length > 100 ? "…" : ""}`,
+            type: "info" as const,
+            priority: "high" as const,
+            actionUrl: `${baseUrl}/admin/global-activity`,
+            actionText: "View in Admin",
+            viewed: false,
+          }));
+
+          const { error: notifError } = await supabaseAdmin
+            .from("notifications")
+            .insert(notifications);
+
+          if (notifError) {
+            console.error("[CONTACT] ⚠️ In-app notification insert failed:", notifError);
+          } else {
+            console.log(
+              `[CONTACT] ✅ In-app notifications sent to ${adminIds.length} Admin user(s)`
+            );
+          }
+        }
+      } catch (notifErr) {
+        console.error("[CONTACT] ⚠️ In-app notification error:", notifErr);
+      }
+    }
 
     // Send email notifications
     const emailApiKey = import.meta.env.EMAIL_API_KEY;
