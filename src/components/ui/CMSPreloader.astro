@@ -9,9 +9,16 @@ interface Props {
   id?: string;
   showByDefault?: boolean; // Whether to show on page load
   zIndex?: string; // z-index class (e.g., "z-50")
+  globalCompanyName: string;
 }
 
-const { id = "cms-preloader", showByDefault = false, zIndex = "z-50" } = Astro.props;
+import SimpleIcon from "../common/SimpleIcon.astro";
+const {
+  id = "cms-preloader",
+  showByDefault = false,
+  zIndex = "z-[50000]",
+  globalCompanyName,
+} = Astro.props;
 ---
 
 <div
@@ -22,41 +29,45 @@ const { id = "cms-preloader", showByDefault = false, zIndex = "z-50" } = Astro.p
   <!-- Icon Mask with Zoom Animation -->
   <div class="relative flex h-32 w-32 items-center justify-center">
     <!-- Animated Library/CMS Icon -->
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="512"
-      height="512"
-      version="1.1"
-      viewBox="0 0 512 512"
-    >
-      <defs>
-        <style>
-          .svg-icon-stroke {
-            fill: none;
-            stroke: #000;
-            stroke-width: 40;
-            stroke-miterlimit: 10;
-            stroke-dasharray: 1;
-            stroke-dashoffset: 1;
-            animation: draw 1s ease-out infinite alternate;
-          }
-
-          @keyframes draw {
-            to {
-              stroke-dashoffset: 0;
-            }
-          }
-        </style>
-      </defs>
-
-      <g>
-        <path
-          class="svg-icon-stroke"
-          pathLength="1"
-          d="M174,197.7h129s40,.3,40,37.3-35,35-35,35h-134v62.2l-.3-61.9h122.8l82,113.5,49-29.3v-200.8L254.9,53.6l-172.7,100,1,201.1,171.7,100.5,78-44.6"
-        ></path>
-      </g>
-    </svg>
+    <!-- get animated icon from simple-icons -->
+    <SimpleIcon name={globalCompanyName} size="lg" />
   </div>
 </div>
 {/* Preloader logic is in App.astro head (inline) so it runs early — see window.cmsPreloader */}
+
+<!-- CMS Preloader: inline in head so it runs early; hides 2s after DOMContentLoaded -->
+<script is:inline>
+  (function () {
+    var DISPLAY_MS = 1000;
+    function init() {
+      var preloader = document.getElementById("cms-preloader");
+      if (preloader) {
+        window.cmsPreloader = {
+          show: function () {
+            preloader.classList.remove("opacity-0", "pointer-events-none");
+            preloader.classList.add("opacity-100");
+          },
+          hide: function () {
+            preloader.classList.remove("opacity-100");
+            preloader.classList.add("opacity-0", "pointer-events-none");
+          },
+          toggle: function () {
+            if (preloader.classList.contains("opacity-0")) {
+              window.cmsPreloader.show();
+            } else {
+              window.cmsPreloader.hide();
+            }
+          },
+        };
+        setTimeout(function () {
+          window.cmsPreloader.hide();
+        }, DISPLAY_MS);
+      }
+    }
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", init);
+    } else {
+      init();
+    }
+  })();
+</script>

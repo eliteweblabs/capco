@@ -85,9 +85,7 @@ const safeTitle = stripHtml(title) || Astro.url.pathname.replace(/\//g, " ").tri
 const safeDescription = stripHtml(description || globalCompanySlogan || "");
 
 import { checkAuth } from "../../lib/auth";
-const { currentUser, session } = await checkAuth(
-  Astro.cookies
-);
+const { currentUser, session } = await checkAuth(Astro.cookies);
 import { globalClasses } from "../../pages/api/global/global-classes";
 const { globalInputClasses, primaryTextClasses, secondaryTextClasses, globalIconButtonClasses } =
   globalClasses();
@@ -117,8 +115,6 @@ if (currentUser && (currentRole === "Admin" || currentRole === "Staff")) {
   }
 }
 
-
-
 // Icon sources - convert SVG to data URI; fallback to public favicon so we never use empty href
 let iconSrc: string;
 if (
@@ -133,8 +129,8 @@ if (
   iconSrc = "/favicon.svg";
 }
 
-// OG Image URL for social sharing - use setting from CMS, with fallback
-const ogImageSrc = ogImage || "";
+// OG Image URL for social sharing - prefer project featured image when on project page, else CMS setting
+const ogImageSrc = project?.featuredImageData?.publicUrl || ogImage || "";
 const ogImageType = ogImageSrc?.includes(".gif")
   ? "image/gif"
   : ogImageSrc?.includes(".svg")
@@ -192,9 +188,7 @@ import Tooltip from "./Tooltip.astro";
 import SpeedDial from "../ui/SpeedDial.astro";
 import AdminVoiceAssistantWidget from "../admin/AdminVoiceAssistantWidget.astro";
 import CacheIndicator from "./CacheIndicator.astro";
-import LogoCloudBlock from "../blocks/LogoCloudBlock.astro";
 import CMSPreloader from "./CMSPreloader.astro";
-
 const isAdmin = currentUser?.profile?.role === "Admin";
 ---
 
@@ -701,7 +695,12 @@ const isAdmin = currentUser?.profile?.role === "Admin";
     <meta name="theme-color" content={primaryColor} />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content={globalCompanyName && globalCompanyName !== "Company Name Not Set" ? globalCompanyName : "App"} />
+    <meta
+      name="apple-mobile-web-app-title"
+      content={globalCompanyName && globalCompanyName !== "Company Name Not Set"
+        ? globalCompanyName
+        : "App"}
+    />
     <meta name="generator" content={Astro.generator} />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <meta http-equiv="Cross-Origin-Embedder-Policy" content="unsafe-none" />
@@ -888,43 +887,6 @@ const isAdmin = currentUser?.profile?.role === "Admin";
           document.addEventListener(TRANSITION_BEFORE_PREPARATION, (event: Event) => { /* no-op */ });
         // </script>
       // )} */} -->
-
-    <!-- CMS Preloader: inline in head so it runs early; hides 2s after DOMContentLoaded -->
-    <script is:inline>
-      (function () {
-        var DISPLAY_MS = 2000;
-        function init() {
-          var preloader = document.getElementById("cms-preloader");
-          if (preloader) {
-            window.cmsPreloader = {
-              show: function () {
-                preloader.classList.remove("opacity-0", "pointer-events-none");
-                preloader.classList.add("opacity-100");
-              },
-              hide: function () {
-                preloader.classList.remove("opacity-100");
-                preloader.classList.add("opacity-0", "pointer-events-none");
-              },
-              toggle: function () {
-                if (preloader.classList.contains("opacity-0")) {
-                  window.cmsPreloader.show();
-                } else {
-                  window.cmsPreloader.hide();
-                }
-              },
-            };
-            setTimeout(function () {
-              window.cmsPreloader.hide();
-            }, DISPLAY_MS);
-          }
-        }
-        if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", init);
-        } else {
-          init();
-        }
-      })();
-    </script>
   </head>
 
   <body
@@ -936,7 +898,7 @@ const isAdmin = currentUser?.profile?.role === "Admin";
     {/* SPA disabled: re-apply theme and astro:after-swap/astro:page-load scripts */}
     {/* SPA disabled: debug and runPageInits scripts */}
 
-    <CMSPreloader showByDefault={true} />
+    <CMSPreloader showByDefault={true} {globalCompanyName} />
 
     <UnifiedNotification />
 
@@ -997,7 +959,47 @@ const isAdmin = currentUser?.profile?.role === "Admin";
           {
             !isAuthPageResult && layout !== "fullform" && (
               <>
-                <LogoCloudBlock />
+                <section class="logo-cloud-block skip overflow-x-hidden">
+                  <div class="relative w-full min-w-0 overflow-hidden" style="--marquee-gap: 3rem">
+                    <div class="flex flex-nowrap gap-[var(--marquee-gap)]">
+                      <img
+                        alt="SBA"
+                        class="h-10 w-auto flex-shrink-0 object-contain opacity-60 mix-blend-multiply grayscale transition-all hover:opacity-100 hover:grayscale-0 dark:mix-blend-normal dark:invert"
+                        height="40"
+                        src="https://fhqglhcjlkusrykqnoel.supabase.co/storage/v1/object/public/project-media/global/1770771616380-sba.svg"
+                        width="160"
+                      />
+                      <img
+                        alt="VIP"
+                        class="h-10 w-auto flex-shrink-0 object-contain opacity-60 mix-blend-multiply grayscale transition-all hover:opacity-100 hover:grayscale-0 dark:mix-blend-normal dark:invert"
+                        height="40"
+                        src="https://fhqglhcjlkusrykqnoel.supabase.co/storage/v1/object/public/project-media/global/1770762813165-logos-vip_logo.png"
+                        width="160"
+                      />
+                      <img
+                        alt="Security Bond Professionals"
+                        class="h-10 w-auto flex-shrink-0 object-contain opacity-60 mix-blend-multiply grayscale transition-all hover:opacity-100 hover:grayscale-0 dark:mix-blend-normal dark:invert"
+                        height="40"
+                        src="https://fhqglhcjlkusrykqnoel.supabase.co/storage/v1/object/public/project-media/global/1770762807136-logos-Screenshot_2025-12-27_144555.png"
+                        width="160"
+                      />
+                      <img
+                        alt="SAM Gov"
+                        class="h-10 w-auto flex-shrink-0 object-contain opacity-60 mix-blend-multiply grayscale transition-all hover:opacity-100 hover:grayscale-0 dark:mix-blend-normal dark:invert"
+                        height="40"
+                        src="https://fhqglhcjlkusrykqnoel.supabase.co/storage/v1/object/public/project-media/global/1770771613443-SamGovLogo.svg"
+                        width="160"
+                      />
+                      <img
+                        alt="Federal Airline Association"
+                        class="h-10 w-auto flex-shrink-0 object-contain opacity-60 mix-blend-multiply grayscale transition-all hover:opacity-100 hover:grayscale-0 dark:mix-blend-normal dark:invert"
+                        height="40"
+                        src="https://fhqglhcjlkusrykqnoel.supabase.co/storage/v1/object/public/project-media/global/1770771611769-logo-faa.svg"
+                        width="160"
+                      />
+                    </div>
+                  </div>
+                </section>
                 <div class="my-6 text-xs">
                   <ul class="align-center flex justify-center">
                     <li>

@@ -41,12 +41,15 @@ export function getIcon(name: string, config: IconConfig = {}): string {
     .replace(/width="16"/g, `width="${size}"`)
     .replace(/height="16"/g, `height="${size}"`);
 
-  // Then add class attribute if it doesn't exist, or replace if it does
-  if (result.includes('class="')) {
-    result = result.replace(/class="[^"]*"/g, `class="${classes}"`);
-  } else {
-    // Add class attribute after the opening <svg tag
-    result = result.replace("<svg", `<svg class="${classes}"`);
+  // Add class to root <svg> only; preserve classes on inner elements (e.g. path class="svg-icon-stroke" for animations)
+  const svgTagMatch = result.match(/^(\s*)<svg([^>]*)>/);
+  if (svgTagMatch) {
+    const [, leading, attrs] = svgTagMatch;
+    if (/class\s*=\s*["'][^"']*["']/.test(attrs)) {
+      result = result.replace(/^(\s*)<svg([^>]*)>/, (_, l, a) => l + '<svg' + a.replace(/class\s*=\s*["'][^"']*["']/, `class="${classes}"`) + '>');
+    } else {
+      result = result.replace(/^(\s*)<svg([^>]*)>/, `$1<svg class="${classes}"$2>`);
+    }
   }
 
   return result;

@@ -15,7 +15,7 @@ interface Project {
   completedAt: string;
   featured: boolean;
   featuredImageUrl: string | null;
-  featuredImageId: number | null;
+  featuredImageData?: { id?: number; publicUrl?: string };
   createdAt: string;
 }
 
@@ -48,7 +48,7 @@ try {
         .map(async (project: any) => {
           let featuredImageUrl = project.featuredImageUrl || null;
 
-          if (!featuredImageUrl && project.featuredImageId) {
+          if (!featuredImageUrl && project.featuredImageData?.id) {
             try {
               const imageResponse = await fetch(
                 `${baseUrl}/api/files/get?projectId=${project.id}&targetLocation=marketing&bucketName=project-marketing`,
@@ -63,7 +63,7 @@ try {
                 const imageData = await imageResponse.json();
                 const images = imageData.data || [];
                 const featuredImage = images.find(
-                  (img: any) => img.id === parseInt(project.featuredImageId)
+                  (img: any) => img.id === project.featuredImageData!.id
                 );
 
                 if (featuredImage && featuredImage.publicUrl) {
@@ -85,7 +85,7 @@ try {
             completedAt: project.completedAt || project.updatedAt,
             featured: project.featured,
             featuredImageUrl: featuredImageUrl,
-            featuredImageId: project.featuredImageId,
+            featuredImageData: project.featuredImageData,
             createdAt: project.createdAt,
           };
         })

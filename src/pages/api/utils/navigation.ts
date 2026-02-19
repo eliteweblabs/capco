@@ -72,7 +72,9 @@ export const navigation = async (
           .eq("isActive", true)
           .eq("includeInNavigation", true);
         if (clientId) {
-          fallbackQuery = fallbackQuery.or(`clientId.is.null,clientId.eq.${quoteClientIdForPostgrest(clientId)}`);
+          fallbackQuery = fallbackQuery.or(
+            `clientId.is.null,clientId.eq.${quoteClientIdForPostgrest(clientId)}`
+          );
         }
         const fallbackResult = await fallbackQuery.order("title");
         cmsPages = fallbackResult.data;
@@ -217,8 +219,8 @@ export const navigation = async (
             }"
          >
           <svg class="inline w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>
-          <span class="inline sm:hidden" data-sidebar-collapse-hide="">${item.label}</span>
-          <span class="hidden sm:inline">${item.label}</span>
+          <span class="inline md:hidden" data-sidebar-collapse-hide="">${item.label}</span>
+          <span class="hidden md:inline">${item.label}</span>
         </a>
       </li>`;
     });
