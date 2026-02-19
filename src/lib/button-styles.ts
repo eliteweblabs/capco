@@ -39,7 +39,7 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
 
   // Base classes for all buttons
   const baseClasses =
-    "font-secondary relative inline-flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1)";
+    "select-none font-secondary relative inline-flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1)";
 
   // Icon buttons: square dimensions so they stay perfectly round (rounded-full)
   const isIconButton = icon || variant === "icon";

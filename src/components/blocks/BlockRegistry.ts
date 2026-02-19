@@ -364,6 +364,28 @@ export const blockRegistry: Record<string, BlockDefinition> = {
     },
   },
 
+  GoogleReviewsBlock: {
+    name: "GoogleReviewsBlock",
+    description: "Google Reviews widget with star ratings and review cards",
+    props: {
+      title: { type: "string", description: "Section title" },
+      description: { type: "string", description: "Section description" },
+      businessName: { type: "string", description: "Business name for badge" },
+      businessUrl: { type: "string", description: "Google Maps/Business Profile URL" },
+      averageRating: { type: "string", description: "Aggregate rating (e.g. 4.9)" },
+      totalReviews: { type: "string", description: "Total review count" },
+      variant: {
+        type: "string",
+        default: "grid",
+        description: "Layout: grid, carousel, minimal",
+      },
+      columns: { type: "number", default: 3, description: "Grid columns (1-3)" },
+      reviews: { type: "string", description: "JSON array of reviews [{text, author, rating, date, avatar}]" },
+      placeId: { type: "string", description: "Google Place ID for live fetch (requires GOOGLE_MAPS_API_KEY)" },
+      ...animationProps,
+    },
+  },
+
   ListBlock: {
     name: "ListBlock",
     description: "Simple list with line breaks and tab indentation for nesting",

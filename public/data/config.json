@@ -73,6 +73,15 @@
       "allow": ["Admin"]
     },
     {
+      "id": "reviews",
+      "label": "Review Submissions",
+      "type": "link",
+      "href": "/admin/reviews",
+      "icon": "star",
+      "position": 6.5,
+      "allow": ["Admin"]
+    },
+    {
       "id": "global-functions",
       "label": "Global Functions",
       "type": "link",
@@ -1808,6 +1817,113 @@
             "label": "send message",
             "classes": "submit-contact"
           }
+        ]
+      }
+    ]
+  },
+  "reviewForm": {
+    "formId": "review-form",
+    "formAction": "/api/reviews/submit",
+    "formMethod": "post",
+    "totalSteps": 4,
+    "progressBar": true,
+    "responseType": "toast",
+    "successMessage": {
+      "title": "Thank you!",
+      "body": "Your review has been submitted. We appreciate your feedback!",
+      "showGoogleReviewLink": true
+    },
+    "googlePlaceId": "",
+    "steps": [
+      {
+        "stepNumber": 1,
+        "title": "Leave a Review",
+        "subtitle": "Your feedback helps us improve. Share your experience with {{globalCompanyName}}.",
+        "response": true,
+        "fields": [
+          {
+            "id": "review-name",
+            "name": "authorName",
+            "type": "text",
+            "placeholder": "Your name",
+            "required": true,
+            "autocomplete": "name",
+            "errorMessage": "Please enter your name",
+            "icon": "user",
+            "iconPosition": "left"
+          }
+        ],
+        "buttons": [{ "type": "next", "dataNext": 2 }]
+      },
+      {
+        "stepNumber": 2,
+        "title": "What's your email?",
+        "response": true,
+        "fields": [
+          {
+            "id": "review-email",
+            "name": "email",
+            "type": "email",
+            "placeholder": "you@example.com",
+            "required": true,
+            "autocomplete": "email",
+            "errorMessage": "Please enter a valid email",
+            "icon": "mail",
+            "iconPosition": "left"
+          }
+        ],
+        "buttons": [
+          { "type": "prev", "label": "back", "dataPrev": 1 },
+          { "type": "next", "dataNext": 3 }
+        ]
+      },
+      {
+        "stepNumber": 3,
+        "title": "How would you rate your experience?",
+        "subtitle": "1 = Poor, 5 = Excellent",
+        "response": true,
+        "fields": [
+          {
+            "type": "hidden",
+            "id": "review-rating-value",
+            "name": "rating"
+          },
+          {
+            "id": "review-rating",
+            "name": "rating",
+            "type": "button-group",
+            "required": true,
+            "errorMessage": "Please select a rating",
+            "buttons": [
+              { "id": "rating-1", "label": "1", "dataValue": "1", "dataNext": 4 },
+              { "id": "rating-2", "label": "2", "dataValue": "2", "dataNext": 4 },
+              { "id": "rating-3", "label": "3", "dataValue": "3", "dataNext": 4 },
+              { "id": "rating-4", "label": "4", "dataValue": "4", "dataNext": 4 },
+              { "id": "rating-5", "label": "5", "dataValue": "5", "dataNext": 4 }
+            ]
+          }
+        ],
+        "buttons": [{ "type": "prev", "label": "back", "dataPrev": 2 }]
+      },
+      {
+        "stepNumber": 4,
+        "title": "Tell us more",
+        "subtitle": "What did you enjoy? What could we do better?",
+        "response": true,
+        "fields": [
+          {
+            "id": "review-text",
+            "name": "reviewText",
+            "type": "textarea",
+            "placeholder": "Share your experience...",
+            "required": true,
+            "rows": 4,
+            "errorMessage": "Please enter your review"
+          }
+        ],
+        "buttons": [
+          { "type": "prev", "label": "back", "dataPrev": 3 },
+          { "type": "submit", "label": "Submit Review" }
         ]
       }
     ]

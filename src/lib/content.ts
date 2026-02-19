@@ -125,6 +125,7 @@ function mergeJsonConfig(
   if (jsonConfig.loginForm) config.loginForm = jsonConfig.loginForm;
   if (jsonConfig.mepForm) config.mepForm = jsonConfig.mepForm;
   if (jsonConfig.contactForm) config.contactForm = jsonConfig.contactForm;
+  if (jsonConfig.reviewForm) config.reviewForm = jsonConfig.reviewForm;
   if (Array.isArray(jsonConfig.userForm)) config.userForm = jsonConfig.userForm;
   if (jsonConfig.statuses) config.statuses = jsonConfig.statuses;
   if (jsonConfig.formButtonDefaults) config.formButtonDefaults = jsonConfig.formButtonDefaults;

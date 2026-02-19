@@ -131,6 +131,20 @@ export async function getProjectFormConfig(
   } as MultiStepFormConfig;
 }
 
+export async function getReviewFormConfig(
+  globalCompanyName: string
+): Promise<MultiStepFormConfig> {
+  const config = await getSiteConfig();
+  const json = (config as any).reviewForm;
+  const base = json || {};
+  const vars = {
+    globalCompanyName: globalCompanyName || "Our Company",
+  };
+  const result = replacePlaceholders(JSON.parse(JSON.stringify(base)), vars) as MultiStepFormConfig;
+  result.buttonDefaults = mergeFormButtonDefaults(config, result);
+  return result;
+}
+
 export async function getMepFormConfig(
   globalCompanyName: string,
   virtualAssistantName?: string | null

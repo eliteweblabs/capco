@@ -89,6 +89,8 @@ const {
 } = await globalCompanyData();
 
 const safeTitle = stripHtml(title) || Astro.url.pathname.replace(/\//g, " ").trim() || "Home";
+const pathname = Astro.url.pathname;
+const disableAnimations = pathname.startsWith("/admin") || pathname.startsWith("/project");
 const safeDescription = stripHtml(description || globalCompanySlogan || "");
 
 import { checkAuth } from "../../lib/auth";
@@ -207,6 +209,7 @@ import Tooltip from "./Tooltip.astro";
 import SpeedDial from "../ui/SpeedDial.astro";
 import AdminVoiceAssistantWidget from "../admin/AdminVoiceAssistantWidget.astro";
 import CacheIndicator from "./CacheIndicator.astro";
+import LogoCloudBlock from "../blocks/LogoCloudBlock.astro";
 
 const isAdmin = currentUser?.profile?.role === "Admin";
 ---
@@ -964,12 +967,15 @@ const isAdmin = currentUser?.profile?.role === "Admin";
           ]}
           style={currentUser ? "transition-duration: 350ms;" : undefined}
         >
-          <main>
+          <main data-animate-main={disableAnimations ? "false" : undefined}>
             <slot />
           </main>
 
           {
             !isAuthPageResult && layout !== "fullform" && (
+
+            <LogoCloudBlock  />
+
               <div class="my-6 text-xs">
                 <ul class="align-center flex justify-center">
                   <li>
@@ -1258,11 +1264,11 @@ const isAdmin = currentUser?.profile?.role === "Admin";
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js" defer></script>
     <script is:inline>
-      // Wait for AOS library to load before initializing
+      // Wait for AOS library to load before initializing (skip on admin/project)
       window.addEventListener("DOMContentLoaded", function () {
-        // @ts-ignore - AOS loaded from CDN
+        var path = window.location.pathname;
+        if (path.startsWith("/admin") || path.startsWith("/project")) return;
         if (typeof AOS !== "undefined") {
-          // @ts-ignore
           AOS.init({
             duration: 800,
             easing: "ease-in-out",

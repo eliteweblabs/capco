@@ -114,17 +114,21 @@ const { id, title = "", onOpenCallback, focusSelector } = Astro.props;
     document.querySelectorAll(".auth-icon-close").forEach(function (closeEl) {
       var trigger = closeEl.closest("[data-popover-target], [data-dropdown-toggle]");
       if (!trigger) return;
-      var panelId = trigger.getAttribute("data-popover-target") || trigger.getAttribute("data-dropdown-toggle");
+      var panelId =
+        trigger.getAttribute("data-popover-target") || trigger.getAttribute("data-dropdown-toggle");
       var panel = panelId ? document.getElementById(panelId) : null;
       if (!panel) return;
 
       function closePopover() {
-        var inst = window.FlowbiteInstances && window.FlowbiteInstances.getInstance("Popover", panelId);
+        var inst =
+          window.FlowbiteInstances && window.FlowbiteInstances.getInstance("Popover", panelId);
         if (inst && typeof inst.hide === "function") {
           inst.hide();
         } else {
           panel.classList.add("opacity-0", "invisible");
-          setTimeout(function () { panel.classList.add("hidden"); }, 150);
+          setTimeout(function () {
+            panel.classList.add("hidden");
+          }, 150);
         }
       }
 
@@ -152,7 +156,9 @@ const { id, title = "", onOpenCallback, focusSelector } = Astro.props;
       }
 
       var observer = new MutationObserver(function () {
-        updateTrigger(!panel.classList.contains("hidden") && !panel.classList.contains("invisible"));
+        updateTrigger(
+          !panel.classList.contains("hidden") && !panel.classList.contains("invisible")
+        );
       });
       observer.observe(panel, { attributes: true, attributeFilter: ["class"] });
       updateTrigger(!panel.classList.contains("hidden") && !panel.classList.contains("invisible"));
@@ -176,37 +182,4 @@ const { id, title = "", onOpenCallback, focusSelector } = Astro.props;
   :global(.dark) [role="tooltip"] > [data-popper-arrow]:after {
     border-color: var(--color-gray-700) !important;
   }
-
-  /* [role="tooltip"] > [data-popper-arrow]:after {
-    border-color: var(--color-gray-200) !important;
-    border-width: 1px !important;
-    border-style: solid !important;
-    border-radius: 0 !important;
-    border-top-left-radius: 0 !important;
-    border-top-right-radius: 0 !important;
-    border-bottom-left-radius: 0 !important;
-    border-bottom-right-radius: 0 !important;
-  }
-
-  .dark [role="tooltip"] > [data-popper-arrow]:before {
-    border-color: var(--color-gray-700) !important;
-    border-width: 1px !important;
-    border-style: solid !important;
-    border-radius: 0 !important;
-    border-top-left-radius: 0 !important;
-    border-top-right-radius: 0 !important;
-    border-bottom-left-radius: 0 !important;
-    border-bottom-right-radius: 0 !important;
-  }
-
-  .dark [role="tooltip"] > [data-popper-arrow]:after {
-    border-color: var(--color-gray-700) !important;
-    border-width: 1px !important;
-    border-style: solid !important;
-    border-radius: 0 !important;
-    border-top-left-radius: 0 !important;
-    border-top-right-radius: 0 !important;
-    border-bottom-left-radius: 0 !important;
-    border-bottom-right-radius: 0 !important;
-  } */
 </style>

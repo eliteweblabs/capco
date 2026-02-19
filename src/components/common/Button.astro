@@ -167,7 +167,7 @@ const attributes = {
   ...(style && { style }),
   ...(isAntispam && {
     "data-antispam": "true",
-    "data-antispam-hold": "5000",
+    "data-antispam-hold": "3000",
   }),
 };
 ---
@@ -238,10 +238,10 @@ const attributes = {
       )}
       {buttonText ? (
         buttonText
+      ) : isAntispam ? (
+        <span class="antispam-button-text"><slot /></span>
       ) : (
-        // <span class="button-text select-none">
         <slot />
-        // </span>
       )}
       {icon && iconPosition === "right" && !loading && (
         <SimpleIcon name={icon} size={iconSize} class={`${iconClasses || "ml-2"} icon-default`} />
@@ -289,7 +289,7 @@ const attributes = {
           {icon && iconPosition === "left" && !loading && (
             <SimpleIcon name={icon} size={iconSize} class={`${iconClasses || "mr-2"} icon-default`} />
           )}
-          {buttonText ? buttonText : <slot />}
+          {buttonText ? buttonText : isAntispam ? (<span class="antispam-button-text"><slot /></span>) : <slot />}
           {icon && iconPosition === "right" && !loading && (
             <SimpleIcon name={icon} size={iconSize} class={`${iconClasses || "ml-2"} icon-default`} />
           )}
@@ -421,11 +421,13 @@ const attributes = {
       const isTouchDevice = () => window.matchMedia("(hover: none)").matches;
       if (!isTouchDevice()) return;
 
+      const TEXT_READY = "press for 3s";
+
       document.querySelectorAll("[data-antispam]").forEach((btn) => {
         if (btn.getAttribute("data-antispam-inited")) return;
         btn.setAttribute("data-antispam-inited", "true");
 
-        const holdMs = parseInt((btn as any).dataset.antispamHold ?? "5000", 10) || 5000;
+        const holdMs = parseInt((btn as any).dataset.antispamHold ?? "3000", 10) || 3000;
         let holdTimer = null;
         let progressInterval = null;
         let startTime = 0;
@@ -475,6 +477,18 @@ const attributes = {
         btn.addEventListener("touchstart", startHold, { passive: true });
         btn.addEventListener("touchend", reset, { passive: true });
         btn.addEventListener("touchcancel", reset, { passive: true });
+
+        const labelEl = btn.querySelector(".antispam-button-text");
+        const form = (btn as HTMLElement).closest("form");
+        if (labelEl && form) {
+          const invalidText = labelEl.textContent?.trim() || "submit";
+          const updateLabel = () => {
+            labelEl.textContent = form.checkValidity() ? TEXT_READY : invalidText;
+          };
+          form.addEventListener("input", updateLabel);
+          form.addEventListener("change", updateLabel);
+          updateLabel();
+        }
       });
     })();
   </script>
