@@ -370,14 +370,26 @@ export function multiStepFieldToInputConfig(field: {
       required: field.required,
     } as TextareaFieldConfig;
   }
-  if (t === "text" || t === "email" || t === "tel" || t === "password") {
+  if (t === "text" || t === "email" || t === "tel" || t === "password" || t === "number") {
     return {
       ...base,
       type: "input",
-      inputType: t as "text" | "email" | "tel" | "password",
+      inputType: t as "text" | "email" | "tel" | "password" | "number",
       placeholder: field.placeholder,
       required: field.required,
+      min: field.min,
+      max: field.max,
+      step: field.step,
     } as InputFieldConfig;
+  }
+  if (t === "range") {
+    return {
+      ...base,
+      type: "slider",
+      min: field.min,
+      max: field.max,
+      step: field.step,
+    } as SliderFieldConfig;
   }
   return null;
 }

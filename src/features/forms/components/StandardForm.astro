@@ -345,7 +345,7 @@ const iconRightPadding = "pr-10 sm:pr-12";
                   </label>
                 )}
                 {/* prettier-ignore */}
-                <textarea id={txtId} name={field.name} placeholder={field.placeholder} required={field.required} rows={field.rows || 4} autocomplete={field.autocomplete} class={textareaInputClasses} data-error={field.errorMessage} data-validate={field.validate} data-validate-message={field.validateMessage}>{textareaVal}</textarea>
+                <textarea id={txtId} name={field.name} placeholder={field.placeholder} required={field.required} rows={field.rows || 4} minlength={field.minlength ?? 10} maxlength={field.maxlength ?? 500} autocomplete={field.autocomplete} class={textareaInputClasses} data-error={field.errorMessage} data-validate={field.validate} data-validate-message={field.validateMessage}>{textareaVal}</textarea>
               </div>
             );
           }
@@ -373,14 +373,18 @@ const iconRightPadding = "pr-10 sm:pr-12";
                   </label>
                 )}
                 <input
-                  type={field.type as "text" | "email" | "tel" | "password"}
+                  type={field.type as "text" | "email" | "tel" | "password" | "number"}
                   id={iconId}
                   name={field.name}
                   value={initialData[field.name] ?? field.value ?? ""}
                   placeholder={field.placeholder}
                   required={field.required}
                   autocomplete={field.autocomplete}
-                  minlength={field.minlength}
+                  minlength={field.type !== "number" ? (field.minlength ?? 2) : undefined}
+                  maxlength={field.type !== "number" ? (field.maxlength ?? 50) : undefined}
+                  min={field.type === "number" ? field.min : undefined}
+                  max={field.type === "number" ? field.max : undefined}
+                  step={field.type === "number" ? field.step : undefined}
                   autofocus={field.autofocus}
                   readonly={(field.componentProps as any)?.readonly}
                   class={`${appendedGlobalInputClasses} ${field.iconPosition === "left" ? iconLeftPadding : iconRightPadding}`}
@@ -406,14 +410,18 @@ const iconRightPadding = "pr-10 sm:pr-12";
                 </label>
               )}
               <input
-                type={field.type as "text" | "email" | "tel" | "password"}
+                type={field.type as "text" | "email" | "tel" | "password" | "number"}
                 id={inpId}
                 name={field.name}
                 value={inputVal}
                 placeholder={field.placeholder}
                 required={field.required}
                 autocomplete={field.autocomplete}
-                minlength={field.minlength}
+                minlength={field.type !== "number" ? (field.minlength ?? 2) : undefined}
+                maxlength={field.type !== "number" ? (field.maxlength ?? 50) : undefined}
+                min={field.type === "number" ? field.min : undefined}
+                max={field.type === "number" ? field.max : undefined}
+                step={field.type === "number" ? field.step : undefined}
                 autofocus={field.autofocus}
                 readonly={(field.componentProps as any)?.readonly}
                 class={`${appendedGlobalInputClasses} ${field.iconPosition === "left" ? iconLeftPadding : iconRightPadding}`}

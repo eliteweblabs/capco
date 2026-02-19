@@ -112,6 +112,7 @@ export interface FormFieldConfig {
   /** Message (can include HTML e.g. link to register) shown when validate check fails. */
   validateMessage?: string;
   minlength?: number;
+  maxlength?: number;
   rows?: number;
   autofocus?: boolean;
   component?: string; // Component name (e.g., "InlineAddressSearch", "SlotMachineModalStaff", "UnitSlider", "ToggleButton", "FileUpload")
