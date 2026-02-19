@@ -98,109 +98,6 @@ export const navigation = async (
     // Continue without CMS pages if fetch fails
   }
 
-  // Navigation items
-  const navItems: NavItem[] = [
-    // Frontend navigation (hidden on backend pages to reduce clutter)
-    // {
-    //   label: "Why CAPCo",
-    //   href: "#",
-    //   roles: ["any"],
-    //   pageType: "frontend",
-    //   isPrimary: false,
-    //   isDropdown: true,
-    //   dropdownItems: [
-    //     { label: "Unified Fire Protection Platform", href: "/solutions" },
-    //     { label: "CAPCo vs Competitors", href: "/solutions" },
-    //     { label: "Move to CAPCo", href: "/solutions" },
-    //     { label: "See Our Customers", href: "/customers" },
-    //   ],
-    // },
-    // {
-    //   label: "Pricing",
-    //   href: "/pricing",
-    //   roles: ["any"],
-    //   pageType: "frontend",
-    //   isPrimary: currentUrl.startsWith("/pricing"),
-    //   desktopOnly: true,
-    // },
-
-    // Backend navigation (shown on backend pages)
-    // {
-    //   label: "New Project",
-    //   href: "/project/new",
-    //   roles: ["Client", "Admin", "Staff"],
-    //   pageType: "backend",
-    //   isPrimary: currentUrl.startsWith("/project/new"),
-    // },
-    // {
-    //   label: "Projects",
-    //   href: "/projects",
-    //   roles: ["any"],
-    //   pageType: "frontend",
-    //   isDrawer: false, // Special flag for drawer trigger
-    //   isPrimary: currentUrl.startsWith("/projects"),
-    // },
-    // {
-    //   label: "Book Demo",
-    //   href: "/demo",
-    //   roles: ["any"],
-    //   pageType: "frontend",
-    //   isPrimary: currentUrl.startsWith("/demo"),
-    //   buttonStyle: "outline",
-    //   desktopOnly: true,
-    //   hideWhenAuth: true,
-    // },
-    // {
-    //   label: "Email Your Project",
-    //   href: "mailto:project@new.capcofire.com",
-    //   roles: ["any"],
-    //   pageType: "frontend",
-    //   isPrimary: false,
-    //   buttonStyle: "outline",
-    //   desktopOnly: false,
-    //   hideWhenAuth: true,
-    // },
-    // {
-    //   label: "Discussions",
-    //   href: "/discussions",
-    //   roles: ["Admin", "Staff"],
-    //   pageType: "backend",
-    //   isPrimary: currentUrl.startsWith("/discussions"),
-    // },
-    // {
-    //   label: "Global Activity",
-    //   href: "/admin/global-activity",
-    //   roles: ["Admin"],
-    //   pageType: "backend",
-    //   isPrimary: currentUrl.startsWith("/admin/global-activity"),
-    // },
-    // {
-    //   label: "Global Discussions",
-    //   href: "/admin/discussions",
-    //   roles: ["Admin"],
-    //   pageType: "backend",
-    //   isPrimary: currentUrl.startsWith("/admin/discussions"),
-    // },
-    // {
-    //   label: "Users",
-    //   href: "/users",
-    //   roles: ["Admin"],
-    //   pageType: "backend",
-    //   isPrimary: currentUrl.startsWith("/users"),
-    // },
-    // {
-    //   label: "Analytics",
-    //   href: "/analytics",
-    //   roles: ["Admin"],
-    //   pageType: "backend",
-    //   isPrimary: currentUrl.startsWith("/analytics"),
-    // },
-    // Add CMS pages that are marked for navigation
-    ...cmsNavItems,
-  ];
-
-  // Dropdown menus are now integrated into navItems array above
-
   // Filter navigation items based on auth state, role, and page type
   function getVisibleNavItems(
     navItems: NavItem[],
@@ -329,7 +226,7 @@ export const navigation = async (
   }
 
   // Generate navigation HTML for reuse
-  const visibleNavItems = getVisibleNavItems(navItems, isAuth, currentRole, isBackend);
+  const visibleNavItems = getVisibleNavItems(cmsNavItems, isAuth, currentRole, isBackend);
   const desktopNavigationHTML = generateNavigationHTML(visibleNavItems, "desktop");
   const mobileNavigationHTML = generateNavigationHTML(visibleNavItems, "mobile");
 

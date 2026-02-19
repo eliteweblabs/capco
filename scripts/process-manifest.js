@@ -27,6 +27,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { generateFaviconPng } from "./generate-favicon-png.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -95,6 +96,7 @@ async function loadCompanyData() {
     return {
       globalCompanyName: get("companyName", "RAILWAY_PROJECT_NAME", "company_name") || "Company Name Not Set",
       globalCompanySlogan: get("slogan"),
+      globalCompanyIcon: get("icon", "GLOBAL_COMPANY_ICON_SVG", "icon"),
       globalCompanyAddress: get("address", "GLOBAL_COMPANY_ADDRESS"),
       globalCompanyPhone: get("phone", "VAPI_PHONE_NUMBER"),
       globalCompanyEmail: get("email", "GLOBAL_COMPANY_EMAIL"),
@@ -167,6 +169,15 @@ async function processManifest() {
 
   // Load site config for PWA shortcuts (optional)
   const siteConfig = loadSiteConfig(globalCompanyName);
+
+  // Overwrite favicon.svg from DB icon when available (prepare-favicons runs first with content/default)
+  const globalCompanyIcon = companyData?.globalCompanyIcon || "";
+  if (globalCompanyIcon && (globalCompanyIcon.includes("<svg") || globalCompanyIcon.includes("<?xml"))) {
+    const faviconPath = path.join(__dirname, "../public/favicon.svg");
+    fs.writeFileSync(faviconPath, globalCompanyIcon, "utf-8");
+    await generateFaviconPng();
+    console.log("📊 Favicon: written from CMS icon, png regenerated");
+  }
 
   // Template file paths
   const templatePath = path.join(__dirname, "../public/manifest.json.template");

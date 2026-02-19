@@ -3,27 +3,27 @@
 // SMS functionality disabled due to carrier gateway bounce issues
 // Messages now sent directly to email addresses
 import Button from "../../../components/common/Button.astro";
+import { globalCompanyData } from "../../../pages/api/global/global-company-data";
 
 export interface Props {
   compact?: boolean;
 }
 
 const { compact = false } = Astro.props;
+const companyData = await globalCompanyData();
 ---
 
 <div class={compact ? "w-full" : "mx-auto w-full max-w-lg"}>
   {
     !compact && (
       <div class="mb-6">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Contact CAPCo</h3>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          Contact {companyData.globalCompanyName}
+        </h3>
         <p class="text-sm text-gray-600 dark:text-gray-400">
           Send a message directly to our team via email
         </p>
-        <div class="dark:bg-primary-900/20 mt-2 rounded-lg bg-primary-50 p-3">
-          {/* <p class="text-xs text-primary-700 dark:text-primary-300">
-          📧 <strong>Email Mode:</strong> Messages will be sent to capco@eliteweblabs.com and jk@capcofire.com
-        </p> */}
-        </div>
+        <div class="dark:bg-primary-900/20 mt-2 rounded-lg bg-primary-50 p-3"></div>
       </div>
     )
   }

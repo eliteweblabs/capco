@@ -5,18 +5,16 @@ import { defineConfig } from "astro/config";
 // @ts-check
 import node from "@astrojs/node";
 import tailwind from "@astrojs/tailwind";
-import react from "@astrojs/react";
 // import studiocms from "studiocms"; // Disabled - not in use, causing SDK initialization errors
 
 // Load environment variables
 import { loadEnv } from "vite";
-import { hexToRgb } from "./src/lib/color-utils.ts";
+// import { hexToRgb } from "./src/lib/color-utils.ts";
 
 const env = loadEnv(process.env.NODE_ENV || "development", process.cwd(), "");
 
 // Generate RGB version of primary color automatically
-const primaryColor = env.GLOBAL_COLOR_PRIMARY || "#825BDD";
-const primaryColorRgb = hexToRgb(primaryColor);
+// const primaryColor = env.GLOBAL_COLOR_PRIMARY || "#825BDD";
 
 // https://astro.build/config
 export default defineConfig({
@@ -27,7 +25,7 @@ export default defineConfig({
   adapter: node({
     mode: "standalone",
   }),
-  integrations: [tailwind(), react()], // studiocms() disabled - not in use
+  integrations: [tailwind()],
   devToolbar: {
     enabled: false,
   },
@@ -58,7 +56,13 @@ export default defineConfig({
       target: "es2018",
     },
     optimizeDeps: {
-      include: ["cropperjs", "@floating-ui/dom", "@supabase/supabase-js", "libphonenumber-js", "typeit"],
+      include: [
+        "cropperjs",
+        "@floating-ui/dom",
+        "@supabase/supabase-js",
+        "libphonenumber-js",
+        "typeit",
+      ],
       // Avoid 504 Outdated Optimize Dep in dev by re-optimizing when deps change
       ...(process.env.NODE_ENV === "development" && { force: true }),
     },

@@ -7,6 +7,7 @@ import { getApiBaseUrl } from "../../../lib/url-utils";
 interface ConfirmationEmailRequest {
   name: string;
   email: string;
+  globalCompanyName: string;
   appointmentDetails: {
     time?: string;
     date?: string;
@@ -37,12 +38,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const body: ConfirmationEmailRequest = await request.json();
-    const { name, email, appointmentDetails } = body;
+    const { name, email, appointmentDetails, globalCompanyName } = body;
 
     console.log(`📧 [VAPI-CONFIRMATION-EMAIL] Sending confirmation email to:`, {
       name,
       email,
       appointmentDetails,
+      globalCompanyName,
     });
 
     if (!name || !email) {
@@ -63,7 +65,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         
         <p>Dear ${name},</p>
         
-        <p>Thank you for scheduling your appointment with CAPCo Fire Protection. Here are the details:</p>
+        <p>Thank you for scheduling your appointment with ${globalCompanyName}. Here are the details:</p>
         
         <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h3 style="margin-top: 0; color: #1e40af;">Appointment Details</h3>
@@ -81,7 +83,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         <p>We look forward to meeting with you!</p>
         
         <p>Best regards,<br>
-        CAPCo Fire Protection Team</p>
+        ${globalCompanyName} Team</p>
       </div>
     `;
 
