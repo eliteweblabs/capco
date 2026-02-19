@@ -34,7 +34,7 @@ import LoadingSpinner from "./LoadingSpinner.astro";
   <!-- Panel body: data-dropdown-id passed so script can find panel/triggers (Navbar uses id="notifications") -->
   <div class="min-h-0 flex-1 overflow-y-auto" data-dropdown-id={id}>
     <!-- Header with Mark all read button -->
-    <div class="align-center flex items-center justify-between rounded-lg">
+    <div class="align-center flex hidden items-center justify-between">
       <button
         id="mark-all-read"
         class="text-sm text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300"
@@ -118,9 +118,11 @@ import LoadingSpinner from "./LoadingSpinner.astro";
       const panel = document.getElementById(this.panelId);
       const markAllRead = document.getElementById("mark-all-read");
 
-      // When dropdown is opened (bell trigger), load notifications; when closed, mark as viewed
+      // When dropdown is opened (trigger), load notifications; when closed, mark as viewed
       // Also remove Dismiss-added classes (opacity-0, transition) so panel is visible again after closing once
-      document.querySelectorAll(`[data-dropdown-toggle="${this.panelId}"]`).forEach((el) => {
+      // Support both data-dropdown-toggle and data-popover-target (Navbar uses popover)
+      const triggerSelectors = `[data-dropdown-toggle="${this.panelId}"], [data-popover-target="${this.panelId}"]`;
+      document.querySelectorAll(triggerSelectors).forEach((el) => {
         el.addEventListener("click", () => {
           setTimeout(() => {
             if (panel && !panel.classList.contains("hidden")) {
@@ -148,9 +150,7 @@ import LoadingSpinner from "./LoadingSpinner.astro";
       // ESC key: close dropdown and sync state
       document.addEventListener("keydown", (e) => {
         if (e.key === "Escape" && panel && !panel.classList.contains("hidden")) {
-          panel.classList.add("hidden");
-          this.isOpen = false;
-          this.markViewedNotificationsAsRead();
+          this.closeDropdown();
         }
       });
 
@@ -164,14 +164,52 @@ import LoadingSpinner from "./LoadingSpinner.astro";
       notificationList?.addEventListener("scroll", () => {
         this.handleScroll();
       });
+
+      // Swipe down to dismiss (only when list is at top to avoid conflicting with scroll)
+      this.bindSwipeToDismiss();
+    }
+
+    bindSwipeToDismiss() {
+      const panel = document.getElementById(this.panelId);
+      const notificationList = document.getElementById("notification-list");
+      if (!panel || !notificationList) return;
+      if ((panel as any).__swipeBound) return;
+      (panel as any).__swipeBound = true;
+
+      let touchStartY = 0;
+      panel.addEventListener(
+        "touchstart",
+        (e) => {
+          touchStartY = e.touches[0].clientY;
+        },
+        { passive: true }
+      );
+      panel.addEventListener(
+        "touchend",
+        (e) => {
+          if (!this.isOpen) return;
+          const touchEndY = e.changedTouches[0].clientY;
+          const deltaY = touchEndY - touchStartY;
+          // Swipe down > 60px and list at top = dismiss
+          if (deltaY > 60 && notificationList.scrollTop <= 0) {
+            this.closeDropdown();
+          }
+        },
+        { passive: true }
+      );
     }
 
     closeDropdown() {
       const panel = document.getElementById(this.panelId);
-      if (panel) {
-        panel.classList.add("hidden");
-        this.isOpen = false;
-        this.markViewedNotificationsAsRead();
+      if (!panel) return;
+      this.isOpen = false;
+      this.markViewedNotificationsAsRead();
+      const inst = (window as any).FlowbiteInstances?.getInstance("Popover", this.panelId);
+      if (inst?.hide) {
+        inst.hide();
+      } else {
+        panel.classList.add("opacity-0", "invisible");
+        setTimeout(() => panel.classList.add("hidden"), 300);
       }
     }
 
@@ -272,7 +310,7 @@ import LoadingSpinner from "./LoadingSpinner.astro";
               ? `<div class="notification-hold-progress" aria-hidden="true" style="--hold-progress: 0;"></div>`
               : ""
           }
-          <div class="notification-content p-4 bg-inherit color-background flex items-start gap-2 sm:gap-3 relative">
+          <div class="notification-content p-4 bg-inherit flex items-start gap-2 sm:gap-3 relative">
             <div class="flex-shrink-0">
               <svg class="w-5 h-5 ${iconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${iconPath}"></path>
@@ -304,7 +342,7 @@ import LoadingSpinner from "./LoadingSpinner.astro";
               <button
                 type="button"
                 id="delete-notification-${notification.id}"
-                class="delete-confirm-btn btn-ghost btn-sm rounded-full inline-flex items-center justify-center p-2 text-sm font-medium text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-500 dark:hover:text-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                class="delete-confirm-btn rounded-full inline-flex items-center justify-center p-2 text-sm font-medium text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-500 dark:hover:text-gray-200 dark:hover:bg-gray-700 transition-colors"
                 data-state="trash"
                 data-timeout="3000"
                 data-item-type="notification"
@@ -312,7 +350,7 @@ import LoadingSpinner from "./LoadingSpinner.astro";
                 data-callback="handleNotificationDelete"
                 title="Delete notification"
               >
-                <svg class="inline-block delete-confirm-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg class="inline-block delete-confirm-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M3 6h18"></path>
                   <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
                   <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
@@ -450,7 +488,7 @@ import LoadingSpinner from "./LoadingSpinner.astro";
         const indicator = element.querySelector(".read-indicator");
         if (!indicator) {
           const checkmark = document.createElement("div");
-          checkmark.className = "read-indicator absolute top-2 right-2 text-green-500 text-xs";
+          checkmark.className = "read-indicator absolute top-2 right-2 text-green-500 text-lg";
           checkmark.innerHTML = "✓";
           element.appendChild(checkmark);
         }

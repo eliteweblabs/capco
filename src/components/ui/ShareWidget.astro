@@ -1,0 +1,186 @@
+---
+/**
+ * ShareWidget - Awwwards-style share button with expandable pill.
+ * Uses proximity logic: hover to show, delayed hide when leaving so the cursor can
+ * move between trigger and pill without closing. Click toggles on touch devices.
+ * Uses SimpleIcon for icons.
+ */
+import SimpleIcon from "../common/SimpleIcon.astro";
+
+interface Props {
+  /** URL to share. Defaults to current page URL (set client-side if not provided). */
+  url?: string;
+  /** Title for LinkedIn/Open Graph. */
+  title?: string;
+  /** Text for Twitter tweet. */
+  text?: string;
+  /** Additional classes for the wrapper. */
+  class?: string;
+}
+
+const { url = "", title = "", text = "", class: className = "" } = Astro.props;
+
+// Build share URLs (url/title/text filled client-side if empty)
+const encodedUrl = url ? encodeURIComponent(url) : "{{SHARE_URL}}";
+const encodedTitle = title ? encodeURIComponent(title) : "{{SHARE_TITLE}}";
+const encodedText = text ? encodeURIComponent(text) : "{{SHARE_TEXT}}";
+
+const twitterHref = `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`;
+const linkedinHref = `https://www.linkedin.com/shareArticle?mini=true&url=${encodedUrl}&title=${encodedTitle}`;
+const facebookHref = `https://www.facebook.com/sharer.php?u=${encodedUrl}&t=${encodedTitle}`;
+---
+
+<li class={["share-widget-wrapper", className].filter(Boolean).join(" ")}>
+  <span class="share-widget__item relative inline-flex cursor-pointer" data-share-trigger aria-label="Share">
+    <span class="share-widget__icon" data-share-icon>
+      <SimpleIcon name="share" size="md" class="text-gray-700 dark:text-gray-300" />
+    </span>
+    <div
+      class="share-widget__pill absolute left-0 top-1/2 flex -translate-y-1/2 items-center gap-3 rounded-full bg-gray-800 px-4 py-2 -z-10 opacity-0 pointer-events-none transition-all duration-200 data-[visible]:z-10 data-[visible]:opacity-100 data-[visible]:pointer-events-auto dark:bg-gray-700"
+      data-share-box
+      role="toolbar"
+      aria-label="Share options"
+    >
+      <a
+        href={twitterHref}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="share-widget__link flex items-center justify-center text-gray-400 hover:text-gray-200 transition-colors [&_svg]:!fill-current"
+        aria-label="Share on X (Twitter)"
+        data-share-link
+      >
+        <SimpleIcon name="x-twitter" size="md" class="h-5 w-5" />
+      </a>
+      <a
+        href={linkedinHref}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="share-widget__link flex items-center justify-center text-gray-400 hover:text-gray-200 transition-colors [&_svg_path]:!fill-current"
+        aria-label="Share on LinkedIn"
+        data-share-link
+      >
+        <SimpleIcon name="linkedin" size="md" class="h-5 w-5" />
+      </a>
+      <a
+        href={facebookHref}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="share-widget__link flex items-center justify-center text-gray-400 hover:text-gray-200 transition-colors [&_svg_path]:!fill-current"
+        aria-label="Share on Facebook"
+        data-share-link
+      >
+        <SimpleIcon name="facebook" size="md" class="h-5 w-5" />
+      </a>
+      <button
+        type="button"
+        class="share-widget__close flex items-center justify-center text-white hover:text-gray-200 transition-colors ml-0.5"
+        aria-label="Close share menu"
+        data-share-close
+      >
+        <SimpleIcon name="x" size="md" class="h-5 w-5" />
+      </button>
+    </div>
+  </span>
+</li>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function initShareWidget() {
+    const PROXIMITY_DELAY_MS = 180;
+
+    document.querySelectorAll("[data-share-trigger]").forEach(function (trigger) {
+      if (trigger.hasAttribute("data-share-bound")) return;
+      trigger.setAttribute("data-share-bound", "true");
+
+      const box = trigger.querySelector("[data-share-box]");
+      const closeBtn = trigger.querySelector("[data-share-close]");
+      const links = trigger.querySelectorAll("[data-share-link]");
+
+      function resolveHref(a: HTMLAnchorElement) {
+        let href = a.getAttribute("href") || "";
+        if (href.includes("{{SHARE_URL}}") || href.includes("{{SHARE_TITLE}}") || href.includes("{{SHARE_TEXT}}")) {
+          const u = encodeURIComponent(window.location.href);
+          const t = encodeURIComponent(document.title || "");
+          href = href.replace("{{SHARE_URL}}", u).replace("{{SHARE_TITLE}}", t).replace("{{SHARE_TEXT}}", t);
+          a.setAttribute("href", href);
+        }
+      }
+
+      links.forEach(function (link) {
+        resolveHref(link as HTMLAnchorElement);
+      });
+
+      const iconEl = trigger.querySelector("[data-share-icon]");
+      let hideTimer: number | null = null;
+
+      function show() {
+        if (hideTimer) {
+          clearTimeout(hideTimer);
+          hideTimer = null;
+        }
+        box?.setAttribute("data-visible", "");
+        iconEl?.classList.add("invisible");
+      }
+
+      function hide() {
+        hideTimer = null;
+        box?.removeAttribute("data-visible");
+        iconEl?.classList.remove("invisible");
+      }
+
+      function scheduleHide() {
+        if (hideTimer) return;
+        hideTimer = window.setTimeout(hide, PROXIMITY_DELAY_MS);
+      }
+
+      function cancelHide() {
+        if (hideTimer) {
+          clearTimeout(hideTimer);
+          hideTimer = null;
+        }
+      }
+
+      const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+
+      if (!isTouchDevice) {
+        trigger.addEventListener("mouseenter", function () {
+          cancelHide();
+          show();
+        });
+        trigger.addEventListener("mouseleave", function () {
+          scheduleHide();
+        });
+        if (box) {
+          box.addEventListener("mouseenter", function () {
+            cancelHide();
+            show();
+          });
+          box.addEventListener("mouseleave", function () {
+            scheduleHide();
+          });
+        }
+      }
+
+      trigger.addEventListener("click", function (e) {
+        if ((e.target as Element).closest("[data-share-close]")) return;
+        if ((e.target as Element).closest("[data-share-link]")) return;
+        e.preventDefault();
+        const visible = box?.hasAttribute("data-visible");
+        visible ? hide() : show();
+      });
+
+      closeBtn?.addEventListener("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        cancelHide();
+        hide();
+      });
+
+      document.addEventListener("click", function (e) {
+        if (!trigger.contains(e.target as Node)) {
+          cancelHide();
+          hide();
+        }
+      });
+    });
+  });
+</script>

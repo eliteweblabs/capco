@@ -90,7 +90,6 @@ const {
 
 const safeTitle = stripHtml(title) || Astro.url.pathname.replace(/\//g, " ").trim() || "Home";
 const pathname = Astro.url.pathname;
-const disableAnimations = pathname.startsWith("/admin") || pathname.startsWith("/project");
 const safeDescription = stripHtml(description || globalCompanySlogan || "");
 
 import { checkAuth } from "../../lib/auth";
@@ -209,7 +208,7 @@ import SpeedDial from "../ui/SpeedDial.astro";
 import AdminVoiceAssistantWidget from "../admin/AdminVoiceAssistantWidget.astro";
 import CacheIndicator from "./CacheIndicator.astro";
 import LogoCloudBlock from "../blocks/LogoCloudBlock.astro";
-import PixelGrid from "../ui/PixelGrid.astro";
+import CMSPreloader from "./CMSPreloader.astro";
 
 const isAdmin = currentUser?.profile?.role === "Admin";
 ---
@@ -915,6 +914,8 @@ const isAdmin = currentUser?.profile?.role === "Admin";
     {/* SPA disabled: re-apply theme and astro:after-swap/astro:page-load scripts */}
     {/* SPA disabled: debug and runPageInits scripts */}
 
+    <CMSPreloader showByDefault={true} />
+
     <UnifiedNotification />
 
     <TutorialOverlay {currentUser} tutorialId="demo-tour" autoStart={false} {isAuth} />
@@ -967,7 +968,7 @@ const isAdmin = currentUser?.profile?.role === "Admin";
           ]}
           style={currentUser ? "transition-duration: 350ms;" : undefined}
         >
-          <main data-animate-main={disableAnimations ? "false" : undefined}>
+          <main>
             <slot />
           </main>
 

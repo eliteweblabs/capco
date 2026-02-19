@@ -289,8 +289,9 @@ const stats = includeGrid ? {
           data-searchable
         />
         <SimpleIcon
+          id={`${uniqueId}-search-icon`}
           name="search"
-          class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+          class="search-icon absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
         />
         <SimpleIcon
           id={`${uniqueId}-clear`}
@@ -492,6 +493,7 @@ const stats = includeGrid ? {
     if (!container) return;
 
     const searchInput = document.getElementById(`${uniqueId}-search`);
+    const searchIcon = document.getElementById(`${uniqueId}-search-icon`);
     const clearBtn = document.getElementById(`${uniqueId}-clear`);
     const suggestionsDiv = document.getElementById(`${uniqueId}-suggestions`);
     const filterButtons = container.querySelectorAll(".media-filter-btn");
@@ -618,13 +620,11 @@ const stats = includeGrid ? {
         noResults.classList.toggle("hidden", visibleCount > 0 || totalCards === 0);
       }
 
-      // Show/hide clear button
+      // Show/hide clear button and search icon (only one visible at a time)
       if (clearBtn && searchInput) {
-        if (searchInput.value.length > 0) {
-          clearBtn.classList.remove("hidden");
-        } else {
-          clearBtn.classList.add("hidden");
-        }
+        const hasValue = searchInput.value.length > 0;
+        clearBtn.classList.toggle("hidden", !hasValue);
+        if (searchIcon) searchIcon.classList.toggle("hidden", hasValue);
       }
 
       // Retrigger masonry layout
