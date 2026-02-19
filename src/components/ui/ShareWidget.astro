@@ -51,7 +51,7 @@ const facebookHref = `https://www.facebook.com/sharer.php?u=${encodedUrl}&t=${en
     </span>
     <div
       class:list={[
-        "share-widget__pill pointer-events-none absolute top-1/2 -z-10 flex -translate-y-1/2 items-center gap-3 rounded-full bg-gray-800 p-2 opacity-0 transition-all duration-200 data-[visible]:pointer-events-auto data-[visible]:z-10 data-[visible]:opacity-100 dark:bg-gray-700",
+        "share-widget__pill pointer-events-none absolute top-1/2 -z-10 flex -translate-y-1/2 items-center gap-3 overflow-hidden rounded-full bg-gray-800 p-2 opacity-0 transition-opacity duration-200 data-[visible]:pointer-events-auto data-[visible]:z-10 data-[visible]:opacity-100 dark:bg-gray-700",
         direction === "left" ? "right-0" : "left-0",
       ]}
       data-share-box
@@ -62,7 +62,7 @@ const facebookHref = `https://www.facebook.com/sharer.php?u=${encodedUrl}&t=${en
         href={twitterHref}
         target="_blank"
         rel="noopener noreferrer"
-        class="share-widget__link flex items-center justify-center text-gray-400 transition-colors hover:text-gray-200 [&_svg]:!fill-current"
+        class="share-widget__link share-widget__link--1 flex items-center justify-center text-gray-400 transition-[color,transform] duration-300 ease-out hover:text-gray-200 [&_svg]:!fill-current"
         aria-label="Share on X (Twitter)"
         data-share-link
       >
@@ -72,7 +72,7 @@ const facebookHref = `https://www.facebook.com/sharer.php?u=${encodedUrl}&t=${en
         href={linkedinHref}
         target="_blank"
         rel="noopener noreferrer"
-        class="share-widget__link flex items-center justify-center text-gray-400 transition-colors hover:text-gray-200 [&_svg_path]:!fill-current"
+        class="share-widget__link share-widget__link--2 flex items-center justify-center text-gray-400 transition-[color,transform] duration-300 ease-out hover:text-gray-200 [&_svg_path]:!fill-current"
         aria-label="Share on LinkedIn"
         data-share-link
       >
@@ -82,7 +82,7 @@ const facebookHref = `https://www.facebook.com/sharer.php?u=${encodedUrl}&t=${en
         href={facebookHref}
         target="_blank"
         rel="noopener noreferrer"
-        class="share-widget__link flex items-center justify-center text-gray-400 transition-colors hover:text-gray-200 [&_svg_path]:!fill-current"
+        class="share-widget__link share-widget__link--3 flex items-center justify-center text-gray-400 transition-[color,transform] duration-300 ease-out hover:text-gray-200 [&_svg_path]:!fill-current"
         aria-label="Share on Facebook"
         data-share-link
       >
@@ -99,6 +99,35 @@ const facebookHref = `https://www.facebook.com/sharer.php?u=${encodedUrl}&t=${en
     </div>
   </span>
 </div>
+
+<style>
+  /* Stacked-coin slide: all 3 start stacked (right), slide left; first stops at slot 1, then 2nd at slot 2, then 3rd at slot 3 */
+  [data-share-box] .share-widget__link {
+    --slot: 2rem; /* icon 20px + gap 12px ≈ 32px */
+    transition: transform 0.4s ease-out, color 0.2s;
+  }
+  [data-share-box] .share-widget__link--1 {
+    transform: translateX(calc(3 * var(--slot)));
+  }
+  [data-share-box] .share-widget__link--2 {
+    transform: translateX(calc(2 * var(--slot)));
+  }
+  [data-share-box] .share-widget__link--3 {
+    transform: translateX(var(--slot));
+  }
+  [data-share-box][data-visible] .share-widget__link--1 {
+    transform: translateX(0);
+    transition-duration: 0.16s;
+  }
+  [data-share-box][data-visible] .share-widget__link--2 {
+    transform: translateX(0);
+    transition-duration: 0.32s;
+  }
+  [data-share-box][data-visible] .share-widget__link--3 {
+    transform: translateX(0);
+    transition-duration: 0.48s;
+  }
+</style>
 
 <script>
   document.addEventListener("DOMContentLoaded", function initShareWidget() {
@@ -184,7 +213,7 @@ const facebookHref = `https://www.facebook.com/sharer.php?u=${encodedUrl}&t=${en
         }
       }
 
-      trigger.addEventListener("click", function (e) {
+      trigger.addEventListener("hover", function (e) {
         if ((e.target as Element).closest("[data-share-close]")) return;
         if ((e.target as Element).closest("[data-share-link]")) return;
         e.preventDefault();
