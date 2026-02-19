@@ -54,6 +54,15 @@ export default defineConfig({
     // and nullish coalescing (??) which require Safari 13.1+
     build: {
       target: "es2018",
+      rollupOptions: {
+        external: (id) => {
+          // content.ts and gray-matter use Node APIs (fs, path) – exclude from client bundle
+          if (id === "gray-matter" || id.includes("/lib/content") || id.includes("content.ts")) {
+            return true;
+          }
+          return false;
+        },
+      },
     },
     optimizeDeps: {
       include: [

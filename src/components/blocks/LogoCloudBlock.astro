@@ -135,7 +135,7 @@ const {
   wrapperClass,
   id,
   marqueeDirection = 'left',
-  marqueeReduceMotion = 'respect',
+  marqueeReduceMotion = props.marqueeReduceMotion ?? (variant === 'marquee' ? 'override' : 'respect'),
 } = props;
 
 const columns = typeof props.columns === 'string' ? parseInt(props.columns) : (props.columns ?? 6);
@@ -204,19 +204,21 @@ const gridClass = columnClasses[columns] || columnClasses[6];
     )}
     
     {(variant === 'marquee' || variant === 'simple') ? (
-      <div class="logo-cloud-marquee relative w-full min-w-0 overflow-hidden" style="--marquee-gap: 12rem;">
+      <div class="logo-cloud-marquee relative w-full min-w-0 overflow-hidden pointer-events-none" style="--marquee-gap: 12rem;">
         {/* Fade edges */}
         {/* <div class="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-white dark:from-gray-900 to-transparent z-10 pointer-events-none" /> */}
         {/* <div class="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-white dark:from-gray-900 to-transparent z-10 pointer-events-none" /> */}
         
-        <div class:list={['flex flex-nowrap animate-marquee gap-[var(--marquee-gap)]', marqueeDirection === 'right' && 'animate-marquee--right']}>
+        <div class:list={['flex flex-nowrap logo-marquee-scroll gap-[var(--marquee-gap)] pointer-events-none', marqueeDirection === 'right' && 'logo-marquee-scroll--right']}>
           {[...logoItems, ...logoItems, ...logoItems].map((logo) => (
             logo.href ? (
               <a 
                 href={logo.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                class="flex-shrink-0"
+                class="flex-shrink-0 pointer-events-none"
+                aria-hidden="true"
+                tabindex="-1"
               >
                 {logo.icon ? (
                   <i 
@@ -245,11 +247,12 @@ const gridClass = columnClasses[columns] || columnClasses[6];
               <i 
                 class:list={[
                   logo.icon,
-                  'text-4xl flex-shrink-0',
+                  'text-4xl flex-shrink-0 pointer-events-none',
                   logo.iconColor || 'text-gray-600 dark:text-gray-400',
                   grayscale && 'grayscale opacity-60',
                 ]}
                 title={logo.alt}
+                aria-hidden="true"
               />
             ) : (
               <img 
@@ -258,9 +261,10 @@ const gridClass = columnClasses[columns] || columnClasses[6];
                 width={logo.width || 160}
                 height="40"
                 class:list={[
-                  'h-10 w-auto object-contain flex-shrink-0 mix-blend-multiply dark:invert dark:mix-blend-normal',
+                  'h-10 w-auto object-contain flex-shrink-0 mix-blend-multiply dark:invert dark:mix-blend-normal pointer-events-none',
                   grayscale && 'grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all',
                 ]}
+                aria-hidden="true"
               />
             )
           ))}
@@ -388,7 +392,7 @@ const gridClass = columnClasses[columns] || columnClasses[6];
       to { transform: translate3d(-33.333%, 0, 0); }
     }
 
-    .logo-cloud-block .animate-marquee {
+    .logo-cloud-block .logo-marquee-scroll {
       animation: logo-cloud-marquee 10s linear infinite;
       -webkit-animation: logo-cloud-marquee 10s linear infinite;
       will-change: transform;
@@ -396,17 +400,13 @@ const gridClass = columnClasses[columns] || columnClasses[6];
       backface-visibility: hidden;
     }
 
-    .logo-cloud-block .animate-marquee--right {
+    .logo-cloud-block .logo-marquee-scroll--right {
       animation-direction: reverse;
-    }
-
-    .logo-cloud-block .logo-cloud-marquee:hover .animate-marquee {
-      animation-play-state: paused;
     }
 
     /* Respect reduced motion; .logo-cloud-marquee-force overrides for testing */
     @media (prefers-reduced-motion: reduce) {
-      .logo-cloud-block:not(.logo-cloud-marquee-force) .animate-marquee {
+      .logo-cloud-block:not(.logo-cloud-marquee-force) .logo-marquee-scroll {
         animation: none;
       }
     }

@@ -1121,23 +1121,11 @@ const isAdmin = currentUser?.profile?.role === "Admin";
       document.addEventListener("DOMContentLoaded", async () => {
         (window as any).hideOnFormFocus();
 
-        // Initialize notification count only if user is authenticated
+        // Initialize notification count only if notification bell exists (shown when authenticated)
         try {
-          const notificationBell = document.querySelector(
-            '[data-dropdown-toggle="notification-dropdown"]'
-          );
-          if (
-            notificationBell &&
-            (notificationBell as HTMLElement).dataset?.userId &&
-            (window as any).initializeNotificationCount
-          ) {
-            console.log(
-              "🔔 [APP] Initializing notifications for user:",
-              (notificationBell as HTMLElement).dataset?.userId
-            );
+          const notificationBell = document.getElementById("notification-bell");
+          if (notificationBell && (window as any).initializeNotificationCount) {
             await (window as any).initializeNotificationCount();
-          } else {
-            console.log("🔔 [APP] Skipping notification initialization - no authenticated user");
           }
         } catch (error) {
           console.error("🔔 [APP] Error initializing notification count:", error);

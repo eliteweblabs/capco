@@ -30,7 +30,7 @@ import LoadingSpinner from "./LoadingSpinner.astro";
 ---
 
 <!-- Account dropdown: Flowbite data-popover-target on UserIcon trigger -->
-<Dropdown id={id} {currentUser} {globalIconButtonClasses} title="authi" onOpenCallback={onOpen}>
+<Dropdown id={id} {currentUser} {globalIconButtonClasses} title="" onOpenCallback={onOpen}>
   <!-- Panel body: data-dropdown-id passed so script can find panel/triggers (Navbar uses id="notifications") -->
   <div class="min-h-0 flex-1 overflow-y-auto" data-dropdown-id={id}>
     <!-- Header with Mark all read button -->
@@ -73,7 +73,7 @@ import LoadingSpinner from "./LoadingSpinner.astro";
     </div>
 
     <!-- Notifications List -->
-    <div id="notification-list" class="max-h-96 overflow-y-auto scrollbar-hide">
+    <div id="notification-list" class="scrollbar-hide" data-dynamic-height="minHeight">
       <!-- Notifications will be populated here -->
     </div>
 
@@ -373,7 +373,9 @@ import LoadingSpinner from "./LoadingSpinner.astro";
         if (holdItem) return;
         const target = e.target as HTMLElement;
         if (target.closest("button, .delete-confirm-wrapper, a[href]")) return;
-        const item = target.closest("[data-notification-id][data-hold-mark-read]") as HTMLElement | null;
+        const item = target.closest(
+          "[data-notification-id][data-hold-mark-read]"
+        ) as HTMLElement | null;
         if (!item || item.dataset.viewed === "true") return;
 
         holdItem = item;
