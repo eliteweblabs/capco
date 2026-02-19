@@ -70,15 +70,40 @@ if (props.items) {
   );
 }
 
-// Limit to 4 items
-items = items.slice(0, 4);
+// Default items when none provided (construction/GC use case)
+const defaultItems: IconTooltipItem[] = [
+  {
+    icon: "building",
+    title: "General Contracting",
+    description: "Full project delivery from preconstruction to closeout",
+  },
+  {
+    icon: "bar-chart-3",
+    title: "Construction Management",
+    description: "Schedule, budget, and quality oversight",
+  },
+  {
+    icon: "shield",
+    title: "Safety Management",
+    description: "OSHA-compliant programs, zero-incident culture",
+  },
+  {
+    icon: "check-circle",
+    title: "Quality Control",
+    description: "QC plans, inspections, documentation",
+  },
+];
 
-// Default icons if missing
-const defaultIcons = ["building", "bar-chart-3", "shield", "check-circle"];
-items = items.map((item, i) => ({
-  ...item,
-  icon: item.icon || defaultIcons[i] || "info-circle",
-}));
+if (items.length === 0) {
+  items = defaultItems;
+} else {
+  items = items.slice(0, 4);
+  const defaultIcons = ["building", "bar-chart-3", "shield", "check-circle"];
+  items = items.map((item, i) => ({
+    ...item,
+    icon: item.icon || defaultIcons[i] || "info-circle",
+  }));
+}
 ---
 
 <section {id} class:list={["icon-tooltip-4-block py-12 md:py-16", className]}>

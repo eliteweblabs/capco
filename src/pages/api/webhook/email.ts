@@ -8,6 +8,7 @@ import { supabaseAdmin } from "../../../lib/supabase-admin";
 import { getApiBaseUrl } from "../../../lib/url-utils";
 // Import validateEmail from ux-utils (server-side API routes need explicit import)
 import { validateEmail } from "../../../lib/ux-utils";
+import { isValidEmail } from "../../../lib/global-display-utils";
 
 interface EmailWebhookData {
   from: string;
@@ -324,12 +325,6 @@ function extractEmailAddress(emailString: string): string | null {
 
   // Return as-is if it's already a plain email
   return trimmed;
-}
-
-// Validate email format
-function isValidEmail(email: string): boolean {
-  const emailError = validateEmail(email);
-  return emailError === null;
 }
 
 // Generate a temporary password for new users

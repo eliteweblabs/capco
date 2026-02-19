@@ -510,7 +510,7 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
 
 <script>
   // Tab switching for Project Form | PDF Data Extractor
-  window.switchProjectFormTab = function (tabId) {
+  (window as any).switchProjectFormTab = function (tabId: string) {
     const formContent = document.getElementById("form-content");
     const pdfContent = document.getElementById("pdf-content");
     if (!formContent || !pdfContent) return;
@@ -1325,7 +1325,7 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
 
           try {
             // Wait for PDF.js to load
-            const pdfjsLib = window.pdfjsLib;
+            const pdfjsLib = (window as any).pdfjsLib;
             if (!pdfjsLib) {
               await loadPDFJS();
             }
@@ -1334,7 +1334,7 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
             fileReader.onload = async function (e: any) {
               try {
                 const typedarray = new Uint8Array(e.target.result);
-                const loadedPdfjsLib = window.pdfjsLib;
+                const loadedPdfjsLib = (window as any).pdfjsLib;
                 if (!loadedPdfjsLib) {
                   throw new Error("PDF.js library not loaded");
                 }
@@ -2374,7 +2374,7 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
 
         async function loadPDFJS() {
           return new Promise((resolve) => {
-            const pdfjsLib = window.pdfjsLib;
+            const pdfjsLib = (window as any).pdfjsLib;
             if (pdfjsLib) {
               resolve(pdfjsLib);
               return;
@@ -2389,7 +2389,7 @@ const showPDFSelector = currentRole === "Admin" || currentRole === "Staff";
               workerScript.defer = true;
               document.head.appendChild(workerScript);
 
-              const loadedPdfjsLib = window.pdfjsLib;
+              const loadedPdfjsLib = (window as any).pdfjsLib;
               if (loadedPdfjsLib) {
                 loadedPdfjsLib.GlobalWorkerOptions.workerSrc = "/js/pdf.worker.min.js";
               }

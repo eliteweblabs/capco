@@ -184,6 +184,21 @@ declare global {
     lockBodyScroll?: () => void;
     unlockBodyScroll?: () => void;
 
+    // Display utilities
+    hexToRgb?: (hex: string) => string;
+    formatFileSize?: (bytes: number | null | undefined) => string;
+    getFileIcon?: (fileType: string | null | undefined, fileName?: string | null) => string;
+    getFileIconSvg?: (
+      fileType: string | null | undefined,
+      size?: "sm" | "md" | "lg"
+    ) => string;
+    formatDate?: (
+      date: string | Date | null | undefined,
+      options?: { format?: "long" | "medium" | "short" }
+    ) => string;
+    formatCurrency?: (amount: number, currency?: string) => string;
+    isValidEmail?: (email: string) => boolean;
+
     // Modal utilities
     showModal?: (options: {
       id?: string;

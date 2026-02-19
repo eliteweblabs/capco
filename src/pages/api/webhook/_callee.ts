@@ -5,6 +5,7 @@ import { supabase } from "../../../lib/supabase";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
 import { getApiBaseUrl, ensureProtocol } from "../../../lib/url-utils";
 import { validateEmail } from "../../../lib/ux-utils";
+import { isValidEmail } from "../../../lib/global-display-utils";
 
 export interface EmailWebhookData {
   from: string;
@@ -194,11 +195,7 @@ export function extractEmailAddress(emailString: string): string | null {
   return trimmed;
 }
 
-// Validate email format
-export function isValidEmail(email: string): boolean {
-  const emailError = validateEmail(email);
-  return emailError === null;
-}
+export { isValidEmail };
 
 // Generate a temporary password for new users
 export function generateTempPassword(): string {

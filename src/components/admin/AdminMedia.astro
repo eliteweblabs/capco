@@ -8,6 +8,7 @@ import SimpleIcon from "../common/SimpleIcon.astro";
 import DeleteConfirmButton from "../ui/DeleteConfirmButton.astro";
 import GridFilter from "../../features/grid-filter/GridFilter.astro";
 import { supabaseAdmin } from "../../lib/supabase-admin";
+import { formatFileSize, getFileIcon } from "../../lib/global-display-utils";
 
 export interface Props {
   currentUser: any;
@@ -440,32 +441,6 @@ const stats = {
     return fileType?.includes("pdf") || fileType?.includes("document");
   }).length,
 };
-
-// Helper to format file size
-function formatFileSize(bytes: number | null): string {
-  if (!bytes) return "—";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-// Helper to get file icon
-function getFileIcon(fileType: string | null, fileName?: string | null): string {
-  if (!fileType && !fileName) return "file";
-  
-  const type = fileType?.toLowerCase() || "";
-  const name = fileName?.toLowerCase() || "";
-  
-  if (type.startsWith("image/") || name.match(/\.(webp|avif|svg|png|jpg|jpeg|gif|ico|bmp|tiff?)$/)) return "image";
-  if (type.includes("pdf") || name.endsWith(".pdf")) return "file-pdf";
-  if (type.includes("word") || type.includes("document") || name.match(/\.(doc|docx)$/)) return "file-word";
-  if (type.includes("excel") || type.includes("spreadsheet") || name.match(/\.(xls|xlsx|csv)$/)) return "spreadsheet";
-  if (type.includes("video") || name.match(/\.(mp4|webm|mov|avi|mkv)$/)) return "video";
-  if (type.includes("audio") || name.match(/\.(mp3|wav|ogg|m4a|flac)$/)) return "music";
-  if (type.includes("zip") || type.includes("archive") || name.match(/\.(zip|rar|7z|tar|gz)$/)) return "archive";
-  
-  return "file";
-}
 ---
 
 <div class="admin-media-component">
@@ -831,13 +806,7 @@ function getFileIcon(fileType: string | null, fileName?: string | null): string 
     const progressBar = document.getElementById("progress-bar");
     const progressText = document.getElementById("progress-text");
 
-    // Format file size helper
-    function formatFileSize(bytes: number | null): string {
-      if (!bytes) return "—";
-      if (bytes < 1024) return `${bytes} B`;
-      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-    }
+    const formatFileSize = window.formatFileSize;
 
     // Upload handler
     uploadBtn?.addEventListener("click", () => {

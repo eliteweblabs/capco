@@ -1,0 +1,143 @@
+---
+/**
+ * TabberBlock - Sliding pill nav tabs with content panels
+ *
+ * CMS-ready tabber using SlidingTabs for the nav. Content can be HTML from rich text.
+ *
+ * @example Direct usage:
+ * <TabberBlock tabs={[
+ *   { label: "Overview", content: "<p>Overview content...</p>" },
+ *   { label: "Details", content: "<p>Details content...</p>" }
+ * ]} />
+ *
+ * @example CMS shortcode:
+ * <TabberBlock
+ *   tab1Label="Overview"
+ *   tab1Content="<p>Overview content...</p>"
+ *   tab2Label="Details"
+ *   tab2Content="<p>Details content...</p>"
+ * />
+ */
+import SlidingTabs from "../common/SlidingTabs.astro";
+import { parseJsonProp, buildArrayFromFlatProps } from "./BlockRegistry";
+
+interface TabItem {
+  label: string;
+  content?: string;
+  icon?: string;
+}
+
+interface Props {
+  tabs?: string | TabItem[];
+
+  // Flat props for CMS (tab1Label, tab1Content, tab2Label, tab2Content, ...)
+  tab1Label?: string;
+  tab1Content?: string;
+  tab1Icon?: string;
+  tab2Label?: string;
+  tab2Content?: string;
+  tab2Icon?: string;
+  tab3Label?: string;
+  tab3Content?: string;
+  tab3Icon?: string;
+  tab4Label?: string;
+  tab4Content?: string;
+  tab4Icon?: string;
+  tab5Label?: string;
+  tab5Content?: string;
+  tab5Icon?: string;
+  tab6Label?: string;
+  tab6Content?: string;
+  tab6Icon?: string;
+
+  className?: string;
+  id?: string;
+  /** Unique nav ID for SlidingTabs; defaults to generated */
+  navId?: string;
+  /** Compact nav (smaller padding) */
+  compact?: boolean | string;
+}
+
+const props = Astro.props;
+const { className = "", id, navId: propsNavId, compact = false } = props;
+const isCompact = compact === true || compact === "true";
+
+// Build tabs from JSON or flat props
+let tabs: TabItem[] = [];
+if (props.tabs) {
+  tabs = parseJsonProp<TabItem[]>(props.tabs, []);
+} else {
+  tabs = buildArrayFromFlatProps<TabItem>(
+    props,
+    "tab",
+    ["label", "content", "icon"],
+    6
+  );
+}
+
+tabs = tabs.filter((t) => t.label);
+
+// Unique ID for this tabber instance
+const blockId = id || `tabber-${Math.random().toString(36).slice(2, 9)}`;
+const navId = propsNavId || `${blockId}-nav`;
+
+// SlidingTabs expects NavItem shape
+const navItems = tabs.map((t) => ({
+  label: t.label,
+  icon: t.icon,
+  id: undefined,
+  variant: "tab" as const,
+}));
+---
+
+<section id={blockId} class={`tabber-block py-8 md:py-12 ${className}`} data-tabber>
+  <SlidingTabs
+    items={navItems}
+    navId={navId}
+    activeItem={0}
+    navClass={`mb-0 ${isCompact ? "" : "!pt-4"}`}
+    compact={isCompact}
+    urlParam=""
+  />
+  <div class="tabber-panels mt-6">
+    {
+      tabs.map((tab, index) => (
+        <div
+          data-tab-index={index}
+          data-tabber-panel
+          class:list={[
+            "tabber-panel prose max-w-none dark:prose-invert",
+            index === 0 ? "" : "hidden",
+          ]}
+          set:html={tab.content || ""}
+        />
+      ))
+    }
+  </div>
+</section>
+
+<script>
+  function initTabberPanels() {
+    document.querySelectorAll("[data-tabber]").forEach((block) => {
+      const nav = block.querySelector("nav");
+      const panels = block.querySelectorAll("[data-tabber-panel]");
+      if (!nav || !panels.length) return;
+
+      const buttons = nav.querySelectorAll("button[data-index]");
+      buttons.forEach((btn) => {
+        btn.addEventListener("click", function () {
+          const idx = parseInt((this as HTMLElement).dataset.index ?? "0", 10);
+          panels.forEach((panel, i) => {
+            (panel as HTMLElement).classList.toggle("hidden", i !== idx);
+          });
+        });
+      });
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initTabberPanels);
+  } else {
+    initTabberPanels();
+  }
+</script>

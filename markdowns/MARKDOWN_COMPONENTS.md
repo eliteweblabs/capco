@@ -54,6 +54,8 @@ Navigate to `/your-page` (the slug matches the filename without `.md`)
 
 ### Block Components
 - `<CountUpBlock title="..." stat1Value="2.5M" stat1Label="Sq Ft developed" stat1Color="pink" stat2Value="105" stat2Label="years of expertise" stat2Color="cyan" stat3Value="12" stat3Label="satisfied clients" stat3Color="orange"/>` - Animated odometer-style stats (numbers roll from 0 when in view)
+- `<IconTooltip4Block/>` - 4-column XL icon grid; text in tooltips on hover/tap. Default: General Contracting, Construction Management, Safety Management, Quality Control. Override with `item1Icon`, `item1Title`, `item1Description`, etc.
+- `<TabberBlock/>` - Sliding pill nav tabs with content panels. Use `tab1Label`, `tab1Content`, `tab2Label`, `tab2Content`, etc., or `tabs` JSON array.
 
 ## ⚠️ Nested Shortcodes
 

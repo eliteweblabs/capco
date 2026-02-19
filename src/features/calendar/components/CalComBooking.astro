@@ -45,11 +45,13 @@ import LoadingSpinner from "../../../components/ui/LoadingSpinner.astro";
       } catch {
         // do nothing
       }
+      // Use window.currentTheme from App.astro (localStorage + system preference); fallback to DOM/system
       const theme =
-        document.documentElement.classList.contains("dark") ||
-        window.matchMedia("(prefers-color-scheme: dark)").matches
+        (typeof window.currentTheme === "string" && window.currentTheme) ||
+        (document.documentElement.classList.contains("dark") ||
+          window.matchMedia("(prefers-color-scheme: dark)").matches
           ? "dark"
-          : "light";
+          : "light");
       el.innerHTML = "";
       const iframe = document.createElement("iframe");
       iframe.src = baseUrl + "/" + calLink + "?embed=true&layout=month_view&theme=" + theme;

@@ -1524,18 +1524,14 @@ const settings = {
           }
 
           // Inject background colors for .color-background (uses r,g,b format)
-          const hexToRgb = (hex: string) => {
-            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-            return result
-              ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`
-              : null;
-          };
+          const rgbFromHex = (hex: string) =>
+            window.hexToRgb ? window.hexToRgb(hex) : null;
           const newBackgroundColor =
             settings.backgroundColor || backgroundColorInput?.value || "#ffffff";
           const newBackgroundColorDark =
             settings.backgroundColorDark || backgroundColorDarkInput?.value || "#0a0a0a";
-          const rgbLight = hexToRgb(newBackgroundColor);
-          const rgbDark = hexToRgb(newBackgroundColorDark);
+          const rgbLight = rgbFromHex(newBackgroundColor);
+          const rgbDark = rgbFromHex(newBackgroundColorDark);
           if (rgbLight) document.documentElement.style.setProperty("--color-background", rgbLight);
           if (rgbDark)
             document.documentElement.style.setProperty("--color-background-dark", rgbDark);

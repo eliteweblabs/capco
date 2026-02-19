@@ -10,6 +10,15 @@ import {
   debounce,
   throttle,
 } from "../lib/ux-utils";
+import { hexToRgb } from "../lib/color-utils";
+import { getFileIconSvg } from "../lib/file-icon";
+import {
+  formatFileSize,
+  getFileIcon,
+  formatDate,
+  formatCurrency,
+  isValidEmail,
+} from "../lib/global-display-utils";
 
 declare global {
   interface Window {
@@ -91,6 +100,20 @@ declare global {
     toggleCommentForm?: () => void;
     trimText?: (text: string, maxLength?: number, suffix?: string) => string;
     trimWords?: (text: string, wordLimit?: number, suffix?: string) => string;
+    // Display utilities
+    hexToRgb?: (hex: string) => string;
+    formatFileSize?: (bytes: number | null | undefined) => string;
+    getFileIcon?: (fileType: string | null | undefined, fileName?: string | null) => string;
+    getFileIconSvg?: (
+      fileType: string | null | undefined,
+      size?: "sm" | "md" | "lg"
+    ) => string;
+    formatDate?: (
+      date: string | Date | null | undefined,
+      options?: { format?: "long" | "medium" | "short" }
+    ) => string;
+    formatCurrency?: (amount: number, currency?: string) => string;
+    isValidEmail?: (email: string) => boolean;
     // Typewriter (simple + TypeIt)
     runSimpleTypewriter?: (
       el: HTMLElement,
@@ -1102,6 +1125,15 @@ let isDeleting = false; // Flag to prevent multiple delete operations
 (window as any).unlockBodyScroll = function () {
   document.body.style.overflow = "";
 };
+
+// Display utilities (hexToRgb, formatFileSize, getFileIcon, getFileIconSvg, formatDate, formatCurrency, isValidEmail)
+(window as any).hexToRgb = hexToRgb;
+(window as any).formatFileSize = formatFileSize;
+(window as any).getFileIcon = getFileIcon;
+(window as any).getFileIconSvg = getFileIconSvg;
+(window as any).formatDate = formatDate;
+(window as any).formatCurrency = formatCurrency;
+(window as any).isValidEmail = isValidEmail;
 
 /**
  * Handles URL parameter notifications (errors and success messages)
