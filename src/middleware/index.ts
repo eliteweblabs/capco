@@ -8,8 +8,8 @@ import { supabase } from "../lib/supabase";
 import { supabaseAdmin } from "../lib/supabase-admin";
 import { globalCompanyData } from "../pages/api/global/global-company-data";
 
-// Setup console interceptor for server-side (disables console.log in production)
-// Set DISABLE_CONSOLE_INTERCEPTOR=1 in .env to turn off and show all logs
+// Setup console interceptor for server-side (disables console.log in production when ENABLE_CONSOLE_INTERCEPTOR=1)
+// Default: all logs flow. Set ENABLE_CONSOLE_INTERCEPTOR=1 to suppress.
 try {
   setupConsoleInterceptor();
 } catch (error) {
