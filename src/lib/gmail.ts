@@ -59,7 +59,7 @@ export async function getGmailClient(userId: string): Promise<gmail_v1.Gmail> {
   const oauth2Client = new google.auth.OAuth2(
     process.env.GMAIL_CLIENT_ID,
     process.env.GMAIL_CLIENT_SECRET,
-    `${process.env.PUBLIC_URL || "http://localhost:4321"}/api/auth/gmail/callback`
+    `${process.env.PUBLIC_URL || (process.env.RAILWAY_PUBLIC_DOMAIN ? process.env.RAILWAY_PUBLIC_DOMAIN.startsWith("http") ? process.env.RAILWAY_PUBLIC_DOMAIN : `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : "http://localhost:4321")}/api/auth/gmail/callback`
   );
 
   oauth2Client.setCredentials({

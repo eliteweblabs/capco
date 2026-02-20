@@ -177,7 +177,15 @@ export async function getSiteConfig(): Promise<SiteConfig> {
         "Fire Protection Services",
       slogan: companyData?.globalCompanySlogan || "Professional Services",
       description: companyData?.globalCompanySlogan || "Fire protection system review and approval",
-      url: companyData?.globalCompanyWebsite || "http://localhost:4321",
+      url:
+        companyData?.globalCompanyWebsite ||
+        (process.env.RAILWAY_PUBLIC_DOMAIN
+          ? process.env.RAILWAY_PUBLIC_DOMAIN.startsWith("http")
+            ? process.env.RAILWAY_PUBLIC_DOMAIN
+            : `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+          : null) ||
+        process.env.PUBLIC_URL ||
+        "http://localhost:4321",
       email:
         companyData?.globalCompanyEmail || process.env.GLOBAL_COMPANY_EMAIL || "admin@example.com",
       phone: companyData?.globalCompanyPhone || process.env.GLOBAL_COMPANY_PHONE || "+15551234567",

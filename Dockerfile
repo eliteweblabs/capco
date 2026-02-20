@@ -84,8 +84,9 @@ ARG STRIPE_SECRET_KEY
 # AI
 ARG ANTHROPIC_API_KEY
 
-# Railway
+# Railway (PUBLIC_URL required for Gmail/Google OAuth redirect URIs)
 ARG RAILWAY_PUBLIC_DOMAIN
+ARG PUBLIC_URL
 
 # Set environment variables for build (required for Astro build)
 
@@ -126,6 +127,7 @@ ENV ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY
 
 # Railway
 ENV RAILWAY_PUBLIC_DOMAIN=$RAILWAY_PUBLIC_DOMAIN
+ENV PUBLIC_URL=$PUBLIC_URL
 
 # Campfire variables - Must be available at BUILD time (PUBLIC_ vars get embedded in JS)
 ENV PUBLIC_CAMPFIRE_URL=$PUBLIC_CAMPFIRE_URL

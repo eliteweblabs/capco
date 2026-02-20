@@ -124,6 +124,14 @@ export default defineConfig({
       "process.env.RAILWAY_PUBLIC_DOMAIN": JSON.stringify(
         env.RAILWAY_PUBLIC_DOMAIN || "https://capcofire.com"
       ),
+      "process.env.PUBLIC_URL": JSON.stringify(
+        env.PUBLIC_URL ||
+          (env.RAILWAY_PUBLIC_DOMAIN
+            ? env.RAILWAY_PUBLIC_DOMAIN.startsWith("http")
+              ? env.RAILWAY_PUBLIC_DOMAIN
+              : `https://${env.RAILWAY_PUBLIC_DOMAIN}`
+            : "")
+      ),
       "process.env.STRIPE_DOMAIN_ID": JSON.stringify(env.STRIPE_DOMAIN_ID),
       "process.env.STRIPE_SECRET_KEY": JSON.stringify(env.STRIPE_SECRET_KEY),
       "process.env.YEAR": JSON.stringify(env.YEAR),
