@@ -202,6 +202,112 @@ const isAdmin = currentUser?.profile?.role === "Admin";
 <!doctype html>
 <html lang="en">
   <head>
+    {/* Nuclear JS debug: runs only on production (Railway) to catch why JS fails there vs localhost */}
+    <script is:inline>
+      (function () {
+        var isProd = window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" && !window.location.hostname.startsWith("192.168.");
+        if (!isProd) return;
+        var errors = [];
+        var checkpoints = [];
+        var maxErrors = 20;
+        var maxCheckpoints = 50;
+        window.__RAILWAY_DEBUG = {
+          env: {
+            hostname: window.location.hostname,
+            origin: window.location.origin,
+            pathname: window.location.pathname,
+            protocol: window.location.protocol,
+            userAgent: navigator.userAgent,
+            readyState: document.readyState,
+          },
+          errors: errors,
+          checkpoints: checkpoints,
+          dump: function () {
+            return JSON.stringify({ env: this.env, errors: this.errors, checkpoints: this.checkpoints }, null, 2);
+          },
+        };
+        window.__railway_checkpoint = function (id) {
+          try {
+            var t = performance.now ? performance.now().toFixed(0) : Date.now();
+            checkpoints.push({ id: id, at: t, time: new Date().toISOString() });
+            if (checkpoints.length > maxCheckpoints) checkpoints.shift();
+            console.log("[RAILWAY-DEBUG] checkpoint:", id);
+            if (window.__railway_debugPanel) window.__railway_debugPanel.update();
+          } catch (e) {
+            console.error("[RAILWAY-DEBUG] checkpoint error:", e);
+          }
+        };
+        window.__railway_checkpoint("debug-bootstrap-done");
+        function addError(kind, msg, source, line, col, err) {
+          var entry = { kind: kind, message: msg, source: source || "", line: line, col: col, stack: err && err.stack, time: new Date().toISOString() };
+          errors.push(entry);
+          if (errors.length > maxErrors) errors.shift();
+          console.error("[RAILWAY-DEBUG] " + kind + ":", msg, source || "", line, col, err);
+          if (window.__railway_debugPanel) window.__railway_debugPanel.update();
+        }
+        window.onerror = function (msg, source, line, col, err) {
+          addError("error", msg, source, line, col, err);
+          return false;
+        };
+        window.addEventListener("unhandledrejection", function (e) {
+          addError("unhandledrejection", (e.reason && (e.reason.message || String(e.reason))) || "unknown", "", 0, 0, e.reason);
+        });
+        window.addEventListener("error", function (e) {
+          if (e.target && e.target.tagName === "SCRIPT") {
+            var src = e.target.src || e.target.getAttribute("src") || "(inline)";
+            addError("script-load", "Script failed: " + src, src, 0, 0, null);
+          }
+        }, true);
+        document.addEventListener("DOMContentLoaded", function () {
+          window.__railway_checkpoint("DOMContentLoaded");
+          var scripts = document.querySelectorAll("script[src]");
+          var list = [];
+          scripts.forEach(function (s) {
+            list.push(s.src || s.getAttribute("src"));
+          });
+          window.__RAILWAY_DEBUG.scriptUrls = list;
+          console.log("[RAILWAY-DEBUG] Script URLs on page:", list);
+        });
+        function injectPanel() {
+          var style = document.createElement("style");
+          style.textContent = "#railway-debug-panel{position:fixed;bottom:0;left:0;right:0;max-height:280px;overflow:auto;background:#1a1a1a;color:#eee;font:12px/1.4 monospace;z-index:999999;padding:8px;border-top:2px solid #f59e0b;}#railway-debug-panel h3{margin:0 0 6px 0;color:#f59e0b;}#railway-debug-panel button{margin-right:8px;margin-bottom:4px;}#railway-debug-panel pre{white-space:pre-wrap;word-break:break-all;margin:4px 0;font-size:11px;}#railway-debug-panel .err{margin:4px 0;padding:4px;background:#450a0a;color:#fca5a5;border-radius:4px;}";
+          document.head.appendChild(style);
+          var div = document.createElement("div");
+          div.id = "railway-debug-panel";
+          div.innerHTML = "<h3>RAILWAY JS DEBUG (production only)</h3><p>Checkpoints and errors below. Console: <code>copy(__RAILWAY_DEBUG.dump())</code></p><button type=\"button\" id=\"railway-debug-toggle\">Toggle</button><button type=\"button\" id=\"railway-debug-copy\">Copy dump</button><div id=\"railway-debug-content\"></div>";
+          document.body.appendChild(div);
+          window.__railway_debugPanel = {
+            update: function () {
+              var el = document.getElementById("railway-debug-content");
+              if (!el) return;
+              var cp = (window.__RAILWAY_DEBUG && window.__RAILWAY_DEBUG.checkpoints) ? window.__RAILWAY_DEBUG.checkpoints : [];
+              var err = (window.__RAILWAY_DEBUG && window.__RAILWAY_DEBUG.errors) ? window.__RAILWAY_DEBUG.errors : [];
+              el.innerHTML = "<strong>Checkpoints (" + cp.length + "):</strong><pre>" + cp.map(function (c) { return c.id + " @ " + c.time; }).join("\n") + "</pre><strong>Errors (" + err.length + "):</strong>" + err.slice(-5).reverse().map(function (e) {
+                return "<div class=\"err\">" + e.kind + ": " + (e.message || "").substring(0, 200) + (e.source ? " @ " + e.source : "") + "</div>";
+              }).join("");
+            },
+          };
+          document.getElementById("railway-debug-toggle").onclick = function () {
+            div.style.display = div.style.display === "none" ? "block" : "none";
+          };
+          document.getElementById("railway-debug-copy").onclick = function () {
+            try {
+              navigator.clipboard.writeText(window.__RAILWAY_DEBUG.dump());
+              console.log("[RAILWAY-DEBUG] Dump copied to clipboard.");
+            } catch (e) {
+              console.error(e);
+            }
+          };
+          window.__railway_checkpoint("panel-injected");
+          window.__railway_debugPanel.update();
+        }
+        if (document.body) {
+          injectPanel();
+        } else {
+          document.addEventListener("DOMContentLoaded", injectPanel);
+        }
+      })();
+    </script>
     <!-- Console suppression MUST run first so it catches all subsequent script output -->
     <script is:inline>
       // Aggressively suppress harmless console errors in development
@@ -475,11 +581,13 @@ const isAdmin = currentUser?.profile?.role === "Admin";
         }
       })();
     </script>
+    <script is:inline>if (window.__railway_checkpoint) window.__railway_checkpoint("after-theme");</script>
 
     <!-- Expose for components that run in swapped SPA content (bundled so no 404 on /lib/...) -->
     <script>
       import "../../scripts/init-auth-globals";
     </script>
+    <script is:inline>if (window.__railway_checkpoint) window.__railway_checkpoint("after-init-auth-globals");</script>
 
     <!-- Critical CMS colors (server-rendered) so first paint uses DB colors before any script -->
     <style is:global set:html={criticalColorsCss}></style>
@@ -679,6 +787,7 @@ const isAdmin = currentUser?.profile?.role === "Admin";
         });
       })();
     </script>
+    <script is:inline>if (window.__railway_checkpoint) window.__railway_checkpoint("after-dynamic-colors");</script>
 
     <meta charset="utf-8" />
     <meta
@@ -1044,10 +1153,12 @@ const isAdmin = currentUser?.profile?.role === "Admin";
     <script>
       import "../../scripts/flowbite-init";
     </script>
+    <script is:inline>if (window.__railway_checkpoint) window.__railway_checkpoint("after-flowbite-init");</script>
 
     <script>
       import "../../scripts/app-globals";
     </script>
+    <script is:inline>if (window.__railway_checkpoint) window.__railway_checkpoint("after-app-globals");</script>
 
     <!-- Overscroll: scale .overscroll-scale linearly with overscroll % (getOverscrollPercent). 0–100% → scale 1; >100% or <0% → scale tracks linearly. -->
     {
@@ -1154,7 +1265,7 @@ const isAdmin = currentUser?.profile?.role === "Admin";
     <script>
       document.addEventListener("DOMContentLoaded", async () => {
         (window as any).hideOnFormFocus();
-
+        if ((window as any).__railway_checkpoint) (window as any).__railway_checkpoint("DOMContentLoaded-hideOnFormFocus");
         // Initialize notification count only if notification bell exists (shown when authenticated)
         try {
           const notificationBell = document.getElementById("notification-bell");
@@ -1311,6 +1422,7 @@ const isAdmin = currentUser?.profile?.role === "Admin";
     <script>
       import "../../scripts/lazy-load-images";
     </script>
+    <script is:inline>if (window.__railway_checkpoint) window.__railway_checkpoint("after-lazy-load-images");</script>
 
     {/* <!-- Global Project Item Handlers (Extracted from ProjectItem.astro for performance) --> */}
     <script>
@@ -1344,6 +1456,7 @@ const isAdmin = currentUser?.profile?.role === "Admin";
     <script>
       import "../../lib/modal-global";
     </script>
+    <script is:inline>if (window.__railway_checkpoint) window.__railway_checkpoint("after-modal-global");</script>
 
     {/* <!-- Plausible Analytics Script --> */}
     {/* {plausibleTrackingScript && <Fragment set:html={plausibleTrackingScript} />} */}
