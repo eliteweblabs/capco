@@ -7,11 +7,12 @@ import node from "@astrojs/node";
 import tailwind from "@astrojs/tailwind";
 // import studiocms from "studiocms"; // Disabled - not in use, causing SDK initialization errors
 
-// Load environment variables
+// Load environment variables (merge with process.env so Railway build args are available when .env is missing)
 import { loadEnv } from "vite";
 // import { hexToRgb } from "./src/lib/color-utils.ts";
 
-const env = loadEnv(process.env.NODE_ENV || "development", process.cwd(), "");
+const loaded = loadEnv(process.env.NODE_ENV || "development", process.cwd(), "");
+const env = { ...process.env, ...loaded };
 
 // Generate RGB version of primary color automatically
 // const primaryColor = env.GLOBAL_COLOR_PRIMARY || "#825BDD";
