@@ -130,8 +130,11 @@ if (
 }
 
 // Apple Touch Icon: Safari/iOS does NOT support data URIs - must use a URL to PNG
-const appleTouchIconSrc =
-  iconSrc.startsWith("data:") ? "/favicon.png" : iconSrc.includes(".png") ? iconSrc : "/favicon.png";
+const appleTouchIconSrc = iconSrc.startsWith("data:")
+  ? "/favicon.png"
+  : iconSrc.includes(".png")
+    ? iconSrc
+    : "/favicon.png";
 
 // OG Image URL for social sharing - prefer project featured image when on project page, else CMS setting
 const ogImageSrc = project?.featuredImageData?.publicUrl || ogImage || "";
@@ -962,68 +965,35 @@ const isAdmin = currentUser?.profile?.role === "Admin";
 
           {
             !isAuthPageResult && layout !== "fullform" && (
-              <>
-                <section class="logo-cloud-block mx-auto max-w-md">
-                  <div class="relative w-full min-w-0 overflow-hidden" style="--marquee-gap: 1rem">
-                    <div class="pointer-events-none flex flex-nowrap gap-[var(--marquee-gap)]">
-                      <img
-                        alt="SBA"
-                        class="h-10 w-auto flex-shrink-0 opacity-60 mix-blend-multiply grayscale transition-all hover:opacity-100 hover:grayscale-0 dark:mix-blend-normal dark:invert"
-                        src="https://fhqglhcjlkusrykqnoel.supabase.co/storage/v1/object/public/project-media/global/1770771616380-sba.svg"
-                      />
-                      <img
-                        alt="VIP"
-                        class="h-10 w-auto flex-shrink-0 opacity-60 mix-blend-multiply grayscale transition-all hover:opacity-100 hover:grayscale-0 dark:mix-blend-normal dark:invert"
-                        src="https://fhqglhcjlkusrykqnoel.supabase.co/storage/v1/object/public/project-media/global/1770762813165-logos-vip_logo.png"
-                      />
-                      <img
-                        alt="Security Bond Professionals"
-                        class="h-10 w-auto flex-shrink-0 opacity-60 mix-blend-multiply grayscale transition-all hover:opacity-100 hover:grayscale-0 dark:mix-blend-normal dark:invert"
-                        src="https://fhqglhcjlkusrykqnoel.supabase.co/storage/v1/object/public/project-media/global/1770762807136-logos-Screenshot_2025-12-27_144555.png"
-                      />
-                      <img
-                        alt="SAM Gov"
-                        class="h-10 w-auto flex-shrink-0 opacity-60 mix-blend-multiply grayscale transition-all hover:opacity-100 hover:grayscale-0 dark:mix-blend-normal dark:invert"
-                        src="https://fhqglhcjlkusrykqnoel.supabase.co/storage/v1/object/public/project-media/global/1770771613443-SamGovLogo.svg"
-                      />
-                      <img
-                        alt="Federal Airline Association"
-                        class="h-10 w-auto flex-shrink-0 opacity-60 mix-blend-multiply grayscale transition-all hover:opacity-100 hover:grayscale-0 dark:mix-blend-normal dark:invert"
-                        src="https://fhqglhcjlkusrykqnoel.supabase.co/storage/v1/object/public/project-media/global/1770771611769-logo-faa.svg"
-                      />
-                    </div>
-                  </div>
-                </section>
-                <div class="my-6 text-xs">
-                  <ul class="align-center flex justify-center">
-                    <li>
-                      <Tooltip
-                        text={`${new Date().getFullYear().toString()} ${globalCompanyName}. All rights reserved.`}
-                      >
-                        <span class="me-6 no-underline hover:underline">©</span>
-                      </Tooltip>
-                    </li>
-                    <li>
-                      <a href="/privacy" class="me-6 no-underline hover:underline">
-                        {" "}
-                        privacy{" "}
-                      </a>
-                    </li>
-                    <li>
-                      <a href="/terms" class="me-6 no-underline hover:underline">
-                        {" "}
-                        terms{" "}
-                      </a>
-                    </li>
-                    <li>
-                      <a href="/cookies" class="no-underline hover:underline">
-                        {" "}
-                        cookie{" "}
-                      </a>
-                    </li>
-                  </ul>
-                </div>
-              </>
+              <div class="my-6 text-xs">
+                <ul class="align-center flex justify-center">
+                  <li>
+                    <Tooltip
+                      text={`${new Date().getFullYear().toString()} ${globalCompanyName}. All rights reserved.`}
+                    >
+                      <span class="me-6 no-underline hover:underline">©</span>
+                    </Tooltip>
+                  </li>
+                  <li>
+                    <a href="/privacy" class="me-6 no-underline hover:underline">
+                      {" "}
+                      privacy{" "}
+                    </a>
+                  </li>
+                  <li>
+                    <a href="/terms" class="me-6 no-underline hover:underline">
+                      {" "}
+                      terms{" "}
+                    </a>
+                  </li>
+                  <li>
+                    <a href="/cookies" class="no-underline hover:underline">
+                      {" "}
+                      cookie{" "}
+                    </a>
+                  </li>
+                </ul>
+              </div>
             )
           }
         </div>
@@ -1080,7 +1050,9 @@ const isAdmin = currentUser?.profile?.role === "Admin";
     </script>
 
     <!-- Overscroll: scale .overscroll-scale linearly with overscroll % (getOverscrollPercent). 0–100% → scale 1; >100% or <0% → scale tracks linearly. -->
-    {/* Theme toggle: inline in layout so it is always emitted (component scripts may not be in SSR output). */}
+    {
+      /* Theme toggle: inline in layout so it is always emitted (component scripts may not be in SSR output). */
+    }
     <script is:inline>
       (function () {
         function initThemeToggle() {
@@ -1091,22 +1063,33 @@ const isAdmin = currentUser?.profile?.role === "Admin";
           if (themeToggle.dataset.themeToggleInited === "1") return;
           themeToggle.dataset.themeToggleInited = "1";
           function syncIcons(isDark) {
-            if (isDark) { darkIcon.classList.add("hidden"); lightIcon.classList.remove("hidden"); }
-            else { darkIcon.classList.remove("hidden"); lightIcon.classList.add("hidden"); }
+            if (isDark) {
+              darkIcon.classList.add("hidden");
+              lightIcon.classList.remove("hidden");
+            } else {
+              darkIcon.classList.remove("hidden");
+              lightIcon.classList.add("hidden");
+            }
           }
           syncIcons(document.documentElement.classList.contains("dark"));
           themeToggle.addEventListener("click", function () {
             var isDark = document.documentElement.classList.contains("dark");
             var newTheme = isDark ? "light" : "dark";
-            if (isDark) { document.documentElement.classList.remove("dark"); localStorage.setItem("color-theme", "light"); }
-            else { document.documentElement.classList.add("dark"); localStorage.setItem("color-theme", "dark"); }
+            if (isDark) {
+              document.documentElement.classList.remove("dark");
+              localStorage.setItem("color-theme", "light");
+            } else {
+              document.documentElement.classList.add("dark");
+              localStorage.setItem("color-theme", "dark");
+            }
             syncIcons(!isDark);
             document.cookie = "theme=" + newTheme + "; path=/; max-age=31536000; SameSite=Lax";
             if (typeof window.currentTheme !== "undefined") window.currentTheme = newTheme;
             if (typeof window.updateThemeSync === "function") window.updateThemeSync();
           });
         }
-        if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initThemeToggle);
+        if (document.readyState === "loading")
+          document.addEventListener("DOMContentLoaded", initThemeToggle);
         else initThemeToggle();
       })();
     </script>

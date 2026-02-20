@@ -40,3 +40,14 @@ Most likely culprits for “scripts missing” or “theme toggle / components n
 - **Navigation**: Remove or fix the last-added nav item or feature that might contain `<`, `>`, or `</…>`.
 
 If you need to revert in the DB directly, use the SQL in `sql-queriers/inspect-and-revert-cms-breaking-content.sql`.
+
+---
+
+## RAILWAY_PROJECT_NAME vs DB company name
+
+**Keep these in sync.** A mismatch can cause wrong or missing content, navigation, or branding:
+
+- **RAILWAY_PROJECT_NAME** – Set in Railway (env) and used as `clientId` for filtering CMS pages, site config, and navigation.
+- **DB company name** – `globalSettings.companyName` (or equivalent). Used for display and for matching client-specific content.
+
+If they differ (e.g. Railway has `"Rothco"` but the DB has `"Rothco Built"`), client-scoped content may not load and the site can look broken or show the wrong client’s data. Fix by either updating the env var to match the DB or updating the DB company name to match the deployment.
