@@ -1,10 +1,8 @@
 /**
  * Content Management System
  *
- * Reads content from markdown files and site-config.json
- * Allows each deployment to have custom content without changing code
- *
- * This system bridges environment-based config and a future full CMS
+ * Page content: database (cmsPages), env vars, or persistent volume only (no git markdown fallback).
+ * Site config from site-config.json / SITE_CONFIG / database.
  */
 
 import { readFileSync, existsSync } from "fs";
@@ -517,28 +515,7 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
     }
   }
 
-  // 3. Try markdown file (from git - defaults)
-  const contentPath = join(process.cwd(), "content", "pages", `${slug}.md`);
-  if (existsSync(contentPath)) {
-    try {
-      const fileContent = readFileSync(contentPath, "utf-8");
-      const { data, content } = matter(fileContent);
-
-      const pageContent: PageContent = {
-        ...data,
-        content,
-        title: data.title || "Untitled Page",
-      };
-
-      cache.set(cacheKey, pageContent);
-      // console.log(`✅ [CONTENT] Loaded ${slug} from file`);
-      return pageContent;
-    } catch (error) {
-      console.warn(`⚠️ [CONTENT] Error reading ${slug}.md:`, error);
-    }
-  }
-
-  // 3. Fallback to default content
+  // 3. Fallback to default content (no backup markdown from git - pages come from CMS/DB, env, or volume only)
   const defaultContent = await getDefaultPageContent(slug);
   if (defaultContent) {
     // console.log(`ℹ️ [CONTENT] Using default content for: ${slug}`);
