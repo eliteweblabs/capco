@@ -88,6 +88,20 @@ const ASSISTANT_ID = "3ae002d5-fe9c-4870-8034-4c66a9b43b51";
 const VAPI_API_KEY = process.env.VAPI_API_KEY;
 const VAPI_WEBHOOK_URL = `${WEBHOOK_DOMAIN}/api/vapi/webhook?calendarType=${CALENDAR_TYPE}`;
 
+// Fixed tool IDs (assistant-specific; processFile is ensured at runtime)
+const CAPCO_TOOL_IDS = [
+  "0b17d3bc-a697-432b-8386-7ed1235fd111", // getStaffSchedule({ username: 'capco' })
+  "5b8ac059-9bbe-4a27-985d-70df87f9490d", // bookAppointment
+  "5e721363-2451-403b-b835-1015f2b37539", // getUnreadEmails
+  "0d6f3b7f-895d-4ff1-9844-7b963b0e1a2b", // readEmail
+  "5d6a11c6-0ca2-4a5d-9789-4f92b68cb007", // sendEmail
+  "0fa95b37-a835-41a0-bb22-de2dc18dd5c0", // replyToEmail
+  "b37284e9-edde-475f-867d-45ec6a1ca2ca", // archiveEmail
+  "5b8ac059-9bbe-4a27-985d-70df87f9490d", // bookAppointment
+  "0b17d3bc-a697-432b-8386-7ed1235fd111", // getStaffSchedule
+  "1575a00d-30e4-45f5-8b48-5e9d653b5dad", // processFile
+];
+
 // Simple placeholder replacement for this script
 // Only replaces {{COMPANY_NAME}} - other placeholders like {{assistant.name}}
 // and {{customer.number}} are VAPI template variables that VAPI replaces at runtime
@@ -106,6 +120,96 @@ function replacePlaceholders(text) {
   }
 
   return replaced;
+}
+
+// ---------------------------------------------------------------------------
+// VAPI tools: list and ensure processFile (file upload / OCR)
+// ---------------------------------------------------------------------------
+
+/** List VAPI tools; optional filter by function name. */
+async function listVapiTools(functionName = null) {
+  const response = await fetch("https://api.vapi.ai/tool", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${VAPI_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+  });
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Failed to list tools: ${response.status} ${err}`);
+  }
+  const body = await response.json();
+  const tools = Array.isArray(body) ? body : (body?.tools ?? body?.data ?? []);
+  if (!functionName) return Array.isArray(tools) ? tools : [];
+  return (Array.isArray(tools) ? tools : []).filter((t) => t?.function?.name === functionName);
+}
+
+/** processFile tool config (single source of truth). */
+const processFileToolConfig = {
+  type: "function",
+  async: false,
+  function: {
+    name: "processFile",
+    description:
+      "Process an uploaded PDF or image file. Extract text content using OCR for images or text extraction for PDFs. Use this when the user uploads a document or image file.",
+    parameters: {
+      type: "object",
+      properties: {
+        fileUrl: {
+          type: "string",
+          description: "The URL of the uploaded file (provided by VAPI when user uploads a file)",
+        },
+        fileName: { type: "string", description: "The name of the file" },
+        fileType: {
+          type: "string",
+          description:
+            "The MIME type of the file (e.g., 'application/pdf', 'image/png', 'image/jpeg')",
+        },
+        saveToKnowledge: {
+          type: "boolean",
+          description:
+            "Whether to save the extracted content to the knowledge base for future reference",
+          default: false,
+        },
+      },
+      required: ["fileUrl", "fileName", "fileType"],
+    },
+  },
+  server: { url: VAPI_WEBHOOK_URL, timeoutSeconds: 60 },
+  messages: [
+    { type: "request-start", content: "Let me process that file for you." },
+    { type: "request-complete", content: "File processed successfully!" },
+    {
+      type: "request-failed",
+      content: "I'm having trouble processing that file right now. Please try again.",
+    },
+  ],
+};
+
+/** Ensure processFile tool exists in VAPI; return its ID (existing or newly created). */
+async function ensureProcessFileTool() {
+  const existing = await listVapiTools("processFile");
+  if (existing.length > 0) {
+    console.log(`📎 ${LOG_PREFIX} Using existing processFile tool: ${existing[0].id}`);
+    return existing[0].id;
+  }
+  console.log(`📎 ${LOG_PREFIX} Creating processFile tool...`);
+  const response = await fetch("https://api.vapi.ai/tool", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${VAPI_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(processFileToolConfig),
+  });
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Failed to create processFile tool: ${response.status} ${err}`);
+  }
+  const tool = await response.json();
+  console.log(`✅ ${LOG_PREFIX} processFile tool created: ${tool.id}`);
+  return tool.id;
 }
 
 // Process the assistant config to replace placeholders
@@ -313,15 +417,7 @@ Remember: Your goal is efficient service - whether booking appointments, managin
 **FINAL REMINDER**: After any action (booking, email, project), ask if there's anything else, then WAIT SILENTLY. Never say "Done" or end the call yourself.`,
       },
     ],
-    toolIds: [
-      "0b17d3bc-a697-432b-8386-7ed1235fd111", // getStaffSchedule({ username: 'capco' })
-      "5b8ac059-9bbe-4a27-985d-70df87f9490d", // bookAppointment({ username: 'capco', start, name, email, phone })
-      "5e721363-2451-403b-b835-1015f2b37539", // getUnreadEmails()
-      "0d6f3b7f-895d-4ff1-9844-7b963b0e1a2b", // readEmail(emailId)
-      "5d6a11c6-0ca2-4a5d-9789-4f92b68cb007", // sendEmail(to, subject, body)
-      "0fa95b37-a835-41a0-bb22-de2dc18dd5c0", // replyToEmail(emailId, body)
-      "b37284e9-edde-475f-867d-45ec6a1ca2ca", // archiveEmail(emailId)
-    ],
+    toolIds: [...CAPCO_TOOL_IDS, ""], // processFile ID set in main() via ensureProcessFileTool()
   },
   voice: {
     provider: "11labs",
@@ -508,6 +604,9 @@ async function main() {
   }
 
   try {
+    const processFileId = await ensureProcessFileTool();
+    assistantConfig.model.toolIds = [...CAPCO_TOOL_IDS, processFileId];
+
     if (ASSISTANT_ID) {
       console.log(`🤖 ${LOG_PREFIX} Updating existing assistant:`, ASSISTANT_ID);
       await updateAssistant(ASSISTANT_ID);
@@ -530,4 +629,13 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   main();
 }
 
-export { createAssistant, updateAssistant, getAssistant, testAssistant, assistantConfig };
+export {
+  createAssistant,
+  updateAssistant,
+  getAssistant,
+  testAssistant,
+  assistantConfig,
+  listVapiTools,
+  ensureProcessFileTool,
+  processFileToolConfig,
+};

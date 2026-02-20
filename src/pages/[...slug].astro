@@ -29,6 +29,11 @@ const excludedPaths = [
   ".map",
 ];
 
+// _astro is Astro's build output; /_astro or /_astro/... must not hit content loader
+if (pageSlug === "_astro" || pageSlug.startsWith("_astro/")) {
+  return new Response(null, { status: 404 });
+}
+
 // Check if this is a technical path that should be skipped
 if (excludedPaths.some((path) => pageSlug.includes(path))) {
   return new Response(null, { status: 404 });

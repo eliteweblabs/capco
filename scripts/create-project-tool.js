@@ -27,10 +27,41 @@ if (!RAILWAY_PUBLIC_DOMAIN.startsWith("https://")) {
 const webhookUrl = `${RAILWAY_PUBLIC_DOMAIN}/api/vapi/webhook`;
 console.log(`🔧 Using webhook URL: ${webhookUrl}`);
 
-// Create createProject tool for VAPI
+const TOOL_NAME = "createProject";
+
+/** List existing VAPI tools and return those named createProject */
+async function listCreateProjectTools() {
+  const response = await fetch("https://api.vapi.ai/tool", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${VAPI_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+  });
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Failed to list tools: ${response.status} ${err}`);
+  }
+  const body = await response.json();
+  const tools = Array.isArray(body) ? body : body?.tools ?? body?.data ?? [];
+  const createProjectTools = (Array.isArray(tools) ? tools : []).filter(
+    (t) => t?.function?.name === TOOL_NAME
+  );
+  return createProjectTools;
+}
+
+// Create createProject tool for VAPI (skips if one already exists)
 async function createProjectTool() {
   try {
-    console.log("🔧 Creating createProject tool for VAPI...");
+    const existing = await listCreateProjectTools();
+    if (existing.length > 0) {
+      console.log(`⚠️ Found ${existing.length} existing "${TOOL_NAME}" tool(s). Skipping creation to avoid duplicates.`);
+      existing.forEach((t, i) => console.log(`   ${i + 1}. ID: ${t.id}`));
+      console.log("\nUse one of the IDs above in your assistant, or delete duplicates in the VAPI dashboard first.");
+      return existing[0];
+    }
+
+    console.log(`🔧 Creating ${TOOL_NAME} tool for VAPI...`);
 
     const toolConfig = {
       type: "function",
