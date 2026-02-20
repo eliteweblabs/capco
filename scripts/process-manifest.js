@@ -4,6 +4,11 @@
  * This script processes the manifest.json template with global variables
  * from the CMS database (globalSettings table) at build time.
  *
+ * Load .env so PUBLIC_SUPABASE_URL and SUPABASE_SECRET are available.
+ */
+import "dotenv/config";
+
+/**
  * DATA SOURCES (in priority order):
  * 1. CMS Database (globalSettings table via globalCompanyData)
  * 2. Environment variables (fallback)

@@ -80,11 +80,11 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
   </svg> -->
 </button>
 
-<script>
+<script is:inline>
   import { BREAKPOINTS } from "../../lib/ux-utils";
 
   /** AbortController to remove previous listeners when re-initing (SPA navigations). */
-  let sidebarAbortController: AbortController | null = null;
+  let sidebarAbortController = null;
 
   function initSidebar() {
     // Abort previous run to avoid duplicate document/window listeners
@@ -112,7 +112,7 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
     let isHovering = false;
 
     // Toggle icons based on state — update ALL instances (navbar + sticky actions, etc.) so they stay in sync
-    const updateIcons = (isExpanded: boolean) => {
+    const updateIcons = (isExpanded) => {
       if (collapseIcon && expandIcon) {
         if (isExpanded) {
           collapseIcon.classList.remove("hidden");
@@ -282,10 +282,7 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
       "click",
       (e) => {
         if (isMobile() && !sidebar.classList.contains("-translate-x-full")) {
-          if (
-            !sidebar.contains(e.target as Node) &&
-            !toggleButtons.some((btn) => btn.contains(e.target as Node))
-          ) {
+          if (!sidebar.contains(e.target) && !toggleButtons.some((btn) => btn.contains(e.target))) {
             hideSidebarMobile();
           }
         }
