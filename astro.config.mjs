@@ -57,12 +57,18 @@ export default defineConfig({
       target: "es2018",
       rollupOptions: {
         external: (id) => {
-          // content.ts and gray-matter use Node APIs (fs, path) – exclude from client bundle
-          if (id === "gray-matter" || id.includes("/lib/content") || id.includes("content.ts")) {
-            return true;
-          }
+          // Only gray-matter – exclude from client bundle (uses Node path/fs).
+          // Do NOT externalize content.ts – it breaks Railway (looks for /app/dist/server/app/src/lib/content which doesn't exist).
+          if (id === "gray-matter") return true;
           return false;
         },
+        onwarn(warning, warn) {
+          if (warning.message?.includes?.("Generated an empty chunk")) return;
+          warn(warning);
+        },
+      },
+      ssr: {
+        noExternal: true, // Bundle everything for SSR – prevents ERR_MODULE_NOT_FOUND in standalone deploy
       },
     },
     optimizeDeps: {
