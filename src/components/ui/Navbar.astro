@@ -25,6 +25,8 @@ interface Props {
   /** Page template (layout) for tooltip: default | fullwidth | minimal | centered | fullscreen */
   template?: string;
   hideFooter?: boolean;
+  /** Server-known theme for SSR icon visibility (so toggle works before JS loads) */
+  serverTheme?: string;
 }
 
 const {
@@ -39,6 +41,7 @@ const {
   pathname,
   template,
   hideFooter = false,
+  serverTheme = "light",
 } = Astro.props;
 const currentRole = (currentUser as any)?.profile?.role;
 ---
@@ -134,7 +137,7 @@ const currentRole = (currentUser as any)?.profile?.role;
         )
       }
 
-      <ThemeToggle {currentUser} {session} {isBackend} {globalIconButtonClasses} />
+      <ThemeToggle {currentUser} {session} {isBackend} {globalIconButtonClasses} serverTheme={serverTheme} />
 
       <AuthIcon
         id="account"

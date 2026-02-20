@@ -169,6 +169,9 @@ export function disableConsoleDebug(): void {
  * Allows certain prefixes to show in production for debugging
  */
 export function setupConsoleInterceptor(): void {
+  // Skip entirely if disabled (e.g. DISABLE_CONSOLE_INTERCEPTOR=1)
+  if (process.env.DISABLE_CONSOLE_INTERCEPTOR === "1") return;
+
   // Check if we're in production
   const isProduction = import.meta.env.PROD || process.env.NODE_ENV === "production";
   const isServer = typeof window === "undefined";
