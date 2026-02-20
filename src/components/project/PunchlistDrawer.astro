@@ -126,13 +126,16 @@ const drawerTitle = (project.title || project.address || "Project") + " Punchlis
     const tabButton = document.getElementById("punchlist-drawer-toggle");
 
     if (tabButton) {
-      // Update count bubble on tab button
-
-      window.updateCountBubble(
-        tabButton,
-        incompleteCount,
-        window.COUNT_BUBBLE_PRESETS.notification
-      );
+      // Update count bubble on tab button (guard: app-globals may not be loaded yet)
+      if (typeof window.updateCountBubble === "function" && window.COUNT_BUBBLE_PRESETS?.notification) {
+        window.updateCountBubble(tabButton, incompleteCount, window.COUNT_BUBBLE_PRESETS.notification);
+      } else if (incompleteCount > 0) {
+        tabButton.setAttribute("data-count", incompleteCount.toString());
+        tabButton.classList.add("has-count");
+      } else {
+        tabButton.removeAttribute("data-count");
+        tabButton.classList.remove("has-count");
+      }
 
       // if (incompleteCount > 0) {
       //   tabButton.setAttribute("data-count", incompleteCount.toString());

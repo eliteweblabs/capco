@@ -207,15 +207,30 @@ export async function getSiteConfig(): Promise<SiteConfig> {
   // 1. Priority: env-based config (Railway limits vars to 32KB, so we support multiple methods)
   let envConfigJson: string | null = null;
 
-  // 1a. SITE_CONFIG_URL - fetch from URL (no size limit)
+  // 1a. SITE_CONFIG_URL - fetch from URL, or read from filesystem path
   const configUrl = process.env.SITE_CONFIG_URL;
   if (configUrl) {
     try {
-      const res = await fetch(configUrl);
-      if (res.ok) envConfigJson = await res.text();
-      else console.warn("⚠️ [CONTENT] SITE_CONFIG_URL fetch failed:", res.status);
+      const isUrl =
+        configUrl.startsWith("http://") ||
+        configUrl.startsWith("https://") ||
+        configUrl.startsWith("file://");
+      if (isUrl) {
+        const res = await fetch(configUrl);
+        if (res.ok) envConfigJson = await res.text();
+        else console.warn("⚠️ [CONTENT] SITE_CONFIG_URL fetch failed:", res.status);
+      } else {
+        // Treat as filesystem path (e.g. dist/client/data/config.json on Railway)
+        const filePath = configUrl.startsWith("/") ? configUrl : join(process.cwd(), configUrl);
+        if (existsSync(filePath)) {
+          envConfigJson = readFileSync(filePath, "utf-8");
+          console.log("[CONTENT] Loaded config from SITE_CONFIG_URL path:", filePath);
+        } else {
+          console.warn("⚠️ [CONTENT] SITE_CONFIG_URL file not found:", filePath);
+        }
+      }
     } catch (error) {
-      console.warn("⚠️ [CONTENT] Error fetching SITE_CONFIG_URL:", error);
+      console.warn("⚠️ [CONTENT] Error loading SITE_CONFIG_URL:", error);
     }
   }
 

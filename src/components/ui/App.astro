@@ -136,16 +136,19 @@ const projectId = project?.id || undefined;
 const currentUrl = Astro.url.pathname;
 
 // Icon sources - convert SVG to data URI; fallback to public favicon so we never use empty href
+// Wrapped in try/catch: bad/malformed icon in globalSettings must not block page load
 let iconSrc: string;
-if (
-  globalCompanyIcon &&
-  (globalCompanyIcon.includes("<svg") || globalCompanyIcon.includes("<?xml"))
-) {
-  const encoded = Buffer.from(globalCompanyIcon).toString("base64");
-  iconSrc = "data:image/svg+xml;base64," + encoded;
-} else if (globalCompanyIcon && typeof globalCompanyIcon === "string") {
-  iconSrc = globalCompanyIcon;
-} else {
+try {
+  const icon = globalCompanyIcon;
+  if (icon && typeof icon === "string" && (icon.includes("<svg") || icon.includes("<?xml"))) {
+    const encoded = Buffer.from(icon).toString("base64");
+    iconSrc = "data:image/svg+xml;base64," + encoded;
+  } else if (icon && typeof icon === "string") {
+    iconSrc = icon;
+  } else {
+    iconSrc = "/favicon.svg";
+  }
+} catch {
   iconSrc = "/favicon.svg";
 }
 

@@ -157,6 +157,7 @@ declare global {
 
 // Setup console interceptor for client-side (filters out image fetch logs)
 setupConsoleInterceptor();
+console.log("[---INIT] app-globals loaded (showNotice, COUNT_BUBBLE_PRESETS, etc.)");
 
 // Set Stripe publishable key globally for PaymentForm
 (window as any).STRIPE_PUBLISHABLE_KEY = import.meta.env.STRIPE_PUBLISHABLE_KEY;

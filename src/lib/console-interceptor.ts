@@ -206,7 +206,7 @@ export function setupConsoleInterceptor(): void {
         return; // Don't log image fetch messages
       }
 
-      // Allow logs that contain [---] pattern (e.g., [---VAPI], [---DEBUG], [---ADMIN-VOICE], etc.)
+      // Allow logs that contain [---] pattern (e.g., [---VAPI], [---DEBUG], [---INIT], etc.)
       if (message.includes("[---")) {
         originalLog(...args);
         return;
