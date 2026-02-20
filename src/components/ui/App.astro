@@ -1080,6 +1080,37 @@ const isAdmin = currentUser?.profile?.role === "Admin";
     </script>
 
     <!-- Overscroll: scale .overscroll-scale linearly with overscroll % (getOverscrollPercent). 0–100% → scale 1; >100% or <0% → scale tracks linearly. -->
+    {/* Theme toggle: inline in layout so it is always emitted (component scripts may not be in SSR output). */}
+    <script is:inline>
+      (function () {
+        function initThemeToggle() {
+          var themeToggle = document.getElementById("theme-toggle");
+          var darkIcon = document.getElementById("theme-toggle-dark-icon");
+          var lightIcon = document.getElementById("theme-toggle-light-icon");
+          if (!themeToggle || !darkIcon || !lightIcon) return;
+          if (themeToggle.dataset.themeToggleInited === "1") return;
+          themeToggle.dataset.themeToggleInited = "1";
+          function syncIcons(isDark) {
+            if (isDark) { darkIcon.classList.add("hidden"); lightIcon.classList.remove("hidden"); }
+            else { darkIcon.classList.remove("hidden"); lightIcon.classList.add("hidden"); }
+          }
+          syncIcons(document.documentElement.classList.contains("dark"));
+          themeToggle.addEventListener("click", function () {
+            var isDark = document.documentElement.classList.contains("dark");
+            var newTheme = isDark ? "light" : "dark";
+            if (isDark) { document.documentElement.classList.remove("dark"); localStorage.setItem("color-theme", "light"); }
+            else { document.documentElement.classList.add("dark"); localStorage.setItem("color-theme", "dark"); }
+            syncIcons(!isDark);
+            document.cookie = "theme=" + newTheme + "; path=/; max-age=31536000; SameSite=Lax";
+            if (typeof window.currentTheme !== "undefined") window.currentTheme = newTheme;
+            if (typeof window.updateThemeSync === "function") window.updateThemeSync();
+          });
+        }
+        if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initThemeToggle);
+        else initThemeToggle();
+      })();
+    </script>
+
     <script is:inline>
       (function () {
         var getOverscrollPercent = window.getOverscrollPercent;

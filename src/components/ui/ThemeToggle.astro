@@ -5,11 +5,11 @@ import SimpleIcon from "../common/SimpleIcon.astro";
 const { globalIconButtonClasses } = await Astro.props;
 ---
 
-<a
-  href={"#"}
-  id="theme-toggle"
+<button
   type="button"
+  id="theme-toggle"
   title="Toggle dark mode"
+  aria-label="Toggle light / dark mode"
   class={globalIconButtonClasses}
 >
   <Tooltip text="Toggle dark mode" position="bottom" hideOnMobile>
@@ -19,70 +19,5 @@ const { globalIconButtonClasses } = await Astro.props;
     <SimpleIcon name="sun" size="md" id="theme-toggle-light-icon" class={`hidden`} />
   </Tooltip>
   <span class="sr-only">Toggle light / dark mode</span>
-</a>
-
-<script>
-  // Theme toggle functionality
-  function initThemeToggle() {
-    const themeToggle = document.getElementById("theme-toggle");
-    const darkIcon = document.getElementById("theme-toggle-dark-icon");
-    const lightIcon = document.getElementById("theme-toggle-light-icon");
-
-    if (!themeToggle || !darkIcon || !lightIcon) return;
-
-    // Set initial state (dark mode is already initialized in App.astro)
-    const isDark = document.documentElement.classList.contains("dark");
-
-    isDark ? document.documentElement.classList.add("zD1iTsv7EQco3GO_szee") : "";
-
-    // Remove hidden class from the appropriate icon
-    if (isDark) {
-      darkIcon.classList.add("hidden");
-      lightIcon.classList.remove("hidden");
-    } else {
-      darkIcon.classList.remove("hidden");
-      lightIcon.classList.add("hidden");
-    }
-
-    themeToggle.addEventListener("click", function (e) {
-      e.preventDefault();
-      const isDark = document.documentElement.classList.contains("dark");
-      const newTheme = isDark ? "light" : "dark";
-
-      if (isDark) {
-        // Switch to light
-        document.documentElement.classList.remove("dark");
-        localStorage.setItem("color-theme", "light");
-        darkIcon.classList.remove("hidden");
-        lightIcon.classList.add("hidden");
-      } else {
-        // Switch to dark
-        document.documentElement.classList.add("dark");
-        localStorage.setItem("color-theme", "dark");
-        darkIcon.classList.add("hidden");
-        lightIcon.classList.remove("hidden");
-      }
-
-      // Update cookie
-      document.cookie = `theme=${newTheme}; path=/; max-age=31536000; SameSite=Lax`;
-      console.log("[THEME-TOGGLE] Theme changed to:", newTheme);
-      console.log("[THEME-TOGGLE] Cookie set to:", newTheme);
-
-      // Update window.currentTheme
-      if (window.currentTheme !== undefined) {
-        window.currentTheme = newTheme;
-      }
-
-      // Sync theme-synced elements
-      if (window.updateThemeSync) {
-        window.updateThemeSync();
-      }
-    });
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initThemeToggle);
-  } else {
-    initThemeToggle();
-  }
-</script>
+</button>
+{/* Theme toggle script lives in App.astro (layout) so it is always in the HTML in production. */}
