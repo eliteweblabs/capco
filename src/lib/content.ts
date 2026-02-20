@@ -241,15 +241,20 @@ export async function getSiteConfig(): Promise<SiteConfig> {
       join(process.cwd(), "public", "data", "config.json"),
       join(process.cwd(), "dist", "client", "data", "config.json"),
     ];
+    console.log("[CONTENT] Before loading config.json – trying paths:", paths);
     for (const p of paths) {
       if (existsSync(p)) {
         try {
           envConfigJson = readFileSync(p, "utf-8");
+          console.log("[CONTENT] After loading config.json – loaded from:", p, "length:", envConfigJson?.length);
           break;
-        } catch {
-          /* ignore */
+        } catch (err) {
+          console.warn("[CONTENT] Failed to read config.json from:", p, err);
         }
       }
+    }
+    if (!envConfigJson) {
+      console.log("[CONTENT] After loading config.json – not found (paths did not exist or were unreadable)");
     }
   }
 

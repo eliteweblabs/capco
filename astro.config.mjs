@@ -7,11 +7,12 @@ import node from "@astrojs/node";
 import tailwind from "@astrojs/tailwind";
 // import studiocms from "studiocms"; // Disabled - not in use, causing SDK initialization errors
 
-// Load environment variables
+// Load environment variables (merge with process.env so Railway build vars are available when .env is missing)
 import { loadEnv } from "vite";
 // import { hexToRgb } from "./src/lib/color-utils.ts";
 
-const env = loadEnv(process.env.NODE_ENV || "development", process.cwd(), "");
+const loaded = loadEnv(process.env.NODE_ENV || "development", process.cwd(), "");
+const env = { ...process.env, ...loaded };
 
 // Generate RGB version of primary color automatically
 // const primaryColor = env.GLOBAL_COLOR_PRIMARY || "#825BDD";
@@ -105,7 +106,9 @@ export default defineConfig({
       "process.env.PUBLIC_SUPABASE_URL": JSON.stringify(env.PUBLIC_SUPABASE_URL),
       // New Supabase API keys (preferred)
       "process.env.PUBLIC_SUPABASE_PUBLISHABLE": JSON.stringify(env.PUBLIC_SUPABASE_PUBLISHABLE),
-      "process.env.SUPABASE_SECRET": JSON.stringify(env.SUPABASE_SECRET),
+      "process.env.SUPABASE_SECRET": JSON.stringify(
+        env.SUPABASE_SECRET || env.SUPABASE_SERVICE_ROLE_KEY || ""
+      ),
       // Legacy keys (fallback for backwards compatibility)
       "process.env.PUBLIC_SUPABASE_ANON_KEY": JSON.stringify(env.PUBLIC_SUPABASE_ANON_KEY),
       "process.env.SUPABASE_ADMIN_KEY": JSON.stringify(env.SUPABASE_ADMIN_KEY),

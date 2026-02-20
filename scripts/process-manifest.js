@@ -54,7 +54,8 @@ async function loadCompanyData() {
     
     // Check if we have the necessary env vars for Supabase
     const supabaseUrl = process.env.PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseKey =
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET;
     
     if (!supabaseUrl || !supabaseKey) {
       console.warn("⚠️  Supabase credentials not found, using environment variables only");
