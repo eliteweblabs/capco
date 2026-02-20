@@ -19,6 +19,7 @@ import {
   formatCurrency,
   isValidEmail,
 } from "../lib/global-display-utils";
+import { initFlowbite } from "flowbite";
 
 declare global {
   interface Window {
@@ -1590,6 +1591,9 @@ if ("serviceWorker" in navigator) {
 
 document.addEventListener("DOMContentLoaded", () => {
   try {
+    // Flowbite: ensure dropdowns/drawers/popovers work (fallback if flowbite-init chunk fails to load on server)
+    initFlowbite();
+
     // Initialize autofill navigation - COMMENTED OUT
     // (window as any).setupAutofillNavigation();
 
