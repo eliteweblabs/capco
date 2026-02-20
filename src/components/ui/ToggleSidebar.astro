@@ -49,7 +49,8 @@ const responsiveClass = !currentUser ? "md:hidden" : "";
 </button>
 
 <script>
-  import { BREAKPOINTS } from "../../lib/ux-utils";
+  /** Tailwind md breakpoint - inlined to avoid import/bundling issues on production */
+  const MD_BREAKPOINT = 768;
 
   /** AbortController to remove previous listeners when re-initing (SPA navigations). */
   let sidebarAbortController: AbortController | null = null;
@@ -73,8 +74,7 @@ const responsiveClass = !currentUser ? "md:hidden" : "";
     // Check if user is authenticated (from first toggle button)
     const isAuth = toggleButtons[0].getAttribute("data-is-auth") === "true";
 
-    // Use global breakpoint (Tailwind sm)
-    const isMobile = () => window.innerWidth < BREAKPOINTS.MD;
+    const isMobile = () => window.innerWidth < MD_BREAKPOINT;
 
     // Track if sidebar is expanded (for desktop hover behavior)
     let isHovering = false;
@@ -350,10 +350,31 @@ const responsiveClass = !currentUser ? "md:hidden" : "";
     }
   }
 
+  function ensureInit() {
+    const toggleButtons = document.querySelectorAll("[data-sidebar-toggle-button]");
+    const sidebar = document.getElementById("sidebar");
+    if (toggleButtons.length && sidebar) {
+      initSidebar();
+      return true;
+    }
+    return false;
+  }
+
+  function runInitWithRetry(retries = 5, delay = 100) {
+    if (ensureInit()) return;
+    let attempt = 0;
+    const id = setInterval(() => {
+      attempt++;
+      if (ensureInit() || attempt >= retries) {
+        clearInterval(id);
+      }
+    }, delay);
+  }
+
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initSidebar);
+    document.addEventListener("DOMContentLoaded", () => runInitWithRetry());
   } else {
-    initSidebar();
+    runInitWithRetry();
   }
   // SPA disabled: document.addEventListener("astro:page-load", () => requestAnimationFrame(initSidebar));
 </script>
