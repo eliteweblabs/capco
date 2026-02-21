@@ -28,6 +28,7 @@ let agentSettings: Record<string, string> = {
   aiAgent_specialization: DEFAULT_SPECIALIZATION,
   aiAgent_standards: "",
   aiAgent_systemPromptExtra: "",
+  aiAgent_systemPromptTemplate: "",
 };
 
 if (supabaseAdmin) {
@@ -76,7 +77,28 @@ if (supabaseAdmin) {
 
     <form id="agent-settings-form" class="space-y-6">
       <div class="rounded-lg bg-white p-6 shadow dark:bg-gray-900">
-        <h2 class="mb-4 text-xl font-semibold">System prompt (from database)</h2>
+        <h2 class="mb-4 text-xl font-semibold">System prompt template (admin-editable)</h2>
+        <div class="mb-4">
+          <label for="aiAgent_systemPromptTemplate" class="mb-2 block text-sm font-medium">
+            Full system prompt template
+          </label>
+          <textarea
+            id="aiAgent_systemPromptTemplate"
+            name="aiAgent_systemPromptTemplate"
+            rows={16}
+            class={globalInputClasses + " font-mono text-sm"}
+            placeholder="Leave empty to use the built-in template. Placeholders: {{specialization}}, {{standardsLine}}, {{additionalInstructions}}, {{projectMemory}}, {{knowledgeBase}}, {{currentContext}}"
+          >
+            {agentSettings.aiAgent_systemPromptTemplate}
+          </textarea>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            When empty, the built-in template in <code>unified-agent.ts</code> is used. Use the placeholders so specialization, standards, and dynamic sections are injected correctly.
+          </p>
+        </div>
+      </div>
+
+      <div class="rounded-lg bg-white p-6 shadow dark:bg-gray-900">
+        <h2 class="mb-4 text-xl font-semibold">Injected values (used by template)</h2>
 
         <div class="mb-4">
           <label for="aiAgent_specialization" class="mb-2 block text-sm font-medium">
@@ -166,14 +188,17 @@ if (supabaseAdmin) {
 
   form?.addEventListener("submit", async (e) => {
     e.preventDefault();
+    const templateEl = document.getElementById("aiAgent_systemPromptTemplate");
     const specializationEl = document.getElementById("aiAgent_specialization");
     const standardsEl = document.getElementById("aiAgent_standards");
     const systemPromptExtraEl = document.getElementById("aiAgent_systemPromptExtra");
+    const template = templateEl?.value?.trim() ?? "";
     const specialization = specializationEl?.value?.trim();
     const standards = standardsEl?.value?.trim();
     const systemPromptExtra = systemPromptExtraEl?.value?.trim();
 
     const settings = {
+      aiAgent_systemPromptTemplate: template,
       aiAgent_specialization: specialization || DEFAULT_SPECIALIZATION,
       aiAgent_standards: standards || "",
       aiAgent_systemPromptExtra: systemPromptExtra || "",
@@ -208,9 +233,11 @@ if (supabaseAdmin) {
   });
 
   resetBtn?.addEventListener("click", () => {
+    const templateEl = document.getElementById("aiAgent_systemPromptTemplate");
     const specEl = document.getElementById("aiAgent_specialization");
     const stdEl = document.getElementById("aiAgent_standards");
     const extraEl = document.getElementById("aiAgent_systemPromptExtra");
+    if (templateEl) templateEl.value = "";
     if (specEl) specEl.value = DEFAULT_SPECIALIZATION;
     if (stdEl) stdEl.value = "";
     if (extraEl) extraEl.value = "";
