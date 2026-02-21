@@ -143,10 +143,12 @@ const btnClasses = "provider-btn w-12 object-contain sm:w-14 md:w-16";
 </div>
 
 <script>
-  // Handle provider button clicks
-  document.addEventListener("DOMContentLoaded", () => {
+  // Handle provider button clicks.
+  // Run when DOM is ready: in production Astro bundles scripts so they may run after
+  // DOMContentLoaded has already fired; using a single function and running now-or-on-load
+  // ensures listeners are attached whether this script runs before or after DOMContentLoaded.
+  function attachAuthProviderListeners() {
     const providerButtons = document.querySelectorAll(".provider-btn");
-
     providerButtons.forEach((button) => {
       button.addEventListener("click", (e) => {
         const target = e.currentTarget;
@@ -185,5 +187,11 @@ const btnClasses = "provider-btn w-12 object-contain sm:w-14 md:w-16";
         }
       });
     });
-  });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", attachAuthProviderListeners);
+  } else {
+    attachAuthProviderListeners();
+  }
 </script>

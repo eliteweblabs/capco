@@ -23,6 +23,9 @@ const env = { ...process.env, ...loaded };
 
 // https://astro.build/config
 export default defineConfig({
+  experimental: {
+    preserveScriptOrder: true,
+  },
   site: env.RAILWAY_PUBLIC_DOMAIN?.startsWith("http")
     ? env.RAILWAY_PUBLIC_DOMAIN
     : `https://${env.RAILWAY_PUBLIC_DOMAIN || "capcofire.com"}`, // Set your production domain
