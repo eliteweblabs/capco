@@ -376,5 +376,7 @@ const responsiveClass = !currentUser ? "md:hidden" : "";
   } else {
     runInitWithRetry();
   }
+  // Expose so App.astro can re-run init after DOM is fully ready (fixes Railway/production when scripts run early)
+  (window as any).__ensureSidebarInit = () => runInitWithRetry(3, 50);
   // SPA disabled: document.addEventListener("astro:page-load", () => requestAnimationFrame(initSidebar));
 </script>
