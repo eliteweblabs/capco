@@ -19,7 +19,6 @@ A comprehensive, CMS-ready block component system for building pages dynamically
 | `GalleryBlock` | Image galleries | Portfolio, projects |
 | `AlertBlock` | Alert/notification banners | Announcements |
 | `PricingBlock` | Pricing tables | Plans, packages |
-| `FooterBlock` | Footer sections | Page footers |
 
 ## Quick Start
 
@@ -422,44 +421,6 @@ Pricing tables and plans.
       highlighted: true,
       badge: "Most Popular"
     }
-  ]}
-/>
-```
-
-### FooterBlock
-
-Page footer sections.
-
-**Variants:** `standard`, `minimal`, `centered`, `columns`
-
-```astro
-<FooterBlock 
-  variant="standard"
-  logo="/logo-white.svg"
-  companyName="RothCo Fire Protection"
-  description="Leading fire protection solutions since 2005"
-  email="info@example.com"
-  phone="(555) 123-4567"
-  copyright="© 2024 RothCo. All rights reserved."
-  links={[
-    {
-      title: "Services",
-      links: [
-        { text: "Design Review", href: "/services/design" },
-        { text: "Compliance", href: "/services/compliance" }
-      ]
-    },
-    {
-      title: "Company",
-      links: [
-        { text: "About", href: "/about" },
-        { text: "Contact", href: "/contact" }
-      ]
-    }
-  ]}
-  socialLinks={[
-    { icon: "linkedin", href: "https://linkedin.com/company/..." },
-    { icon: "twitter", href: "https://twitter.com/..." }
   ]}
 />
 ```

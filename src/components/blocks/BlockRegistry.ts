@@ -344,23 +344,6 @@ export const blockRegistry: Record<string, BlockDefinition> = {
     },
   },
 
-  FooterBlock: {
-    name: "FooterBlock",
-    description: "Footer section",
-    props: {
-      variant: {
-        type: "string",
-        default: "standard",
-        description: "Style: standard, minimal, centered",
-      },
-      logo: { type: "string", description: "Logo image URL" },
-      description: { type: "string", description: "Company description" },
-      copyright: { type: "string", description: "Copyright text" },
-      links: { type: "string", description: "JSON array of link sections" },
-      socialLinks: { type: "string", description: "JSON array of social links" },
-    },
-  },
-
   WhatSetsUsApartBlock: {
     name: "WhatSetsUsApartBlock",
     description:

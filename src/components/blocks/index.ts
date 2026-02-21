@@ -22,7 +22,6 @@ export { default as NewsletterBlock } from "./NewsletterBlock.astro";
 export { default as GalleryBlock } from "./GalleryBlock.astro";
 export { default as AlertBlock } from "./AlertBlock.astro";
 export { default as PricingBlock } from "./PricingBlock.astro";
-export { default as FooterBlock } from "./FooterBlock.astro";
 export { default as ImageBlock } from "./ImageBlock.astro";
 export { default as ListBlock } from "./ListBlock.astro";
 export { default as GoogleReviewsBlock } from "./GoogleReviewsBlock.astro";
