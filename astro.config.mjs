@@ -19,10 +19,6 @@ const env = { ...process.env, ...loaded };
 
 // https://astro.build/config
 export default defineConfig({
-  // Production builds reverse script/style order by default; that breaks sidebar init and Flowbite popovers on Railway.
-  experimental: {
-    preserveScriptOrder: true,
-  },
   site: env.RAILWAY_PUBLIC_DOMAIN?.startsWith("http")
     ? env.RAILWAY_PUBLIC_DOMAIN
     : `https://${env.RAILWAY_PUBLIC_DOMAIN || "capcofire.com"}`, // Set your production domain
@@ -64,11 +60,6 @@ export default defineConfig({
           // gray-matter uses Node APIs – exclude from client bundle
           if (id === "gray-matter") return true;
           return false;
-        },
-        onwarn(warning, warn) {
-          // Suppress "Generated an empty chunk" – common with Astro islands that only use define:vars
-          if (warning.message?.includes?.("Generated an empty chunk")) return;
-          warn(warning);
         },
       },
       ssr: {
