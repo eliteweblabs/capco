@@ -53,6 +53,9 @@ const {
   hideFooter = false,
 } = Astro.props;
 
+/** When true: only Flowbite + theme scripts run (for finding what breaks nav/forms). Set to false to restore all scripts. */
+const ONLY_FLOWBITE_AND_THEME = true;
+
 const stripHtml = (s: string | undefined | null): string =>
   (s ?? "")
     .replace(/<[^>]*>/g, "")
@@ -206,59 +209,60 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
 <!doctype html>
 <html lang="en">
   <head>
-    <!-- CRITICAL: Production fix for Astro 5 bundled scripts running after DOMContentLoaded.
-        When scripts run late (deferred/module at end of body), DOMContentLoaded has already fired
-        so addEventListener('DOMContentLoaded', fn) never runs. This patch makes late-added
-        DOMContentLoaded/load listeners run immediately so auth, dropdowns, contact forms, etc. work. -->
-    <script is:inline>
-      (function () {
-        function runIfAlreadyLoaded(type, listener) {
-          if (document.readyState !== "loading") {
-            setTimeout(function () {
-              if (typeof listener === "function") listener();
-              else if (listener && typeof listener.handleEvent === "function") listener.handleEvent({ type: type });
-            }, 0);
-            return true;
+    {!ONLY_FLOWBITE_AND_THEME && (
+      <>
+        {/* 1. DOMContentLoaded patch - re-enable first if testing */}
+        <script is:inline>
+          (function () {
+            function runIfAlreadyLoaded(type, listener) {
+              if (document.readyState !== "loading") {
+                setTimeout(function () {
+                  if (typeof listener === "function") listener();
+                  else if (listener && typeof listener.handleEvent === "function") listener.handleEvent({ type: type });
+                }, 0);
+                return true;
+              }
+              return false;
+            }
+            var docNative = document.addEventListener.bind(document);
+            document.addEventListener = function (type, listener, options) {
+              if ((type === "DOMContentLoaded" || type === "load") && runIfAlreadyLoaded(type, listener)) return;
+              docNative(type, listener, options);
+            };
+            var winNative = window.addEventListener.bind(window);
+            window.addEventListener = function (type, listener, options) {
+              if ((type === "DOMContentLoaded" || type === "load") && runIfAlreadyLoaded(type, listener)) return;
+              winNative(type, listener, options);
+            };
+          })();
+        </script>
+        <script is:inline define:vars={{ suppressConsoleNoise }}>
+          if (suppressConsoleNoise) {
+            (function () {
+              const ow = console.warn, oe = console.error, ol = console.log;
+              const skip = function (s) {
+                return !s || s.includes("_cf_bm") || s.includes("__cf_bm") || (s.includes("Cookie") && s.includes("rejected")) || s.includes("invalid domain") || s.includes("NS_BINDING_ABORTED") || s.includes("Avatar failed to load") || s.includes("rate limit");
+              };
+              console.warn = function () {
+                if (skip([].join.call(arguments, " "))) return;
+                ow.apply(console, arguments);
+              };
+              console.error = function () {
+                if (skip([].join.call(arguments, " "))) return;
+                oe.apply(console, arguments);
+              };
+              console.log = function () {
+                var s = [].join.call(arguments, " ");
+                if (s && (s.includes("NS_BINDING_ABORTED") || s.includes("net::ERR_") || s.includes("_cf_bm") || s.includes("__cf_bm"))) return;
+                ol.apply(console, arguments);
+              };
+            })();
           }
-          return false;
-        }
-        var docNative = document.addEventListener.bind(document);
-        document.addEventListener = function (type, listener, options) {
-          if ((type === "DOMContentLoaded" || type === "load") && runIfAlreadyLoaded(type, listener)) return;
-          docNative(type, listener, options);
-        };
-        var winNative = window.addEventListener.bind(window);
-        window.addEventListener = function (type, listener, options) {
-          if ((type === "DOMContentLoaded" || type === "load") && runIfAlreadyLoaded(type, listener)) return;
-          winNative(type, listener, options);
-        };
-      })();
-    </script>
-    <!-- Console suppression: ONLY filters console output. No fetch/XHR/error overrides (those broke production). -->
-    <script is:inline define:vars={{ suppressConsoleNoise }}>
-      if (suppressConsoleNoise) {
-        (function () {
-          const ow = console.warn, oe = console.error, ol = console.log;
-          const skip = function (s) {
-            return !s || s.includes("_cf_bm") || s.includes("__cf_bm") || (s.includes("Cookie") && s.includes("rejected")) || s.includes("invalid domain") || s.includes("NS_BINDING_ABORTED") || s.includes("Avatar failed to load") || s.includes("rate limit");
-          };
-          console.warn = function () {
-            if (skip([].join.call(arguments, " "))) return;
-            ow.apply(console, arguments);
-          };
-          console.error = function () {
-            if (skip([].join.call(arguments, " "))) return;
-            oe.apply(console, arguments);
-          };
-          console.log = function () {
-            var s = [].join.call(arguments, " ");
-            if (s && (s.includes("NS_BINDING_ABORTED") || s.includes("net::ERR_") || s.includes("_cf_bm") || s.includes("__cf_bm"))) return;
-            ol.apply(console, arguments);
-          };
-        })();
-      }
-    </script>
+        </script>
+      </>
+    )}
 
+    {/* KEPT: Theme detection - required for Flowbite dark mode */}
     <!-- Theme detection - MUST be first to be available for all components -->
     <script is:inline>
       (function () {
@@ -319,25 +323,31 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
       })();
     </script>
 
-    <!-- Expose for components that run in swapped SPA content (bundled so no 404 on /lib/...) -->
-    <script>
-      import "../../scripts/init-auth-globals";
-    </script>
+    {!ONLY_FLOWBITE_AND_THEME && (
+      <>
+        {/* 3. init-auth-globals */}
+        <script>
+          import "../../scripts/init-auth-globals";
+        </script>
+      </>
+    )}
 
     <!-- Critical CMS colors (server-rendered) so first paint uses DB colors before any script -->
     <style is:global set:html={criticalColorsCss}></style>
 
-    <!-- Dynamic Color & Font Injection - MUST run BEFORE CSS is parsed to prevent flash -->
-    <script
-      is:inline
-      define:vars={{
-        primaryColor,
-        secondaryColor,
-        fontFamily,
-        secondaryFontFamily,
-        globalCompanyName,
-      }}
-    >
+    {!ONLY_FLOWBITE_AND_THEME && (
+      <>
+        {/* 4. Dynamic Color & Font Injection */}
+        <script
+          is:inline
+          define:vars={{
+            primaryColor,
+            secondaryColor,
+            fontFamily,
+            secondaryFontFamily,
+            globalCompanyName,
+          }}
+        >
       (function () {
         // Inject colors and font immediately, synchronously BEFORE any CSS is parsed
         const primary = primaryColor || "#825BDD";
@@ -521,7 +531,9 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
           secondaryFont,
         });
       })();
-    </script>
+        </script>
+      </>
+    )}
 
     <meta charset="utf-8" />
     <meta
@@ -636,23 +648,24 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
       )
     }
 
-    <script>
-      import {
-        initializeNotificationCount,
-        loadNotificationCount,
-        refreshNotificationCount,
-        updateNotificationBellCount,
-      } from "@/lib/notification-count-loader";
+    {!ONLY_FLOWBITE_AND_THEME && (
+      <>
+        {/* 5. Notification count loader */}
+        <script>
+          import {
+            initializeNotificationCount,
+            loadNotificationCount,
+            refreshNotificationCount,
+            updateNotificationBellCount,
+          } from "@/lib/notification-count-loader";
 
-      // Make functions globally available
-      (window as any).initializeNotificationCount = initializeNotificationCount;
-      (window as any).updateNotificationBellCount = updateNotificationBellCount;
-      (window as any).loadNotificationCount = loadNotificationCount;
-      (window as any).refreshNotificationCount = refreshNotificationCount;
-    </script>
-
-    <!-- Global typewriter: simple (vanilla) + TypeIt-based -->
-    <script>
+          (window as any).initializeNotificationCount = initializeNotificationCount;
+          (window as any).updateNotificationBellCount = updateNotificationBellCount;
+          (window as any).loadNotificationCount = loadNotificationCount;
+          (window as any).refreshNotificationCount = refreshNotificationCount;
+        </script>
+        {/* 6. Global typewriter */}
+        <script>
       (function () {
         const DONE_ATTR = "data-typewriter-done";
 
@@ -698,17 +711,20 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
           initLoadingTypewriters();
         }
       })();
-    </script>
-    <script>
-      import {
-        initTypewriterTexts,
-        triggerActiveStepTypewriter,
-        skipActiveTypewriterToEnd,
-      } from "../../scripts/typewriter-text";
-      window.initTypewriterTexts = initTypewriterTexts;
-      window.triggerActiveStepTypewriter = triggerActiveStepTypewriter;
-      window.skipActiveTypewriterToEnd = skipActiveTypewriterToEnd;
-    </script>
+        </script>
+        {/* 7. typewriter-text */}
+        <script>
+          import {
+            initTypewriterTexts,
+            triggerActiveStepTypewriter,
+            skipActiveTypewriterToEnd,
+          } from "../../scripts/typewriter-text";
+          window.initTypewriterTexts = initTypewriterTexts;
+          window.triggerActiveStepTypewriter = triggerActiveStepTypewriter;
+          window.skipActiveTypewriterToEnd = skipActiveTypewriterToEnd;
+        </script>
+      </>
+    )}
 
     <!-- Set global user data for client-side components -->
 
@@ -883,23 +899,29 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
     {/* Cache indicator: dev/test only (localhost or ?cacheIndicator=1) */}
     {isAdmin && <CacheIndicator />}
 
+    {/* KEPT: Flowbite - only script that runs when ONLY_FLOWBITE_AND_THEME is true */}
     <!-- Flowbite JavaScript (bundled from npm - avoids CDN/CSP issues on production) -->
     <script>
       import "../../scripts/flowbite-init";
     </script>
 
-    <script>
-      import "../../scripts/app-globals";
-    </script>
-    <script>
-      import "../../scripts/hold-progress-init";
-    </script>
+    {!ONLY_FLOWBITE_AND_THEME && (
+      <>
+        {/* 8. app-globals */}
+        <script>
+          import "../../scripts/app-globals";
+        </script>
+        {/* 9. hold-progress-init */}
+        <script>
+          import "../../scripts/hold-progress-init";
+        </script>
+      </>
+    )}
 
-    <!-- Overscroll: scale .overscroll-scale linearly with overscroll % (getOverscrollPercent). 0–100% → scale 1; >100% or <0% → scale tracks linearly. -->
-    {
-      /* Theme toggle: inline in layout so it is always emitted (component scripts may not be in SSR output). */
-    }
-    <script is:inline>
+    {!ONLY_FLOWBITE_AND_THEME && (
+      <>
+        {/* 10. Theme toggle inline */}
+        <script is:inline>
       (function () {
         function initThemeToggle() {
           var themeToggle = document.getElementById("theme-toggle");
@@ -995,8 +1017,14 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
           setTimeout(init, 0);
         }
       })();
-    </script>
+        </script>
+        {/* 11. Overscroll scale - above */}
+      </>
+    )}
 
+    {!ONLY_FLOWBITE_AND_THEME && (
+      <>
+        {/* 12. DOMContentLoaded init (notification, sidebar) */}
     <script>
       document.addEventListener("DOMContentLoaded", async () => {
         try {
@@ -1018,8 +1046,12 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
         }
       });
     </script>
+      </>
+    )}
 
-    <!-- Global Image Error Handler -->
+    {!ONLY_FLOWBITE_AND_THEME && (
+      <>
+        {/* 13. Global Image Error Handler */}
     <script>
       // Global error handler for broken image URLs (especially Supabase storage)
       document.addEventListener("DOMContentLoaded", () => {
@@ -1133,7 +1165,12 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
         }
       });
     </script>
+      </>
+    )}
 
+    {!ONLY_FLOWBITE_AND_THEME && (
+      <>
+    {/* 14. AOS (Animate On Scroll) */}
     <!-- AOS (Animate On Scroll) - Global initialization -->
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js" defer></script>
@@ -1153,49 +1190,30 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
         }
       });
     </script>
+      </>
+    )}
 
-    {/* <!-- Custom Scroll Animations (Blur/Scale effects) --> */}
-    <script>
-      import "../../scripts/scroll-animations";
-    </script>
+    {!ONLY_FLOWBITE_AND_THEME && (
+      <>
+        {/* 15. scroll-animations */}
+        <script>
+          import "../../scripts/scroll-animations";
+        </script>
+        {/* 16. lazy-load-images */}
+        <script>
+          import "../../scripts/lazy-load-images";
+        </script>
+        {/* 17. project-item-handlers */}
+        <script>
+          import "../../scripts/project-item-handlers";
+        </script>
 
-    {/* <!-- Lazy Loading Images (Global) --> */}
-    <script>
-      import "../../scripts/lazy-load-images";
-    </script>
-
-    {/* <!-- Global Project Item Handlers (Extracted from ProjectItem.astro for performance) --> */}
-    <script>
-      import "../../scripts/project-item-handlers";
-    </script>
-
-    {/* <!-- Button Ripple Effects (Focus and Click animations) --> */}
-    {
-      /* <script>
-      import "../../scripts/button-ripple"; 
-    </script> */
-    }
-
-    {/* Load refresh-manager for Staff/Admin only - keeps project/user data fresh across pages */}
-    {
-      /* {
-      (currentRole === "Admin" || currentRole === "Staff") && (
-        <script>import "../../lib/refresh-manager.ts";</script>
-      )
-    } */
-    }
-
-    {/* Project Refresh Manager (DISABLED - use generic refresh-manager.ts instead) */}
-    {
-      /* <script>
-      import "../../lib/project-refresh-manager";
-    </script> */
-    }
-
-    {/* <!-- Global Modal System --> */}
-    <script>
-      import "../../lib/modal-global";
-    </script>
+    {/* 18. modal-global */}
+        <script>
+          import "../../lib/modal-global";
+        </script>
+      </>
+    )}
 
     {/* <!-- Plausible Analytics Script --> */}
     {/* {plausibleTrackingScript && <Fragment set:html={plausibleTrackingScript} />} */}

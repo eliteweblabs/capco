@@ -26,7 +26,7 @@ This is a **build/output** issue, not a runtime or “event listener” issue. A
 ## What we changed
 
 1. **LoginForm**  
-   The login form script was moved into a **separate `.ts` file** (`login-form-client.ts`) and loaded with `<script client:load src="./login-form-client.ts">`. That file is bundled as a normal module, so its chunk has real code. Login form and Google OAuth on the login page should work again in production.
+   The login form script lives in **`login-form-client.ts`** and is loaded from **`login.astro`** with `<script src="../../features/forms/components/login-form-client.ts">`. Using `src` (instead of an inline script that only imports the module) gives the script its own chunk that is not one of the empty Astro script chunks, so it runs in production. The empty-chunk warning for `login.astro` no longer appears in the build.
 
 2. **Console interceptor**  
    Disabled in production so it can’t affect script execution.
