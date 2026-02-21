@@ -1,9 +1,7 @@
 /**
- * NFPA 25 Wet Pipe Sprinkler Systems — Inspection, Testing, and Maintenance
- * Single form template from 2520FMPDF.pdf. Uses proper components:
- * - InlineAddressSearch (address), ToggleButton (frequency), UnitSlider/range (psi),
- * - button-group (Yes/No/N/A), stepper (progress bar).
- * Once this form is correct, replicate the pattern for the other ~19 forms in the PDF.
+ * NFPA 25 Wet Pipe ITM form — REFERENCE ONLY.
+ * The live form is managed in config.json under forms["nfpa25-wet-pipe-itm"].
+ * This file is kept for reference / type structure; the page loads via getFormConfig("nfpa25-wet-pipe-itm").
  */
 import type { FormFieldConfig, FormStepConfig, MultiStepFormConfig } from "../multi-step-form-config";
 import { normalizeFormConfig } from "../multi-step-form-config";

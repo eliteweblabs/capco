@@ -4,10 +4,34 @@
  */
 
 import type { MultiStepFormConfig, FormFieldConfig } from "../multi-step-form-config";
-import { GLOBAL_BUTTON_DEFAULTS } from "../multi-step-form-config";
+import { GLOBAL_BUTTON_DEFAULTS, normalizeFormConfig } from "../multi-step-form-config";
 import type { FormElementConfig } from "../project-form-config";
 import { getFilteredUserFormElements } from "../__user-form-config";
 import { getSiteConfig } from "../content";
+
+/**
+ * Get any form config by id from config.json "forms" (or legacy top-level keys).
+ * Use this for all forms so they are managed in config.json under "forms".
+ */
+export async function getFormConfig(formId: string): Promise<MultiStepFormConfig | null> {
+  const config = await getSiteConfig();
+  const forms = (config as any).forms;
+  let json = forms?.[formId] ?? null;
+  if (!json) {
+    const legacy: Record<string, string> = {
+      "register-form": "registerForm",
+      "login-form": "loginForm",
+      "contact-form": "contactForm",
+      "review-form": "reviewForm",
+      "mep-form": "mepForm",
+    };
+    const key = legacy[formId];
+    if (key) json = (config as any)[key] ?? null;
+  }
+  if (!json) return null;
+  const merged = mergeFormButtonDefaults(config, json);
+  return normalizeFormConfig({ ...json, buttonDefaults: merged }) as MultiStepFormConfig;
+}
 
 /**
  * Merge button defaults: global (from site config.formButtonDefaults) + form (form-specific).
@@ -54,27 +78,31 @@ function replacePlaceholders(obj: any, vars: Record<string, string>): any {
 }
 
 export async function getRegisterFormConfig(): Promise<MultiStepFormConfig> {
+  const fromForms = await getFormConfig("register-form");
+  if (fromForms) return fromForms;
   const config = await getSiteConfig();
   const json = (config as any).registerForm;
   if (!json) {
     throw new Error(
-      "registerForm is missing from site config. Add it to config.json (or SITE_CONFIG)"
+      "registerForm is missing from site config. Add it to config.json (or SITE_CONFIG) under forms or registerForm"
     );
   }
   const merged = mergeFormButtonDefaults(config, json);
-  return { ...json, buttonDefaults: merged } as MultiStepFormConfig;
+  return normalizeFormConfig({ ...json, buttonDefaults: merged }) as MultiStepFormConfig;
 }
 
 export async function getLoginFormConfig(): Promise<MultiStepFormConfig> {
+  const fromForms = await getFormConfig("login-form");
+  if (fromForms) return fromForms;
   const config = await getSiteConfig();
   const json = (config as any).loginForm;
   if (!json) {
     throw new Error(
-      "loginForm is missing from site config. Add it to config.json (or SITE_CONFIG)"
+      "loginForm is missing from site config. Add it to config.json (or SITE_CONFIG) under forms or loginForm"
     );
   }
   const merged = mergeFormButtonDefaults(config, json);
-  return { ...json, buttonDefaults: merged } as MultiStepFormConfig;
+  return normalizeFormConfig({ ...json, buttonDefaults: merged }) as MultiStepFormConfig;
 }
 
 export async function getContactFormConfig(
@@ -82,8 +110,8 @@ export async function getContactFormConfig(
   virtualAssistantName?: string | null
 ): Promise<MultiStepFormConfig> {
   const config = await getSiteConfig();
-  const json = (config as any).contactForm;
-  const base = json || {};
+  const forms = (config as any).forms;
+  let base = forms?.["contact-form"] ?? (config as any).contactForm ?? {};
   const vars = {
     globalCompanyName: globalCompanyName || "Our Company",
     virtualAssistantName: virtualAssistantName || "Leah",
@@ -91,7 +119,7 @@ export async function getContactFormConfig(
   };
   const result = replacePlaceholders(JSON.parse(JSON.stringify(base)), vars) as MultiStepFormConfig;
   result.buttonDefaults = mergeFormButtonDefaults(config, result);
-  return result;
+  return normalizeFormConfig(result) as MultiStepFormConfig;
 }
 
 export async function getProjectFormConfig(
@@ -134,21 +162,35 @@ export async function getProjectFormConfig(
 export async function getReviewFormConfig(
   globalCompanyName: string
 ): Promise<MultiStepFormConfig> {
+  const fromForms = await getFormConfig("review-form");
+  if (fromForms) {
+    const vars = { globalCompanyName: globalCompanyName || "Our Company" };
+    const result = replacePlaceholders(JSON.parse(JSON.stringify(fromForms)), vars) as MultiStepFormConfig;
+    return normalizeFormConfig(result) as MultiStepFormConfig;
+  }
   const config = await getSiteConfig();
   const json = (config as any).reviewForm;
   const base = json || {};
-  const vars = {
-    globalCompanyName: globalCompanyName || "Our Company",
-  };
+  const vars = { globalCompanyName: globalCompanyName || "Our Company" };
   const result = replacePlaceholders(JSON.parse(JSON.stringify(base)), vars) as MultiStepFormConfig;
   result.buttonDefaults = mergeFormButtonDefaults(config, result);
-  return result;
+  return normalizeFormConfig(result) as MultiStepFormConfig;
 }
 
 export async function getMepFormConfig(
   globalCompanyName: string,
   virtualAssistantName?: string | null
 ): Promise<MultiStepFormConfig> {
+  const fromForms = await getFormConfig("mep-form");
+  if (fromForms) {
+    const vars = {
+      globalCompanyName: globalCompanyName || "Our Company",
+      virtualAssistantName: virtualAssistantName || "Leah",
+      assistantName: virtualAssistantName || "Leah",
+    };
+    const result = replacePlaceholders(JSON.parse(JSON.stringify(fromForms)), vars) as MultiStepFormConfig;
+    return normalizeFormConfig(result) as MultiStepFormConfig;
+  }
   const config = await getSiteConfig();
   const json = (config as any).mepForm;
   const base = json || {};
@@ -159,7 +201,7 @@ export async function getMepFormConfig(
   };
   const result = replacePlaceholders(JSON.parse(JSON.stringify(base)), vars) as MultiStepFormConfig;
   result.buttonDefaults = mergeFormButtonDefaults(config, result);
-  return result;
+  return normalizeFormConfig(result) as MultiStepFormConfig;
 }
 
 /** Map FormElementConfig to FormFieldConfig for StandardForm */

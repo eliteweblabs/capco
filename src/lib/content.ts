@@ -134,6 +134,7 @@ function mergeJsonConfig(
   if (Array.isArray(jsonConfig.userForm)) config.userForm = jsonConfig.userForm;
   if (jsonConfig.statuses) config.statuses = jsonConfig.statuses;
   if (jsonConfig.formButtonDefaults) config.formButtonDefaults = jsonConfig.formButtonDefaults;
+  if (jsonConfig.forms) config.forms = jsonConfig.forms;
   if (jsonConfig.site) config.site = { ...config.site, ...jsonConfig.site };
   if (jsonConfig.branding) config.branding = { ...config.branding, ...jsonConfig.branding };
 }
@@ -262,13 +263,24 @@ export async function getSiteConfig(): Promise<SiteConfig> {
     if (chunks.length > 0) envConfigJson = chunks.join("");
   }
 
-  // 1d. public/data/config.json (copied to dist/client/data/config.json at build)
+  // 1d. config-${RAILWAY_PROJECT_NAME}.json then config.json (client-specific config by project name)
   if (!envConfigJson) {
-    const paths = [
-      join(process.cwd(), "public", "data", "config.json"),
-      join(process.cwd(), "dist", "client", "data", "config.json"),
-    ];
-    for (const p of paths) {
+    const projectName = process.env.RAILWAY_PROJECT_NAME || "";
+    const slug = projectName
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, "-")
+      .replace(/-+/g, "-")
+      .trim();
+    const dataDir = join(process.cwd(), "public", "data");
+    const distDataDir = join(process.cwd(), "dist", "client", "data");
+    const candidates: string[] = [];
+    if (slug) {
+      candidates.push(join(dataDir, `config-${slug}.json`));
+      candidates.push(join(distDataDir, `config-${slug}.json`));
+    }
+    candidates.push(join(dataDir, "config.json"));
+    candidates.push(join(distDataDir, "config.json"));
+    for (const p of candidates) {
       if (existsSync(p)) {
         try {
           envConfigJson = readFileSync(p, "utf-8");

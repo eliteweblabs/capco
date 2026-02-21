@@ -1,16 +1,23 @@
 ---
 /**
  * NFPA 25 Wet Pipe Sprinkler Systems — Inspection, Testing, and Maintenance
- * Multi-step form (generated from 2520FMPDF.pdf).
+ * Form config is loaded from config.json under forms["nfpa25-wet-pipe-itm"].
  */
 import LayoutFullForm from "@/components/layouts/LayoutFullForm.astro";
 import MultiStepForm from "@/features/forms/components/MultiStepForm.astro";
-import { nfpa25WetPipeItmFormConfig } from "@/lib/forms/nfpa25-wet-pipe-itm-form-config";
+import { getFormConfig } from "@/lib/forms/form-config-from-site";
+
+const formConfig = await getFormConfig("nfpa25-wet-pipe-itm");
+if (!formConfig) {
+  throw new Error(
+    "Form nfpa25-wet-pipe-itm is missing. Add it to config.json under forms[\"nfpa25-wet-pipe-itm\"]"
+  );
+}
 ---
 
 <LayoutFullForm
   title="Wet Pipe Sprinkler Systems — ITM"
   description="NFPA 25 Inspection, Testing, and Maintenance"
 >
-  <MultiStepForm config={nfpa25WetPipeItmFormConfig} />
+  <MultiStepForm config={formConfig} />
 </LayoutFullForm>
