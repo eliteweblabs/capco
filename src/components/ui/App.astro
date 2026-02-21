@@ -819,7 +819,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
           style={currentUser ? "transition-duration: 350ms;" : undefined}
         >
           <main>
-            <!-- <slot /> -->
+            <slot />
           </main>
 
           {
@@ -899,11 +899,57 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
     {/* Cache indicator: dev/test only (localhost or ?cacheIndicator=1) */}
     {isAdmin && <CacheIndicator />}
 
-    {/* KEPT: Flowbite - only script that runs when ONLY_FLOWBITE_AND_THEME is true */}
-    <!-- Flowbite JavaScript (bundled from npm - avoids CDN/CSP issues on production) -->
-    <script>
-      import "../../scripts/flowbite-init";
-    </script>
+    {/* Flowbite: in minimal mode use CDN so it runs (bundled chunk is empty in prod). Otherwise use bundle. */}
+    {ONLY_FLOWBITE_AND_THEME ? (
+      <script
+        is:inline
+        src="https://cdn.jsdelivr.net/npm/flowbite@2.2.2/dist/flowbite.min.js"
+        defer
+      />
+    ) : (
+      <script>
+        import "../../scripts/flowbite-init";
+      </script>
+    )}
+
+    {/* Minimal sidebar toggle (inline) so hamburger works when bundled ToggleSidebar.astro script is empty in prod. */}
+    {ONLY_FLOWBITE_AND_THEME && (
+      <script is:inline>
+        (function () {
+          function initSidebar() {
+            var btn = document.querySelector("[data-sidebar-toggle-button]");
+            var sidebar = document.getElementById("sidebar");
+            var main = document.getElementById("main-content");
+            if (!btn || !sidebar) return;
+            if (btn.dataset.sidebarInited === "1") return;
+            btn.dataset.sidebarInited = "1";
+            var isMobile = function () { return window.innerWidth < 768; };
+            btn.addEventListener("click", function () {
+              if (isMobile()) {
+                var hidden = sidebar.classList.contains("-translate-x-full");
+                if (hidden) {
+                  sidebar.classList.remove("-translate-x-full");
+                  sidebar.classList.add("translate-x-0");
+                  document.body.style.overflow = "hidden";
+                  if (main) main.classList.add("overflow-hidden", "pointer-events-none");
+                } else {
+                  sidebar.classList.add("-translate-x-full");
+                  sidebar.classList.remove("translate-x-0");
+                  document.body.style.overflow = "";
+                  if (main) main.classList.remove("overflow-hidden", "pointer-events-none");
+                }
+              }
+            });
+            if (isMobile()) sidebar.classList.add("-translate-x-full");
+          }
+          if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", initSidebar);
+          } else {
+            initSidebar();
+          }
+        })();
+      </script>
+    )}
 
     {!ONLY_FLOWBITE_AND_THEME && (
       <>
