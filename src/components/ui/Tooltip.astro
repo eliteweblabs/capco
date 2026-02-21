@@ -154,12 +154,12 @@ const contentClasses = [
 </style>
 
 <script>
-  import { computePosition, flip, shift, offset, arrow } from "@floating-ui/dom";
-  import type { Placement } from "@floating-ui/dom";
-
+  // Dynamic import so production build emits a resolvable chunk (avoids "Failed to resolve module specifier '@floating-ui/dom'" in browser)
   const initialized = new WeakSet();
 
-  function initTooltips() {
+  async function initTooltips() {
+    const floatingUi = await import("@floating-ui/dom");
+    const { computePosition, flip, shift, offset, arrow } = floatingUi;
     const wrappers = document.querySelectorAll(".tooltip-wrapper");
 
     wrappers.forEach((wrapper) => {
@@ -199,7 +199,7 @@ const contentClasses = [
           trigger as HTMLElement,
           tooltip as HTMLElement,
           {
-            placement: preferredPosition as Placement,
+            placement: preferredPosition as "top" | "bottom" | "left" | "right",
             middleware,
           }
         );
