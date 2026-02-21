@@ -206,6 +206,25 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- CRITICAL: Production fix for Astro 5 bundled scripts running after DOMContentLoaded.
+        When scripts run late (deferred/module at end of body), DOMContentLoaded has already fired
+        so addEventListener('DOMContentLoaded', fn) never runs. This patch makes late-added
+        DOMContentLoaded/load listeners run immediately so auth, dropdowns, contact forms, etc. work. -->
+    <script is:inline>
+      (function () {
+        var nativeAdd = document.addEventListener.bind(document);
+        document.addEventListener = function (type, listener, options) {
+          if ((type === "DOMContentLoaded" || type === "load") && document.readyState !== "loading") {
+            setTimeout(function () {
+              if (typeof listener === "function") listener();
+              else if (listener && typeof listener.handleEvent === "function") listener.handleEvent({ type: type });
+            }, 0);
+            return;
+          }
+          nativeAdd(type, listener, options);
+        };
+      })();
+    </script>
     <!-- Console suppression: ONLY filters console output. No fetch/XHR/error overrides (those broke production). -->
     <script is:inline define:vars={{ suppressConsoleNoise }}>
       if (suppressConsoleNoise) {

@@ -49,6 +49,17 @@ After enabling this:
 
 No fake fixes — the only behavioral change is **`experimental.preserveScriptOrder: true`**.
 
+## Second cause: scripts run after DOMContentLoaded (Astro 5 bundles)
+
+Even with `preserveScriptOrder`, Astro 5 bundles scripts into chunks that load with `defer` / `type="module"` at the end of the body. By then **DOMContentLoaded has already fired**. Any component that does `document.addEventListener("DOMContentLoaded", fn)` adds a listener for an event that will never fire again, so **fn never runs**. That broke:
+
+- Auth providers (Google button)
+- Contact form
+- Dropdowns, Flowbite, etc.
+- Anything that only inits on DOMContentLoaded
+
+**Fix (App.astro, first script in `<head>`):** Patch `document.addEventListener` so that when a script adds a `DOMContentLoaded` or `load` listener **after** the document is already loaded (`readyState !== "loading"`), we run the listener immediately (via `setTimeout(..., 0)`). One inline script fixes every component site-wide without changing dozens of files. Do not remove this patch.
+
 ## If it still breaks
 
 Then the cause is likely something else, e.g.:
