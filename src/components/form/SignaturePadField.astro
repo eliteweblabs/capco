@@ -1,0 +1,144 @@
+---
+/**
+ * Form-only signature pad: canvas + clear + hidden input.
+ * Uses same SignaturePad library as DigitalSignature.astro; no project/contract logic.
+ */
+interface Props {
+  id: string;
+  name: string;
+  label?: string;
+  required?: boolean;
+  width?: number;
+  height?: number;
+}
+
+const { id, name, label = "Signature", required = false, width = 400, height = 200 } = Astro.props;
+const aspectRatio = width / height;
+---
+
+<div class="signature-pad-field-container mb-4">
+  {label && (
+    <label for={id} class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+      {label} {required && <span class="text-red-500">*</span>}
+    </label>
+  )}
+  <div class="signature-container relative" data-max-width={width} data-max-height={height} data-aspect-ratio={aspectRatio}>
+    <canvas
+      {id}
+      class="signature-pad-field-canvas block w-full cursor-crosshair rounded-lg border-2 border-dashed border-gray-300 bg-gray-100 dark:border-gray-600 dark:bg-gray-800"
+      data-max-width={width}
+      data-max-height={height}
+      data-aspect-ratio={aspectRatio}
+    />
+    <div class="signature-placeholder pointer-events-none absolute inset-0 flex items-center justify-center">
+      <span class="text-sm text-gray-400 dark:text-gray-500">Sign here...</span>
+    </div>
+    <div class="mt-2 flex justify-end">
+      <button
+        type="button"
+        class="signature-clear rounded bg-red-500 px-3 py-1 text-xs text-white transition-colors hover:bg-red-600"
+        data-signature-id={id}
+      >
+        Clear
+      </button>
+    </div>
+    <input type="hidden" id={`${id}-data`} name={name} class="signature-data" required={required} />
+  </div>
+</div>
+
+<script>
+  (function () {
+    async function loadSignaturePad() {
+      if (typeof window === "undefined") return null;
+      if ((window as any).SignaturePad) return (window as any).SignaturePad;
+      return new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js";
+        script.async = true;
+        script.onload = () => resolve((window as any).SignaturePad);
+        script.onerror = () => reject(new Error("Failed to load SignaturePad"));
+        document.head.appendChild(script);
+      });
+    }
+
+    function initCanvas(canvas: HTMLCanvasElement) {
+      const container = canvas.parentElement;
+      if (!container) return;
+      const cw = container.clientWidth || 400;
+      const maxW = parseInt(canvas.getAttribute("data-max-width") || "400", 10);
+      const maxH = parseInt(canvas.getAttribute("data-max-height") || "200", 10);
+      const ratio = parseFloat(canvas.getAttribute("data-aspect-ratio") || "2");
+      const w = Math.min(cw - 8, maxW, 600);
+      const h = Math.min(w / ratio, maxH);
+      const displayW = Math.max(w, 280);
+      const displayH = Math.max(h, 120);
+      canvas.width = displayW;
+      canvas.height = displayH;
+      canvas.style.width = displayW + "px";
+      canvas.style.height = displayH + "px";
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        const dpr = window.devicePixelRatio || 1;
+        if (dpr > 1) {
+          canvas.width = displayW * dpr;
+          canvas.height = displayH * dpr;
+          ctx.scale(dpr, dpr);
+          canvas.style.width = displayW + "px";
+          canvas.style.height = displayH + "px";
+        }
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      const SignaturePad = await loadSignaturePad();
+      if (!SignaturePad) return;
+
+      document.querySelectorAll(".signature-pad-field-container").forEach((container) => {
+        if ((container as HTMLElement).dataset.inited === "true") return;
+        (container as HTMLElement).dataset.inited = "true";
+
+        const canvas = container.querySelector(".signature-pad-field-canvas") as HTMLCanvasElement;
+        const hiddenInput = container.querySelector(".signature-data") as HTMLInputElement;
+        const placeholder = container.querySelector(".signature-placeholder") as HTMLElement;
+        const clearBtn = container.querySelector(".signature-clear");
+
+        if (!canvas || !hiddenInput) return;
+
+        initCanvas(canvas);
+
+        const pad = new SignaturePad(canvas, {
+          backgroundColor: "rgba(255, 255, 255, 0)",
+          penColor: "rgb(0, 0, 0)",
+          velocityFilterWeight: 0.7,
+          minWidth: 0.5,
+          maxWidth: 2.5,
+          throttle: 16,
+          minDistance: 5,
+        });
+
+        pad.addEventListener("beginStroke", () => {
+          if (placeholder) placeholder.style.display = "none";
+        });
+
+        pad.addEventListener("endStroke", () => {
+          if (!pad.isEmpty()) {
+            hiddenInput.value = pad.toDataURL("image/png");
+            document.dispatchEvent(new CustomEvent("signatureUpdated", { detail: { isEmpty: false } }));
+          } else {
+            hiddenInput.value = "";
+            document.dispatchEvent(new CustomEvent("signatureUpdated", { detail: { isEmpty: true } }));
+          }
+        });
+
+        clearBtn?.addEventListener("click", (e) => {
+          e.preventDefault();
+          pad.clear();
+          hiddenInput.value = "";
+          if (placeholder) placeholder.style.display = "flex";
+        });
+
+        window.addEventListener("resize", () => initCanvas(canvas));
+      });
+    });
+  })();
+</script>

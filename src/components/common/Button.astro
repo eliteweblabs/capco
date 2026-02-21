@@ -158,8 +158,7 @@ const attributes = {
   ...selectedDataAttr,
   ...(style && { style }),
   ...(isAntispam && {
-    "data-antispam": "true",
-    "data-antispam-hold": "3000",
+    "data-hold": String(dataAttributes?.["data-hold"] ?? "3000"),
   }),
 };
 ---
@@ -188,7 +187,7 @@ const attributes = {
         </a>
       ) : (
         <button type={type as "button" | "submit" | "reset"} {...attributes} data-size={size}>
-          {isAntispam && <span class="antispam-progress" aria-hidden="true" />}
+          {isAntispam && <span class="hold-progress" aria-hidden="true" />}
           {loading && (
             <svg class="-ml-1 mr-2 h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
@@ -198,7 +197,7 @@ const attributes = {
           {icon && iconPosition === "left" && !loading && (
             <SimpleIcon name={icon} size={iconSize} class={`${iconClasses || "mr-2"} icon-default`} />
           )}
-          {buttonText ? buttonText : isAntispam ? (<span class="antispam-button-text"><slot /></span>) : <slot />}
+          {buttonText ? buttonText : isAntispam ? (<span class="hold-button-text"><slot /></span>) : <slot />}
           {icon && iconPosition === "right" && !loading && (
             <SimpleIcon name={icon} size={iconSize} class={`${iconClasses || "ml-2"} icon-default`} />
           )}
@@ -291,112 +290,8 @@ const attributes = {
     color: white !important;
   } */
 
-  /* Antispam: horizontal color transition progress bar */
+  /* Hold-to-activate (data-hold): button sets --hold-progress for global .hold-progress bar */
   .antispam-button {
-    --antispam-progress: 0;
-  }
-
-  .antispam-progress {
-    position: absolute;
-    inset: 0;
-    left: 0;
-    width: calc(var(--antispam-progress, 0) * 100%);
-    background: linear-gradient(
-      90deg,
-      var(--color-primary-300, #b099e6) 0%,
-      var(--color-primary-500, #825bdd) 50%,
-      var(--color-success-500, #22c55e) 100%
-    );
-    border-radius: inherit;
-    pointer-events: none;
-    transition: width 0.05s linear;
-    z-index: 0;
-  }
-
-  .antispam-button > *:not(.antispam-progress) {
-    position: relative;
-    z-index: 1;
+    --hold-progress: 0;
   }
 </style>
-
-{isAntispam && (
-  <script>
-    (function initAntispam() {
-      if ((window as any).__antispamInited) return;
-      (window as any).__antispamInited = true;
-
-      const isTouchDevice = () => window.matchMedia("(hover: none)").matches;
-      if (!isTouchDevice()) return;
-
-      const TEXT_READY = "press for 3s";
-
-      document.querySelectorAll("[data-antispam]").forEach((btn) => {
-        if (btn.getAttribute("data-antispam-inited")) return;
-        btn.setAttribute("data-antispam-inited", "true");
-
-        const holdMs = parseInt((btn as any).dataset.antispamHold ?? "3000", 10) || 3000;
-        let holdTimer = null;
-        let progressInterval = null;
-        let startTime = 0;
-
-        const reset = () => {
-          if (holdTimer) clearTimeout(holdTimer);
-          if (progressInterval) clearInterval(progressInterval);
-          holdTimer = null;
-          progressInterval = null;
-          (btn as any).style.setProperty("--antispam-progress", "0");
-        };
-
-        const complete = () => {
-          reset();
-          (btn as any).style.setProperty("--antispam-progress", "1");
-          btn.setAttribute("data-antispam-allowed", "true");
-          (btn as any).click();
-          btn.removeAttribute("data-antispam-allowed");
-        };
-
-        const startHold = () => {
-          if ((btn as any).disabled) return;
-          startTime = Date.now();
-          progressInterval = setInterval(() => {
-            const elapsed = Date.now() - startTime;
-            const progress = Math.min(elapsed / holdMs, 1);
-            (btn as any).style.setProperty("--antispam-progress", String(progress));
-          }, 50);
-          holdTimer = setTimeout(complete, holdMs);
-        };
-
-        btn.addEventListener(
-          "click",
-          (e) => {
-            if (!btn.getAttribute("data-antispam-allowed")) {
-              e.preventDefault();
-              e.stopPropagation();
-              const form = (btn as HTMLElement).closest("form");
-              if (form && (window as any).showMultiStepFormValidationErrors) {
-                (window as any).showMultiStepFormValidationErrors(form);
-              }
-            }
-          },
-          { capture: true }
-        );
-
-        btn.addEventListener("touchstart", startHold, { passive: true });
-        btn.addEventListener("touchend", reset, { passive: true });
-        btn.addEventListener("touchcancel", reset, { passive: true });
-
-        const labelEl = btn.querySelector(".antispam-button-text");
-        const form = (btn as HTMLElement).closest("form");
-        if (labelEl && form) {
-          const invalidText = labelEl.textContent?.trim() || "submit";
-          const updateLabel = () => {
-            labelEl.textContent = form.checkValidity() ? TEXT_READY : invalidText;
-          };
-          form.addEventListener("input", updateLabel);
-          form.addEventListener("change", updateLabel);
-          updateLabel();
-        }
-      });
-    })();
-  </script>
-)}

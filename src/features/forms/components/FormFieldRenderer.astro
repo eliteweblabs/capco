@@ -1,0 +1,85 @@
+---
+/**
+ * Single renderer for form fields: one component per input type.
+ * Used by StandardForm and MultiStepForm so all forms share the same field rendering.
+ * Config format: MultiStepFormConfig / FormFieldConfig (fields in JSON or TS).
+ */
+import type { FormFieldConfig, FormButtonConfig } from "../../../lib/multi-step-form-config";
+import FormFieldContent from "./FormFieldContent.astro";
+
+export interface FormFieldRendererProps {
+  field: FormFieldConfig;
+  /** "standard" = single-page form, "multistep" = step wizard (affects classes and optional features) */
+  context: "standard" | "multistep";
+  /** Global input CSS classes (e.g. appendedGlobalInputClasses or appendedMultiStepInputClasses) */
+  inputClasses: string;
+  /** For standard context: initial values keyed by field name */
+  initialData?: Record<string, any>;
+  /** Optional id prefix (e.g. for admin form) */
+  fid?: (id: string) => string;
+  /** For button-group: merge with form defaults */
+  buttonDefaults?: Record<string, Partial<FormButtonConfig>>;
+  /** For SlotMachineModalStaff (carrier select) */
+  mobileCarrierOptions?: Array<{ value: string; label: string }>;
+  /** Multistep only: icon padding classes */
+  iconLeftPadding?: string;
+  iconRightPadding?: string;
+  /** Optional wrapper class (e.g. "input-wrapper w-full"); if not set, no wrapper div */
+  wrapperClass?: string;
+  /** When true, render label above control (used by StandardForm) */
+  showLabel?: boolean;
+}
+
+const {
+  field,
+  context,
+  inputClasses,
+  initialData = {},
+  fid = (id: string) => id,
+  buttonDefaults = {},
+  mobileCarrierOptions = [],
+  iconLeftPadding = "pl-14",
+  iconRightPadding = "pr-14",
+  wrapperClass,
+  showLabel,
+} = Astro.props;
+
+const effectiveShowLabel = showLabel ?? context === "standard";
+
+const hasWrapper = Boolean(wrapperClass);
+const wrapperAttrs = hasWrapper
+  ? {
+      class: field.type === "hidden" ? "" : wrapperClass,
+      "data-conditional-field": field.conditional?.field,
+      "data-conditional-value":
+        field.conditional
+          ? Array.isArray(field.conditional.value)
+            ? field.conditional.value.join(",")
+            : field.conditional.value
+          : undefined,
+      style: field.conditional ? "display: none;" : undefined,
+      tabindex: "-1",
+    }
+  : {};
+
+const contentProps = {
+  field,
+  context,
+  inputClasses,
+  initialData,
+  fid,
+  buttonDefaults,
+  mobileCarrierOptions,
+  iconLeftPadding,
+  iconRightPadding,
+  showLabel: effectiveShowLabel,
+};
+---
+
+{hasWrapper ? (
+  <div {...wrapperAttrs}>
+    <FormFieldContent {...contentProps} />
+  </div>
+) : (
+  <FormFieldContent {...contentProps} />
+)}

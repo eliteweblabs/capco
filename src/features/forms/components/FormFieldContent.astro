@@ -1,0 +1,418 @@
+---
+/**
+ * Inner field content: one component per input type. Used only by FormFieldRenderer.
+ */
+import type { FormFieldConfig, FormButtonConfig } from "../../../lib/multi-step-form-config";
+import { getButtonConfig } from "../../../lib/multi-step-form-config";
+import Button from "../../../components/common/Button.astro";
+import SlotMachineModalStaff from "../../../components/form/SlotMachineModalStaff.astro";
+import InlineAddressSearch from "../../../components/form/InlineAddressSearch.astro";
+import SlideToggle from "../../../components/form/SlideToggle.astro";
+import UnitSlider from "../../../components/form/UnitSlider.astro";
+import ToggleButton from "../../../components/form/ToggleButton.astro";
+import FileUpload from "../../../components/form/FileUpload.astro";
+import SignaturePadField from "../../../components/form/SignaturePadField.astro";
+import PhoneAndSMS from "../../../components/form/PhoneAndSMS.astro";
+import ProfileAvatarBlock from "../../../components/profile/ProfileAvatarBlock.astro";
+
+export interface FormFieldContentProps {
+  field: FormFieldConfig;
+  context: "standard" | "multistep";
+  inputClasses: string;
+  initialData?: Record<string, any>;
+  fid?: (id: string) => string;
+  buttonDefaults?: Record<string, Partial<FormButtonConfig>>;
+  mobileCarrierOptions?: Array<{ value: string; label: string }>;
+  iconLeftPadding?: string;
+  iconRightPadding?: string;
+  /** When true, render label above control (standard form style) */
+  showLabel?: boolean;
+}
+
+const labelClass = "mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300";
+
+const {
+  field,
+  context,
+  inputClasses,
+  initialData = {},
+  fid = (id: string) => id,
+  buttonDefaults = {},
+  mobileCarrierOptions = [],
+  iconLeftPadding = "pl-14",
+  iconRightPadding = "pr-14",
+  showLabel = false,
+} = Astro.props;
+
+const id = fid(field.id);
+const value = initialData[field.name] ?? field.value ?? "";
+const isMultistep = context === "multistep";
+
+---
+
+{field.type === "hidden" ? (
+  <input type="hidden" name={field.name} value={typeof value === "string" ? value : ""} />
+) : field.type === "component" && field.component === "ProfileAvatar" ? (
+  <>
+    {showLabel && field.label && (
+      <label for={id} class={labelClass}>
+        {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
+      </label>
+    )}
+    <ProfileAvatarBlock
+      idPrefix={initialData._avatarIdPrefix ?? ""}
+      avatarUrl={initialData.avatarUrl ?? initialData.avatar ?? ""}
+      label={field.label}
+    />
+  </>
+) : field.type === "component" && field.component === "PhoneAndSMS" ? (
+  <>
+    {showLabel && field.label && (
+      <label for={id} class={labelClass}>
+        {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
+      </label>
+    )}
+    <PhoneAndSMS
+      id={id}
+      name={field.name}
+      value={initialData[field.name] ?? initialData.phone ?? ""}
+      placeholder={field.placeholder}
+      required={field.required}
+      showSMS={field.componentProps?.showSMS ?? true}
+      smsChecked={initialData.smsAlerts ?? false}
+      selectedCarrier={initialData.mobileCarrier ?? ""}
+      globalInputClasses={field.icon ? `${inputClasses} ${field.iconPosition === "left" ? iconLeftPadding : iconRightPadding}` : inputClasses}
+    />
+  </>
+) : field.type === "component" && field.component === "Select" ? (
+  <>
+    {showLabel && field.label && (
+      <label for={id} class={labelClass}>
+        {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
+      </label>
+    )}
+    <select id={id} name={field.name} required={field.required} class={inputClasses}>
+      <option value="">{field.placeholder || "Select..."}</option>
+      {(field.options || []).map((o: { value: string; label: string }) => (
+        <option value={o.value} selected={o.value === value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
+  </>
+) : field.type === "component" && field.component === "SlotMachineModalStaff" ? (
+  <SlotMachineModalStaff
+    id={id}
+    name={field.name}
+    title={field.label || "Select an option"}
+    options={mobileCarrierOptions}
+    selectedValue=""
+    globalInputClasses={inputClasses}
+    {...field.componentProps}
+  />
+) : field.type === "component" && field.component === "SlideToggle" ? (
+  <div class={isMultistep ? "flex items-center justify-center py-8" : ""} tabindex="-1">
+    <SlideToggle id={id} name={field.name} {...field.componentProps} />
+  </div>
+) : field.type === "component" && field.component === "InlineAddressSearch" ? (
+  <InlineAddressSearch
+    id={id}
+    name={field.name}
+    globalInputClasses={inputClasses}
+    {...field.componentProps}
+  />
+) : field.type === "component" && field.component === "UnitSlider" ? (
+  <UnitSlider
+    name={field.name}
+    label={field.label || field.name}
+    value={Number(field.value) ?? 1}
+    required={field.required}
+    min={field.min}
+    max={field.max}
+    step={field.step}
+    {...field.componentProps}
+  />
+) : field.type === "component" && field.component === "ToggleButton" ? (
+  <div class="multi-step-toggle-group flex flex-wrap gap-3" tabindex="-1">
+    {field.options?.map((option) => (
+      <ToggleButton
+        value={option.value}
+        group={field.name}
+        type={field.toggleType || "radio"}
+        class={field.classes}
+      >
+        {option.label}
+      </ToggleButton>
+    ))}
+  </div>
+) : field.type === "component" && field.component === "FileUpload" ? (
+  <FileUpload
+    name={field.name}
+    label={field.label}
+    required={field.required}
+    accept={field.accept}
+    multiple={field.multiple}
+    maxFiles={field.maxFiles}
+    maxSize={field.maxSize}
+    {...field.componentProps}
+  />
+) : field.type === "range" ? (
+  <UnitSlider
+    name={field.name}
+    label={field.label || field.name}
+    value={Number(field.value) ?? Number(field.min) ?? 0}
+    required={field.required}
+    min={field.min ?? 0}
+    max={field.max ?? 100}
+    step={field.step ?? 1}
+  />
+) : field.type === "textarea" ? (
+  <>
+    {showLabel && field.label && (
+      <label for={id} class={labelClass}>
+        {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
+      </label>
+    )}
+    <textarea
+      id={id}
+      name={field.name}
+      placeholder={field.placeholder}
+      required={field.required}
+      rows={field.rows ?? 4}
+      minlength={field.minlength ?? 10}
+      maxlength={field.maxlength ?? 500}
+      autocomplete={field.autocomplete}
+      class={inputClasses}
+      data-error={field.errorMessage}
+      data-validate={field.validate}
+      data-validate-message={field.validateMessage}
+    >
+      {typeof value === "string" ? value : ""}
+    </textarea>
+  </>
+) : field.type === "date" ? (
+  <>
+    {showLabel && field.label && (
+      <label for={id} class={labelClass}>
+        {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
+      </label>
+    )}
+    <input
+    type="date"
+    id={id}
+    name={field.name}
+    required={field.required}
+    value={typeof field.value === "string" ? field.value : typeof value === "string" ? value : ""}
+    autofocus={field.autofocus}
+    class={inputClasses}
+    data-error={field.errorMessage}
+    data-validate={field.validate}
+    data-validate-message={field.validateMessage}
+  />
+  </>
+) : field.type === "time" ? (
+  <>
+    {showLabel && field.label && (
+      <label for={id} class={labelClass}>
+        {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
+      </label>
+    )}
+    <input
+    type="time"
+    id={id}
+    name={field.name}
+    required={field.required}
+    value={typeof field.value === "string" ? field.value : typeof value === "string" ? value : ""}
+    autofocus={field.autofocus}
+    class={inputClasses}
+    data-error={field.errorMessage}
+    data-validate={field.validate}
+    data-validate-message={field.validateMessage}
+  />
+  </>
+) : field.type === "signature" ? (
+  <>
+    {showLabel && field.label && (
+      <label for={id} class={labelClass}>
+        {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
+      </label>
+    )}
+    <SignaturePadField
+    id={id}
+    name={field.name}
+    label={field.label}
+    required={field.required}
+    width={field.componentProps?.width ?? 400}
+    height={field.componentProps?.height ?? 200}
+  />
+  </>
+) : field.type === "button-group" ? (
+  <div class="multi-step-button-group flex flex-wrap gap-3" tabindex="-1">
+    {field.buttons?.map((button) => {
+      const btnConfig = getButtonConfig(
+        button,
+        buttonDefaults[button.type as keyof typeof buttonDefaults]
+      );
+      return (
+        <Button
+          id={button.id}
+          variant={btnConfig.variant}
+          size={btnConfig.size || "md"}
+          icon={btnConfig.icon}
+          iconPosition={btnConfig.iconPosition}
+          class={btnConfig.classes}
+          dataAttributes={{
+            ...(button.dataValue && { "data-value": button.dataValue }),
+            ...(button.dataNext !== undefined && { "data-next": String(button.dataNext) }),
+          }}
+        >
+          {btnConfig.label && <span class="button-text" set:html={btnConfig.label} />}
+        </Button>
+      );
+    })}
+  </div>
+) : field.animatedPlaceholders && field.animatedPlaceholders.length > 0 && isMultistep ? (
+  <div
+    class:list={[
+      "relative text-black dark:text-white",
+      field.icon ? "input-with-icon" : "",
+      field.iconPosition === "right" ? "icon-right" : "icon-left",
+    ]}
+    data-icon={field.icon}
+    tabindex="-1"
+  >
+    <input
+      type={field.type as "text" | "email" | "tel" | "password" | "number"}
+      id={id}
+      name={field.name}
+      placeholder=""
+      required={field.required}
+      autocomplete={field.autocomplete}
+      minlength={field.type !== "number" ? (field.minlength ?? 2) : undefined}
+      maxlength={field.type !== "number" ? (field.maxlength ?? 50) : undefined}
+      min={field.type === "number" ? field.min : undefined}
+      max={field.type === "number" ? field.max : undefined}
+      step={field.type === "number" ? field.step : undefined}
+      autofocus={field.autofocus}
+      class:list={[
+        inputClasses,
+        field.icon && field.iconPosition === "right" ? iconRightPadding : "",
+        field.icon && field.iconPosition !== "right" ? iconLeftPadding : "",
+      ]}
+      data-error={field.errorMessage}
+      data-validate={field.validate}
+      data-validate-message={field.validateMessage}
+      data-has-animated-placeholder="true"
+      data-original-placeholder={field.placeholder}
+      data-animated-placeholders={JSON.stringify(field.animatedPlaceholders)}
+    />
+    <span
+      class:list={[
+        "animated-placeholder pointer-events-none absolute left-0 top-[calc(0.125rem-2px)] flex h-full w-full items-center",
+        field.animatedPlaceholderAlignment === "left"
+          ? `justify-start ${field.icon && field.iconPosition === "left" ? "" : iconLeftPadding}`
+          : field.animatedPlaceholderAlignment === "right"
+            ? `justify-end ${field.icon && field.iconPosition === "right" ? "" : iconRightPadding}`
+            : "justify-center",
+        field.icon && field.iconPosition === "right" ? iconRightPadding : "",
+        field.icon && field.iconPosition !== "right" ? iconLeftPadding : "",
+      ]}
+      data-for={field.id}
+      tabindex="-1"
+    >
+      {field.placeholder}
+    </span>
+  </div>
+) : field.icon && isMultistep ? (
+  <div
+    class:list={[
+      "input-with-icon relative",
+      field.iconPosition === "right" ? "icon-right" : "icon-left",
+    ]}
+    data-icon={field.icon}
+    tabindex="-1"
+  >
+    <input
+      type={field.type as "text" | "email" | "tel" | "password" | "number" | "hidden"}
+      id={id}
+      name={field.name}
+      placeholder={field.placeholder}
+      required={field.required}
+      autocomplete={field.autocomplete}
+      minlength={field.type !== "number" && field.type !== "hidden" ? (field.minlength ?? 2) : undefined}
+      maxlength={field.type !== "number" && field.type !== "hidden" ? (field.maxlength ?? 50) : undefined}
+      min={field.type === "number" ? field.min : undefined}
+      max={field.type === "number" ? field.max : undefined}
+      step={field.type === "number" ? field.step : undefined}
+      autofocus={field.autofocus}
+      class:list={[inputClasses, field.iconPosition === "right" ? iconRightPadding : iconLeftPadding]}
+      data-error={field.errorMessage}
+      data-validate={field.validate}
+      data-validate-message={field.validateMessage}
+    />
+  </div>
+) : field.icon && !isMultistep ? (
+  <>
+    {showLabel && field.label && (
+      <label for={id} class={labelClass}>
+        {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
+      </label>
+    )}
+    <div
+      class:list={[
+        "input-with-icon relative",
+        field.iconPosition === "right" ? "icon-right" : "icon-left",
+      ]}
+      data-icon={field.icon}
+    >
+      <input
+        type={field.type as "text" | "email" | "tel" | "password" | "number"}
+        id={id}
+        name={field.name}
+        value={typeof value === "string" || typeof value === "number" ? String(value) : undefined}
+        placeholder={field.placeholder}
+        required={field.required}
+        autocomplete={field.autocomplete}
+        minlength={field.type !== "number" ? (field.minlength ?? 2) : undefined}
+        maxlength={field.type !== "number" ? (field.maxlength ?? 50) : undefined}
+        min={field.type === "number" ? field.min : undefined}
+        max={field.type === "number" ? field.max : undefined}
+        step={field.type === "number" ? field.step : undefined}
+        autofocus={field.autofocus}
+        readonly={(field.componentProps as any)?.readonly}
+        class:list={[inputClasses, field.iconPosition === "right" ? iconRightPadding : iconLeftPadding]}
+        data-error={field.errorMessage}
+        data-validate={field.validate}
+        data-validate-message={field.validateMessage}
+      />
+    </div>
+  </>
+) : (
+  <>
+    {showLabel && field.label && (
+      <label for={id} class={labelClass}>
+        {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
+      </label>
+    )}
+    <input
+      type={field.type as "text" | "email" | "tel" | "password" | "number" | "hidden"}
+      id={id}
+      name={field.name}
+      placeholder={field.placeholder}
+      required={field.required}
+      value={typeof value === "string" || typeof value === "number" ? String(value) : undefined}
+      autocomplete={field.autocomplete}
+      minlength={field.type !== "number" && field.type !== "hidden" ? (field.minlength ?? 2) : undefined}
+      maxlength={field.type !== "number" && field.type !== "hidden" ? (field.maxlength ?? 50) : undefined}
+      min={field.type === "number" ? field.min : undefined}
+      max={field.type === "number" ? field.max : undefined}
+      step={field.type === "number" ? field.step : undefined}
+      autofocus={field.autofocus}
+      readonly={(field.componentProps as any)?.readonly}
+      class={inputClasses}
+      data-error={field.errorMessage}
+      data-validate={field.validate}
+      data-validate-message={field.validateMessage}
+    />
+  </>
+)}

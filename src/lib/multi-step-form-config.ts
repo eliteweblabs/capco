@@ -99,7 +99,10 @@ export interface FormFieldConfig {
     | "hidden"
     | "component"
     | "button-group"
-    | "range";
+    | "range"
+    | "date"
+    | "time"
+    | "signature";
   label?: string;
   placeholder?: string;
   animatedPlaceholders?: string[]; // Array of rotating placeholder values
