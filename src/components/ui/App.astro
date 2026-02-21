@@ -212,16 +212,25 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
         DOMContentLoaded/load listeners run immediately so auth, dropdowns, contact forms, etc. work. -->
     <script is:inline>
       (function () {
-        var nativeAdd = document.addEventListener.bind(document);
-        document.addEventListener = function (type, listener, options) {
-          if ((type === "DOMContentLoaded" || type === "load") && document.readyState !== "loading") {
+        function runIfAlreadyLoaded(type, listener) {
+          if (document.readyState !== "loading") {
             setTimeout(function () {
               if (typeof listener === "function") listener();
               else if (listener && typeof listener.handleEvent === "function") listener.handleEvent({ type: type });
             }, 0);
-            return;
+            return true;
           }
-          nativeAdd(type, listener, options);
+          return false;
+        }
+        var docNative = document.addEventListener.bind(document);
+        document.addEventListener = function (type, listener, options) {
+          if ((type === "DOMContentLoaded" || type === "load") && runIfAlreadyLoaded(type, listener)) return;
+          docNative(type, listener, options);
+        };
+        var winNative = window.addEventListener.bind(window);
+        window.addEventListener = function (type, listener, options) {
+          if ((type === "DOMContentLoaded" || type === "load") && runIfAlreadyLoaded(type, listener)) return;
+          winNative(type, listener, options);
         };
       })();
     </script>
