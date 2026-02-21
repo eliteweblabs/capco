@@ -976,6 +976,12 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
           if (notificationBell && typeof (window as any).initializeNotificationCount === "function") {
             await (window as any).initializeNotificationCount();
           }
+          const ensureSidebar = (window as any).__ensureSidebarInit;
+          if (typeof ensureSidebar === "function") {
+            ensureSidebar();
+            setTimeout(ensureSidebar, 400);
+            setTimeout(ensureSidebar, 1200);
+          }
         } catch (error) {
           console.error("🔔 [APP] Error in DOMContentLoaded init:", error);
         }
