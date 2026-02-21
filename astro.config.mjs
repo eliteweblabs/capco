@@ -19,6 +19,10 @@ const env = { ...process.env, ...loaded };
 
 // https://astro.build/config
 export default defineConfig({
+  // Production builds reverse script/style order by default; that breaks sidebar init and Flowbite popovers on Railway.
+  experimental: {
+    preserveScriptOrder: true,
+  },
   site: env.RAILWAY_PUBLIC_DOMAIN?.startsWith("http")
     ? env.RAILWAY_PUBLIC_DOMAIN
     : `https://${env.RAILWAY_PUBLIC_DOMAIN || "capcofire.com"}`, // Set your production domain
