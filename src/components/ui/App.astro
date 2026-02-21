@@ -601,7 +601,6 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
     <meta name="robots" content="max-image-preview:large" />
 
     <link rel="canonical" href={Astro.url.href} />
-    <link rel="stylesheet" href="https://flowbite.com/application-ui/demo/app.css" />
     <!-- Font Awesome for icons -->
     <link
       rel="stylesheet"
@@ -899,57 +898,11 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
     {/* Cache indicator: dev/test only (localhost or ?cacheIndicator=1) */}
     {isAdmin && <CacheIndicator />}
 
-    {/* Flowbite: in minimal mode use CDN so it runs (bundled chunk is empty in prod). Otherwise use bundle. */}
-    {ONLY_FLOWBITE_AND_THEME ? (
-      <script
-        is:inline
-        src="https://cdn.jsdelivr.net/npm/flowbite@2.2.2/dist/flowbite.min.js"
-        defer
-      />
-    ) : (
-      <script>
-        import "../../scripts/flowbite-init";
-      </script>
-    )}
-
-    {/* Minimal sidebar toggle (inline) so hamburger works when bundled ToggleSidebar.astro script is empty in prod. */}
-    {ONLY_FLOWBITE_AND_THEME && (
-      <script is:inline>
-        (function () {
-          function initSidebar() {
-            var btn = document.querySelector("[data-sidebar-toggle-button]");
-            var sidebar = document.getElementById("sidebar");
-            var main = document.getElementById("main-content");
-            if (!btn || !sidebar) return;
-            if (btn.dataset.sidebarInited === "1") return;
-            btn.dataset.sidebarInited = "1";
-            var isMobile = function () { return window.innerWidth < 768; };
-            btn.addEventListener("click", function () {
-              if (isMobile()) {
-                var hidden = sidebar.classList.contains("-translate-x-full");
-                if (hidden) {
-                  sidebar.classList.remove("-translate-x-full");
-                  sidebar.classList.add("translate-x-0");
-                  document.body.style.overflow = "hidden";
-                  if (main) main.classList.add("overflow-hidden", "pointer-events-none");
-                } else {
-                  sidebar.classList.add("-translate-x-full");
-                  sidebar.classList.remove("translate-x-0");
-                  document.body.style.overflow = "";
-                  if (main) main.classList.remove("overflow-hidden", "pointer-events-none");
-                }
-              }
-            });
-            if (isMobile()) sidebar.classList.add("-translate-x-full");
-          }
-          if (document.readyState === "loading") {
-            document.addEventListener("DOMContentLoaded", initSidebar);
-          } else {
-            initSidebar();
-          }
-        })();
-      </script>
-    )}
+    {/* Flowbite: include via CDN per https://flowbite.com/docs/getting-started/astro/ (is:inline so it runs in prod; version matches package.json). */}
+    <script
+      is:inline
+      src="https://cdn.jsdelivr.net/npm/flowbite@4.0.1/dist/flowbite.min.js"
+    />
 
     {!ONLY_FLOWBITE_AND_THEME && (
       <>

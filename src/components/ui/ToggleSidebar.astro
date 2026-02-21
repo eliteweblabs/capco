@@ -380,3 +380,40 @@ const responsiveClass = !currentUser ? "md:hidden" : "";
   }
   // SPA disabled: document.addEventListener("astro:page-load", () => requestAnimationFrame(initSidebar));
 </script>
+
+<!-- Prod fallback: bundled script above is empty in production (Astro 5). This inline runs only in prod so toggle stays in this component. -->
+<script is:inline define:vars={{ isProd: import.meta.env.PROD }}>
+  if (isProd) (function () {
+    function initSidebar() {
+      var btn = document.querySelector("[data-sidebar-toggle-button]");
+      var sidebar = document.getElementById("sidebar");
+      var main = document.getElementById("main-content");
+      if (!btn || !sidebar) return;
+      if (btn.dataset.sidebarInited === "1") return;
+      btn.dataset.sidebarInited = "1";
+      var isMobile = function () { return window.innerWidth < 768; };
+      btn.addEventListener("click", function () {
+        if (isMobile()) {
+          var hidden = sidebar.classList.contains("-translate-x-full");
+          if (hidden) {
+            sidebar.classList.remove("-translate-x-full");
+            sidebar.classList.add("translate-x-0");
+            document.body.style.overflow = "hidden";
+            if (main) main.classList.add("overflow-hidden", "pointer-events-none");
+          } else {
+            sidebar.classList.add("-translate-x-full");
+            sidebar.classList.remove("translate-x-0");
+            document.body.style.overflow = "";
+            if (main) main.classList.remove("overflow-hidden", "pointer-events-none");
+          }
+        }
+      });
+      if (isMobile()) sidebar.classList.add("-translate-x-full");
+    }
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initSidebar);
+    } else {
+      initSidebar();
+    }
+  })();
+</script>
