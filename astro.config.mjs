@@ -5,6 +5,10 @@ import { defineConfig } from "astro/config";
 // @ts-check
 import node from "@astrojs/node";
 import tailwind from "@astrojs/tailwind";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // import studiocms from "studiocms"; // Disabled - not in use, causing SDK initialization errors
 
 // Load environment variables (merge with process.env so Railway build args are available when .env is missing)
@@ -51,6 +55,15 @@ export default defineConfig({
   },
   // Ensure proper CI building
   vite: {
+    // Force @floating-ui/dom to resolve to dist file so it is bundled (avoids "Failed to resolve module specifier" in production)
+    resolve: {
+      alias: {
+        "@floating-ui/dom": path.resolve(
+          __dirname,
+          "node_modules/@floating-ui/dom/dist/floating-ui.dom.mjs"
+        ),
+      },
+    },
     // Support older Safari (e.g. iPad Air on iOS 12) – transpile optional chaining (?.)
     // and nullish coalescing (??) which require Safari 13.1+
     build: {

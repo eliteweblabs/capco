@@ -968,15 +968,16 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
 
     <script>
       document.addEventListener("DOMContentLoaded", async () => {
-        (window as any).hideOnFormFocus();
-        // Initialize notification count only if notification bell exists (shown when authenticated)
         try {
+          if (typeof (window as any).hideOnFormFocus === "function") {
+            (window as any).hideOnFormFocus();
+          }
           const notificationBell = document.getElementById("notification-bell");
-          if (notificationBell && (window as any).initializeNotificationCount) {
+          if (notificationBell && typeof (window as any).initializeNotificationCount === "function") {
             await (window as any).initializeNotificationCount();
           }
         } catch (error) {
-          console.error("🔔 [APP] Error initializing notification count:", error);
+          console.error("🔔 [APP] Error in DOMContentLoaded init:", error);
         }
       });
     </script>
