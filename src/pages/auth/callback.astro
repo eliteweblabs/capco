@@ -142,7 +142,12 @@ import LayoutAuthCallback from "../../components/layouts/LayoutAuthCallback.astr
   const capturedError = initialUrlParams.get("error") || initialHashParams.get("error");
   const capturedErrorDescription =
     initialUrlParams.get("error_description") || initialHashParams.get("error_description");
-  const capturedRedirect = initialUrlParams.get("redirect") || initialHashParams.get("redirect");
+  // Redirect destination: prefer URL param (legacy), fall back to localStorage (set by auth-google.ts)
+  const capturedRedirect =
+    initialUrlParams.get("redirect") ||
+    initialHashParams.get("redirect") ||
+    (() => { try { return localStorage.getItem("post-auth-redirect"); } catch { return null; } })() ||
+    "/project/dashboard";
 
   console.log("[AUTH-CALLBACK] IMMEDIATE CAPTURE on page load:");
   console.log("[AUTH-CALLBACK] Initial URL:", initialUrl);
@@ -270,6 +275,7 @@ import LayoutAuthCallback from "../../components/layouts/LayoutAuthCallback.astr
         console.log("[AUTH-CALLBACK] Authentication successful, redirecting...");
         await new Promise((resolve) => setTimeout(resolve, 300));
         const redirectUrl = capturedRedirect || "/project/dashboard";
+        try { localStorage.removeItem("post-auth-redirect"); } catch { /* ignore */ }
         console.log("[AUTH-CALLBACK] Redirecting to:", redirectUrl);
         window.location.replace(redirectUrl);
         return;
@@ -613,6 +619,7 @@ import LayoutAuthCallback from "../../components/layouts/LayoutAuthCallback.astr
       // Use replace instead of href to ensure proper navigation with cookies
       // This ensures the browser includes cookies in the redirect
       const redirectUrl = capturedRedirect || "/project/dashboard";
+      try { localStorage.removeItem("post-auth-redirect"); } catch { /* ignore */ }
       console.log("[AUTH-CALLBACK] Final redirect to:", redirectUrl);
       window.location.replace(redirectUrl);
     } catch (err) {

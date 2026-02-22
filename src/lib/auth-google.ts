@@ -42,12 +42,16 @@ export async function startGoogleSignIn(redirectDestination?: string): Promise<v
 
   await new Promise((r) => setTimeout(r, 200));
 
-  const callbackUrl = `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`;
-
-  console.log("[AUTH-GOOGLE] Starting OAuth with callbackUrl:", callbackUrl);
+  // Use a clean callback URL (no query string) so it matches the Supabase allowlist exactly.
+  // The redirect destination is stored in localStorage and read by the callback page.
+  const callbackUrl = `${window.location.origin}/auth/callback`;
+  try {
+    localStorage.setItem("post-auth-redirect", redirectTo);
+  } catch {
+    /* ignore storage errors */
+  }
 
   try {
-    // Use skipBrowserRedirect to capture the generated URL for debugging, then navigate manually
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -58,7 +62,6 @@ export async function startGoogleSignIn(redirectDestination?: string): Promise<v
     });
 
     if (error) {
-      console.error("[AUTH-GOOGLE] signInWithOAuth error:", error.message);
       if ((window as any).showNotice) {
         (window as any).showNotice("error", "Sign In Error", error.message);
       }
@@ -66,22 +69,14 @@ export async function startGoogleSignIn(redirectDestination?: string): Promise<v
     }
 
     if (!data?.url) {
-      console.error("[AUTH-GOOGLE] No OAuth URL returned from Supabase");
       if ((window as any).showNotice) {
         (window as any).showNotice("error", "Sign In Error", "Could not start Google sign-in. Please try again.");
       }
       return;
     }
 
-    // Log the full OAuth URL so redirect_to can be verified in DevTools
-    console.log("[AUTH-GOOGLE] OAuth URL generated:", data.url);
-    const oauthUrl = new URL(data.url);
-    const redirectToParam = oauthUrl.searchParams.get("redirect_to");
-    console.log("[AUTH-GOOGLE] redirect_to parameter:", redirectToParam ?? "(not found — may be encoded in state)");
-
     window.location.href = data.url;
   } catch (err) {
-    console.error("[AUTH-GOOGLE] Unexpected error:", err);
     if ((window as any).showNotice) {
       (window as any).showNotice("error", "Sign In Error", "An unexpected error occurred");
     }
