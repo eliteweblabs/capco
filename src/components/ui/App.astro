@@ -943,11 +943,14 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
               if (typeof w.hideNotification !== "function") w.hideNotification = function () {};
               if (typeof w.initFlowbite === "function") w.initFlowbite();
             }
-            if (document.readyState === "loading") {
-              document.addEventListener("DOMContentLoaded", ensureGlobals);
-            } else {
-              ensureGlobals();
+            function runWhenReady() {
+              if (document.readyState === "loading") {
+                document.addEventListener("DOMContentLoaded", ensureGlobals);
+              } else {
+                ensureGlobals();
+              }
             }
+            runWhenReady();
             if (window.__traceLog) window.__traceLog("App: fallback script registered (ensureGlobals on load or now)");
           })();
         </script>

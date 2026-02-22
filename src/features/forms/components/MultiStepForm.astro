@@ -607,7 +607,7 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
   // TypeIt typewriter loaded globally from App.astro (window.initTypewriterTexts, window.triggerActiveStepTypewriter)
   if (typeof window !== "undefined" && (window as any).__traceLog) (window as any).__traceLog("MultiStepForm.astro script module loaded");
 
-  document.addEventListener("DOMContentLoaded", () => {
+  function runMultiStepPageInit() {
     if (typeof window !== "undefined" && (window as any).__traceLog) (window as any).__traceLog("MultiStepForm.astro DOMContentLoaded running");
     // Tap-to-focus: tapping the field wrapper focuses the input (iOS keypad requires direct user gesture)
     document.addEventListener(
@@ -1426,7 +1426,14 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
     } else {
       runMultiStepInit();
     }
-  });
+  }
+
+  // Run when DOM is ready; if this script loaded after DOMContentLoaded (e.g. deferred module), run now
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", runMultiStepPageInit);
+  } else {
+    runMultiStepPageInit();
+  }
 
   // Helper function to check if all fields in current step are valid
   function checkAllFieldsValid() {
