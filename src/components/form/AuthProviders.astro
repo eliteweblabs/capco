@@ -142,42 +142,26 @@ const btnClasses = "provider-btn w-12 object-contain sm:w-14 md:w-16";
   </Tooltip>
 </div>
 
-<!-- Inline so provider buttons work when Astro module scripts don't load (e.g. prod). -->
-<script is:inline>
-  (function () {
-    function attach() {
-      var buttons = document.querySelectorAll(".provider-btn");
-      for (var i = 0; i < buttons.length; i++) {
-        var btn = buttons[i];
-        if (btn._authProviderAttached) continue;
-        btn._authProviderAttached = true;
-        btn.addEventListener("click", function (e) {
-          var target = e.currentTarget;
-          if (target.disabled) return;
-          var provider = target.getAttribute("data-provider");
-          if (!provider) return;
-          if (provider === "phone" || provider === "email") {
-            window.location.href = "/auth/otp-login";
-            return;
-          }
-          if (provider === "google") {
-            var handleGoogle = window.handleGoogleSignup;
-            if (typeof handleGoogle === "function") {
-              handleGoogle(e);
-            } else {
-              var dest = (document.querySelector('input[name="redirect"]') && document.querySelector('input[name="redirect"]').value) || "/project/dashboard";
-              window.location.href = "/auth/google?redirect=" + encodeURIComponent(dest);
-            }
-            return;
-          }
-        });
-      }
+<script>
+  import { startGoogleSignIn } from "../../lib/auth-google";
+
+  function attachProviderListeners() {
+    const googleBtn = document.querySelector<HTMLButtonElement>('.provider-btn[data-provider="google"]');
+    if (googleBtn && !googleBtn.dataset.authAttached) {
+      googleBtn.dataset.authAttached = "1";
+      googleBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const redirect =
+          (document.querySelector<HTMLInputElement>('input[name="redirect"]')?.value) ||
+          "/project/dashboard";
+        startGoogleSignIn(redirect);
+      });
     }
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", attach);
-    } else {
-      attach();
-    }
-    setTimeout(attach, 500);
-  })();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", attachProviderListeners);
+  } else {
+    attachProviderListeners();
+  }
 </script>

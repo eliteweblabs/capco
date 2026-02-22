@@ -156,9 +156,13 @@ import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
   />
 </LayoutFullWidth>
 
-{/* refresh-manager loaded in App.astro for Staff/Admin */}
+{/* refresh-manager loaded in App.astro for Staff/Admin when PUBLIC_ENABLE_AUTO_REFRESH=true */}
 <script
-  define:vars={{ currentUserId: currentUser?.id, currentUserRole: currentUser?.profile?.role }}
+  define:vars={{
+    currentUserId: currentUser?.id,
+    currentUserRole: currentUser?.profile?.role,
+    enableAutoRefresh: import.meta.env.PUBLIC_ENABLE_AUTO_REFRESH !== "false",
+  }}
   is:inline
   data-astro-rerun
 >
@@ -207,8 +211,9 @@ import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
     });
   }
 
-  // Run init only for Staff/Admin (refresh-manager loaded in App.astro for them only)
+  // Run init only when enabled and for Staff/Admin
   async function runDashboardInit() {
+    if (!enableAutoRefresh) return;
     if (!window.location.pathname.startsWith("/project")) return;
     if (currentUserRole !== "Admin" && currentUserRole !== "Staff") return;
     console.log("🔄 [DASHBOARD] runDashboardInit (path:", window.location.pathname + ")");
