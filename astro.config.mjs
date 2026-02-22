@@ -26,15 +26,12 @@ export default defineConfig({
   experimental: {
     preserveScriptOrder: true,
   },
-  // In development use localhost so URLs never switch to production; production uses env or fallback
-  site:
-    process.env.NODE_ENV === "development"
-      ? "http://localhost:4321"
-      : env.RAILWAY_PUBLIC_DOMAIN?.startsWith("http")
-        ? env.RAILWAY_PUBLIC_DOMAIN
-        : env.RAILWAY_PUBLIC_DOMAIN
-          ? `https://${env.RAILWAY_PUBLIC_DOMAIN}`
-          : "https://capcofire.com",
+  // When RAILWAY_PUBLIC_DOMAIN is unset (local dev) use localhost so URLs never switch to production
+  site: env.RAILWAY_PUBLIC_DOMAIN
+    ? env.RAILWAY_PUBLIC_DOMAIN.startsWith("http")
+      ? env.RAILWAY_PUBLIC_DOMAIN
+      : `https://${env.RAILWAY_PUBLIC_DOMAIN}`
+    : "http://localhost:4321",
   output: "server",
   adapter: node({
     mode: "standalone",
