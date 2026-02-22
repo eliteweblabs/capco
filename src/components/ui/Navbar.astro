@@ -160,110 +160,58 @@ const currentRole = (currentUser as any)?.profile?.role;
   </div>
 </nav>
 
-<script>
-  if (typeof window !== "undefined" && (window as any).__jsOrderLog) (window as any).__jsOrderLog("Navbar (module)");
-  const logoutBtn = document.getElementById("logout-btn");
-
-  // Logout functionality (only if logout button exists - when authenticated)
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", async () => {
-      // console.log("📋 [HEADER] Logout button clicked");
-      try {
-        // console.log("📋 [HEADER] Sending logout request...");
-        const response = await fetch("/api/auth/signout", {
-          method: "POST",
+<script is:inline>
+  (function () {
+    function run() {
+      var logoutBtn = document.getElementById("logout-btn");
+      if (logoutBtn && !logoutBtn.hasAttribute("data-navbar-logout-bound")) {
+        logoutBtn.setAttribute("data-navbar-logout-bound", "true");
+        logoutBtn.addEventListener("click", function () {
+          fetch("/api/auth/signout", { method: "POST" })
+            .then(function (response) {
+              if (response.ok) {
+                var url = new URL(window.location.origin);
+                url.searchParams.set("message", "logout_success");
+                window.location.href = url.toString();
+              } else {
+                if (typeof window.showNotice === "function") {
+                  window.showNotice("error", "Logout Failed", "There was an error logging out. Please try again.", 0);
+                } else {
+                  alert("There was an error logging out. Please try again.");
+                }
+              }
+            })
+            .catch(function (err) { console.error("Logout error:", err); });
         });
-        // console.log("📋 [HEADER] Logout response status:", response.status);
+      }
 
-        if (response.ok) {
-          // console.log("📋 [HEADER] Logout successful, redirecting...");
-
-          // Simple redirect to home page with success message
-          const url = new URL(window.location.origin);
-          url.searchParams.set("message", "logout_success");
-          window.location.href = url.toString();
-        } else {
-          // console.error("📋 [HEADER] Logout failed with status:", response.status);
-
-          // Show error modal if logout fails
-          if (typeof window.showNotice === "function") {
-            window.showNotice(
-              "error",
-              "Logout Failed",
-              "There was an error logging out. Please try again.",
-              0 // No auto-hide for errors
-            );
-          } else {
-            // Fallback if showNotice is not available
-            alert("There was an error logging out. Please try again.");
+      var navbar = document.getElementById("main-navbar");
+      if (navbar && !navbar.hasAttribute("data-navbar-modal-bound")) {
+        navbar.setAttribute("data-navbar-modal-bound", "true");
+        function isMobile() { return window.innerWidth < 768; }
+        var observer = new MutationObserver(function () {
+          if (!isMobile()) return;
+          var modals = document.querySelectorAll('[id*="modal"]');
+          var hasVisible = false;
+          modals.forEach(function (modal) {
+            if (!modal.classList.contains("hidden") && modal.classList.contains("flex")) hasVisible = true;
+          });
+          navbar.style.opacity = hasVisible ? "0" : "1";
+          navbar.style.pointerEvents = hasVisible ? "none" : "auto";
+        });
+        observer.observe(document.body, { attributes: true, attributeFilter: ["class"], subtree: true, childList: true });
+        window.addEventListener("resize", function () {
+          if (!isMobile() && navbar.style.opacity === "0") {
+            navbar.style.opacity = "1";
+            navbar.style.pointerEvents = "auto";
           }
-        }
-      } catch (error) {
-        console.error("📋 [HEADER] Logout error:", error);
+        });
       }
-    });
-  }
-
-  // Hide navbar on mobile when modals open
-  function setupNavbarHideOnModal() {
-    const navbar = document.getElementById("main-navbar");
-    if (!navbar) return;
-
-    // Check if device is mobile (screen width < 768px)
-    function isMobile() {
-      return window.innerWidth < 768;
     }
-
-    // Observe for modal visibility changes
-    const observer = new MutationObserver((mutations) => {
-      if (!isMobile()) return;
-
-      // Check if any modal is visible
-      const modals = document.querySelectorAll('[id*="modal"]');
-      let hasVisibleModal = false;
-
-      modals.forEach((modal) => {
-        const isVisible = !modal.classList.contains("hidden") && modal.classList.contains("flex");
-        if (isVisible) {
-          hasVisibleModal = true;
-        }
-      });
-
-      // Hide or show navbar based on modal visibility
-      if (hasVisibleModal) {
-        navbar.style.opacity = "0";
-        navbar.style.pointerEvents = "none";
-      } else {
-        navbar.style.opacity = "1";
-        navbar.style.pointerEvents = "auto";
-      }
-    });
-
-    // Observe the body for modal changes
-    observer.observe(document.body, {
-      attributes: true,
-      attributeFilter: ["class"],
-      subtree: true,
-      childList: true,
-    });
-
-    // Also listen for window resize to re-check mobile status
-    window.addEventListener("resize", () => {
-      if (!isMobile() && navbar.style.opacity === "0") {
-        navbar.style.opacity = "1";
-        navbar.style.pointerEvents = "auto";
-      }
-    });
-  }
-
-  // navbar-at-top is synced by BannerAlertsLoader's reveal-scroll logic: translateY 0 === at top (all screens)
-
-  // Initialize on DOM ready
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", setupNavbarHideOnModal);
-  } else {
-    setupNavbarHideOnModal();
-  }
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run);
+    else run();
+    setTimeout(run, 400);
+  })();
 </script>
 <style>
   /* z-100 only at top of page; z-50 when scrolled */
