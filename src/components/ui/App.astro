@@ -87,10 +87,6 @@ const {
 const safeTitle = stripHtml(title) || Astro.url.pathname.replace(/\//g, " ").trim() || "Home";
 const safeDescription = stripHtml(description || globalCompanySlogan || "");
 
-/** Supabase env for standalone form script (when Astro module chunks don't load) */
-const publicSupabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL ?? "";
-const publicSupabasePublishable = import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE ?? "";
-
 import { checkAuth } from "../../lib/auth";
 const { currentUser, session } = await checkAuth(Astro.cookies);
 import { globalClasses } from "../../pages/api/global/global-classes";
@@ -346,12 +342,6 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
         if (window.__traceLog) window.__traceLog("App theme script end");
       })();
     </script>
-    {/* Supabase env for standalone form script (when Astro module chunks don't load) */}
-    <script is:inline define:vars={{ publicSupabaseUrl, publicSupabasePublishable }}>
-      window.__PUBLIC_SUPABASE_URL__ = typeof publicSupabaseUrl !== "undefined" ? publicSupabaseUrl : "";
-      window.__PUBLIC_SUPABASE_PUBLISHABLE__ = typeof publicSupabasePublishable !== "undefined" ? publicSupabasePublishable : "";
-    </script>
-
     {!ONLY_FLOWBITE_AND_THEME && (
       <>
         {/* 3. init-auth-globals */}
@@ -938,14 +928,27 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
     <script is:inline>
       (function () {
         function loadFormFallback() {
-          if (document.querySelector("form[data-form-config]") && !window.__multistepFormFallbackLoaded) {
-            window.__multistepFormFallbackLoaded = true;
-            if (window.__jsOrderLog) window.__jsOrderLog("MultiStepForm fallback loader (inline)");
+          if (!document.querySelector("form[data-form-config]") || window.__multistepFormFallbackLoaded) return;
+          window.__multistepFormFallbackLoaded = true;
+          if (window.__jsOrderLog) window.__jsOrderLog("MultiStepForm fallback loader (inline)");
+          function injectFormScript() {
             var s = document.createElement("script");
             s.src = "/scripts/init-multistep-form.js";
             s.async = false;
             document.body.appendChild(s);
           }
+          if (window.__PUBLIC_SUPABASE_URL__ && window.__PUBLIC_SUPABASE_PUBLISHABLE__) {
+            injectFormScript();
+            return;
+          }
+          fetch("/api/env/supabase-public")
+            .then(function (r) { return r.ok ? r.json() : {}; })
+            .then(function (d) {
+              if (d && typeof d.url === "string") window.__PUBLIC_SUPABASE_URL__ = d.url;
+              if (d && typeof d.key === "string") window.__PUBLIC_SUPABASE_PUBLISHABLE__ = d.key;
+              injectFormScript();
+            })
+            .catch(function () { injectFormScript(); });
         }
         if (document.readyState === "loading") {
           document.addEventListener("DOMContentLoaded", loadFormFallback);
