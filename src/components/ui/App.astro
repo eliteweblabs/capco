@@ -266,6 +266,12 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
     <!-- Theme detection - MUST be first to be available for all components -->
     <script is:inline>
       (function () {
+        window.__traceNum = 0;
+        window.__traceLog = function (m) {
+          window.__traceNum = (window.__traceNum || 0) + 1;
+          console.log("[TRACE " + window.__traceNum + "] " + m);
+        };
+        window.__traceLog("App theme script start");
         // Initialize dark mode FIRST to prevent flash (IIFE avoids duplicate-declaration if script is inlined twice)
         var hasExplicitPreference = localStorage.getItem("color-theme") !== null;
 
@@ -320,6 +326,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
         if (isIOS && major > 0 && major < 14) {
           window.__legacySafari = true;
         }
+        if (window.__traceLog) window.__traceLog("App theme script end");
       })();
     </script>
 
@@ -349,6 +356,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
           }}
         >
       (function () {
+        console.log("[TRACE] App dynamic colors script start");
         // Inject colors and font immediately, synchronously BEFORE any CSS is parsed
         const primary = primaryColor || "#825BDD";
         const secondary = secondaryColor || "#0ea5e9";
@@ -901,6 +909,9 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
 
     {/* Flowbite: use same CDN as working 55cf3925 (unpkg 2.5.2). */}
     <script src="https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js"></script>
+    <script is:inline>
+      if (window.__traceLog) window.__traceLog("App: Flowbite script tag loaded, before app-globals");
+    </script>
 
     {!ONLY_FLOWBITE_AND_THEME && (
       <>

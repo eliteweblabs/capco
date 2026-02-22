@@ -21,6 +21,8 @@ import {
 } from "../lib/global-display-utils";
 import { initFlowbite } from "flowbite";
 
+if (typeof window !== "undefined" && (window as any).__traceLog) (window as any).__traceLog("app-globals.ts running");
+
 declare global {
   interface Window {
     // Global functions and utilities (alphabetized)

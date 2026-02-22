@@ -6,6 +6,7 @@
 import { initPageSizeToggle } from "../lib/page-size-plugin";
 import { validatePhone, formatPhoneAsYouType } from "../lib/phone-validation";
 
+if (typeof window !== "undefined" && (window as any).__traceLog) (window as any).__traceLog("init-auth-globals.ts running");
 (window as any).initPageSizeToggle = initPageSizeToggle;
 (window as any).validatePhone = validatePhone;
 (window as any).formatPhoneAsYouType = formatPhoneAsYouType;
