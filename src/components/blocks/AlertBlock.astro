@@ -260,9 +260,11 @@ const alertId = id || `alert-${Math.random().toString(36).slice(2, 9)}`;
 }
 
 <script>
-  // Dismiss functionality
-  document.addEventListener("DOMContentLoaded", () => {
+  if (typeof window !== "undefined" && (window as any).__jsOrderLog) (window as any).__jsOrderLog("AlertBlock dismiss (module)");
+  function initAlertDismiss() {
     document.querySelectorAll("[data-dismiss-alert]").forEach((btn) => {
+      if ((btn as HTMLElement).dataset.alertDismissInited === "1") return;
+      (btn as HTMLElement).dataset.alertDismissInited = "1";
       btn.addEventListener("click", () => {
         const alertId = btn.getAttribute("data-dismiss-alert");
         const alert = document.getElementById(alertId!);
@@ -273,5 +275,10 @@ const alertId = id || `alert-${Math.random().toString(36).slice(2, 9)}`;
         }
       });
     });
-  });
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initAlertDismiss);
+  } else {
+    initAlertDismiss();
+  }
 </script>

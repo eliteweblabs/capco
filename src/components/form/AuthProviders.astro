@@ -142,48 +142,42 @@ const btnClasses = "provider-btn w-12 object-contain sm:w-14 md:w-16";
   </Tooltip>
 </div>
 
-<script>
-  // Handle provider button clicks
-  document.addEventListener("DOMContentLoaded", () => {
-    const providerButtons = document.querySelectorAll(".provider-btn");
-
-    providerButtons.forEach((button) => {
-      button.addEventListener("click", (e) => {
-        const target = e.currentTarget;
-
-        // Don't handle clicks on disabled buttons
-        if ((target as HTMLButtonElement).disabled) {
-          return;
-        }
-
-        const provider = (target as HTMLButtonElement).dataset.provider;
-        console.log(`🔐 Auth provider clicked: ${provider}`);
-
-        // Handle specific providers
-        switch (provider) {
-          case "phone":
+<!-- Inline so provider buttons work when Astro module scripts don't load (e.g. prod). -->
+<script is:inline>
+  (function () {
+    function attach() {
+      var buttons = document.querySelectorAll(".provider-btn");
+      for (var i = 0; i < buttons.length; i++) {
+        var btn = buttons[i];
+        if (btn._authProviderAttached) continue;
+        btn._authProviderAttached = true;
+        btn.addEventListener("click", function (e) {
+          var target = e.currentTarget;
+          if (target.disabled) return;
+          var provider = target.getAttribute("data-provider");
+          if (!provider) return;
+          if (provider === "phone" || provider === "email") {
             window.location.href = "/auth/otp-login";
-            break;
-          case "email":
-            window.location.href = "/auth/otp-login";
-            break;
-          case "google": {
-            const handleGoogle = (window as any).handleGoogleSignup;
+            return;
+          }
+          if (provider === "google") {
+            var handleGoogle = window.handleGoogleSignup;
             if (typeof handleGoogle === "function") {
               handleGoogle(e);
             } else {
-              window.location.href = "/auth/login?provider=google";
+              var dest = (document.querySelector('input[name="redirect"]') && document.querySelector('input[name="redirect"]').value) || "/project/dashboard";
+              window.location.href = "/auth/login?provider=google&redirect=" + encodeURIComponent(dest);
             }
-            break;
+            return;
           }
-          case "facebook":
-          case "slack":
-          case "github":
-            // These are disabled, so this shouldn't be reached
-            console.log(`${provider} auth coming soon`);
-            break;
-        }
-      });
-    });
-  });
+        });
+      }
+    }
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", attach);
+    } else {
+      attach();
+    }
+    setTimeout(attach, 500);
+  })();
 </script>

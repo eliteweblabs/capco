@@ -554,14 +554,14 @@ export async function getMedia(params: GetMediaParams): Promise<{
   if (params.projectId) {
     // console.log("🐛 [MEDIA] Getting project files:", params.projectId);
 
-    // Get project's featuredImageId for marking files as featured
+    // Get project's featured image ID for marking files as featured
     const { data: projectData, error: projectError } = await supabaseAdmin
       .from("projects")
-      .select("featuredImageId")
+      .select("featuredImageData")
       .eq("id", parseInt(params.projectId))
       .single();
 
-    const featuredImageId = projectData?.featuredImageId;
+    const featuredImageId = projectData?.featuredImageData?.id ?? null;
 
     let query = supabaseAdmin
       .from("files")
@@ -675,7 +675,7 @@ export async function getMedia(params: GetMediaParams): Promise<{
           publicUrl: urlData?.publicUrl || null,
           title: file.title,
           comments: file.comments,
-          isFeatured: featuredImageId && file.id === parseInt(featuredImageId),
+          isFeatured: featuredImageId != null && file.id === featuredImageId,
           versionNumber: file.versionNumber || 1,
           isCurrentVersion: file.isCurrentVersion !== false,
           previousVersionId: file.previousVersionId,

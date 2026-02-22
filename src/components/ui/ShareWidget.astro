@@ -131,111 +131,74 @@ const facebookHref = `https://www.facebook.com/sharer.php?u=${encodedUrl}&t=${en
   }
 </style>
 
-<script>
-  document.addEventListener("DOMContentLoaded", function initShareWidget() {
-    const PROXIMITY_DELAY_MS = 180;
-
-    document.querySelectorAll("[data-share-trigger]").forEach(function (trigger) {
-      if (trigger.hasAttribute("data-share-bound")) return;
-      trigger.setAttribute("data-share-bound", "true");
-
-      const box = trigger.querySelector("[data-share-box]");
-      const closeBtn = trigger.querySelector("[data-share-close]");
-      const links = trigger.querySelectorAll("[data-share-link]");
-
-      function resolveHref(a: HTMLAnchorElement) {
-        let href = a.getAttribute("href") || "";
-        if (
-          href.includes("{{SHARE_URL}}") ||
-          href.includes("{{SHARE_TITLE}}") ||
-          href.includes("{{SHARE_TEXT}}")
-        ) {
-          const u = encodeURIComponent(window.location.href);
-          const t = encodeURIComponent(document.title || "");
-          href = href
-            .replace("{{SHARE_URL}}", u)
-            .replace("{{SHARE_TITLE}}", t)
-            .replace("{{SHARE_TEXT}}", t);
-          a.setAttribute("href", href);
-        }
-      }
-
-      links.forEach(function (link) {
-        resolveHref(link as HTMLAnchorElement);
-      });
-
-      const iconEl = trigger.querySelector("[data-share-icon]");
-      let hideTimer: number | null = null;
-
-      function show() {
-        if (hideTimer) {
-          clearTimeout(hideTimer);
-          hideTimer = null;
-        }
-        box?.setAttribute("data-visible", "");
-        iconEl?.classList.add("invisible");
-      }
-
-      function hide() {
-        hideTimer = null;
-        box?.removeAttribute("data-visible");
-        iconEl?.classList.remove("invisible");
-      }
-
-      function scheduleHide() {
-        if (hideTimer) return;
-        hideTimer = window.setTimeout(hide, PROXIMITY_DELAY_MS);
-      }
-
-      function cancelHide() {
-        if (hideTimer) {
-          clearTimeout(hideTimer);
-          hideTimer = null;
-        }
-      }
-
-      const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
-
-      if (!isTouchDevice) {
-        trigger.addEventListener("mouseenter", function () {
-          cancelHide();
-          show();
+<script is:inline>
+  (function () {
+    var PROXIMITY_DELAY_MS = 180;
+    function initShareWidget() {
+      document.querySelectorAll("[data-share-trigger]").forEach(function (trigger) {
+        if (trigger.hasAttribute("data-share-bound")) return;
+        trigger.setAttribute("data-share-bound", "true");
+        var box = trigger.querySelector("[data-share-box]");
+        var closeBtn = trigger.querySelector("[data-share-close]");
+        var links = trigger.querySelectorAll("[data-share-link]");
+        links.forEach(function (link) {
+          var href = link.getAttribute("href") || "";
+          if (href.indexOf("{{SHARE_URL}}") !== -1 || href.indexOf("{{SHARE_TITLE}}") !== -1 || href.indexOf("{{SHARE_TEXT}}") !== -1) {
+            href = href
+              .replace("{{SHARE_URL}}", encodeURIComponent(window.location.href))
+              .replace("{{SHARE_TITLE}}", encodeURIComponent(document.title || ""))
+              .replace("{{SHARE_TEXT}}", encodeURIComponent(document.title || ""));
+            link.setAttribute("href", href);
+          }
         });
-        trigger.addEventListener("mouseleave", function () {
-          scheduleHide();
+        var iconEl = trigger.querySelector("[data-share-icon]");
+        var hideTimer = null;
+        function show() {
+          if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+          if (box) box.setAttribute("data-visible", "");
+          if (iconEl) iconEl.classList.add("invisible");
+        }
+        function hide() {
+          hideTimer = null;
+          if (box) box.removeAttribute("data-visible");
+          if (iconEl) iconEl.classList.remove("invisible");
+        }
+        function scheduleHide() {
+          if (hideTimer) return;
+          hideTimer = window.setTimeout(hide, PROXIMITY_DELAY_MS);
+        }
+        function cancelHide() {
+          if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+        }
+        var isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+        if (!isTouchDevice) {
+          trigger.addEventListener("mouseenter", function () { cancelHide(); show(); });
+          trigger.addEventListener("mouseleave", scheduleHide);
+          if (box) {
+            box.addEventListener("mouseenter", function () { cancelHide(); show(); });
+            box.addEventListener("mouseleave", scheduleHide);
+          }
+        }
+        trigger.addEventListener("click", function (e) {
+          if (e.target.closest && (e.target.closest("[data-share-close]") || e.target.closest("[data-share-link]"))) return;
+          e.preventDefault();
+          if (box && box.hasAttribute("data-visible")) hide(); else show();
         });
-        if (box) {
-          box.addEventListener("mouseenter", function () {
+        if (closeBtn) {
+          closeBtn.addEventListener("click", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
             cancelHide();
-            show();
-          });
-          box.addEventListener("mouseleave", function () {
-            scheduleHide();
+            hide();
           });
         }
-      }
-
-      trigger.addEventListener("click", function (e) {
-        if ((e.target as Element).closest("[data-share-close]")) return;
-        if ((e.target as Element).closest("[data-share-link]")) return;
-        e.preventDefault();
-        const visible = box?.hasAttribute("data-visible");
-        visible ? hide() : show();
+        document.addEventListener("click", function (e) {
+          if (!trigger.contains(e.target)) { cancelHide(); hide(); }
+        });
       });
-
-      closeBtn?.addEventListener("click", function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        cancelHide();
-        hide();
-      });
-
-      document.addEventListener("click", function (e) {
-        if (!trigger.contains(e.target as Node)) {
-          cancelHide();
-          hide();
-        }
-      });
-    });
-  });
+    }
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initShareWidget);
+    else initShareWidget();
+    setTimeout(initShareWidget, 400);
+  })();
 </script>

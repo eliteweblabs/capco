@@ -48,13 +48,13 @@ const {
   supabaseUrl = undefined,
   projects = undefined,
   id = undefined,
-  statusData = undefined,
   mainClasses = "",
-  layout = "default",
-  mask = "center",
-  horizontalScroll = false,
+  layout = undefined,
   hideFooter = false,
 } = Astro.props;
+
+/** When true: only Flowbite + theme scripts run (for finding what breaks nav/forms). Set to false to restore all scripts. Reverted to false to match working 55cf3925. */
+const ONLY_FLOWBITE_AND_THEME = false;
 
 const stripHtml = (s: string | undefined | null): string =>
   (s ?? "")
@@ -70,11 +70,7 @@ import { globalCompanyData } from "../../pages/api/global/global-company-data";
 const {
   globalCompanyName,
   globalCompanySlogan,
-  globalCompanyAddress,
   globalCompanyPhone,
-  globalCompanyEmail,
-  globalCompanyWebsite,
-  globalCompanyLogo,
   primaryColor,
   secondaryColor,
   backgroundColor,
@@ -89,26 +85,18 @@ const {
 } = await globalCompanyData();
 
 const safeTitle = stripHtml(title) || Astro.url.pathname.replace(/\//g, " ").trim() || "Home";
-const pathname = Astro.url.pathname;
-const disableAnimations = pathname.startsWith("/admin") || pathname.startsWith("/project");
 const safeDescription = stripHtml(description || globalCompanySlogan || "");
 
 import { checkAuth } from "../../lib/auth";
-const { currentUser, session, supabase, refreshToken, accessToken } = await checkAuth(
-  Astro.cookies
-);
+const { currentUser, session } = await checkAuth(Astro.cookies);
 import { globalClasses } from "../../pages/api/global/global-classes";
 const { globalInputClasses, primaryTextClasses, secondaryTextClasses, globalIconButtonClasses } =
   globalClasses();
 
-// Get theme from cookie (set by client-side script)
-// Note: Cookie is set client-side, so on first load it may not exist yet
-const themeCookie = Astro.cookies.get("theme");
-const serverTheme = themeCookie?.value || "light"; // Default to light
-
-// Debug logging
-
 // Derived properties (needed for assigned fetch)
+// Derived properties (8 props → 13 total)
+const isAuth = currentUser ? true : false;
+const currentUrl = Astro.url.pathname;
 const currentRole = currentUser?.profile?.role;
 
 // Fetch assigned projects (count + preview) for Staff/Admin — lightweight endpoint, no profiles/files
@@ -130,30 +118,29 @@ if (currentUser && (currentRole === "Admin" || currentRole === "Staff")) {
   }
 }
 
-// Derived properties (8 props → 13 total)
-const isAuth = currentUser ? true : false;
-const projectId = project?.id || undefined;
-const currentUrl = Astro.url.pathname;
-
 // Icon sources - convert SVG to data URI; fallback to public favicon so we never use empty href
-// Wrapped in try/catch: bad/malformed icon in globalSettings must not block page load
 let iconSrc: string;
-try {
-  const icon = globalCompanyIcon;
-  if (icon && typeof icon === "string" && (icon.includes("<svg") || icon.includes("<?xml"))) {
-    const encoded = Buffer.from(icon).toString("base64");
-    iconSrc = "data:image/svg+xml;base64," + encoded;
-  } else if (icon && typeof icon === "string") {
-    iconSrc = icon;
-  } else {
-    iconSrc = "/favicon.svg";
-  }
-} catch {
+if (
+  globalCompanyIcon &&
+  (globalCompanyIcon.includes("<svg") || globalCompanyIcon.includes("<?xml"))
+) {
+  const encoded = Buffer.from(globalCompanyIcon).toString("base64");
+  iconSrc = "data:image/svg+xml;base64," + encoded;
+} else if (globalCompanyIcon && typeof globalCompanyIcon === "string") {
+  iconSrc = globalCompanyIcon;
+} else {
   iconSrc = "/favicon.svg";
 }
 
-// OG Image URL for social sharing - use setting from CMS, with fallback
-const ogImageSrc = ogImage || "";
+// Apple Touch Icon: Safari/iOS does NOT support data URIs - must use a URL to PNG
+const appleTouchIconSrc = iconSrc.startsWith("data:")
+  ? "/favicon.png"
+  : iconSrc.includes(".png")
+    ? iconSrc
+    : "/favicon.png";
+
+// OG Image URL for social sharing - prefer project featured image when on project page, else CMS setting
+const ogImageSrc = project?.featuredImageData?.publicUrl || ogImage || "";
 const ogImageType = ogImageSrc?.includes(".gif")
   ? "image/gif"
   : ogImageSrc?.includes(".svg")
@@ -211,232 +198,93 @@ import Tooltip from "./Tooltip.astro";
 import SpeedDial from "../ui/SpeedDial.astro";
 import AdminVoiceAssistantWidget from "../admin/AdminVoiceAssistantWidget.astro";
 import CacheIndicator from "./CacheIndicator.astro";
-import LogoCloudBlock from "../blocks/LogoCloudBlock.astro";
-import PixelGrid from "../ui/PixelGrid.astro";
+import CMSPreloader from "./CMSPreloader.astro";
 
 const isAdmin = currentUser?.profile?.role === "Admin";
+
+// Console suppression: ON by default. Set PUBLIC_SUPPRESS_CONSOLE_NOISE=false to disable (e.g. when debugging).
+const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "false";
 ---
 
 <!doctype html>
 <html lang="en">
   <head>
-    <!-- Console suppression MUST run first so it catches all subsequent script output -->
-    <script is:inline>
-      // Aggressively suppress harmless console errors in development
-      (function () {
-        const isDev =
-          window.location.hostname === "localhost" ||
-          window.location.hostname === "127.0.0.1" ||
-          window.location.hostname.startsWith("192.168.");
-
-        if (!isDev) return;
-
-        // Suppress Cloudflare cookie warnings and errors
-        const originalWarn = console.warn;
-        const originalError = console.error;
-        const originalLog = console.log;
-
-        // Override console.warn
-        console.warn = function (...args) {
-          const message = String(args[0] || "");
-          const fullMessage = args.join(" ");
-
-          // Suppress Cloudflare cookie warnings
-          if (
-            message.includes("_cf_bm") ||
-            message.includes("__cf_bm") ||
-            (fullMessage.includes("Cookie") && fullMessage.includes("rejected")) ||
-            fullMessage.includes("invalid domain") ||
-            fullMessage.includes("NS_BINDING_ABORTED") ||
-            fullMessage.includes("OpaqueResponseBlocking") ||
-            fullMessage.includes("Ignoring Event: localhost") ||
-            fullMessage.includes("Avatar failed to load") ||
-            fullMessage.includes("rate limit")
-          ) {
-            return; // Silent fail
-          }
-          originalWarn.apply(console, args);
-        };
-
-        // Override console.error
-        console.error = function (...args) {
-          const message = String(args[0] || "");
-          const fullMessage = args.join(" ");
-
-          // Suppress Cloudflare cookie errors
-          if (
-            message.includes("_cf_bm") ||
-            message.includes("__cf_bm") ||
-            (fullMessage.includes("Cookie") && fullMessage.includes("rejected")) ||
-            fullMessage.includes("invalid domain") ||
-            fullMessage.includes("NS_BINDING_ABORTED")
-          ) {
-            return; // Silent fail
-          }
-          originalError.apply(console, args);
-        };
-
-        // Override console.log to suppress network errors
-        console.log = function (...args) {
-          // const message = String(args[0] || ""); // Unused
-          const fullMessage = args.join(" ");
-
-          if (
-            fullMessage.includes("NS_BINDING_ABORTED") ||
-            fullMessage.includes("net::ERR_") ||
-            fullMessage.includes("_cf_bm") ||
-            fullMessage.includes("__cf_bm")
-          ) {
-            return; // Silent fail
-          }
-          originalLog.apply(console, args);
-        };
-
-        // Suppress unhandled promise rejections for aborted requests
-        window.addEventListener("unhandledrejection", function (event) {
-          const reason = event.reason;
-          const message = reason?.message || String(reason || "");
-
-          if (
-            message.includes("aborted") ||
-            message.includes("NS_BINDING_ABORTED") ||
-            message.includes("AbortError") ||
-            reason?.name === "AbortError"
-          ) {
-            event.preventDefault(); // Prevent console error
-            return;
-          }
-        });
-
-        // Suppress global error events for network errors
-        window.addEventListener(
-          "error",
-          function (event) {
-            const message = event.message || "";
-            const filename = event.filename || "";
-            const target = event.target;
-
-            // Suppress errors related to aborted requests, cookies, or failed image loads
-            if (
-              message.includes("NS_BINDING_ABORTED") ||
-              message.includes("_cf_bm") ||
-              message.includes("__cf_bm") ||
-              (message.includes("Cookie") && message.includes("rejected")) ||
-              (filename.includes("supabase.co") && message.includes("Failed")) ||
-              (target &&
-                target.tagName === "IMG" &&
-                target.src &&
-                target.src.includes("supabase.co/storage"))
-            ) {
-              event.preventDefault();
-              event.stopPropagation();
+    {!ONLY_FLOWBITE_AND_THEME && (
+      <>
+        {/* 1. DOMContentLoaded patch - re-enable first if testing */}
+        <script is:inline>
+          (function () {
+            function runIfAlreadyLoaded(type, listener) {
+              if (document.readyState !== "loading") {
+                setTimeout(function () {
+                  if (typeof listener === "function") listener();
+                  else if (listener && typeof listener.handleEvent === "function") listener.handleEvent({ type: type });
+                }, 0);
+                return true;
+              }
               return false;
             }
-          },
-          true
-        ); // Use capture phase to catch early
-
-        // Intercept fetch to suppress aborted request errors and failed avatar requests
-        const originalFetch = window.fetch;
-        window.fetch = function (...args) {
-          const url = typeof args[0] === "string" ? args[0] : args[0]?.url || "";
-          const method = args[1]?.method || "GET";
-
-          // Suppress HEAD requests to Supabase storage avatars (we know they'll fail)
-          if (
-            method === "HEAD" &&
-            url.includes("supabase.co/storage") &&
-            url.includes("/avatars/")
-          ) {
-            return Promise.resolve(new Response(null, { status: 404, statusText: "Not Found" }));
+            var docNative = document.addEventListener.bind(document);
+            document.addEventListener = function (type, listener, options) {
+              if ((type === "DOMContentLoaded" || type === "load") && runIfAlreadyLoaded(type, listener)) return;
+              docNative(type, listener, options);
+            };
+            var winNative = window.addEventListener.bind(window);
+            window.addEventListener = function (type, listener, options) {
+              if ((type === "DOMContentLoaded" || type === "load") && runIfAlreadyLoaded(type, listener)) return;
+              winNative(type, listener, options);
+            };
+          })();
+        </script>
+        <script is:inline define:vars={{ suppressConsoleNoise }}>
+          if (suppressConsoleNoise) {
+            (function () {
+              const ow = console.warn, oe = console.error, ol = console.log;
+              const skip = function (s) {
+                return !s || s.includes("_cf_bm") || s.includes("__cf_bm") || (s.includes("Cookie") && s.includes("rejected")) || s.includes("invalid domain") || s.includes("NS_BINDING_ABORTED") || s.includes("Avatar failed to load") || s.includes("rate limit");
+              };
+              console.warn = function () {
+                if (skip([].join.call(arguments, " "))) return;
+                ow.apply(console, arguments);
+              };
+              console.error = function () {
+                if (skip([].join.call(arguments, " "))) return;
+                oe.apply(console, arguments);
+              };
+              console.log = function () {
+                var s = [].join.call(arguments, " ");
+                if (s && (s.includes("NS_BINDING_ABORTED") || s.includes("net::ERR_") || s.includes("_cf_bm") || s.includes("__cf_bm"))) return;
+                ol.apply(console, arguments);
+              };
+            })();
           }
+        </script>
+      </>
+    )}
 
-          let fetchPromise = originalFetch.apply(this, args);
-
-          // Wrap to catch and suppress abort errors
-          fetchPromise = fetchPromise.catch(function (error) {
-            if (
-              error?.name === "AbortError" ||
-              error?.message?.includes("aborted") ||
-              error?.message?.includes("NS_BINDING_ABORTED")
-            ) {
-              // Return a silent rejection
-              return Promise.reject(new Error("Request aborted (suppressed)"));
-            }
-            throw error;
-          });
-
-          // Also suppress 400 responses for avatar images
-          fetchPromise = fetchPromise.then(function (response) {
-            if (
-              !response.ok &&
-              response.status === 400 &&
-              url.includes("supabase.co/storage") &&
-              url.includes("/avatars/")
-            ) {
-              // Return a silent failure - don't throw, just return a 404-like response
-              return new Response(null, { status: 404, statusText: "Not Found" });
-            }
-            return response;
-          });
-
-          return fetchPromise;
-        };
-
-        // Intercept XMLHttpRequest to suppress aborted errors and failed avatar requests
-        const originalXHROpen = XMLHttpRequest.prototype.open;
-        const originalXHRSend = XMLHttpRequest.prototype.send;
-
-        XMLHttpRequest.prototype.open = function (...args) {
-          this._suppressAbortError = false;
-          this._url = args[1]; // Store URL for later check
-          return originalXHROpen.apply(this, args);
-        };
-
-        XMLHttpRequest.prototype.send = function (...args) {
-          const xhr = this;
-          const url = xhr._url || "";
-
-          // Suppress 400 errors for avatar images
-          const originalOnLoad = xhr.onload;
-          xhr.onload = function (event) {
-            if (
-              xhr.status === 400 &&
-              url.includes("supabase.co/storage") &&
-              url.includes("/avatars/")
-            ) {
-              // Silently fail - don't trigger error handlers
-              return;
-            }
-            if (originalOnLoad) {
-              originalOnLoad.call(xhr, event);
-            }
-          };
-
-          const originalOnError = xhr.onerror;
-          xhr.onerror = function (event) {
-            // Suppress errors for avatar images
-            if (url.includes("supabase.co/storage") && url.includes("/avatars/")) {
-              return;
-            }
-            // Suppress aborted errors
-            if (xhr.status === 0 && xhr.readyState === 0) {
-              // Likely an aborted request
-              return;
-            }
-            if (originalOnError) {
-              originalOnError.call(xhr, event);
-            }
-          };
-
-          return originalXHRSend.apply(this, args);
-        };
-      })();
-    </script>
-
+    {/* KEPT: Theme detection - required for Flowbite dark mode */}
     <!-- Theme detection - MUST be first to be available for all components -->
     <script is:inline>
       (function () {
+        window.__jsOrder = 0;
+        window.__jsOrderLog = function (label) {
+          window.__jsOrder = (window.__jsOrder || 0) + 1;
+          console.log("[JS-ORDER]", window.__jsOrder, label);
+        };
+        window.__jsOrderLog("App theme (inline)");
+        window.__traceNum = 0;
+        window.__traceLog = function (m) {
+          window.__traceNum = (window.__traceNum || 0) + 1;
+          console.log("[TRACE " + window.__traceNum + "] " + m);
+        };
+        window.addEventListener("error", function (e) {
+          if (window.__traceLog) window.__traceLog("ERROR: " + (e.message || String(e)));
+        });
+        window.addEventListener("unhandledrejection", function (e) {
+          var msg = (e.reason && (e.reason.message || String(e.reason))) || "unknown";
+          if (window.__traceLog) window.__traceLog("UNHANDLED REJECTION: " + msg);
+        });
+        window.__traceLog("App theme script start");
         // Initialize dark mode FIRST to prevent flash (IIFE avoids duplicate-declaration if script is inlined twice)
         var hasExplicitPreference = localStorage.getItem("color-theme") !== null;
 
@@ -491,29 +339,36 @@ const isAdmin = currentUser?.profile?.role === "Admin";
         if (isIOS && major > 0 && major < 14) {
           window.__legacySafari = true;
         }
+        if (window.__traceLog) window.__traceLog("App theme script end");
       })();
     </script>
-
-    <!-- Expose for components that run in swapped SPA content (bundled so no 404 on /lib/...) -->
-    <script>
-      import "../../scripts/init-auth-globals";
-    </script>
+    {!ONLY_FLOWBITE_AND_THEME && (
+      <>
+        {/* 3. init-auth-globals */}
+        <script>
+          import "../../scripts/init-auth-globals";
+        </script>
+      </>
+    )}
 
     <!-- Critical CMS colors (server-rendered) so first paint uses DB colors before any script -->
     <style is:global set:html={criticalColorsCss}></style>
 
-    <!-- Dynamic Color & Font Injection - MUST run BEFORE CSS is parsed to prevent flash -->
-    <script
-      is:inline
-      define:vars={{
-        primaryColor,
-        secondaryColor,
-        fontFamily,
-        secondaryFontFamily,
-        globalCompanyName,
-      }}
-    >
+    {!ONLY_FLOWBITE_AND_THEME && (
+      <>
+        {/* 4. Dynamic Color & Font Injection */}
+        <script
+          is:inline
+          define:vars={{
+            primaryColor,
+            secondaryColor,
+            fontFamily,
+            secondaryFontFamily,
+            globalCompanyName,
+          }}
+        >
       (function () {
+        if (window.__jsOrderLog) window.__jsOrderLog("App dynamic colors (inline)");
         // Inject colors and font immediately, synchronously BEFORE any CSS is parsed
         const primary = primaryColor || "#825BDD";
         const secondary = secondaryColor || "#0ea5e9";
@@ -696,7 +551,9 @@ const isAdmin = currentUser?.profile?.role === "Admin";
           secondaryFont,
         });
       })();
-    </script>
+        </script>
+      </>
+    )}
 
     <meta charset="utf-8" />
     <meta
@@ -720,7 +577,12 @@ const isAdmin = currentUser?.profile?.role === "Admin";
     <meta name="theme-color" content={primaryColor} />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-project-title" content={globalCompanyName} />
+    <meta
+      name="apple-mobile-web-app-title"
+      content={globalCompanyName && globalCompanyName !== "Company Name Not Set"
+        ? globalCompanyName
+        : "App"}
+    />
     <meta name="generator" content={Astro.generator} />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <meta http-equiv="Cross-Origin-Embedder-Policy" content="unsafe-none" />
@@ -770,7 +632,7 @@ const isAdmin = currentUser?.profile?.role === "Admin";
     />
 
     <!-- Favicons and App Icons -->
-    <link rel="apple-touch-icon" sizes="180x180" href={iconSrc} />
+    <link rel="apple-touch-icon" sizes="180x180" href={appleTouchIconSrc} />
     <link
       rel="icon"
       type={globalCompanyIcon?.includes("<svg") || globalCompanyIcon?.includes("<?xml")
@@ -806,23 +668,24 @@ const isAdmin = currentUser?.profile?.role === "Admin";
       )
     }
 
-    <script>
-      import {
-        initializeNotificationCount,
-        loadNotificationCount,
-        refreshNotificationCount,
-        updateNotificationBellCount,
-      } from "@/lib/notification-count-loader";
+    {!ONLY_FLOWBITE_AND_THEME && (
+      <>
+        {/* 5. Notification count loader */}
+        <script>
+          import {
+            initializeNotificationCount,
+            loadNotificationCount,
+            refreshNotificationCount,
+            updateNotificationBellCount,
+          } from "@/lib/notification-count-loader";
 
-      // Make functions globally available
-      (window as any).initializeNotificationCount = initializeNotificationCount;
-      (window as any).updateNotificationBellCount = updateNotificationBellCount;
-      (window as any).loadNotificationCount = loadNotificationCount;
-      (window as any).refreshNotificationCount = refreshNotificationCount;
-    </script>
-
-    <!-- Global typewriter: simple (vanilla) + TypeIt-based -->
-    <script>
+          (window as any).initializeNotificationCount = initializeNotificationCount;
+          (window as any).updateNotificationBellCount = updateNotificationBellCount;
+          (window as any).loadNotificationCount = loadNotificationCount;
+          (window as any).refreshNotificationCount = refreshNotificationCount;
+        </script>
+        {/* 6. Global typewriter */}
+        <script>
       (function () {
         const DONE_ATTR = "data-typewriter-done";
 
@@ -868,21 +731,48 @@ const isAdmin = currentUser?.profile?.role === "Admin";
           initLoadingTypewriters();
         }
       })();
-    </script>
-    <script>
-      import {
-        initTypewriterTexts,
-        triggerActiveStepTypewriter,
-        skipActiveTypewriterToEnd,
-      } from "../../scripts/typewriter-text";
-      window.initTypewriterTexts = initTypewriterTexts;
-      window.triggerActiveStepTypewriter = triggerActiveStepTypewriter;
-      window.skipActiveTypewriterToEnd = skipActiveTypewriterToEnd;
-    </script>
+        </script>
+        {/* 7. typewriter-text */}
+        <script>
+          import {
+            initTypewriterTexts,
+            triggerActiveStepTypewriter,
+            skipActiveTypewriterToEnd,
+          } from "../../scripts/typewriter-text";
+          window.initTypewriterTexts = initTypewriterTexts;
+          window.triggerActiveStepTypewriter = triggerActiveStepTypewriter;
+          window.skipActiveTypewriterToEnd = skipActiveTypewriterToEnd;
+        </script>
+      </>
+    )}
 
     <!-- Set global user data for client-side components -->
 
-    {/* SPA disabled: CMS colors, ClientRouter, TRANSITION_BEFORE_PREPARATION - see git history if needed */}
+    {/* SPA disabled: persist CMS colors for re-apply after client navigation */}
+    <!-- {/* {isBackend && (
+        <>
+          <script id="cms-colors" type="application/json" set:html={JSON.stringify({
+            primaryColor: primaryColor || "#825BDD",
+            secondaryColor: secondaryColor || "#0ea5e9",
+            fontFamily: fontFamily || "Outfit Variable",
+            secondaryFontFamily: secondaryFontFamily || "sans-serif",
+          })} />
+          <script is:inline data-astro-rerun>
+            document.addEventListener("astro:after-swap", function reapplyCmsColors() { /* no-op */ 
+      //       });
+      //     </script>
+      //   </>
+      // )}}
+
+      {/* SPA disabled: client-side routing for project/* and admin/* (no full page reload) */}
+      {/* isBackend && <ClientRouter fallback="swap" />} */}
+      {/* SPA disabled: prevent swap on 404 */}
+      {/* {isBackend && (
+        <script>
+          import { isTransitionBeforePreparationEvent, TRANSITION_BEFORE_PREPARATION } from "astro:transitions/client";
+          document.addEventListener(TRANSITION_BEFORE_PREPARATION, (event: Event) => { /* no-op */ });
+        // </script>
+      // )} */} -->
   </head>
 
   <body
@@ -894,11 +784,13 @@ const isAdmin = currentUser?.profile?.role === "Admin";
     {/* SPA disabled: re-apply theme and astro:after-swap/astro:page-load scripts */}
     {/* SPA disabled: debug and runPageInits scripts */}
 
+    <CMSPreloader showByDefault={true} {globalCompanyName} />
+
     <UnifiedNotification />
 
     <TutorialOverlay {currentUser} tutorialId="demo-tour" autoStart={false} {isAuth} />
 
-    {/* <DebugPanel {debugData} {currentRole} /> */}
+    <!-- <DebugPanel {debugData} {currentRole} /> -->
 
     <FeedbackPanel {currentUser} />
 
@@ -918,7 +810,6 @@ const isAdmin = currentUser?.profile?.role === "Admin";
         pathname={Astro.url.pathname}
         template={layout}
         {hideFooter}
-        serverTheme={serverTheme}
       />
 
       <Aside {currentUser} {primaryTextClasses} {mobileNavigationHTML} />
@@ -947,44 +838,41 @@ const isAdmin = currentUser?.profile?.role === "Admin";
           ]}
           style={currentUser ? "transition-duration: 350ms;" : undefined}
         >
-          <main data-animate-main={disableAnimations ? "false" : undefined}>
+          <main>
             <slot />
           </main>
 
           {
             !isAuthPageResult && layout !== "fullform" && (
-              <>
-                <LogoCloudBlock />
-                <div class="my-6 text-xs">
-                  <ul class="align-center flex justify-center">
-                    <li>
-                      <Tooltip
-                        text={`${new Date().getFullYear().toString()} ${globalCompanyName}. All rights reserved.`}
-                      >
-                        <span class="me-6 no-underline hover:underline">©</span>
-                      </Tooltip>
-                    </li>
-                    <li>
-                      <a href="/privacy" class="me-6 no-underline hover:underline">
-                        {" "}
-                        privacy{" "}
-                      </a>
-                    </li>
-                    <li>
-                      <a href="/terms" class="me-6 no-underline hover:underline">
-                        {" "}
-                        terms{" "}
-                      </a>
-                    </li>
-                    <li>
-                      <a href="/cookies" class="no-underline hover:underline">
-                        {" "}
-                        cookie{" "}
-                      </a>
-                    </li>
-                  </ul>
-                </div>
-              </>
+              <div class="my-6 text-xs">
+                <ul class="align-center flex justify-center">
+                  <li>
+                    <Tooltip
+                      text={`${new Date().getFullYear().toString()} ${globalCompanyName}. All rights reserved.`}
+                    >
+                      <span class="me-6 no-underline hover:underline">©</span>
+                    </Tooltip>
+                  </li>
+                  <li>
+                    <a href="/privacy" class="me-6 no-underline hover:underline">
+                      {" "}
+                      privacy{" "}
+                    </a>
+                  </li>
+                  <li>
+                    <a href="/terms" class="me-6 no-underline hover:underline">
+                      {" "}
+                      terms{" "}
+                    </a>
+                  </li>
+                  <li>
+                    <a href="/cookies" class="no-underline hover:underline">
+                      {" "}
+                      cookie{" "}
+                    </a>
+                  </li>
+                </ul>
+              </div>
             )
           }
         </div>
@@ -1005,13 +893,12 @@ const isAdmin = currentUser?.profile?.role === "Admin";
         {hideFooter}
       />
 
-      <div id="action-buttons" class="hide-on-form-focus fixed bottom-8 right-4 z-[500]">
+      <div id="action-buttons" class="hide-on-form-focus fixed bottom-8 right-4 z-100">
         {
           isAdmin ? (
             <AdminVoiceAssistantWidget {currentUser} {globalCompanyPhone} />
           ) : (
-            !isAuthPageResult &&
-            !isContactPageResult && (
+            !isAuthPageResult && (
               <SpeedDial
                 {globalCompanyPhone}
                 currentUser={currentUser || undefined}
@@ -1032,16 +919,214 @@ const isAdmin = currentUser?.profile?.role === "Admin";
     {/* Cache indicator: dev/test only (localhost or ?cacheIndicator=1) */}
     {isAdmin && <CacheIndicator />}
 
-    <!-- Flowbite JavaScript -->
-    <script src="https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js"></script>
-
-    <script>
-      import "../../scripts/app-globals";
+    {/* Flowbite: CDN may load slowly or fail (CSP/network). Fallback below retries and can load script dynamically. */}
+    <script src="https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js" defer></script>
+    <script is:inline>
+      if (window.__jsOrderLog) window.__jsOrderLog("Flowbite script tag (inline after CDN)");
     </script>
-
-    <!-- Overscroll: scale .overscroll-scale linearly with overscroll % (getOverscrollPercent). 0–100% → scale 1; >100% or <0% → scale tracks linearly. -->
+    {/* Multi-step form fallback: when Astro module chunks don't load, load typewriter then form so animation runs */}
     <script is:inline>
       (function () {
+        function loadFormFallback() {
+          if (!document.querySelector("form[data-form-config]") || window.__multistepFormFallbackLoaded) return;
+          window.__multistepFormFallbackLoaded = true;
+          if (window.__jsOrderLog) window.__jsOrderLog("MultiStepForm fallback loader (inline)");
+          function injectFormScript() {
+            var s = document.createElement("script");
+            s.src = "/scripts/init-multistep-form.js";
+            s.async = false;
+            document.body.appendChild(s);
+          }
+          function injectTypewriterThenForm() {
+            var tw = document.createElement("script");
+            tw.src = "/scripts/typewriter.js";
+            tw.async = false;
+            tw.onload = injectFormScript;
+            tw.onerror = injectFormScript;
+            document.body.appendChild(tw);
+          }
+          if (window.__PUBLIC_SUPABASE_URL__ && window.__PUBLIC_SUPABASE_PUBLISHABLE__) {
+            injectTypewriterThenForm();
+            return;
+          }
+          fetch("/api/env/supabase-public")
+            .then(function (r) { return r.ok ? r.json() : {}; })
+            .then(function (d) {
+              if (d && typeof d.url === "string") window.__PUBLIC_SUPABASE_URL__ = d.url;
+              if (d && typeof d.key === "string") window.__PUBLIC_SUPABASE_PUBLISHABLE__ = d.key;
+              injectTypewriterThenForm();
+            })
+            .catch(function () { injectTypewriterThenForm(); });
+        }
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", loadFormFallback);
+        } else {
+          loadFormFallback();
+        }
+      })();
+    </script>
+    {/* Alert and banner dismiss: inline so close works when module scripts don't load */}
+    <script is:inline>
+      (function () {
+        function initAlertDismiss() {
+          document.querySelectorAll("[data-dismiss-alert]").forEach(function (btn) {
+            if (btn.getAttribute("data-alert-dismiss-inited") === "1") return;
+            btn.setAttribute("data-alert-dismiss-inited", "1");
+            btn.addEventListener("click", function () {
+              var alertId = btn.getAttribute("data-dismiss-alert");
+              var alert = alertId ? document.getElementById(alertId) : null;
+              if (alert) {
+                alert.style.transition = "opacity 0.3s ease";
+                alert.style.opacity = "0";
+                setTimeout(function () { alert.remove(); }, 300);
+              }
+            });
+          });
+          document.querySelectorAll(".banner-alert").forEach(function (banner) {
+            var el = banner;
+            var bannerId = el.getAttribute("data-banner-id");
+            var dismissBtn = el.querySelector(".banner-dismiss");
+            if (!dismissBtn || dismissBtn.getAttribute("data-banner-dismiss-inited") === "1") return;
+            dismissBtn.setAttribute("data-banner-dismiss-inited", "1");
+            try {
+              var stored = localStorage.getItem("dismissedBanners");
+              var dismissed = stored ? JSON.parse(stored) : [];
+              if (bannerId && dismissed.indexOf(bannerId) !== -1) { el.style.display = "none"; return; }
+            } catch (e) {_logger.error("Error dismissing banner:", e);}
+            dismissBtn.addEventListener("click", function () {
+              el.style.transition = "max-height 0.3s ease-out, opacity 0.3s ease-out, margin 0.3s ease-out";
+              el.style.opacity = "0";
+              el.style.maxHeight = "0";
+              el.style.overflow = "hidden";
+              el.style.marginTop = "0";
+              el.style.marginBottom = "0";
+              setTimeout(function () { el.style.display = "none"; }, 300);
+              if (bannerId) {
+                try {
+                  var s = localStorage.getItem("dismissedBanners");
+                  var arr = s ? JSON.parse(s) : [];
+                  if (arr.indexOf(bannerId) === -1) arr.push(bannerId);
+                  localStorage.setItem("dismissedBanners", JSON.stringify(arr));
+                } catch (e) {_logger.error("Error dismissing banner:", e);}
+              }
+            });
+          });
+        }
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", initAlertDismiss);
+        } else {
+          initAlertDismiss();
+        }
+        setTimeout(initAlertDismiss, 400);
+      })();
+    </script>
+
+    {!ONLY_FLOWBITE_AND_THEME && (
+      <>
+        {/* 8. app-globals DISABLED: Astro 5 emits empty chunk in prod; loading it stops all subsequent scripts (no TRACE 5). Fallback below provides stubs so site works. */}
+        {/* <script> import "../../scripts/app-globals"; </script> */}
+        {/* 8b. Fallback: define critical window.* stubs and re-init Flowbite. Waits for Flowbite if CDN loads late; if still missing, loads script dynamically. */}
+        <script is:inline>
+          (function () {
+            if (window.__jsOrderLog) window.__jsOrderLog("App fallback / ensureGlobals (inline)");
+            var flowbiteInited = false;
+            function runInitFlowbite() {
+              if (flowbiteInited) return;
+              var w = window;
+              if (typeof w.initFlowbite === "function") {
+                try { w.initFlowbite(); flowbiteInited = true; } catch (e) { console.warn("[App] initFlowbite error:", e); }
+              }
+            }
+            function ensureGlobals() {
+              if (window.__appGlobalsFallbackDone) return;
+              window.__appGlobalsFallbackDone = true;
+              var w = window;
+              if (typeof w.showNotice !== "function") w.showNotice = function () {};
+              if (typeof w.showModal !== "function") w.showModal = function () {};
+              if (typeof w.hideModal !== "function") w.hideModal = function () {};
+              if (typeof w.removeModal !== "function") w.removeModal = function () {};
+              if (typeof w.lockBodyScroll !== "function") w.lockBodyScroll = function () {};
+              if (typeof w.unlockBodyScroll !== "function") w.unlockBodyScroll = function () {};
+              if (typeof w.handleUrlNotification !== "function") w.handleUrlNotification = function () {};
+              if (typeof w.processUrlNotifications !== "function") w.processUrlNotifications = function () {};
+              if (typeof w.hideNotification !== "function") w.hideNotification = function () {};
+              runInitFlowbite();
+              [50, 150, 350, 600].forEach(function (ms) {
+                setTimeout(runInitFlowbite, ms);
+              });
+              setTimeout(function () {
+                if (flowbiteInited) return;
+                if (typeof w.initFlowbite === "function") { runInitFlowbite(); return; }
+                var s = document.createElement("script");
+                s.src = "https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js";
+                s.onload = function () { runInitFlowbite(); };
+                s.onerror = function () { console.warn("[App] Flowbite CDN load failed; dropdowns/collapse may not work."); };
+                document.head.appendChild(s);
+              }, 700);
+            }
+            if (document.readyState === "loading") {
+              document.addEventListener("DOMContentLoaded", ensureGlobals);
+            } else {
+              ensureGlobals();
+            }
+            if (window.__traceLog) window.__traceLog("App: fallback script registered (ensureGlobals on load or now)");
+          })();
+        </script>
+        {/* 9. hold-progress-init */}
+        <script>
+          import "../../scripts/hold-progress-init";
+        </script>
+      </>
+    )}
+
+    {!ONLY_FLOWBITE_AND_THEME && (
+      <>
+        {/* 10. Theme toggle inline */}
+        <script is:inline>
+      (function () {
+        if (window.__jsOrderLog) window.__jsOrderLog("App theme toggle (inline)");
+        function initThemeToggle() {
+          var themeToggle = document.getElementById("theme-toggle");
+          var darkIcon = document.getElementById("theme-toggle-dark-icon");
+          var lightIcon = document.getElementById("theme-toggle-light-icon");
+          if (!themeToggle || !darkIcon || !lightIcon) return;
+          if (themeToggle.dataset.themeToggleInited === "1") return;
+          themeToggle.dataset.themeToggleInited = "1";
+          function syncIcons(isDark) {
+            if (isDark) {
+              darkIcon.classList.add("hidden");
+              lightIcon.classList.remove("hidden");
+            } else {
+              darkIcon.classList.remove("hidden");
+              lightIcon.classList.add("hidden");
+            }
+          }
+          syncIcons(document.documentElement.classList.contains("dark"));
+          themeToggle.addEventListener("click", function () {
+            var isDark = document.documentElement.classList.contains("dark");
+            var newTheme = isDark ? "light" : "dark";
+            if (isDark) {
+              document.documentElement.classList.remove("dark");
+              localStorage.setItem("color-theme", "light");
+            } else {
+              document.documentElement.classList.add("dark");
+              localStorage.setItem("color-theme", "dark");
+            }
+            syncIcons(!isDark);
+            document.cookie = "theme=" + newTheme + "; path=/; max-age=31536000; SameSite=Lax";
+            if (typeof window.currentTheme !== "undefined") window.currentTheme = newTheme;
+            if (typeof window.updateThemeSync === "function") window.updateThemeSync();
+          });
+        }
+        if (document.readyState === "loading")
+          document.addEventListener("DOMContentLoaded", initThemeToggle);
+        else initThemeToggle();
+      })();
+    </script>
+
+    <script is:inline>
+      (function () {
+        if (window.__jsOrderLog) window.__jsOrderLog("App overscroll scale (inline)");
         var getOverscrollPercent = window.getOverscrollPercent;
         if (typeof getOverscrollPercent !== "function") return;
 
@@ -1095,27 +1180,44 @@ const isAdmin = currentUser?.profile?.role === "Admin";
           setTimeout(init, 0);
         }
       })();
-    </script>
+        </script>
+        {/* 11. Overscroll scale - above */}
+      </>
+    )}
 
+    {!ONLY_FLOWBITE_AND_THEME && (
+      <>
+        {/* 12. DOMContentLoaded init (notification, sidebar) */}
     <script>
+      if (typeof window !== "undefined" && (window as any).__jsOrderLog) (window as any).__jsOrderLog("App DOMContentLoaded-init (module)");
       document.addEventListener("DOMContentLoaded", async () => {
-        (window as any).hideOnFormFocus();
-
-        // Initialize notification count only if notification bell exists (shown when authenticated)
         try {
+          if (typeof (window as any).hideOnFormFocus === "function") {
+            (window as any).hideOnFormFocus();
+          }
           const notificationBell = document.getElementById("notification-bell");
-          if (notificationBell && (window as any).initializeNotificationCount) {
+          if (notificationBell && typeof (window as any).initializeNotificationCount === "function") {
             await (window as any).initializeNotificationCount();
           }
+          const ensureSidebar = (window as any).__ensureSidebarInit;
+          if (typeof ensureSidebar === "function") {
+            ensureSidebar();
+            setTimeout(ensureSidebar, 400);
+            setTimeout(ensureSidebar, 1200);
+          }
         } catch (error) {
-          console.error("🔔 [APP] Error initializing notification count:", error);
+          console.error("🔔 [APP] Error in DOMContentLoaded init:", error);
         }
       });
     </script>
+      </>
+    )}
 
-    <!-- Global Image Error Handler -->
+    {!ONLY_FLOWBITE_AND_THEME && (
+      <>
+        {/* 13. Global Image Error Handler */}
     <script>
-      // Global error handler for broken image URLs (especially Supabase storage)
+      if (typeof window !== "undefined" && (window as any).__jsOrderLog) (window as any).__jsOrderLog("App image error handler (module)");
       document.addEventListener("DOMContentLoaded", () => {
         // Suppress expected console errors in development
         const isDev =
@@ -1227,12 +1329,17 @@ const isAdmin = currentUser?.profile?.role === "Admin";
         }
       });
     </script>
+      </>
+    )}
 
+    {!ONLY_FLOWBITE_AND_THEME && (
+      <>
+    {/* 14. AOS (Animate On Scroll) */}
     <!-- AOS (Animate On Scroll) - Global initialization -->
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js" defer></script>
     <script is:inline>
-      // Wait for AOS library to load before initializing (skip on admin/project)
+      if (window.__jsOrderLog) window.__jsOrderLog("AOS init (inline)");
       window.addEventListener("DOMContentLoaded", function () {
         var path = window.location.pathname;
         if (path.startsWith("/admin") || path.startsWith("/project")) return;
@@ -1247,47 +1354,32 @@ const isAdmin = currentUser?.profile?.role === "Admin";
         }
       });
     </script>
+      </>
+    )}
 
-    <!-- Custom Scroll Animations (Blur/Scale effects) -->
-    <script>
-      import "../../scripts/scroll-animations";
-    </script>
+    {!ONLY_FLOWBITE_AND_THEME && (
+      <>
+        {/* 15. scroll-animations */}
+        <script>
+          import "../../scripts/scroll-animations";
+        </script>
+        {/* 16. lazy-load-images */}
+        <script>
+          import "../../scripts/lazy-load-images";
+        </script>
+        {/* 17. project-item-handlers */}
+        <script>
+          import "../../scripts/project-item-handlers";
+        </script>
 
-    <!-- Lazy Loading Images (Global) -->
-    <script>
-      import "../../scripts/lazy-load-images";
-    </script>
+    {/* 18. modal-global */}
+        <script>
+          import "../../lib/modal-global";
+        </script>
+      </>
+    )}
 
-    <!-- Global Project Item Handlers (Extracted from ProjectItem.astro for performance) -->
-    <script>
-      import "../../scripts/project-item-handlers";
-    </script>
-
-    <!-- Button Ripple Effects (Focus and Click animations) -->
-    <!-- <script>
-      import "../../scripts/button-ripple";
-    </script> -->
-
-    {/* Load refresh-manager for Staff/Admin only - keeps project/user data fresh across pages */}
-    {
-      (currentRole === "Admin" || currentRole === "Staff") && (
-        <script>import "../../lib/refresh-manager.ts";</script>
-      )
-    }
-
-    {/* Project Refresh Manager (DISABLED - use generic refresh-manager.ts instead) */}
-    {
-      /* <script>
-      import "../../lib/project-refresh-manager";
-    </script> */
-    }
-
-    <!-- Global Modal System -->
-    <script>
-      import "../../lib/modal-global";
-    </script>
-
-    <!-- Plausible Analytics Script -->
-    {/* plausibleTrackingScript - inject when needed */}
+    {/* <!-- Plausible Analytics Script --> */}
+    {/* {plausibleTrackingScript && <Fragment set:html={plausibleTrackingScript} />} */}
   </body>
 </html>

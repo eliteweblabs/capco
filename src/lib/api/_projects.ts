@@ -156,6 +156,7 @@ export async function fetchProjects(
         return {
           ...projectWithData,
           featuredImageData: {
+            id: project.featuredImageData.id,
             publicUrl: project.featuredImageData.publicUrl,
           },
         };
@@ -255,6 +256,7 @@ export async function getProjectsByAuthor(
         return {
           ...projectWithData,
           featuredImageData: {
+            id: project.featuredImageData.id,
             publicUrl: project.featuredImageData.publicUrl,
           },
         };

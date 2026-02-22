@@ -82,6 +82,15 @@
       "allow": ["Admin"]
     },
     {
+      "id": "contact-submissions",
+      "label": "Contact Submissions",
+      "type": "link",
+      "href": "/admin/contact-submissions",
+      "icon": "envelope",
+      "position": 6.6,
+      "allow": ["Admin"]
+    },
+    {
       "id": "global-functions",
       "label": "Global Functions",
       "type": "link",
@@ -402,7 +411,6 @@
       "type": "submit",
       "variant": "antispam",
       "size": "md",
-      "icon": "send",
       "iconPosition": "right",
       "label": "submit"
     },
@@ -410,6 +418,48 @@
       "type": "skip",
       "variant": "outline",
       "size": "md"
+    }
+  },
+  "forms": {
+    "nfpa25-wet-pipe-itm": {
+      "formId": "nfpa25-wet-pipe-itm-form",
+      "formAction": "/api/nfpa25/wet-pipe-itm",
+      "formMethod": "post",
+      "totalSteps": 1,
+      "progressBar": true,
+      "registerUser": false,
+      "steps": [
+        {
+          "title": "Property & Inspector",
+          "subtitle": "Wet Pipe Sprinkler Systems — ITM",
+          "fieldLayout": "grid",
+          "fields": [
+            { "id": "propertyName", "name": "propertyName", "type": "text", "placeholder": "Property Name", "required": true },
+            { "id": "inspector", "name": "inspector", "type": "text", "placeholder": "Inspector", "required": true },
+            { "id": "propertyAddress", "name": "propertyAddress", "type": "component", "component": "InlineAddressSearch", "label": "Property Address", "componentProps": { "placeholder": "Property Address", "fetchApiEndpoint": "/api/google/places-autocomplete", "apiParams": { "types": "address", "components": "country:us" } } },
+            { "id": "contractNo", "name": "contractNo", "type": "text", "placeholder": "Contract No." },
+            { "id": "propertyPhone", "name": "propertyPhone", "type": "tel", "placeholder": "Property Phone Number" },
+            { "id": "date", "name": "date", "type": "date", "label": "Date", "required": true }
+          ],
+          "buttons": [{ "type": "next", "label": "Next", "dataNext": 2 }]
+        },
+        {
+          "title": "Inspection Frequency",
+          "subtitle": "Select all that apply",
+          "fields": [
+            { "id": "inspectionFrequency", "name": "inspectionFrequency", "type": "component", "component": "ToggleButton", "label": "Frequency", "toggleType": "multi-select", "options": [{ "value": "daily", "label": "Daily" }, { "value": "weekly", "label": "Weekly" }, { "value": "monthly", "label": "Monthly" }, { "value": "quarterly", "label": "Quarterly" }, { "value": "annually", "label": "Annually" }, { "value": "five_years", "label": "Five Years" }] }
+          ],
+          "buttons": [{ "type": "prev", "label": "Back", "dataPrev": 1 }, { "type": "next", "label": "Next", "dataNext": 3 }]
+        },
+        { "title": "Daily — Valve (Cold Weather): Enclosure inspected during cold weather to verify minimum 40°F (4°C)", "fields": [{ "id": "h_daily_valve_enclosure", "name": "daily_valve_enclosure", "type": "hidden", "value": "" }, { "id": "bg_daily_valve_enclosure", "name": "daily_valve_enclosure", "type": "button-group", "label": "Daily — Valve (Cold Weather): Enclosure inspected during cold weather to verify minimum 40°F (4°C)", "buttons": [{ "type": "choice", "label": "Yes", "dataValue": "yes" }, { "type": "choice", "label": "No", "dataValue": "no" }, { "type": "choice", "label": "N/A", "dataValue": "na" }] }], "buttons": [{ "type": "prev", "label": "Back", "dataPrev": 2 }, { "type": "next", "label": "Next", "dataNext": 4 }] },
+        { "title": "Weekly — Backflow: Isolation valves in open position and locked or supervised", "fields": [{ "id": "h_weekly_backflow_isolation", "name": "weekly_backflow_isolation", "type": "hidden", "value": "" }, { "id": "bg_weekly_backflow_isolation", "name": "weekly_backflow_isolation", "type": "button-group", "label": "Weekly — Backflow: Isolation valves in open position and locked or supervised", "buttons": [{ "type": "choice", "label": "Yes", "dataValue": "yes" }, { "type": "choice", "label": "No", "dataValue": "no" }, { "type": "choice", "label": "N/A", "dataValue": "na" }] }], "buttons": [{ "type": "prev", "label": "Back", "dataPrev": 3 }, { "type": "next", "label": "Next", "dataNext": 5 }] },
+        { "title": "Weekly — Master Pressure-Regulating Device", "subtitle": "Downstream pressure (psi)", "fields": [{ "id": "weekly_mprd_downstream_psi", "name": "weekly_mprd_downstream_psi", "type": "range", "label": "Downstream pressure (psi)", "min": 0, "max": 300, "step": 5, "value": 0 }], "buttons": [{ "type": "prev", "label": "Back", "dataPrev": 4 }, { "type": "next", "label": "Next", "dataNext": 6 }] },
+        { "title": "Weekly — Control Valves: In the correct (open or closed) position", "fields": [{ "id": "h_weekly_control_correct_position", "name": "weekly_control_correct_position", "type": "hidden", "value": "" }, { "id": "bg_weekly_control_correct_position", "name": "weekly_control_correct_position", "type": "button-group", "label": "Weekly — Control Valves: In the correct (open or closed) position", "buttons": [{ "type": "choice", "label": "Yes", "dataValue": "yes" }, { "type": "choice", "label": "No", "dataValue": "no" }, { "type": "choice", "label": "N/A", "dataValue": "na" }] }], "buttons": [{ "type": "prev", "label": "Back", "dataPrev": 5 }, { "type": "next", "label": "Next", "dataNext": 7 }] },
+        { "title": "Monthly — Gauges are in good operating condition", "fields": [{ "id": "h_monthly_gauges_condition", "name": "monthly_gauges_condition", "type": "hidden", "value": "" }, { "id": "bg_monthly_gauges_condition", "name": "monthly_gauges_condition", "type": "button-group", "label": "Monthly — Gauges are in good operating condition", "buttons": [{ "type": "choice", "label": "Yes", "dataValue": "yes" }, { "type": "choice", "label": "No", "dataValue": "no" }, { "type": "choice", "label": "N/A", "dataValue": "na" }] }], "buttons": [{ "type": "prev", "label": "Back", "dataPrev": 6 }, { "type": "next", "label": "Next", "dataNext": 8 }] },
+        { "title": "Quarterly — Main Drain Test", "subtitle": "Static and residual pressure (psi)", "fieldLayout": "grid", "fields": [{ "id": "quarterly_main_drain_static_psi", "name": "quarterly_main_drain_static_psi", "type": "number", "placeholder": "Static psi", "min": 0, "max": 300 }, { "id": "quarterly_main_drain_residual_psi", "name": "quarterly_main_drain_residual_psi", "type": "number", "placeholder": "Residual psi", "min": 0, "max": 300 }], "buttons": [{ "type": "prev", "label": "Back", "dataPrev": 7 }, { "type": "next", "label": "Next", "dataNext": 9 }] },
+        { "title": "Annual — Sprinklers (visible): No damage or leaks", "fields": [{ "id": "h_annual_sprinklers_no_damage", "name": "annual_sprinklers_no_damage", "type": "hidden", "value": "" }, { "id": "bg_annual_sprinklers_no_damage", "name": "annual_sprinklers_no_damage", "type": "button-group", "label": "Annual — Sprinklers (visible): No damage or leaks", "buttons": [{ "type": "choice", "label": "Yes", "dataValue": "yes" }, { "type": "choice", "label": "No", "dataValue": "no" }, { "type": "choice", "label": "N/A", "dataValue": "na" }] }], "buttons": [{ "type": "prev", "label": "Back", "dataPrev": 8 }, { "type": "next", "label": "Next", "dataNext": 10 }] },
+        { "title": "Comments & Signature", "subtitle": "Contractor information", "fieldLayout": "grid", "fields": [{ "id": "comments", "name": "comments", "type": "textarea", "placeholder": "Comments", "rows": 4 }, { "id": "signature", "name": "signature", "type": "signature", "label": "Signature", "required": false }, { "id": "signatureDate", "name": "signatureDate", "type": "date", "label": "Date" }, { "id": "contractorName", "name": "contractorName", "type": "text", "placeholder": "Contractor Name" }, { "id": "contractorAddress", "name": "contractorAddress", "type": "component", "component": "InlineAddressSearch", "label": "Contractor Address", "componentProps": { "placeholder": "Contractor Address", "fetchApiEndpoint": "/api/google/places-autocomplete", "apiParams": { "types": "address", "components": "country:us" } } }, { "id": "licenseCertNo", "name": "licenseCertNo", "type": "text", "placeholder": "License/Certification No." }], "buttons": [{ "type": "prev", "label": "Back", "dataPrev": 9 }, { "type": "submit", "label": "Submit", "variant": "primary" }] }
+      ]
     }
   },
   "projectForm": {
@@ -1566,11 +1616,10 @@
     "totalSteps": 8,
     "progressBar": false,
     "responseType": "toast",
-
     "steps": [
       {
         "stepNumber": 1,
-        "title": "<span data-typewriter-pause=\"1360\"></span>Hi, I'm {{virtualAssistantName}}...<br><br>{{globalCompanyName}}'s project assistant. <br><br>Let's start with your name!",
+        "title": "<span data-typewriter-pause=\"1360\"></span>Hi, I'm {{virtualAssistantName}}...<br><br>{{globalCompanyName}}'s project assistant. Let's start with your name!",
         "fieldLayout": "single",
         "response": false,
         "fields": [
@@ -1676,7 +1725,8 @@
       },
       {
         "stepNumber": 4,
-        "title": "<span data-form-session-meta='firstName' data-default='friend'>friend</span>, do you wish to opt in to SMS?<br><br>Not for marketing, communication and project updates only.",
+        "title": "<span data-form-session-meta='firstName' data-default='friend'>friend</span>, do you wish to opt in to SMS",
+        "moreInfoTooltip": "Not for marketing, communication and project updates only.",
         "skipCondition": "noValidPhone",
         "response": true,
         "fields": [
@@ -1826,7 +1876,7 @@
     "formAction": "/api/reviews/submit",
     "formMethod": "post",
     "totalSteps": 4,
-    "progressBar": true,
+    "progressBar": false,
     "responseType": "toast",
     "successMessage": {
       "title": "Thank you!",
@@ -1838,7 +1888,7 @@
       {
         "stepNumber": 1,
         "title": "Leave a Review",
-        "subtitle": "Your feedback helps us improve. Share your experience with {{globalCompanyName}}.",
+        "moreInfoTooltip": "Your feedback helps us improve. Share your experience with {{globalCompanyName}}.",
         "response": true,
         "fields": [
           {
@@ -1877,34 +1927,42 @@
           { "type": "next", "dataNext": 3 }
         ]
       },
+
       {
         "stepNumber": 3,
-        "title": "How would you rate your experience?",
-        "subtitle": "1 = Poor, 5 = Excellent",
+        "title": "How would you rate your experience",
+        "moreInfoTooltip": "1 = Poor, 5 = Excellent",
         "response": true,
         "fields": [
           {
             "type": "hidden",
             "id": "review-rating-value",
-            "name": "rating"
+            "name": "rating",
+            "required": false
           },
           {
-            "id": "review-rating",
+            "type": "range",
+            "id": "review-rating-slider",
             "name": "rating",
-            "type": "button-group",
-            "required": true,
-            "errorMessage": "Please select a rating",
-            "buttons": [
-              { "id": "rating-1", "label": "1", "dataValue": "1", "dataNext": 4 },
-              { "id": "rating-2", "label": "2", "dataValue": "2", "dataNext": 4 },
-              { "id": "rating-3", "label": "3", "dataValue": "3", "dataNext": 4 },
-              { "id": "rating-4", "label": "4", "dataValue": "4", "dataNext": 4 },
-              { "id": "rating-5", "label": "5", "dataValue": "5", "dataNext": 4 }
-            ]
+            "required": false,
+            "min": 1,
+            "max": 5,
+            "step": 1,
+            "label": ""
           }
         ],
-        "buttons": [{ "type": "prev", "label": "back", "dataPrev": 2 }]
+        "buttons": [
+          {
+            "type": "prev",
+            "dataPrev": 2
+          },
+          {
+            "type": "next",
+            "dataNext": 4
+          }
+        ]
       },
+
       {
         "stepNumber": 4,
         "title": "Tell us more",

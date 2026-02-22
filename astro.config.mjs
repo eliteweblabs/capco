@@ -5,9 +5,13 @@ import { defineConfig } from "astro/config";
 // @ts-check
 import node from "@astrojs/node";
 import tailwind from "@astrojs/tailwind";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // import studiocms from "studiocms"; // Disabled - not in use, causing SDK initialization errors
 
-// Load environment variables (merge with process.env so Railway build vars are available when .env is missing)
+// Load environment variables (merge with process.env so Railway build args are available when .env is missing)
 import { loadEnv } from "vite";
 // import { hexToRgb } from "./src/lib/color-utils.ts";
 
@@ -19,6 +23,9 @@ const env = { ...process.env, ...loaded };
 
 // https://astro.build/config
 export default defineConfig({
+  experimental: {
+    preserveScriptOrder: true,
+  },
   site: env.RAILWAY_PUBLIC_DOMAIN?.startsWith("http")
     ? env.RAILWAY_PUBLIC_DOMAIN
     : `https://${env.RAILWAY_PUBLIC_DOMAIN || "capcofire.com"}`, // Set your production domain
@@ -51,24 +58,29 @@ export default defineConfig({
   },
   // Ensure proper CI building
   vite: {
+    // Force @floating-ui/dom to resolve to dist file so it is bundled (avoids "Failed to resolve module specifier" in production)
+    resolve: {
+      alias: {
+        "@floating-ui/dom": path.resolve(
+          __dirname,
+          "node_modules/@floating-ui/dom/dist/floating-ui.dom.mjs"
+        ),
+      },
+    },
     // Support older Safari (e.g. iPad Air on iOS 12) – transpile optional chaining (?.)
     // and nullish coalescing (??) which require Safari 13.1+
     build: {
       target: "es2018",
       rollupOptions: {
         external: (id) => {
-          // Only gray-matter – exclude from client bundle (uses Node path/fs).
-          // Do NOT externalize content.ts – it breaks Railway (looks for /app/dist/server/app/src/lib/content which doesn't exist).
+          // gray-matter uses Node APIs – exclude from client bundle
           if (id === "gray-matter") return true;
           return false;
         },
-        onwarn(warning, warn) {
-          if (warning.message?.includes?.("Generated an empty chunk")) return;
-          warn(warning);
-        },
       },
       ssr: {
-        noExternal: true, // Bundle everything for SSR – prevents ERR_MODULE_NOT_FOUND in standalone deploy
+        // Bundle everything for SSR – prevents ERR_MODULE_NOT_FOUND in standalone deploy
+        noExternal: true,
       },
     },
     optimizeDeps: {
@@ -76,6 +88,7 @@ export default defineConfig({
         "cropperjs",
         "@floating-ui/dom",
         "@supabase/supabase-js",
+        "flowbite",
         "libphonenumber-js",
         "typeit",
       ],
@@ -112,9 +125,7 @@ export default defineConfig({
       "process.env.PUBLIC_SUPABASE_URL": JSON.stringify(env.PUBLIC_SUPABASE_URL),
       // New Supabase API keys (preferred)
       "process.env.PUBLIC_SUPABASE_PUBLISHABLE": JSON.stringify(env.PUBLIC_SUPABASE_PUBLISHABLE),
-      "process.env.SUPABASE_SECRET": JSON.stringify(
-        env.SUPABASE_SECRET || env.SUPABASE_SERVICE_ROLE_KEY || ""
-      ),
+      "process.env.SUPABASE_SECRET": JSON.stringify(env.SUPABASE_SECRET),
       // Legacy keys (fallback for backwards compatibility)
       "process.env.PUBLIC_SUPABASE_ANON_KEY": JSON.stringify(env.PUBLIC_SUPABASE_ANON_KEY),
       "process.env.SUPABASE_ADMIN_KEY": JSON.stringify(env.SUPABASE_ADMIN_KEY),
@@ -123,6 +134,14 @@ export default defineConfig({
       "process.env.GLOBAL_COLOR_SECONDARY": JSON.stringify(env.GLOBAL_COLOR_SECONDARY),
       "process.env.RAILWAY_PUBLIC_DOMAIN": JSON.stringify(
         env.RAILWAY_PUBLIC_DOMAIN || "https://capcofire.com"
+      ),
+      "process.env.PUBLIC_URL": JSON.stringify(
+        env.PUBLIC_URL ||
+          (env.RAILWAY_PUBLIC_DOMAIN
+            ? env.RAILWAY_PUBLIC_DOMAIN.startsWith("http")
+              ? env.RAILWAY_PUBLIC_DOMAIN
+              : `https://${env.RAILWAY_PUBLIC_DOMAIN}`
+            : "")
       ),
       "process.env.STRIPE_DOMAIN_ID": JSON.stringify(env.STRIPE_DOMAIN_ID),
       "process.env.STRIPE_SECRET_KEY": JSON.stringify(env.STRIPE_SECRET_KEY),

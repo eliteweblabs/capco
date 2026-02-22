@@ -124,7 +124,13 @@ export async function replacePlaceholders(
     baseUrl = companyData.globalCompanyWebsite;
   }
   if (!baseUrl) {
-    baseUrl = "http://localhost:4321";
+    const rail = process.env.RAILWAY_PUBLIC_DOMAIN;
+    const pub = process.env.PUBLIC_URL;
+    baseUrl = rail
+      ? rail.startsWith("http")
+        ? rail
+        : `https://${rail}`
+      : pub || "http://localhost:4321";
   }
   if (baseUrl && !baseUrl.startsWith("http")) {
     baseUrl = `https://${baseUrl}`;

@@ -99,7 +99,10 @@ export interface FormFieldConfig {
     | "hidden"
     | "component"
     | "button-group"
-    | "range";
+    | "range"
+    | "date"
+    | "time"
+    | "signature";
   label?: string;
   placeholder?: string;
   animatedPlaceholders?: string[]; // Array of rotating placeholder values
@@ -112,6 +115,7 @@ export interface FormFieldConfig {
   /** Message (can include HTML e.g. link to register) shown when validate check fails. */
   validateMessage?: string;
   minlength?: number;
+  maxlength?: number;
   rows?: number;
   autofocus?: boolean;
   component?: string; // Component name (e.g., "InlineAddressSearch", "SlotMachineModalStaff", "UnitSlider", "ToggleButton", "FileUpload")

@@ -40,6 +40,7 @@ export const navigation = async (
     const { supabaseAdmin } = await import("../../../lib/supabase-admin");
     if (supabaseAdmin) {
       const clientId = process.env.RAILWAY_PROJECT_NAME || null;
+      const { quoteClientIdForPostgrest } = await import("../../../lib/content");
       let query = supabaseAdmin
         .from("cmsPages")
         .select(
@@ -50,7 +51,7 @@ export const navigation = async (
 
       // Filter by clientId: show global (null) or matching clientId
       if (clientId) {
-        query = query.or(`clientId.is.null,clientId.eq.${clientId}`);
+        query = query.or(`clientId.is.null,clientId.eq.${quoteClientIdForPostgrest(clientId)}`);
       }
       // If no clientId set, show all pages (no filter)
 
@@ -71,7 +72,9 @@ export const navigation = async (
           .eq("isActive", true)
           .eq("includeInNavigation", true);
         if (clientId) {
-          fallbackQuery = fallbackQuery.or(`clientId.is.null,clientId.eq.${clientId}`);
+          fallbackQuery = fallbackQuery.or(
+            `clientId.is.null,clientId.eq.${quoteClientIdForPostgrest(clientId)}`
+          );
         }
         const fallbackResult = await fallbackQuery.order("title");
         cmsPages = fallbackResult.data;
@@ -185,18 +188,18 @@ export const navigation = async (
         // If current page, force primary background
         const buttonStyleMap: Record<string, string> = {
           primary:
-            "hover:scale-101 hover:shadow-xl rounded-full border-2 border-primary-500 bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600 shadow-lg",
+            "hover:scale-101 rounded-full border-2 border-primary-500 bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600",
           secondary:
-            "hover:scale-101 hover:shadow-xl rounded-full border-2 border-secondary-500 bg-secondary-500 text-white hover:bg-secondary-600 dark:bg-secondary-500 dark:hover:bg-secondary-600 shadow-lg",
+            "ring-2 ring-inset ring-[currentColor] hover:scale-101 rounded-full border-2 border-secondary-500 bg-secondary-500 text-white hover:bg-secondary-600 dark:bg-secondary-500 dark:hover:bg-secondary-600",
           outline:
-            "hover:scale-101 hover:shadow-xl rounded-full border-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white dark:border-primary-400 dark:text-primary-400 dark:hover:bg-primary-600 dark:hover:text-white backdrop-blur-md",
+            "hover:scale-101 rounded-full border-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white dark:border-primary-400 dark:text-primary-400 dark:hover:bg-primary-600 dark:hover:text-white backdrop-blur-md",
           ghost:
             "rounded-full text-primary-500 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/20",
         };
 
         // If this is the current page button, use primary style with background
         const styleClasses = item.isPrimary
-          ? "hover:scale-101 hover:shadow-xl rounded-full border-2 border-primary-500 bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600 shadow-lg"
+          ? "hover:scale-101 rounded-full border-2 border-primary-500 bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600"
           : buttonStyleMap[item.buttonStyle] || buttonStyleMap.primary;
         const baseClasses =
           "font-secondary relative inline-flex items-center justify-center font-medium transition-all duration-200";
@@ -216,8 +219,8 @@ export const navigation = async (
             }"
          >
           <svg class="inline w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>
-          <span class="inline sm:hidden" data-sidebar-collapse-hide="">${item.label}</span>
-          <span class="hidden sm:inline">${item.label}</span>
+          <span class="inline md:hidden" data-sidebar-collapse-hide="">${item.label}</span>
+          <span class="hidden md:inline">${item.label}</span>
         </a>
       </li>`;
     });

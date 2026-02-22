@@ -27,7 +27,7 @@ const { id, title = "", onOpenCallback, focusSelector, classList } = Astro.props
   role="tooltip"
   {...onOpenCallback ? { "data-on-open": onOpenCallback } : {}}
   {...focusSelector ? { "data-focus-on-open": focusSelector } : {}}
-  class={`${classList ? classList.join(" ") : ""} invisible absolute z-[150] inline-block w-full max-w-md overflow-visible bg-gray-200 text-body text-sm opacity-0 transition-opacity duration-300 ease-out dark:bg-gray-800`}
+  class={`${classList ? classList.join(" ") : ""} overflow-y-scroll no-scrollbar invisible fixed z-[150] inline-block w-full max-w-md overflow-visible bg-gray-200 border border-gray-200 dark:border-gray-800 text-body text-sm opacity-0 transition-opacity duration-300 ease-out dark:bg-gray-800`}
   data-dynamic-height="height"
 >
   <!-- <div class="flex max-h-[85vh] flex-col overflow-hidden">
@@ -43,145 +43,141 @@ const { id, title = "", onOpenCallback, focusSelector, classList } = Astro.props
     )
   }
 
-  <!-- <slot /> -->
+  <slot />
   <!-- </div> -->
 </div>
 
 <script is:inline>
-  // Flowbite adds opacity/transition classes when closing; when reopening, only 'hidden' is
-  // removed so the panel can stay invisible. Remove those classes on trigger click so dropdowns
-  // (account, notifications) reopen correctly after being closed.
-  // Supports both data-dropdown-toggle and data-popover-target (AuthIcon uses popover).
-  // iOS keypad: focus() must run in same user gesture as click, so we focus synchronously first.
-  document.addEventListener("DOMContentLoaded", function () {
-    document.querySelectorAll("[id$='-dropdown']").forEach(function (panel) {
-      var panelId = panel.id;
-      if (!panelId) return;
-      var onOpen = panel.getAttribute("data-on-open");
-      var focusSel = panel.getAttribute("data-focus-on-open");
-      var selectors =
-        "[data-dropdown-toggle='" + panelId + "'], [data-popover-target='" + panelId + "']";
-      document.querySelectorAll(selectors).forEach(function (trigger) {
-        if (trigger.hasAttribute("data-onopen-bound")) return;
-        trigger.setAttribute("data-onopen-bound", "true");
-        trigger.addEventListener("click", function () {
-          // Remove visibility-blocking classes FIRST (sync) so focus() works.
-          // Browsers/emulators often ignore focus on hidden elements.
-          if (panel) {
-            panel.classList.remove(
-              "opacity-0",
-              "transition-opacity",
-              "duration-300",
-              "ease-out",
-              "invisible",
-              "hidden"
-            );
-          }
-          // Sync focus in same click (required for iOS keypad)
-          if (focusSel && panel) {
-            var el = panel.querySelector(focusSel);
-            if (el && typeof el.focus === "function") el.focus();
-          }
-          setTimeout(function () {
-            if (panel && onOpen && typeof window[onOpen] === "function") {
-              window[onOpen]();
+  (function () {
+    function run() {
+      // Flowbite adds opacity/transition classes when closing; when reopening, only 'hidden' is
+      // removed so the panel can stay invisible. Remove those classes on trigger click so dropdowns
+      // (account, notifications) reopen correctly after being closed.
+      document.querySelectorAll("[id$='-dropdown']").forEach(function (panel) {
+        var panelId = panel.id;
+        if (!panelId) return;
+        var onOpen = panel.getAttribute("data-on-open");
+        var focusSel = panel.getAttribute("data-focus-on-open");
+        var selectors =
+          "[data-dropdown-toggle='" + panelId + "'], [data-popover-target='" + panelId + "']";
+        document.querySelectorAll(selectors).forEach(function (trigger) {
+          if (trigger.hasAttribute("data-onopen-bound")) return;
+          trigger.setAttribute("data-onopen-bound", "true");
+          trigger.addEventListener("click", function () {
+            if (panel) {
+              panel.classList.remove(
+                "opacity-0",
+                "transition-opacity",
+                "duration-300",
+                "ease-out",
+                "invisible",
+                "hidden"
+              );
             }
-          }, 50);
+            if (focusSel && panel) {
+              var el = panel.querySelector(focusSel);
+              if (el && typeof el.focus === "function") el.focus();
+            }
+            setTimeout(function () {
+              if (panel && onOpen && typeof window[onOpen] === "function") window[onOpen]();
+            }, 50);
+          });
+        });
+
+        panel.querySelectorAll("[data-dropdown-close]").forEach(function (btn) {
+          if (btn.hasAttribute("data-close-bound")) return;
+          btn.setAttribute("data-close-bound", "true");
+          btn.addEventListener("click", function (e) {
+            e.preventDefault();
+            var inst =
+              window.FlowbiteInstances && window.FlowbiteInstances.getInstance("Popover", panelId);
+            if (inst && typeof inst.hide === "function") inst.hide();
+            else {
+              panel.classList.add("opacity-0", "invisible");
+              setTimeout(function () {
+                panel.classList.add("hidden");
+              }, 150);
+            }
+          });
         });
       });
 
-      // Close button: use Flowbite Popover.hide() when available so state stays in sync.
-      // Falls back to Dismiss-style hide (opacity-0, invisible, hidden) if no Popover instance.
-      panel.querySelectorAll("[data-dropdown-close]").forEach(function (btn) {
-        if (btn.hasAttribute("data-close-bound")) return;
-        btn.setAttribute("data-close-bound", "true");
-        btn.addEventListener("click", function (e) {
-          e.preventDefault();
-          var popoverId = panelId; // e.g. "account-dropdown"
+      // When dropdown open: show X on trigger; when closed: show default icon. Wire X to close.
+      document.querySelectorAll(".auth-icon-close").forEach(function (closeEl) {
+        var trigger = closeEl.closest("[data-popover-target], [data-dropdown-toggle]");
+        if (!trigger) return;
+        var panelId =
+          trigger.getAttribute("data-popover-target") ||
+          trigger.getAttribute("data-dropdown-toggle");
+        var panel = panelId ? document.getElementById(panelId) : null;
+        if (!panel) return;
+        if (closeEl.hasAttribute("data-dropdown-close-bound")) return;
+        closeEl.setAttribute("data-dropdown-close-bound", "true");
+
+        function closePopover() {
           var inst =
-            window.FlowbiteInstances && window.FlowbiteInstances.getInstance("Popover", popoverId);
-          if (inst && typeof inst.hide === "function") {
-            inst.hide();
-          } else {
+            window.FlowbiteInstances && window.FlowbiteInstances.getInstance("Popover", panelId);
+          if (inst && typeof inst.hide === "function") inst.hide();
+          else {
             panel.classList.add("opacity-0", "invisible");
             setTimeout(function () {
               panel.classList.add("hidden");
             }, 150);
           }
-        });
-      });
-    });
-
-    // When dropdown open: show X on trigger; when closed: show default icon. Wire X to close.
-    document.querySelectorAll(".auth-icon-close").forEach(function (closeEl) {
-      var trigger = closeEl.closest("[data-popover-target], [data-dropdown-toggle]");
-      if (!trigger) return;
-      var panelId =
-        trigger.getAttribute("data-popover-target") || trigger.getAttribute("data-dropdown-toggle");
-      var panel = panelId ? document.getElementById(panelId) : null;
-      if (!panel) return;
-
-      function closePopover() {
-        var inst =
-          window.FlowbiteInstances && window.FlowbiteInstances.getInstance("Popover", panelId);
-        if (inst && typeof inst.hide === "function") {
-          inst.hide();
-        } else {
-          panel.classList.add("opacity-0", "invisible");
-          setTimeout(function () {
-            panel.classList.add("hidden");
-          }, 150);
         }
-      }
+        closeEl.addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          closePopover();
+        });
 
-      closeEl.addEventListener("click", function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        closePopover();
-      });
-
-      function updateTrigger(isOpen) {
-        var defaultEl = trigger.querySelector(".auth-icon-default");
-        if (defaultEl && closeEl) {
-          if (isOpen) {
-            defaultEl.style.opacity = "0";
-            defaultEl.style.pointerEvents = "none";
-            closeEl.style.opacity = "1";
-            closeEl.style.pointerEvents = "auto";
-          } else {
-            defaultEl.style.opacity = "1";
-            defaultEl.style.pointerEvents = "auto";
-            closeEl.style.opacity = "0";
-            closeEl.style.pointerEvents = "none";
+        function updateTrigger(isOpen) {
+          var defaultEl = trigger.querySelector(".auth-icon-default");
+          if (defaultEl && closeEl) {
+            if (isOpen) {
+              defaultEl.style.opacity = "0";
+              defaultEl.style.pointerEvents = "none";
+              closeEl.style.opacity = "1";
+              closeEl.style.pointerEvents = "auto";
+            } else {
+              defaultEl.style.opacity = "1";
+              defaultEl.style.pointerEvents = "auto";
+              closeEl.style.opacity = "0";
+              closeEl.style.pointerEvents = "none";
+            }
           }
         }
-      }
-
-      var observer = new MutationObserver(function () {
+        var observer = new MutationObserver(function () {
+          updateTrigger(
+            !panel.classList.contains("hidden") && !panel.classList.contains("invisible")
+          );
+        });
+        observer.observe(panel, { attributes: true, attributeFilter: ["class"] });
         updateTrigger(
           !panel.classList.contains("hidden") && !panel.classList.contains("invisible")
         );
       });
-      observer.observe(panel, { attributes: true, attributeFilter: ["class"] });
-      updateTrigger(!panel.classList.contains("hidden") && !panel.classList.contains("invisible"));
-    });
-  });
+    }
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run);
+    else run();
+    setTimeout(run, 500);
+  })();
 </script>
 
 <style>
   [role="tooltip"] > [data-popper-arrow]:before {
-    border: none !important;
+    border: solid 1px var(--color-gray-200) !important;
   }
 
   [role="tooltip"] > [data-popper-arrow]:after {
-    border: none !important;
+    border: solid 1px var(--color-gray-200) !important;
   }
 
   :global(.dark) [role="tooltip"] > [data-popper-arrow]:before {
-    border: none !important;
+    border: solid 1px var(--color-gray-800) !important;
   }
 
   :global(.dark) [role="tooltip"] > [data-popper-arrow]:after {
-    border: none !important;
+    border: solid 1px var(--color-gray-800) !important;
   }
 </style>

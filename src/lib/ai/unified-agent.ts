@@ -208,6 +208,29 @@ export class UnifiedFireProtectionAgent {
   }
 
   /**
+   * Load AI agent settings from globalSettings (keys prefixed with aiAgent_)
+   */
+  private async loadAgentSettings(): Promise<Record<string, string>> {
+    if (!supabaseAdmin) return {};
+    try {
+      const { data, error } = await supabaseAdmin
+        .from("globalSettings")
+        .select("key, value")
+        .like("key", "aiAgent_%");
+      if (error || !data) return {};
+      return (data as Array<{ key: string; value: string }>).reduce(
+        (acc, row) => {
+          acc[row.key] = row.value ?? "";
+          return acc;
+        },
+        {} as Record<string, string>
+      );
+    } catch {
+      return {};
+    }
+  }
+
+  /**
    * Load project-specific memory (like Claude.ai's project memory)
    */
   private async loadProjectMemory(
@@ -254,6 +277,66 @@ export class UnifiedFireProtectionAgent {
   }
 
   /**
+   * Default system prompt template. Used when aiAgent_systemPromptTemplate is not set in globalSettings.
+   * Placeholders: {{specialization}}, {{standardsLine}}, {{additionalInstructions}}, {{projectMemory}}, {{knowledgeBase}}, {{currentContext}}
+   */
+  private static readonly DEFAULT_SYSTEM_PROMPT_TEMPLATE = `You are an expert AI assistant specialized in {{specialization}}. You help users with:
+
+## Core Capabilities
+
+### 1. Document Generation
+- Generate documents using templates and project data
+- Create professional, well-formatted output
+- Follow any applicable industry or regulatory standards
+
+### 2. Project Analysis
+- Analyze project data and provide insights
+- Review project status and suggest improvements
+- Identify compliance issues or missing information
+
+### 3. Compliance Review
+- Check projects against applicable standards
+- Identify compliance gaps or violations
+- Provide recommendations for compliance
+
+### 4. Data Analysis
+- Analyze project metrics and trends
+- Generate reports on project status, timelines, or performance
+- Provide insights from project data
+
+### 5. Image Analysis
+- Analyze images of plans, systems, or documents
+- Extract information from photos, diagrams, or technical drawings
+- Review uploaded documents or images for technical details
+
+### 6. General Assistance
+- Answer questions about the domain
+- Explain technical concepts
+- Provide guidance on best practices
+
+## Your Personality
+- Professional and knowledgeable
+- Clear and concise in explanations
+- Proactive in identifying issues
+- Helpful and solution-oriented
+
+## Response Format
+- Provide clear, actionable responses
+- When generating documents, use proper formatting
+- When analyzing data, include specific findings
+- {{standardsLine}}
+
+## Available Tools
+You have access to:
+- Project database (can query project information)
+- Document templates (can generate various document types)
+- Historical data (can reference past projects or documents)
+
+{{additionalInstructions}}{{projectMemory}}{{knowledgeBase}}{{currentContext}}
+
+Remember: Be helpful, accurate, and professional. If you need more information to complete a task, ask for it.`;
+
+  /**
    * Build comprehensive system prompt that defines the agent's capabilities
    */
   private async buildSystemPrompt(context?: any): Promise<string> {
@@ -270,6 +353,13 @@ export class UnifiedFireProtectionAgent {
 
     // Load knowledge base entries (global + project-specific)
     const knowledgeEntries = await this.loadKnowledgeBase(undefined, context?.projectId);
+
+    // Load agent settings from database (admin-editable)
+    const agentSettings = await this.loadAgentSettings();
+    const specialization =
+      agentSettings.aiAgent_specialization?.trim() || "project management and document review";
+    const standards = agentSettings.aiAgent_standards?.trim() || "";
+    const systemPromptExtra = agentSettings.aiAgent_systemPromptExtra?.trim() || "";
 
     // Format project memory (like Claude.ai)
     let projectMemorySection = "";
@@ -302,62 +392,30 @@ export class UnifiedFireProtectionAgent {
       );
     }
 
-    return `You are an expert AI assistant specialized in fire protection engineering and project management. You help users with:
+    const standardsLine = standards
+      ? `When relevant, apply or reference these standards: ${standards}.`
+      : "When applicable, cite relevant codes or standards.";
 
-## Core Capabilities
+    const additionalInstructionsSection = systemPromptExtra
+      ? `\n## Additional Instructions\n${systemPromptExtra}\n`
+      : "";
 
-### 1. Document Generation
-- Generate fire protection documents (inspection reports, compliance certificates, design reports)
-- Use templates and project data to create professional documents
-- Ensure NFPA compliance and industry standards
+    const currentContextSection =
+      context?.projectId || context?.userId
+        ? `\n## Current Context\n${context?.projectId ? `- Working with Project ID: ${context.projectId}\n` : ""}${context?.userId ? `- User ID: ${context.userId}\n` : ""}`
+        : "";
 
-### 2. Project Analysis
-- Analyze project data and provide insights
-- Review project status and suggest improvements
-- Identify compliance issues or missing information
+    const template =
+      agentSettings.aiAgent_systemPromptTemplate?.trim() ||
+      UnifiedFireProtectionAgent.DEFAULT_SYSTEM_PROMPT_TEMPLATE;
 
-### 3. Code Compliance
-- Check projects against NFPA standards (NFPA 13, NFPA 72, etc.)
-- Identify code violations or compliance gaps
-- Provide recommendations for compliance
-
-### 4. Data Analysis
-- Analyze project metrics and trends
-- Generate reports on project status, timelines, or performance
-- Provide insights from project data
-
-### 5. Image Analysis
-- Analyze images of fire protection systems, plans, or documents
-- Extract information from photos, diagrams, or technical drawings
-- Review uploaded documents or images for compliance or technical details
-
-### 6. General Assistance
-- Answer questions about fire protection systems
-- Explain technical concepts
-- Provide guidance on best practices
-
-## Your Personality
-- Professional and knowledgeable
-- Clear and concise in explanations
-- Proactive in identifying issues
-- Helpful and solution-oriented
-
-## Response Format
-- Provide clear, actionable responses
-- When generating documents, use proper formatting
-- When analyzing data, include specific findings
-- Always cite relevant codes or standards when applicable
-
-## Available Tools
-You have access to:
-- Project database (can query project information)
-- Document templates (can generate various document types)
-- Historical data (can reference past projects or documents)
-
-${projectMemorySection}${knowledgeSection}${context?.projectId ? `\n## Current Context\n- Working with Project ID: ${context.projectId}\n` : ""}
-${context?.userId ? `- User ID: ${context.userId}\n` : ""}
-
-Remember: Be helpful, accurate, and professional. If you need more information to complete a task, ask for it.`;
+    return template
+      .replace(/\{\{specialization\}\}/g, specialization)
+      .replace(/\{\{standardsLine\}\}/g, standardsLine)
+      .replace(/\{\{additionalInstructions\}\}/g, additionalInstructionsSection)
+      .replace(/\{\{projectMemory\}\}/g, projectMemorySection)
+      .replace(/\{\{knowledgeBase\}\}/g, knowledgeSection)
+      .replace(/\{\{currentContext\}\}/g, currentContextSection);
   }
 
   /**
@@ -533,14 +591,14 @@ Remember: Be helpful, accurate, and professional. If you need more information t
     projectData: Record<string, any>,
     requirements?: string[]
   ): Promise<AgentResponse> {
-    const prompt = `Generate a fire protection document for project ${projectId} using template ${templateId}.
+    const prompt = `Generate a document for project ${projectId} using template ${templateId}.
 
 Project Data:
 ${JSON.stringify(projectData, null, 2)}
 
 ${requirements ? `Requirements:\n${requirements.join("\n")}\n` : ""}
 
-Generate a professional, compliant document following NFPA standards.`;
+Generate a professional document following any applicable standards for this project.`;
 
     return this.processQuery({
       message: prompt,
@@ -581,7 +639,7 @@ Generate a professional, compliant document following NFPA standards.`;
       .order("createdAt", { ascending: false })
       .limit(10);
 
-    const prompt = `Analyze this fire protection project and provide comprehensive insights:
+    const prompt = `Analyze this project and provide comprehensive insights:
 
 Project Data:
 ${JSON.stringify(project, null, 2)}
@@ -605,7 +663,7 @@ Please provide a comprehensive analysis:
    - Overall health of the project
 
 2. **Compliance Review**
-   - NFPA code compliance status
+   - Compliance status against applicable standards
    - Missing required documents or certifications
    - Potential violations or gaps
 
@@ -633,7 +691,7 @@ Format your response clearly with sections and bullet points.`;
   }
 
   /**
-   * Check project compliance against NFPA standards
+   * Check project compliance against applicable or specified standards
    */
   async checkCompliance(projectId: number, standard?: string): Promise<AgentResponse> {
     if (!supabaseAdmin) {
@@ -661,11 +719,13 @@ Format your response clearly with sections and bullet points.`;
       .select("*")
       .eq("projectId", projectId);
 
-    const standardsToCheck = standard
-      ? [standard]
-      : ["NFPA 13", "NFPA 13R", "NFPA 13D", "NFPA 72", "NFPA 25", "NFPA 14"];
+    const standardsToCheck = standard ? [standard] : [];
 
-    const prompt = `Perform a comprehensive compliance check for this fire protection project against NFPA standards.
+    const prompt = `Perform a comprehensive compliance check for this project.${
+      standardsToCheck.length > 0
+        ? ` Standards to check: ${standardsToCheck.join(", ")}.`
+        : " Apply any relevant standards for this type of project."
+    }
 
 Project Information:
 - Type: ${project.new_construction ? "New Construction" : "Existing Building"}
@@ -676,12 +736,10 @@ Project Information:
 Files Available: ${files?.length || 0}
 Documents Generated: ${documents?.length || 0}
 
-Standards to Check: ${standardsToCheck.join(", ")}
+${standardsToCheck.length > 0 ? `Standards to Check: ${standardsToCheck.join(", ")}\n\n` : ""}Please provide:
 
-Please provide:
-
-1. **Compliance Status by Standard**
-   For each applicable standard, indicate:
+1. **Compliance Status**
+   For each applicable standard or requirement, indicate:
    - Compliance level (Compliant / Non-Compliant / Partial / Unknown)
    - Key requirements met
    - Key requirements missing
@@ -689,8 +747,8 @@ Please provide:
 
 2. **Critical Issues**
    - Any critical violations or non-compliance
-   - Safety concerns
-   - Code violations that must be addressed
+   - Concerns that must be addressed
+   - Gaps that should be remedied
 
 3. **Missing Documentation**
    - Required documents not present
@@ -706,7 +764,7 @@ Please provide:
    - Overall compliance percentage
    - Breakdown by standard
 
-Be specific and reference actual NFPA code sections where applicable.`;
+Be specific and reference actual code sections or standards where applicable.`;
 
     return this.processQuery({
       message: prompt,
@@ -752,7 +810,7 @@ Be specific and reference actual NFPA code sections where applicable.`;
       .select("*")
       .eq("projectId", projectId);
 
-    const prompt = `Generate a ${reportType} project report for this fire protection project.
+    const prompt = `Generate a ${reportType} project report for this project.
 
 Project Data:
 ${JSON.stringify(project, null, 2)}
@@ -784,8 +842,8 @@ ${
 `
       : `
 - Compliance Overview
-- NFPA Standard Compliance Status
-- Code Violations and Issues
+- Standard Compliance Status
+- Violations and Issues
 - Required Documentation Status
 - Compliance Recommendations
 - Action Plan

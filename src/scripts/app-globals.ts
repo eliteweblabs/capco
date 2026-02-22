@@ -19,6 +19,9 @@ import {
   formatCurrency,
   isValidEmail,
 } from "../lib/global-display-utils";
+import { initFlowbite } from "flowbite";
+
+if (typeof window !== "undefined" && (window as any).__traceLog) (window as any).__traceLog("app-globals.ts running");
 
 declare global {
   interface Window {
@@ -157,7 +160,6 @@ declare global {
 
 // Setup console interceptor for client-side (filters out image fetch logs)
 setupConsoleInterceptor();
-console.log("[---INIT] app-globals loaded (showNotice, COUNT_BUBBLE_PRESETS, etc.)");
 
 // Set Stripe publishable key globally for PaymentForm
 (window as any).STRIPE_PUBLISHABLE_KEY = import.meta.env.STRIPE_PUBLISHABLE_KEY;
@@ -1591,6 +1593,9 @@ if ("serviceWorker" in navigator) {
 
 document.addEventListener("DOMContentLoaded", () => {
   try {
+    // Flowbite: ensure dropdowns/drawers/popovers work (fallback if flowbite-init chunk fails to load on server)
+    initFlowbite();
+
     // Initialize autofill navigation - COMMENTED OUT
     // (window as any).setupAutofillNavigation();
 

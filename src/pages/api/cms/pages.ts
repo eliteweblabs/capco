@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { quoteClientIdForPostgrest } from "../../../lib/content";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
 
 /**
@@ -26,7 +27,7 @@ export const GET: APIRoute = async ({ request, url }) => {
 
       // Filter by clientId: show global (null) or matching clientId
       if (clientId) {
-        query = query.or(`clientId.is.null,clientId.eq.${clientId}`);
+        query = query.or(`clientId.is.null,clientId.eq.${quoteClientIdForPostgrest(clientId)}`);
       }
       // If no clientId set, query already has correct scope for all pages
 
@@ -49,7 +50,7 @@ export const GET: APIRoute = async ({ request, url }) => {
 
       // Filter by clientId: show global (null) or matching clientId
       if (clientId) {
-        query = query.or(`clientId.is.null,clientId.eq.${clientId}`);
+        query = query.or(`clientId.is.null,clientId.eq.${quoteClientIdForPostgrest(clientId)}`);
       }
       // If no clientId set, show all pages (no filter)
 
@@ -65,7 +66,7 @@ export const GET: APIRoute = async ({ request, url }) => {
         // Column doesn't exist, use slug ordering instead
         let fallbackQuery = supabaseAdmin.from("cmsPages").select("*");
         if (clientId) {
-          fallbackQuery = fallbackQuery.or(`clientId.is.null,clientId.eq.${clientId}`);
+          fallbackQuery = fallbackQuery.or(`clientId.is.null,clientId.eq.${quoteClientIdForPostgrest(clientId)}`);
         }
         const fallbackResult = await fallbackQuery.order("slug");
         data = fallbackResult.data;
@@ -167,7 +168,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Use same OR logic as GET to find either global or client-specific page
     if (clientId) {
-      query = query.or(`clientId.is.null,clientId.eq.${clientId}`);
+      query = query.or(`clientId.is.null,clientId.eq.${quoteClientIdForPostgrest(clientId)}`);
     }
     // If no clientId set, show all pages (no filter)
 
@@ -297,7 +298,7 @@ export const DELETE: APIRoute = async ({ request, url }) => {
 
     if (clientId) {
       // Delete BOTH global and client-specific pages with this slug
-      deleteQuery = deleteQuery.or(`clientId.is.null,clientId.eq.${clientId}`);
+      deleteQuery = deleteQuery.or(`clientId.is.null,clientId.eq.${quoteClientIdForPostgrest(clientId)}`);
     }
     // If no clientId set, delete all pages with this slug (no filter)
 

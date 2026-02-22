@@ -2,93 +2,22 @@
 import Tooltip from "./Tooltip.astro";
 import SimpleIcon from "../common/SimpleIcon.astro";
 
-const { globalIconButtonClasses, serverTheme = "light" } = await Astro.props;
-const buttonClasses = globalIconButtonClasses ?? "w-10 h-10 inline-flex items-center rounded-full justify-center p-2 text-black dark:text-white md:hover:bg-gray-100 md:focus:ring-4 md:focus:ring-gray-200 dark:hover:bg-gray-700 md:dark:text-gray-400 dark:focus:ring-gray-700 focus:outline-none";
-const isDark = serverTheme === "dark";
-// SSR: show correct icon so toggle works before JS loads
-const darkIconClass = isDark ? "hidden" : "";
-const lightIconClass = isDark ? "" : "hidden";
+const { globalIconButtonClasses } = await Astro.props;
 ---
 
-<a
-  href={"#"}
-  id="theme-toggle"
+<button
   type="button"
+  id="theme-toggle"
   title="Toggle dark mode"
-  class={buttonClasses}
+  aria-label="Toggle light / dark mode"
+  class={globalIconButtonClasses}
 >
   <Tooltip text="Toggle dark mode" position="bottom" hideOnMobile>
-    <SimpleIcon name="moon" size="md" id="theme-toggle-dark-icon" class={darkIconClass} />
+    <SimpleIcon name="moon" size="md" id="theme-toggle-dark-icon" class={"hidden"} />
   </Tooltip>
   <Tooltip text="Toggle light mode" position="bottom" hideOnMobile>
-    <SimpleIcon name="sun" size="md" id="theme-toggle-light-icon" class={lightIconClass} />
+    <SimpleIcon name="sun" size="md" id="theme-toggle-light-icon" class={`hidden`} />
   </Tooltip>
   <span class="sr-only">Toggle light / dark mode</span>
-</a>
-
-<script is:inline>
-  // Theme toggle functionality - inlined so it always runs (no external _astro dependency)
-  function initThemeToggle() {
-    const themeToggle = document.getElementById("theme-toggle");
-    const darkIcon = document.getElementById("theme-toggle-dark-icon");
-    const lightIcon = document.getElementById("theme-toggle-light-icon");
-
-    if (!themeToggle || !darkIcon || !lightIcon) return;
-
-    // Set initial state (dark mode is already initialized in App.astro)
-    const isDark = document.documentElement.classList.contains("dark");
-
-    isDark ? document.documentElement.classList.add("zD1iTsv7EQco3GO_szee") : "";
-
-    // Remove hidden class from the appropriate icon
-    if (isDark) {
-      darkIcon.classList.add("hidden");
-      lightIcon.classList.remove("hidden");
-    } else {
-      darkIcon.classList.remove("hidden");
-      lightIcon.classList.add("hidden");
-    }
-
-    themeToggle.addEventListener("click", function (e) {
-      e.preventDefault();
-      const isDark = document.documentElement.classList.contains("dark");
-      const newTheme = isDark ? "light" : "dark";
-
-      if (isDark) {
-        // Switch to light
-        document.documentElement.classList.remove("dark");
-        localStorage.setItem("color-theme", "light");
-        darkIcon.classList.remove("hidden");
-        lightIcon.classList.add("hidden");
-      } else {
-        // Switch to dark
-        document.documentElement.classList.add("dark");
-        localStorage.setItem("color-theme", "dark");
-        darkIcon.classList.add("hidden");
-        lightIcon.classList.remove("hidden");
-      }
-
-      // Update cookie
-      document.cookie = `theme=${newTheme}; path=/; max-age=31536000; SameSite=Lax`;
-      console.log("[THEME-TOGGLE] Theme changed to:", newTheme);
-      console.log("[THEME-TOGGLE] Cookie set to:", newTheme);
-
-      // Update window.currentTheme
-      if (window.currentTheme !== undefined) {
-        window.currentTheme = newTheme;
-      }
-
-      // Sync theme-synced elements
-      if (window.updateThemeSync) {
-        window.updateThemeSync();
-      }
-    });
-  }
-
-  // Run immediately if DOM already loaded (script loaded late); otherwise wait for DOMContentLoaded
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initThemeToggle);
-  } else {
-    initThemeToggle();
-  }
-</script>
+</button>
+{/* Theme toggle script lives in App.astro (layout) so it is always in the HTML in production. */}

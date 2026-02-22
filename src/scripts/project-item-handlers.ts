@@ -3,6 +3,8 @@
  * These functions are shared across all project items on the dashboard
  */
 
+if (typeof window !== "undefined" && (window as any).__jsOrderLog) (window as any).__jsOrderLog("project-item-handlers");
+
 /**
  * Generic function to update any project field
  * @param element - The DOM element with data-refresh, data-meta, data-meta-value

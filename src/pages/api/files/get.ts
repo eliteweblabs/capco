@@ -258,16 +258,16 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     }
 
     // Get featured image ID from project to mark which file is featured
-    let featuredImageId = null;
+    let featuredImageId: number | null = null;
     if (filters.projectId && files && files.length > 0) {
       try {
         const { data: projectData } = await supabaseAdmin!
           .from("projects")
-          .select("featuredImageId")
+          .select("featuredImageData")
           .eq("id", parseInt(filters.projectId))
           .single();
 
-        featuredImageId = projectData?.featuredImageId;
+        featuredImageId = projectData?.featuredImageData?.id ?? null;
         // console.log(`📁 [FILES-GET] Project ${filters.projectId} featuredImageId:`, featuredImageId);
       } catch (projectError) {
         console.warn("⚠️ [FILES-GET] Could not fetch project featured image:", projectError);
@@ -328,7 +328,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
           : null;
 
         // Check if this file is the featured image
-        const isFeatured = featuredImageId && file.id === parseInt(featuredImageId);
+        const isFeatured = featuredImageId != null && file.id === featuredImageId;
 
         if (!file.bucketName || !file.filePath) {
           return { ...file, checked_out_by_name, isFeatured, publicUrl: null };

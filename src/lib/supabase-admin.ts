@@ -9,12 +9,10 @@ const supabaseUrl =
   import.meta.env.SUPABASE_URI ||
   (typeof process !== "undefined" ? process.env.SUPABASE_URI : undefined);
 
-// Use SUPABASE_SECRET (Railway template uses SUPABASE_SERVICE_ROLE_KEY)
+// Use SUPABASE_SECRET
 const supabaseSecretKey =
   import.meta.env.SUPABASE_SECRET ||
-  (typeof process !== "undefined"
-    ? process.env.SUPABASE_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY
-    : undefined);
+  (typeof process !== "undefined" ? process.env.SUPABASE_SECRET : undefined);
 
 // Debug logging for server-side
 if (typeof window === "undefined") {

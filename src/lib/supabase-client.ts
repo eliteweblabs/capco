@@ -64,9 +64,15 @@ export function getSupabaseClient(): SupabaseClient | null {
     return clientInstance;
   }
 
-  // Get configuration from environment
-  const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || "";
-  const supabasePublishableKey = import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE || "";
+  // Get configuration from environment (fallback to window for standalone script bundle)
+  const supabaseUrl =
+    (typeof import.meta !== "undefined" && import.meta.env?.PUBLIC_SUPABASE_URL) ||
+    (typeof window !== "undefined" && (window as any).__PUBLIC_SUPABASE_URL__) ||
+    "";
+  const supabasePublishableKey =
+    (typeof import.meta !== "undefined" && import.meta.env?.PUBLIC_SUPABASE_PUBLISHABLE) ||
+    (typeof window !== "undefined" && (window as any).__PUBLIC_SUPABASE_PUBLISHABLE__) ||
+    "";
 
   if (!supabaseUrl || !supabasePublishableKey) {
     console.warn("[SUPABASE-CLIENT] Supabase configuration missing for client-side");

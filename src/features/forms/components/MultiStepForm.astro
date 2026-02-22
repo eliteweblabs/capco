@@ -5,12 +5,7 @@ import { getButtonConfig, normalizeFormConfig } from "../../../lib/multi-step-fo
 import Button from "../../../components/common/Button.astro";
 import SimpleIcon from "../../../components/common/SimpleIcon.astro";
 import Tooltip from "../../../components/ui/Tooltip.astro";
-import SlotMachineModalStaff from "../../../components/form/SlotMachineModalStaff.astro";
-import InlineAddressSearch from "../../../components/form/InlineAddressSearch.astro";
-import SlideToggle from "../../../components/form/SlideToggle.astro";
-import UnitSlider from "../../../components/form/UnitSlider.astro";
-import ToggleButton from "../../../components/form/ToggleButton.astro";
-import FileUpload from "../../../components/form/FileUpload.astro";
+import FormFieldRenderer from "./FormFieldRenderer.astro";
 import AuthProviders from "../../../components/form/AuthProviders.astro";
 import { SMS_UTILS } from "../../../lib/sms-utils";
 import { globalClasses } from "../../../pages/api/global/global-classes";
@@ -54,6 +49,7 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
     method={config.formMethod || "post"}
     class={config.progressBar ? "" : ""}
     data-form-config={JSON.stringify({ formId: config.formId, formConfig: config, initialData })}
+    data-project-id={config.formId}
   >
     {
       config.responseType === "inline" && (
@@ -108,8 +104,8 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
                         tooltipClass="whitespace-normal"
                       >
                         <SimpleIcon
-                          name="info-circle"
-                          class="h-4 w-4 text-gray-500 dark:text-gray-400 sm:h-5 sm:w-5"
+                          name="help-circle"
+                          class="h-5 w-5 shrink-0 text-gray-500 dark:text-gray-400 sm:h-6 sm:w-6 md:h-7 md:w-7 lg:h-9 lg:w-9"
                         />
                       </Tooltip>
                     )}
@@ -194,227 +190,21 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
                 tabindex="-1"
               >
                 {step.fields.map((field) => (
-                  <div
-                    class:list={[
-                      field.type === "hidden" ? "" : "input-wrapper w-full",
-                      field.columns === 1 ? "md:col-span-2" : "",
-                    ]}
-                    data-conditional-field={field.conditional ? field.conditional.field : undefined}
-                    data-conditional-value={
-                      field.conditional
-                        ? Array.isArray(field.conditional.value)
-                          ? field.conditional.value.join(",")
-                          : field.conditional.value
-                        : undefined
+                  <FormFieldRenderer
+                    field={field}
+                    context="multistep"
+                    inputClasses={appendedMultiStepInputClasses}
+                    initialData={initialData}
+                    buttonDefaults={config.buttonDefaults}
+                    mobileCarrierOptions={mobileCarrierOptions}
+                    iconLeftPadding={iconLeftPadding}
+                    iconRightPadding={iconRightPadding}
+                    wrapperClass={
+                      field.type === "hidden"
+                        ? ""
+                        : `input-wrapper w-full ${field.columns === 1 ? "md:col-span-2" : ""}`
                     }
-                    style={field.conditional ? "display: none;" : undefined}
-                    tabindex="-1"
-                  >
-                    {field.type === "component" && field.component === "SlotMachineModalStaff" ? (
-                      <SlotMachineModalStaff
-                        id={field.id}
-                        name={field.name}
-                        title={field.label || "Select an option"}
-                        options={mobileCarrierOptions}
-                        selectedValue=""
-                        globalInputClasses={appendedMultiStepInputClasses}
-                        {...field.componentProps}
-                      />
-                    ) : field.type === "component" && field.component === "SlideToggle" ? (
-                      <div class="flex items-center justify-center py-8" tabindex="-1">
-                        <SlideToggle id={field.id} name={field.name} {...field.componentProps} />
-                      </div>
-                    ) : field.type === "component" && field.component === "InlineAddressSearch" ? (
-                      <InlineAddressSearch
-                        id={field.id}
-                        name={field.name}
-                        globalInputClasses={appendedMultiStepInputClasses}
-                        {...field.componentProps}
-                      />
-                    ) : field.type === "component" && field.component === "UnitSlider" ? (
-                      <UnitSlider
-                        name={field.name}
-                        label={field.label || field.name}
-                        value={Number(field.value) || 1}
-                        required={field.required}
-                        min={field.min}
-                        max={field.max}
-                        step={field.step}
-                        {...field.componentProps}
-                      />
-                    ) : field.type === "component" && field.component === "ToggleButton" ? (
-                      <div class="multi-step-toggle-group flex flex-wrap gap-3" tabindex="-1">
-                        {field.options?.map((option) => (
-                          <ToggleButton
-                            value={option.value}
-                            group={field.name}
-                            type={field.toggleType || "radio"}
-                            class={field.classes}
-                          >
-                            {option.label}
-                          </ToggleButton>
-                        ))}
-                      </div>
-                    ) : field.type === "component" && field.component === "FileUpload" ? (
-                      <FileUpload
-                        name={field.name}
-                        label={field.label}
-                        required={field.required}
-                        accept={field.accept}
-                        multiple={field.multiple}
-                        maxFiles={field.maxFiles}
-                        maxSize={field.maxSize}
-                        {...field.componentProps}
-                      />
-                    ) : field.type === "range" ? (
-                      <UnitSlider
-                        name={field.name}
-                        label={field.label || field.name}
-                        value={Number(field.value) || Number(field.min) || 0}
-                        required={field.required}
-                        min={field.min || 0}
-                        max={field.max || 100}
-                        step={field.step || 1}
-                      />
-                    ) : field.type === "textarea" ? (
-                      <textarea
-                        id={field.id}
-                        name={field.name}
-                        placeholder={field.placeholder}
-                        required={field.required}
-                        rows={field.rows || 4}
-                        autocomplete={field.autocomplete}
-                        class={appendedMultiStepInputClasses}
-                        data-error={field.errorMessage}
-                        data-validate={field.validate}
-                        data-validate-message={field.validateMessage}
-                      />
-                    ) : field.animatedPlaceholders && field.animatedPlaceholders.length > 0 ? (
-                      <div
-                        class:list={[
-                          "relative",
-                          "text-black dark:text-white",
-                          field.icon ? "input-with-icon" : "",
-                          field.iconPosition === "right" ? "icon-right" : "icon-left",
-                        ]}
-                        data-icon={field.icon}
-                        tabindex="-1"
-                      >
-                        <input
-                          type={field.type as "text" | "email" | "tel" | "password" | "hidden"}
-                          id={field.id}
-                          name={field.name}
-                          placeholder=""
-                          required={field.required}
-                          autocomplete={field.autocomplete}
-                          minlength={field.minlength}
-                          autofocus={field.autofocus}
-                          class:list={[
-                            appendedMultiStepInputClasses,
-                            field.icon && field.iconPosition === "right" ? iconRightPadding : "",
-                            field.icon && field.iconPosition !== "right" ? iconLeftPadding : "",
-                          ]}
-                          data-error={field.errorMessage}
-                          data-validate={field.validate}
-                          data-validate-message={field.validateMessage}
-                          data-has-animated-placeholder="true"
-                          data-original-placeholder={field.placeholder}
-                          data-animated-placeholders={JSON.stringify(field.animatedPlaceholders)}
-                        />
-                        <span
-                          class:list={[
-                            "animated-placeholder pointer-events-none absolute left-0 top-[calc(0.125rem-2px)] flex h-full w-full items-center",
-                            field.animatedPlaceholderAlignment === "left"
-                              ? `justify-start ${field.icon && field.iconPosition === "left" ? "" : iconLeftPadding}`
-                              : field.animatedPlaceholderAlignment === "right"
-                                ? `justify-end ${field.icon && field.iconPosition === "right" ? "" : iconRightPadding}`
-                                : "justify-center",
-                            field.icon && field.iconPosition === "right" ? iconRightPadding : "",
-                            field.icon && field.iconPosition !== "right" ? iconLeftPadding : "",
-                          ]}
-                          data-for={field.id}
-                          tabindex="-1"
-                        >
-                          {field.placeholder}
-                        </span>
-                      </div>
-                    ) : field.type === "button-group" ? (
-                      <div class="multi-step-button-group flex flex-wrap gap-3" tabindex="-1">
-                        {field.buttons?.map((button) => {
-                          const btnConfig = getButtonConfig(
-                            button,
-                            config.buttonDefaults?.[
-                              button.type as keyof typeof config.buttonDefaults
-                            ]
-                          );
-                          return (
-                            <Button
-                              id={button.id}
-                              variant={btnConfig.variant}
-                              size={btnConfig.size || "md"}
-                              icon={btnConfig.icon}
-                              iconPosition={btnConfig.iconPosition}
-                              class={btnConfig.classes}
-                              dataAttributes={{
-                                ...(button.dataValue && { "data-value": button.dataValue }),
-                                ...(button.dataNext !== undefined && {
-                                  "data-next": button.dataNext.toString(),
-                                }),
-                              }}
-                            >
-                              {btnConfig.label && (
-                                <span class="button-text">
-                                  <Fragment set:html={btnConfig.label} />
-                                </span>
-                              )}
-                            </Button>
-                          );
-                        })}
-                      </div>
-                    ) : field.icon ? (
-                      <div
-                        class:list={[
-                          "input-with-icon relative",
-                          field.iconPosition === "right" ? "icon-right" : "icon-left",
-                        ]}
-                        data-icon={field.icon}
-                        tabindex="-1"
-                      >
-                        <input
-                          type={field.type as "text" | "email" | "tel" | "password" | "hidden"}
-                          id={field.id}
-                          name={field.name}
-                          placeholder={field.placeholder}
-                          required={field.required}
-                          autocomplete={field.autocomplete}
-                          minlength={field.minlength}
-                          autofocus={field.autofocus}
-                          class:list={[
-                            appendedMultiStepInputClasses,
-                            field.iconPosition === "right" ? iconRightPadding : iconLeftPadding,
-                          ]}
-                          data-error={field.errorMessage}
-                          data-validate={field.validate}
-                          data-validate-message={field.validateMessage}
-                        />
-                      </div>
-                    ) : (
-                      <input
-                        type={field.type as "text" | "email" | "tel" | "password" | "hidden"}
-                        id={field.id}
-                        name={field.name}
-                        placeholder={field.placeholder}
-                        required={field.required}
-                        autocomplete={field.autocomplete}
-                        minlength={field.minlength}
-                        autofocus={field.autofocus}
-                        class={appendedMultiStepInputClasses}
-                        data-error={field.errorMessage}
-                        data-validate={field.validate}
-                        data-validate-message={field.validateMessage}
-                      />
-                    )}
-                  </div>
+                  />
                 ))}
               </div>
             ) : null}
@@ -498,6 +288,7 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
                       variant={btnConfig.variant}
                       size={btnConfig.size || "md"}
                       icon={btnConfig.icon}
+                      iconClasses="mr-0"
                       iconPosition={btnConfig.iconPosition}
                       type="button"
                       class={`${button.type}-step ${button.classes || ""}`}
@@ -812,10 +603,11 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
 </style>
 
 <script>
+  if (typeof window !== "undefined" && (window as any).__jsOrderLog) (window as any).__jsOrderLog("MultiStepForm (module)");
   import { initializeMultiStepForm } from "../../../lib/multi-step-form-handler";
-  // TypeIt typewriter loaded globally from App.astro (window.initTypewriterTexts, window.triggerActiveStepTypewriter)
 
-  document.addEventListener("DOMContentLoaded", () => {
+  function runMultiStepPageInit() {
+    if (typeof window !== "undefined" && (window as any).__traceLog) (window as any).__traceLog("MultiStepForm.astro DOMContentLoaded running");
     // Tap-to-focus: tapping the field wrapper focuses the input (iOS keypad requires direct user gesture)
     document.addEventListener(
       "click",
@@ -1633,7 +1425,14 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
     } else {
       runMultiStepInit();
     }
-  });
+  }
+
+  // Run when DOM is ready; if this script loaded after DOMContentLoaded (e.g. deferred module), run now
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", runMultiStepPageInit);
+  } else {
+    runMultiStepPageInit();
+  }
 
   // Helper function to check if all fields in current step are valid
   function checkAllFieldsValid() {

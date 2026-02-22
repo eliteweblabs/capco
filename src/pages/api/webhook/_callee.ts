@@ -362,8 +362,14 @@ export async function findOrCreateUser(
       formData.append("smsAlerts", "false");
       formData.append("role", "Client");
 
-      // Use request URL if available, otherwise fallback to localhost
-      const baseUrl = request ? getApiBaseUrl(request) : "http://localhost:4321";
+      // Use request URL if available, otherwise env fallback (Railway has no localhost)
+      const baseUrl = request
+        ? getApiBaseUrl(request)
+        : process.env.RAILWAY_PUBLIC_DOMAIN
+          ? process.env.RAILWAY_PUBLIC_DOMAIN.startsWith("http")
+            ? process.env.RAILWAY_PUBLIC_DOMAIN
+            : `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+          : process.env.PUBLIC_URL || "http://localhost:4321";
       const createUserResponse = await fetch(`${baseUrl}/api/users/upsert`, {
         method: "POST",
         body: formData,

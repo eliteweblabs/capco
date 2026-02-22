@@ -19,7 +19,13 @@ export const GET: APIRoute = async ({ cookies, redirect }) => {
     // Debug: Check environment variables
     const clientId = import.meta.env.GMAIL_CLIENT_ID;
     const clientSecret = import.meta.env.GMAIL_CLIENT_SECRET;
-    const publicUrl = import.meta.env.PUBLIC_URL || "http://localhost:4321";
+    const publicUrl =
+      process.env.PUBLIC_URL ||
+      (process.env.RAILWAY_PUBLIC_DOMAIN
+        ? process.env.RAILWAY_PUBLIC_DOMAIN.startsWith("http")
+          ? process.env.RAILWAY_PUBLIC_DOMAIN
+          : `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+        : import.meta.env.PUBLIC_URL) || "http://localhost:4321";
 
     console.log("[GMAIL-AUTH] Environment check:", {
       hasClientId: !!clientId,

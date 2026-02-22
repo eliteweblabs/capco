@@ -1,16 +1,21 @@
 /**
  * Content Management System
  *
- * Reads content from markdown files and site-config.json
- * Allows each deployment to have custom content without changing code
- *
- * This system bridges environment-based config and a future full CMS
+ * Page content: database (cmsPages), env vars, or persistent volume only (no git markdown fallback).
+ * Site config from site-config.json / SITE_CONFIG / database.
  */
 
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import matter from "gray-matter";
 import { supabaseAdmin } from "./supabase-admin";
+
+/** Quote clientId for PostgREST when it contains spaces, commas, or double quotes */
+export function quoteClientIdForPostgrest(clientId: string): string {
+  return clientId.includes(" ") || clientId.includes(",") || clientId.includes('"')
+    ? `"${clientId.replace(/"/g, '""')}"`
+    : clientId;
+}
 
 // Cache for performance (TTL: 2 min in production; dev skips cache for live updates)
 const cache = new Map<string, any>();
@@ -129,6 +134,7 @@ function mergeJsonConfig(
   if (Array.isArray(jsonConfig.userForm)) config.userForm = jsonConfig.userForm;
   if (jsonConfig.statuses) config.statuses = jsonConfig.statuses;
   if (jsonConfig.formButtonDefaults) config.formButtonDefaults = jsonConfig.formButtonDefaults;
+  if (jsonConfig.forms) config.forms = jsonConfig.forms;
   if (jsonConfig.site) config.site = { ...config.site, ...jsonConfig.site };
   if (jsonConfig.branding) config.branding = { ...config.branding, ...jsonConfig.branding };
 }
@@ -172,7 +178,15 @@ export async function getSiteConfig(): Promise<SiteConfig> {
         "Fire Protection Services",
       slogan: companyData?.globalCompanySlogan || "Professional Services",
       description: companyData?.globalCompanySlogan || "Fire protection system review and approval",
-      url: companyData?.globalCompanyWebsite || "http://localhost:4321",
+      url:
+        companyData?.globalCompanyWebsite ||
+        (process.env.RAILWAY_PUBLIC_DOMAIN
+          ? process.env.RAILWAY_PUBLIC_DOMAIN.startsWith("http")
+            ? process.env.RAILWAY_PUBLIC_DOMAIN
+            : `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+          : null) ||
+        process.env.PUBLIC_URL ||
+        "http://localhost:4321",
       email:
         companyData?.globalCompanyEmail || process.env.GLOBAL_COMPANY_EMAIL || "admin@example.com",
       phone: companyData?.globalCompanyPhone || process.env.GLOBAL_COMPANY_PHONE || "+15551234567",
@@ -207,7 +221,7 @@ export async function getSiteConfig(): Promise<SiteConfig> {
   // 1. Priority: env-based config (Railway limits vars to 32KB, so we support multiple methods)
   let envConfigJson: string | null = null;
 
-  // 1a. SITE_CONFIG_URL - fetch from URL, or read from filesystem path
+  // 1a. SITE_CONFIG_URL - fetch from URL, or read from file path
   const configUrl = process.env.SITE_CONFIG_URL;
   if (configUrl) {
     try {
@@ -220,11 +234,10 @@ export async function getSiteConfig(): Promise<SiteConfig> {
         if (res.ok) envConfigJson = await res.text();
         else console.warn("⚠️ [CONTENT] SITE_CONFIG_URL fetch failed:", res.status);
       } else {
-        // Treat as filesystem path (e.g. dist/client/data/config.json on Railway)
+        // Treat as filesystem path (relative to cwd or absolute)
         const filePath = configUrl.startsWith("/") ? configUrl : join(process.cwd(), configUrl);
         if (existsSync(filePath)) {
           envConfigJson = readFileSync(filePath, "utf-8");
-          console.log("[CONTENT] Loaded config from SITE_CONFIG_URL path:", filePath);
         } else {
           console.warn("⚠️ [CONTENT] SITE_CONFIG_URL file not found:", filePath);
         }
@@ -250,26 +263,32 @@ export async function getSiteConfig(): Promise<SiteConfig> {
     if (chunks.length > 0) envConfigJson = chunks.join("");
   }
 
-  // 1d. public/data/config.json (copied to dist/client/data/config.json at build)
+  // 1d. config-${RAILWAY_PROJECT_NAME}.json then config.json (client-specific config by project name)
   if (!envConfigJson) {
-    const paths = [
-      join(process.cwd(), "public", "data", "config.json"),
-      join(process.cwd(), "dist", "client", "data", "config.json"),
-    ];
-    console.log("[CONTENT] Before loading config.json – trying paths:", paths);
-    for (const p of paths) {
+    const projectName = process.env.RAILWAY_PROJECT_NAME || "";
+    const slug = projectName
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, "-")
+      .replace(/-+/g, "-")
+      .trim();
+    const dataDir = join(process.cwd(), "public", "data");
+    const distDataDir = join(process.cwd(), "dist", "client", "data");
+    const candidates: string[] = [];
+    if (slug) {
+      candidates.push(join(dataDir, `config-${slug}.json`));
+      candidates.push(join(distDataDir, `config-${slug}.json`));
+    }
+    candidates.push(join(dataDir, "config.json"));
+    candidates.push(join(distDataDir, "config.json"));
+    for (const p of candidates) {
       if (existsSync(p)) {
         try {
           envConfigJson = readFileSync(p, "utf-8");
-          console.log("[CONTENT] After loading config.json – loaded from:", p, "length:", envConfigJson?.length);
           break;
-        } catch (err) {
-          console.warn("[CONTENT] Failed to read config.json from:", p, err);
+        } catch {
+          /* ignore */
         }
       }
-    }
-    if (!envConfigJson) {
-      console.log("[CONTENT] After loading config.json – not found (paths did not exist or were unreadable)");
     }
   }
 
@@ -394,7 +413,7 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
 
       // Filter by clientId: show global (null) or matching clientId
       if (clientId) {
-        query = query.or(`clientId.is.null,clientId.eq.${clientId}`);
+        query = query.or(`clientId.is.null,clientId.eq.${quoteClientIdForPostgrest(clientId)}`);
       }
       // If no clientId set, show all pages (no filter)
 
@@ -414,12 +433,13 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
         };
         normalizedTemplate = templateMap[normalizedTemplate] ?? normalizedTemplate;
 
+        // Ensure main content is never overwritten by frontmatter spread
         const pageContent: PageContent = {
           title: dbPage.title || slug,
           description: dbPage.description || "",
           template: normalizedTemplate,
-          content: dbPage.content || "",
           ...(dbPage.frontmatter || {}),
+          content: dbPage.content || (dbPage.frontmatter?.content as string) || "",
         };
         cache.set(cacheKey, pageContent);
         // console.log(`✅ [CONTENT] Loaded ${slug} from database (CMS)`, {
@@ -515,28 +535,7 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
     }
   }
 
-  // 3. Try markdown file (from git - defaults)
-  const contentPath = join(process.cwd(), "content", "pages", `${slug}.md`);
-  if (existsSync(contentPath)) {
-    try {
-      const fileContent = readFileSync(contentPath, "utf-8");
-      const { data, content } = matter(fileContent);
-
-      const pageContent: PageContent = {
-        ...data,
-        content,
-        title: data.title || "Untitled Page",
-      };
-
-      cache.set(cacheKey, pageContent);
-      // console.log(`✅ [CONTENT] Loaded ${slug} from file`);
-      return pageContent;
-    } catch (error) {
-      console.warn(`⚠️ [CONTENT] Error reading ${slug}.md:`, error);
-    }
-  }
-
-  // 3. Fallback to default content
+  // 3. Fallback to default content (no backup markdown from git - pages come from CMS/DB, env, or volume only)
   const defaultContent = await getDefaultPageContent(slug);
   if (defaultContent) {
     // console.log(`ℹ️ [CONTENT] Using default content for: ${slug}`);

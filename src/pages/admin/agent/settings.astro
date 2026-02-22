@@ -1,0 +1,246 @@
+---
+/**
+ * Admin: AI Agent Settings
+ * Configure the unified AI agent system prompt and domain-specific options.
+ * Stored in globalSettings (keys aiAgent_*). Used by unified-agent.ts.
+ */
+import { checkAuth } from "../../../lib/auth";
+import LayoutDefault from "../../../components/layouts/LayoutDefault.astro";
+import Button from "../../../components/common/Button.astro";
+import { globalClasses } from "../../api/global/global-classes";
+import { supabaseAdmin } from "../../../lib/supabase-admin";
+
+const { currentUser, session } = await checkAuth(Astro.cookies);
+const currentRole = currentUser?.profile?.role;
+
+if (!currentUser || !session) {
+  return Astro.redirect("/auth/login");
+}
+if (currentRole !== "Admin") {
+  return Astro.redirect("/dashboard");
+}
+
+const { globalInputClasses } = globalClasses();
+
+const DEFAULT_SPECIALIZATION = "project management and document review";
+
+let agentSettings: Record<string, string> = {
+  aiAgent_specialization: DEFAULT_SPECIALIZATION,
+  aiAgent_standards: "",
+  aiAgent_systemPromptExtra: "",
+  aiAgent_systemPromptTemplate: "",
+};
+
+if (supabaseAdmin) {
+  try {
+    const { data } = await supabaseAdmin
+      .from("globalSettings")
+      .select("key, value")
+      .like("key", "aiAgent_%");
+    if (data?.length) {
+      data.forEach((row: { key: string; value: string }) => {
+        agentSettings[row.key] = row.value ?? "";
+      });
+    }
+  } catch (e) {
+    console.warn("[admin/agent/settings] Failed to load agent settings:", e);
+  }
+}
+---
+
+<LayoutDefault
+  title="AI Agent Settings"
+  description="Configure the AI agent system prompt and domain-specific settings. Stored in the database."
+>
+  <div class="px-4 py-8">
+    <div class="mb-6">
+      <h1 class="mb-2 text-3xl font-bold">AI Agent Settings</h1>
+      <p class="text-gray-600 dark:text-gray-400">
+        These values are injected into the unified AI agent’s system prompt. Leave defaults for a
+        generic agent, or customize for your domain (e.g. industry, standards). Changes are saved to
+        the database and take effect on the next agent request.
+      </p>
+    </div>
+
+    <div
+      id="success-message"
+      class="mb-4 hidden rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/20"
+    >
+      <p class="text-sm text-green-800 dark:text-green-200"></p>
+    </div>
+    <div
+      id="error-message"
+      class="mb-4 hidden rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20"
+    >
+      <p class="text-sm text-red-800 dark:text-red-200"></p>
+    </div>
+
+    <form id="agent-settings-form" class="space-y-6">
+      <div class="rounded-lg bg-white p-6 shadow dark:bg-gray-900">
+        <h2 class="mb-4 text-xl font-semibold">System prompt template (admin-editable)</h2>
+        <div class="mb-4">
+          <label for="aiAgent_systemPromptTemplate" class="mb-2 block text-sm font-medium">
+            Full system prompt template
+          </label>
+          <textarea
+            id="aiAgent_systemPromptTemplate"
+            name="aiAgent_systemPromptTemplate"
+            rows={16}
+            class={globalInputClasses + " font-mono text-sm"}
+            placeholder="Leave empty to use the built-in template. Placeholders: {{specialization}}, {{standardsLine}}, {{additionalInstructions}}, {{projectMemory}}, {{knowledgeBase}}, {{currentContext}}"
+          >
+            {agentSettings.aiAgent_systemPromptTemplate}
+          </textarea>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            When empty, the built-in template in <code>unified-agent.ts</code> is used. Use the placeholders so specialization, standards, and dynamic sections are injected correctly.
+          </p>
+        </div>
+      </div>
+
+      <div class="rounded-lg bg-white p-6 shadow dark:bg-gray-900">
+        <h2 class="mb-4 text-xl font-semibold">Injected values (used by template)</h2>
+
+        <div class="mb-4">
+          <label for="aiAgent_specialization" class="mb-2 block text-sm font-medium">
+            Specialization
+          </label>
+          <input
+            type="text"
+            id="aiAgent_specialization"
+            name="aiAgent_specialization"
+            value={agentSettings.aiAgent_specialization}
+            class={globalInputClasses}
+            placeholder={DEFAULT_SPECIALIZATION}
+          />
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            Used in: “You are an expert AI assistant specialized in [this].”
+          </p>
+        </div>
+
+        <div class="mb-4">
+          <label for="aiAgent_standards" class="mb-2 block text-sm font-medium">
+            Standards (optional)
+          </label>
+          <input
+            type="text"
+            id="aiAgent_standards"
+            name="aiAgent_standards"
+            value={agentSettings.aiAgent_standards}
+            class={globalInputClasses}
+            placeholder="e.g. NFPA 13, NFPA 72"
+          />
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            Comma-separated. When set, the agent is told to reference these standards when
+            applicable.
+          </p>
+        </div>
+
+        <div>
+          <label for="aiAgent_systemPromptExtra" class="mb-2 block text-sm font-medium">
+            Additional instructions (optional)
+          </label>
+          <textarea
+            id="aiAgent_systemPromptExtra"
+            name="aiAgent_systemPromptExtra"
+            rows={6}
+            class={globalInputClasses}
+            placeholder="Optional markdown added to the system prompt (domain rules, tone, etc.)."
+          >
+            {agentSettings.aiAgent_systemPromptExtra}
+          </textarea>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            Appended as “Additional Instructions” in the agent’s system prompt.
+          </p>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <Button type="submit" variant="primary">
+          Save agent settings
+        </Button>
+        <Button type="button" variant="secondary" id="reset-defaults">
+          Reset to defaults
+        </Button>
+      </div>
+    </form>
+  </div>
+</LayoutDefault>
+
+<script define:vars={{ DEFAULT_SPECIALIZATION }}>
+  const form = document.getElementById("agent-settings-form");
+  const successEl = document.getElementById("success-message");
+  const successP = successEl?.querySelector("p");
+  const errorEl = document.getElementById("error-message");
+  const errorP = errorEl?.querySelector("p");
+  const resetBtn = document.getElementById("reset-defaults");
+
+  function showSuccess(msg) {
+    if (errorEl) errorEl.classList.add("hidden");
+    if (successP) successP.textContent = msg;
+    if (successEl) successEl.classList.remove("hidden");
+  }
+
+  function showError(msg) {
+    if (successEl) successEl.classList.add("hidden");
+    if (errorP) errorP.textContent = msg;
+    if (errorEl) errorEl.classList.remove("hidden");
+  }
+
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const templateEl = document.getElementById("aiAgent_systemPromptTemplate");
+    const specializationEl = document.getElementById("aiAgent_specialization");
+    const standardsEl = document.getElementById("aiAgent_standards");
+    const systemPromptExtraEl = document.getElementById("aiAgent_systemPromptExtra");
+    const template = templateEl?.value?.trim() ?? "";
+    const specialization = specializationEl?.value?.trim();
+    const standards = standardsEl?.value?.trim();
+    const systemPromptExtra = systemPromptExtraEl?.value?.trim();
+
+    const settings = {
+      aiAgent_systemPromptTemplate: template,
+      aiAgent_specialization: specialization || DEFAULT_SPECIALIZATION,
+      aiAgent_standards: standards || "",
+      aiAgent_systemPromptExtra: systemPromptExtra || "",
+    };
+
+    const saveBtn = form.querySelector('button[type="submit"]');
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = "Saving…";
+    }
+
+    try {
+      const response = await fetch("/api/settings/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings }),
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || result.message || "Failed to save settings");
+      }
+      showSuccess("Agent settings saved. They will apply on the next agent request.");
+    } catch (err) {
+      showError(err?.message || "Failed to save");
+    } finally {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = "Save agent settings";
+      }
+    }
+  });
+
+  resetBtn?.addEventListener("click", () => {
+    const templateEl = document.getElementById("aiAgent_systemPromptTemplate");
+    const specEl = document.getElementById("aiAgent_specialization");
+    const stdEl = document.getElementById("aiAgent_standards");
+    const extraEl = document.getElementById("aiAgent_systemPromptExtra");
+    if (templateEl) templateEl.value = "";
+    if (specEl) specEl.value = DEFAULT_SPECIALIZATION;
+    if (stdEl) stdEl.value = "";
+    if (extraEl) extraEl.value = "";
+    showSuccess("Form reset to defaults. Click Save to persist.");
+  });
+</script>

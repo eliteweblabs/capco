@@ -39,7 +39,7 @@ This app is a general purpose website and admin for fire protection, contractors
 - Always consider RLS policies when querying
 
 - database tables and columns are always camelCase
-- 6 minutes after syncing to github, mcp to railway and ensure that capco and rothco are working as expected.
+- When the user indicates they have pushed/synced to GitHub, immediately use Railway MCP (list-deployments, check-railway-status) to verify capco and rothco deployments are successful. Do not wait—check right away.
 - MCP ALWAYS DO NOT WAIT
 - save instructional markdowns in /markdowns
 - always check for exisitng components / templates to use over generating html. For example, <button> should be Button.astro. SVG icons should be <SimpleIcon> which maps to custom culled list of svgs

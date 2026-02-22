@@ -8,8 +8,7 @@ import { supabase } from "../lib/supabase";
 import { supabaseAdmin } from "../lib/supabase-admin";
 import { globalCompanyData } from "../pages/api/global/global-company-data";
 
-// Setup console interceptor for server-side (disables console.log in production when ENABLE_CONSOLE_INTERCEPTOR=1)
-// Default: all logs flow. Set ENABLE_CONSOLE_INTERCEPTOR=1 to suppress.
+// Setup console interceptor for server-side (disables console.log in production)
 try {
   setupConsoleInterceptor();
 } catch (error) {
@@ -69,15 +68,26 @@ async function respondWithCachePolicy(
 
 export const onRequest = defineMiddleware(
   async ({ locals, url, cookies, redirect, request }, next) => {
-    // Force HTTPS redirect in production (Railway handles SSL termination)
+    // Force HTTPS redirect in production (Railway handles SSL termination).
+    // Skip for local/dev hosts so the port is never stripped when using localhost:4321 or 192.168.x.x:4321.
     if (import.meta.env.PROD || process.env.NODE_ENV === "production") {
-      const protocol = request.headers.get("x-forwarded-proto") || url.protocol;
-      const host = url.host;
+      const hostname = url.hostname || "";
+      const isLocalHost =
+        hostname === "localhost" ||
+        hostname === "127.0.0.1" ||
+        hostname.startsWith("192.168.") ||
+        hostname.startsWith("10.") ||
+        hostname.endsWith(".local");
 
-      // If request is HTTP, redirect to HTTPS (Railway provides SSL)
-      if (protocol === "http:" || (!protocol && !url.href.startsWith("https://"))) {
-        const httpsUrl = `https://${host}${url.pathname}${url.search}`;
-        return redirect(httpsUrl, 301); // Permanent redirect
+      if (!isLocalHost) {
+        const protocol = request.headers.get("x-forwarded-proto") || url.protocol;
+        // Preserve port so redirect doesn't strip it (e.g. keep :4321 in dev-like prod runs)
+        const host = url.port ? `${hostname}:${url.port}` : hostname;
+
+        if (protocol === "http:" || (!protocol && !url.href.startsWith("https://"))) {
+          const httpsUrl = `https://${host}${url.pathname}${url.search}`;
+          return redirect(httpsUrl, 301);
+        }
       }
     }
 

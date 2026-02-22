@@ -13,7 +13,7 @@ import Button from "../common/Button.astro";
 // Speed dial component for quick actions
 ---
 
-<div id="speed-dial" data-dial-init class="group">
+<div id="speed-dial" class="group">
   <div
     id="speed-dial-menu"
     class="speed-dial-menu mb-4 flex hidden flex-col items-center space-y-2"
@@ -145,7 +145,7 @@ import Button from "../common/Button.astro";
   </Button>
 </div>
 
-<script>
+<script is:inline>
   const tutorials = document.querySelectorAll("[data-welcome]");
   const tutorialButton = document.getElementById("tutorial-trigger");
 
@@ -153,8 +153,7 @@ import Button from "../common/Button.astro";
     tutorialButton.style.display = "none";
   }
 
-  document.addEventListener("DOMContentLoaded", function () {
-    console.log("[---SPEED-DIAL] Init - DOMContentLoaded fired");
+  function initSpeedDial() {
     const speedDialButton = document.querySelector('[data-dial-toggle="speed-dial-menu"]');
     const speedDialMenu = document.getElementById("speed-dial-menu");
     const speedDial = document.getElementById("speed-dial");
@@ -186,64 +185,39 @@ import Button from "../common/Button.astro";
           speedDialMenu?.classList.add("speed-dial-open");
         });
 
-        // Wait for menu to settle, then show tooltips with FloatingUI positioning
+        // Wait for menu to settle, then show tooltips with simple inline positioning (no import - script is inlined in SSR, browser cannot resolve @floating-ui/dom)
         requestAnimationFrame(() => {
           setTimeout(() => {
             const tooltips = speedDialMenu?.querySelectorAll(".speed-dial-tooltip");
             if (tooltips) {
-              // Convert NodeList to Array and reverse it (bottom to top)
               const tooltipsArray = Array.from(tooltips).reverse();
 
               tooltipsArray.forEach((tooltipWrapper, index) => {
                 const tooltipContent = tooltipWrapper.querySelector(".tooltip-content");
                 if (tooltipContent) {
-                  setTimeout(async () => {
-                    // Show tooltip
+                  setTimeout(() => {
                     tooltipContent.classList.remove("opacity-0");
                     tooltipContent.classList.add("opacity-100");
                     tooltipContent.style.pointerEvents = "auto";
 
-                    // Manually trigger FloatingUI position calculation
                     const trigger = tooltipWrapper.firstElementChild;
-                    const arrowElement = tooltipContent.querySelector(".tooltip-arrow");
                     const preferredPosition =
                       tooltipWrapper.getAttribute("data-tooltip-position") || "left";
 
                     if (trigger) {
-                      const { computePosition, flip, shift, offset, arrow } = await import(
-                        "@floating-ui/dom"
-                      );
-
-                      const middleware = [
-                        offset(8),
-                        flip({ fallbackAxisSideDirection: "start" }),
-                        shift({ padding: 8 }),
-                      ];
-
-                      if (arrowElement) {
-                        middleware.push(arrow({ element: arrowElement }));
+                      const wrapper = tooltipWrapper;
+                      const wr = wrapper.getBoundingClientRect();
+                      const tr = trigger.getBoundingClientRect();
+                      const tc = tooltipContent.getBoundingClientRect();
+                      const offset = 8;
+                      if (preferredPosition === "left") {
+                        tooltipContent.style.left = `${tr.left - wr.left - tc.width - offset}px`;
+                        tooltipContent.style.top = `${tr.top - wr.top + tr.height / 2 - tc.height / 2}px`;
+                      } else {
+                        tooltipContent.style.left = `${tr.right - wr.left + offset}px`;
+                        tooltipContent.style.top = `${tr.top - wr.top + tr.height / 2 - tc.height / 2}px`;
                       }
-
-                      const { x, y, placement, middlewareData } = await computePosition(
-                        trigger,
-                        tooltipContent,
-                        {
-                          placement: preferredPosition,
-                          middleware,
-                        }
-                      );
-
-                      Object.assign(tooltipContent.style, { left: `${x}px`, top: `${y}px` });
-                      tooltipContent.setAttribute("data-popper-placement", placement);
-
-                      // Position arrow
-                      if (arrowElement && middlewareData.arrow) {
-                        const { x: arrowX, y: arrowY } = middlewareData.arrow;
-                        Object.assign(arrowElement.style, {
-                          left: arrowX != null ? `${arrowX}px` : "",
-                          top: arrowY != null ? `${arrowY}px` : "",
-                        });
-                      }
+                      tooltipContent.setAttribute("data-popper-placement", preferredPosition);
                     }
                   }, index * 100); // 100ms stagger between each tooltip
                 }
@@ -294,7 +268,6 @@ import Button from "../common/Button.astro";
       }
     }
 
-    console.log("[---SPEED-DIAL] Found button:", !!speedDialButton, "menu:", !!speedDialMenu);
     // Handle button interaction - works for both touch and click
     if (speedDialButton) {
       // Touch event handler for mobile
@@ -397,7 +370,13 @@ import Button from "../common/Button.astro";
         // The stopPropagation above prevents the document click handler from hiding the menu
       }
     });
-  });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initSpeedDial);
+  } else {
+    initSpeedDial();
+  }
 
   // Check for tutorials on load and hide tutorial button if none exist
   function checkTutorials() {

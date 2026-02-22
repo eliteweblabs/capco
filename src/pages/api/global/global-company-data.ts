@@ -92,14 +92,18 @@ export const globalCompanyData = async () => {
   const logo = get("logo", "GLOBAL_COMPANY_LOGO_SVG") || "";
   const icon = get("icon", "GLOBAL_COMPANY_ICON_SVG") || "";
 
-  // Website URL - get from database only, no env fallback
-  // If not in database, will be empty and caller should use request URL
+  // Website URL - DB first, then RAILWAY_PUBLIC_DOMAIN / PUBLIC_URL (no manual admin entry needed)
   const websiteRaw = get("website");
-  const website = websiteRaw?.startsWith("http")
+  let website = websiteRaw?.startsWith("http")
     ? websiteRaw
     : websiteRaw
       ? `https://${websiteRaw}`
       : "";
+  if (!website) {
+    const rail = process.env.RAILWAY_PUBLIC_DOMAIN;
+    const pub = process.env.PUBLIC_URL;
+    website = pub || (rail ? (rail.startsWith("http") ? rail : `https://${rail}`) : "");
+  }
 
   // Favicon paths - consistent format with leading slash
   const faviconSvgPath = "/img/favicon.svg";
@@ -111,7 +115,7 @@ export const globalCompanyData = async () => {
     globalCompanyAddress: get("address", "GLOBAL_COMPANY_ADDRESS"),
     globalCompanyPhone: get("phone", "VAPI_PHONE_NUMBER"),
     globalCompanyEmail: get("email", "GLOBAL_COMPANY_EMAIL"),
-    globalCompanyWebsite: get("website"), // Database only, no env fallback
+    globalCompanyWebsite: website,
 
     // SVG markup for logo (used in UI components)
     // Single SVG with CSS in <defs> or <style> for theme support

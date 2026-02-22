@@ -60,17 +60,17 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
   // Variant classes using global color system
   const variantClasses = {
     primary:
-      "[@media(hover:hover)]:hover:scale-101 [@media(hover:hover)]:hover:-translate-y-0.5 [@media(hover:hover)]:hover:shadow-xl transition-all duration-200 rounded-full border-2 border-primary-500 bg-primary-500 text-white [@media(hover:hover)]:hover:bg-primary-600 dark:bg-primary-500 dark:[@media(hover:hover)]:hover:bg-primary-600 shadow-lg [@media(hover:hover)]:hover:shadow-xl",
+      "[@media(hover:hover)]:hover:scale-101 [@media(hover:hover)]:hover:-translate-y-0.5 transition-all duration-200 rounded-full border-2 border-primary-500 bg-primary-500 text-white [@media(hover:hover)]:hover:bg-primary-600 dark:bg-primary-500 dark:[@media(hover:hover)]:hover:bg-primary-600",
     secondary:
-      "[@media(hover:hover)]:hover:scale-101 [@media(hover:hover)]:hover:-translate-y-0.5 [@media(hover:hover)]:hover:shadow-xl transition-all duration-200 rounded-full border-2 border-secondary-500 bg-secondary-500 text-white [@media(hover:hover)]:hover:bg-secondary-600 dark:bg-secondary-500 dark:[@media(hover:hover)]:hover:bg-secondary-600 shadow-lg [@media(hover:hover)]:hover:shadow-xl",
+      "ring-2 ring-inset ring-[currentColor] [@media(hover:hover)]:hover:scale-101 [@media(hover:hover)]:hover:-translate-y-0.5 transition-all duration-200 rounded-full border-2 border-secondary-500 bg-secondary-500 text-white [@media(hover:hover)]:hover:bg-secondary-600 dark:bg-secondary-500 dark:[@media(hover:hover)]:hover:bg-secondary-600",
     success:
-      "rounded-full bg-success-500 text-white [@media(hover:hover)]:hover:bg-success-600 dark:bg-success-500 dark:[@media(hover:hover)]:hover:bg-success-600 shadow-lg [@media(hover:hover)]:hover:shadow-xl animate-pulse-breathe",
+      "rounded-full bg-success-500 text-white [@media(hover:hover)]:hover:bg-success-600 dark:bg-success-500 dark:[@media(hover:hover)]:hover:bg-success-600 animate-pulse-breathe",
     warning:
-      "bg-warning-500 text-white [@media(hover:hover)]:hover:bg-warning-600 dark:bg-warning-500 dark:[@media(hover:hover)]:hover:bg-warning-600 shadow-lg [@media(hover:hover)]:hover:shadow-xl",
+      "bg-warning-500 text-white [@media(hover:hover)]:hover:bg-warning-600 dark:bg-warning-500 dark:[@media(hover:hover)]:hover:bg-warning-600",
     danger:
-      "rounded-full bg-danger-500 text-white [@media(hover:hover)]:hover:bg-danger-600 dark:bg-danger-500 dark:[@media(hover:hover)]:hover:bg-danger-600 shadow-lg [@media(hover:hover)]:hover:shadow-xl",
+      "rounded-full bg-danger-500 text-white [@media(hover:hover)]:hover:bg-danger-600 dark:bg-danger-500 dark:[@media(hover:hover)]:hover:bg-danger-600",
     outline:
-      "[@media(hover:hover)]:hover:scale-101 [@media(hover:hover)]:hover:-translate-y-0.5 [@media(hover:hover)]:hover:shadow-xl rounded-full border-2 border-primary-500 text-primary-500 [@media(hover:hover)]:hover:bg-primary-500 [@media(hover:hover)]:hover:text-white dark:border-primary-400 dark:text-primary-400 dark:[@media(hover:hover)]:hover:bg-primary-600 dark:[@media(hover:hover)]:hover:text-white backdrop-blur-md",
+      "[@media(hover:hover)]:hover:scale-101 [@media(hover:hover)]:hover:-translate-y-0.5 rounded-full border-2 border-primary-500 text-primary-500 [@media(hover:hover)]:hover:bg-primary-500 [@media(hover:hover)]:hover:text-white dark:border-primary-400 dark:text-primary-400 dark:[@media(hover:hover)]:hover:bg-primary-600 dark:[@media(hover:hover)]:hover:text-white backdrop-blur-md",
     ghost:
       "rounded-full text-primary-500 [@media(hover:hover)]:hover:bg-primary-50 dark:text-primary-400 dark:[@media(hover:hover)]:hover:bg-primary-900/20",
     link: "link text-primary-500 [@media(hover:hover)]:hover:underline [@media(hover:hover)]:hover:text-primary-600 dark:text-primary-400 dark:[@media(hover:hover)]:hover:text-primary-300",
@@ -83,7 +83,7 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
       "text-gray-800 dark:text-gray-200 [@media(hover:hover)]:hover:text-primary dark:[@media(hover:hover)]:hover:text-primary-dark outline-none focus:outline-none border-none focus:ring-0 focus:ring-offset-0 [@media(hover:hover)]:hover:shadow-none opacity-100 transition-all duration-200",
     tab: "tab-button sliding-tabs-item",
     antispam:
-      "antispam-button rounded-full border-2 border-primary-500 bg-primary-500 text-white dark:bg-primary-500 shadow-lg overflow-hidden [@media(hover:hover)]:hover:bg-primary-600 [@media(hover:hover)]:hover:scale-101 [@media(hover:hover)]:hover:-translate-y-0.5",
+      "antispam-button rounded-full border-2 border-primary-500 bg-primary-500 text-white dark:bg-primary-500 overflow-hidden [@media(hover:hover)]:hover:bg-primary-600 [@media(hover:hover)]:hover:scale-101 [@media(hover:hover)]:hover:-translate-y-0.5",
   };
 
   // Focus classes with dashed outline

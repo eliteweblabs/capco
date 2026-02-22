@@ -4,7 +4,6 @@
  */
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
-import { validateSettingsForHtmlInjection } from "../../../lib/cms-html-validation";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
 
 if (!supabaseAdmin) {
@@ -48,30 +47,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    // Validate HTML-injected fields (customCss, customFooterHtml) to prevent page-breaking content
-    const validation = validateSettingsForHtmlInjection(settings);
-    if (!validation.valid) {
-      const message = validation.errors
-        .map((e) => `${e.key}: ${e.message}`)
-        .join(" ");
-      const errorDetails = validation.errors
-        .map((e) => `${e.key}: contains "${e.pattern}" - ${e.message}`)
-        .join("; ");
-      console.warn("[settings/update] Rejected malformed content:", validation.errors);
-      return new Response(
-        JSON.stringify({
-          error: "Content validation failed",
-          message,
-          errorDetails,
-          validationErrors: validation.errors,
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
-
     if (!supabaseAdmin) {
       console.error("[settings/update] supabaseAdmin not available");
       return new Response(JSON.stringify({ error: "Database not available" }), {
@@ -102,6 +77,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         return { category: "company", valueType: "text" };
       } else if (key === "projectDefaultDueDateHours") {
         return { category: "project", valueType: "text" };
+      } else if (key.startsWith("aiAgent_")) {
+        return { category: "agent", valueType: "text" };
       }
       return { category: "general", valueType: "text" };
     }

@@ -1,12 +1,11 @@
 /**
  * Project List Table Configuration
- * JSON-driven column config for the project dashboard table.
- * Loads from site-config-{company-slug}.json projectListColumns when present,
- * else falls back to TS modules (same pattern as asideNav).
+ * Generic, JSON-driven column config for the project dashboard table.
+ * All client-specific columns come from config (config.json or config-${RAILWAY_PROJECT_NAME}.json)
+ * under projectListColumns. No company-specific code; fallback default when config has no columns.
  */
 
 import { getSiteConfig } from "./content";
-import { globalCompanyData } from "../pages/api/global/global-company-data";
 
 export interface ProjectListColumnConfig {
   id: string;
@@ -50,15 +49,6 @@ export interface ProjectListColumnConfig {
   linkToProject?: boolean;
 }
 
-function slugifyCompanyName(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .trim();
-}
-
 /** Check if a column should be visible for the given role */
 export function isColumnAllowed(col: ProjectListColumnConfig, role?: string | null): boolean {
   if (!col.allow || col.allow.length === 0) return true;
@@ -66,53 +56,42 @@ export function isColumnAllowed(col: ProjectListColumnConfig, role?: string | nu
   return col.allow.some((r) => r.toLowerCase() === role?.toLowerCase());
 }
 
-let configCache: ProjectListColumnConfig[] | null = null;
-let configCompanySlug: string | null = null;
+/** Fallback when config has no projectListColumns (e.g. missing config file) */
+const DEFAULT_PROJECT_LIST_COLUMNS: ProjectListColumnConfig[] = [
+  { id: "delete", label: "", type: "delete", allow: ["Admin", "Staff"], width: 48, icon: "trash", tooltip: "Delete" },
+  { id: "edit", label: "", type: "edit", width: 48, icon: "edit" },
+  { id: "address", label: "Address", type: "text", field: "address", linkToProject: true, width: 180 },
+  { id: "company", label: "Company", type: "company", field: "authorProfile.companyName", allow: ["Admin", "Staff"], width: 120 },
+  { id: "status", label: "Status", type: "status", field: "status", width: 100 },
+  { id: "featured", label: "", type: "featured", allow: ["Admin", "Staff"], width: 80, icon: "star", tooltip: "Featured" },
+  { id: "files", label: "Files", type: "files", displayProjectFiles: { field: "projectFiles", size: "sm", tooltips: true, emptyText: "No files" }, width: 200 },
+  { id: "assigned", label: "", type: "assigned", field: "assignedToId", allow: ["Admin", "Staff"], width: 100, icon: "user", tooltip: "Assigned To" },
+  { id: "progress", label: "", type: "progress", field: "status", width: 100, icon: "percent", tooltip: "Progress Thru Statuses" },
+  { id: "checklist", label: "", type: "checklist", width: 80, icon: "checklist", tooltip: "Checklist" },
+  { id: "elapsed", label: "", type: "elapsed", field: "createdAt", width: 90, icon: "calendar", tooltip: "Elapsed Time" },
+  { id: "timeSince", label: "", type: "timeSince", field: "updatedAt", width: 110, icon: "stopwatch", tooltip: "Time since last status change" },
+  { id: "dueDate", label: "Due Date", type: "dueDate", field: "dueDate", width: 140 },
+];
 
-import * as defaultConfig from "./project-list-table-config-capco-design-group";
-import * as rothcoBuiltConfig from "./project-list-table-config-rothco-built";
-
+/**
+ * Get project list table columns from site config (config.json or config-${RAILWAY_PROJECT_NAME}.json).
+ * Client-specific layout is entirely in config under projectListColumns.
+ */
 export async function getProjectListTableColumns(): Promise<ProjectListColumnConfig[]> {
   const siteConfig = await getSiteConfig();
   const jsonColumns = (siteConfig as any).projectListColumns;
   if (Array.isArray(jsonColumns) && jsonColumns.length > 0) {
     return jsonColumns as ProjectListColumnConfig[];
   }
-
-  let companyName = "";
-  try {
-    const companyData = await globalCompanyData();
-    companyName = companyData?.globalCompanyName || process.env.RAILWAY_PROJECT_NAME || "";
-  } catch {
-    companyName = process.env.RAILWAY_PROJECT_NAME || "";
-  }
-  const companySlug = slugifyCompanyName(companyName);
-
-  if (configCache && configCompanySlug === companySlug) {
-    return configCache;
-  }
-
-  let configModule = defaultConfig;
-
-  switch (companySlug) {
-    case "capco-design-group":
-      configModule = defaultConfig;
-      break;
-    case "rothco-built":
-      configModule = rothcoBuiltConfig;
-      break;
-    default:
-      configModule = defaultConfig;
-  }
-
-  configCache = configModule.PROJECT_LIST_COLUMNS;
-  configCompanySlug = companySlug;
-  return configCache;
+  return DEFAULT_PROJECT_LIST_COLUMNS;
 }
 
-/** Get filtered columns for a role (sync, uses default config) */
+/**
+ * Sync version: returns default columns filtered by role. Use getProjectListTableColumns() when
+ * config-driven columns are needed (e.g. in async page/components).
+ */
 export function getProjectListTableColumnsSync(role?: string | null): ProjectListColumnConfig[] {
-  const cols = defaultConfig.PROJECT_LIST_COLUMNS;
+  const cols = DEFAULT_PROJECT_LIST_COLUMNS;
   if (!role) return cols;
   return cols.filter((c) => isColumnAllowed(c, role));
 }

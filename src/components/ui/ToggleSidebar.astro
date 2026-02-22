@@ -7,21 +7,15 @@ const { currentUser } = Astro.props;
 const currentRole = currentUser?.profile?.role;
 const currentUrl = Astro.url.pathname;
 // Show toggle: always on mobile, only when logged in on desktop
-const responsiveClass = !currentUser ? "sm:hidden" : "";
-
-// don't show toggle button during auto and login pages
-// if (currentUrl.includes("/auth/register") || currentUrl.includes("/auth/login")) {
-//   return null;
-// }
+const responsiveClass = !currentUser ? "md:hidden" : "";
 ---
 
-<!-- Toggle button - visible on mobile always, on desktop only when logged in -->
 <button
   type="button"
   data-sidebar-toggle-button
   aria-controls="sidebar"
   data-is-auth={currentUser ? "true" : "false"}
-  class={`inline-flex items-center p-2 pl-0 text-sm ${responsiveClass} mr-0 sm:mr-2`}
+  class={`inline-flex items-center p-4 text-sm ${responsiveClass}`}
 >
   <div class="relative flex h-6 w-6 items-center justify-center overflow-hidden">
     <svg
@@ -52,39 +46,15 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
   </div>
 
   <span class="sr-only">Open sidebar</span>
-  <!-- <svg
-    class="w-7 h-7"
-    data-sidebar-toggle-collapse-icon=""
-    aria-hidden="true"
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    fill="none"
-    viewBox="0 0 24 24"
-  >
-    <path stroke="currentColor" stroke-linecap="round" stroke-width="1" d="M5 7h14M5 12h14M5 17h10"
-    ></path>
-  </svg>
-  <svg
-    class="hidden w-7 h-7"
-    data-sidebar-toggle-expand-icon=""
-    aria-hidden="true"
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    fill="none"
-    viewBox="0 0 24 24"
-  >
-    <path stroke="currentColor" stroke-linecap="round" stroke-width="1" d="M5 7h14M5 12h14M5 17h14"
-    ></path>
-  </svg> -->
 </button>
 
-<script is:inline>
-  import { BREAKPOINTS } from "../../lib/ux-utils";
+<script>
+  if (typeof window !== "undefined" && (window as any).__jsOrderLog) (window as any).__jsOrderLog("ToggleSidebar (module)");
+  /** Tailwind md breakpoint - inlined to avoid import/bundling issues on production */
+  const MD_BREAKPOINT = 768;
 
   /** AbortController to remove previous listeners when re-initing (SPA navigations). */
-  let sidebarAbortController = null;
+  let sidebarAbortController: AbortController | null = null;
 
   function initSidebar() {
     // Abort previous run to avoid duplicate document/window listeners
@@ -105,14 +75,13 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
     // Check if user is authenticated (from first toggle button)
     const isAuth = toggleButtons[0].getAttribute("data-is-auth") === "true";
 
-    // Use global breakpoint (Tailwind sm)
-    const isMobile = () => window.innerWidth < BREAKPOINTS.SM;
+    const isMobile = () => window.innerWidth < MD_BREAKPOINT;
 
     // Track if sidebar is expanded (for desktop hover behavior)
     let isHovering = false;
 
     // Toggle icons based on state — update ALL instances (navbar + sticky actions, etc.) so they stay in sync
-    const updateIcons = (isExpanded) => {
+    const updateIcons = (isExpanded: boolean) => {
       if (collapseIcon && expandIcon) {
         if (isExpanded) {
           collapseIcon.classList.remove("hidden");
@@ -282,7 +251,10 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
       "click",
       (e) => {
         if (isMobile() && !sidebar.classList.contains("-translate-x-full")) {
-          if (!sidebar.contains(e.target) && !toggleButtons.some((btn) => btn.contains(e.target))) {
+          if (
+            !sidebar.contains(e.target as Node) &&
+            !toggleButtons.some((btn) => btn.contains(e.target as Node))
+          ) {
             hideSidebarMobile();
           }
         }
@@ -379,6 +351,101 @@ const responsiveClass = !currentUser ? "sm:hidden" : "";
     }
   }
 
-  document.addEventListener("DOMContentLoaded", initSidebar);
+  function ensureInit() {
+    const toggleButtons = document.querySelectorAll("[data-sidebar-toggle-button]");
+    const sidebar = document.getElementById("sidebar");
+    if (toggleButtons.length && sidebar) {
+      initSidebar();
+      return true;
+    }
+    return false;
+  }
+
+  (window as any).__ensureSidebarInit = ensureInit;
+
+  function runInitWithRetry(retries = 8, delay = 150) {
+    if (ensureInit()) return;
+    let attempt = 0;
+    const id = setInterval(() => {
+      attempt++;
+      if (ensureInit() || attempt >= retries) {
+        clearInterval(id);
+      }
+    }, delay);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => runInitWithRetry());
+  } else {
+    runInitWithRetry();
+  }
   // SPA disabled: document.addEventListener("astro:page-load", () => requestAnimationFrame(initSidebar));
+</script>
+
+<!-- Prod fallback: bundled script above is empty in production (Astro 5). This inline runs only in prod so toggle stays in this component. -->
+<script is:inline define:vars={{ isProd: import.meta.env.PROD }}>
+  if (isProd) (function () {
+    if (window.__jsOrderLog) window.__jsOrderLog("ToggleSidebar prod fallback (inline)");
+    function updateIcons(isExpanded) {
+      var menuIcons = document.querySelectorAll(".sidebar-toggle-menu-icon");
+      var closeIcons = document.querySelectorAll(".sidebar-toggle-close-icon");
+      if (isExpanded) {
+        menuIcons.forEach(function (el) {
+          el.classList.remove("opacity-100", "rotate-0", "scale-100");
+          el.classList.add("opacity-0", "rotate-90", "scale-0");
+        });
+        closeIcons.forEach(function (el) {
+          el.classList.remove("opacity-0", "-rotate-90", "scale-0");
+          el.classList.add("opacity-100", "rotate-0", "scale-100");
+        });
+      } else {
+        menuIcons.forEach(function (el) {
+          el.classList.remove("opacity-0", "rotate-90", "scale-0");
+          el.classList.add("opacity-100", "rotate-0", "scale-100");
+        });
+        closeIcons.forEach(function (el) {
+          el.classList.remove("opacity-100", "rotate-0", "scale-100");
+          el.classList.add("opacity-0", "-rotate-90", "scale-0");
+        });
+      }
+    }
+    function initSidebar() {
+      var btns = document.querySelectorAll("[data-sidebar-toggle-button]");
+      var sidebar = document.getElementById("sidebar");
+      var main = document.getElementById("main-content");
+      if (!btns.length || !sidebar) return;
+      if (btns[0].dataset.sidebarInited === "1") return;
+      btns[0].dataset.sidebarInited = "1";
+      var isMobile = function () { return window.innerWidth < 768; };
+      btns.forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          if (isMobile()) {
+            var hidden = sidebar.classList.contains("-translate-x-full");
+            if (hidden) {
+              sidebar.classList.remove("-translate-x-full");
+              sidebar.classList.add("translate-x-0");
+              document.body.style.overflow = "hidden";
+              if (main) main.classList.add("overflow-hidden", "pointer-events-none");
+              updateIcons(true);
+            } else {
+              sidebar.classList.add("-translate-x-full");
+              sidebar.classList.remove("translate-x-0");
+              document.body.style.overflow = "";
+              if (main) main.classList.remove("overflow-hidden", "pointer-events-none");
+              updateIcons(false);
+            }
+          }
+        });
+      });
+      if (isMobile()) {
+        sidebar.classList.add("-translate-x-full");
+        updateIcons(false);
+      }
+    }
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initSidebar);
+    } else {
+      initSidebar();
+    }
+  })();
 </script>

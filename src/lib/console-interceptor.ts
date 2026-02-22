@@ -166,80 +166,32 @@ export function disableConsoleDebug(): void {
 
 /**
  * Conditional console disabling based on environment
- * Allows certain prefixes to show in production for debugging
+ * Allows certain prefixes to show in production for debugging.
+ * DISABLED in production: overriding console.log was suspected of contributing to
+ * forms/dropdowns not working (scripts running after DOMContentLoaded). No-op in prod.
  */
 export function setupConsoleInterceptor(): void {
-  // Skip entirely unless explicitly enabled - default: allow all logs for debugging
-  // Set ENABLE_CONSOLE_INTERCEPTOR=1 to suppress console.log in production (except [---] prefixed)
-  if (process.env.ENABLE_CONSOLE_INTERCEPTOR !== "1") return;
-
-  // Check if we're in production
   const isProduction = import.meta.env.PROD || process.env.NODE_ENV === "production";
   const isServer = typeof window === "undefined";
 
-  // Debug logging
-  if (!isProduction) {
-    console.log(
-      `🔍 [CONSOLE-INTERCEPTOR] ${isServer ? "Server" : "Client"}-side environment check:`
-    );
-    console.log("  - import.meta.env.PROD:", import.meta.env.PROD);
-    console.log("  - process.env.NODE_ENV:", process.env.NODE_ENV);
-    console.log("  - isProduction:", isProduction);
-    console.log("  - isServer:", isServer);
+  if (isProduction) {
+    // Do not override console in production - avoid any risk to script execution
+    return;
   }
 
-  // Only disable console.log in production (both server and client)
-  if (isProduction) {
-    // Store original console.log
-    const originalLog = console.log;
-
-    // Override with selective filter - allow [---] prefixed logs
-    console.log = (...args: any[]) => {
-      const message = args.join(" ");
-
-      // Filter out image fetch logs
-      if (
-        message.includes("Fetch finished loading: GET") &&
-        (message.includes(".png") ||
-          message.includes(".jpg") ||
-          message.includes(".jpeg") ||
-          message.includes(".gif") ||
-          message.includes(".svg") ||
-          message.includes(".webp"))
-      ) {
-        return; // Don't log image fetch messages
-      }
-
-      // Allow logs that contain [---] pattern (e.g., [---VAPI], [---DEBUG], [---INIT], etc.)
-      if (message.includes("[---")) {
-        originalLog(...args);
-        return;
-      }
-      // Allow admin voice widget and API logs (server and client)
-      if (
-        message.includes("[ADMIN-VOICE]") ||
-        message.includes("[ADMIN-NEW-SUBMISSIONS]") ||
-        message.includes("[ADMIN-CREATE-PROJECT")
-      ) {
-        originalLog(...args);
-        return;
-      }
-      // Otherwise, suppress the log
-    };
-
-    if (isServer) {
-      console.warn("🔇 [SERVER] Console.log disabled in production (except [---] prefixed logs)");
-    } else {
-      console.warn("🔇 [CLIENT] Console.log disabled in production (except [---] prefixed logs)");
-    }
+  // Development only
+  console.log(
+    `🔍 [CONSOLE-INTERCEPTOR] ${isServer ? "Server" : "Client"}-side environment check:`
+  );
+  console.log("  - import.meta.env.PROD:", import.meta.env.PROD);
+  console.log("  - process.env.NODE_ENV:", process.env.NODE_ENV);
+  console.log("  - isProduction:", isProduction);
+  console.log("  - isServer:", isServer);
+  truncateConsoleLogs();
+  if (isServer) {
+    console.log("🔊 [SERVER] Console.log statements enabled in development (truncated)");
   } else {
-    // In development, truncate long console logs to prevent terminal clutter
-    truncateConsoleLogs();
-    if (isServer) {
-      console.log("🔊 [SERVER] Console.log statements enabled in development (truncated)");
-    } else {
-      console.log("🔊 [CLIENT] Console.log statements enabled in development (truncated)");
-    }
+    console.log("🔊 [CLIENT] Console.log statements enabled in development (truncated)");
   }
 }
 

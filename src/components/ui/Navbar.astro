@@ -7,6 +7,7 @@ import SimpleIcon from "../common/SimpleIcon.astro";
 import ThemeToggle from "./ThemeToggle.astro";
 import NotificationsDropdown from "./NotificationsDropdown.astro";
 import PunchlistDrawer from "../project/PunchlistDrawer.astro";
+import ShareWidget from "./ShareWidget.astro";
 
 interface Props {
   currentUser?: any;
@@ -25,8 +26,6 @@ interface Props {
   /** Page template (layout) for tooltip: default | fullwidth | minimal | centered | fullscreen */
   template?: string;
   hideFooter?: boolean;
-  /** Server-known theme for SSR icon visibility (so toggle works before JS loads) */
-  serverTheme?: string;
 }
 
 const {
@@ -41,7 +40,6 @@ const {
   pathname,
   template,
   hideFooter = false,
-  serverTheme = "light",
 } = Astro.props;
 const currentRole = (currentUser as any)?.profile?.role;
 ---
@@ -50,7 +48,7 @@ const currentRole = (currentUser as any)?.profile?.role;
 <nav
   id="main-navbar"
   class="color-background navbar-at-top fixed left-0 right-0"
-  style="top: max(0rem, env(safe-area-inset-top, 0px)); transform: translateZ(0); -webkit-backface-visibility: hidden; backface-visibility: hidden;"
+  style="top: max(0rem, env(safe-area-inset-top, 0px));"
 >
   <!-- Top Banner Alerts (if any) -->
   <BannerAlertsLoader position="top" width="auto" {pathname} template={template} {hideFooter} />
@@ -58,11 +56,13 @@ const currentRole = (currentUser as any)?.profile?.role;
   <!-- Main Navbar Content -->
   <div
     id="navbar-content"
-    class="flex h-16 min-w-0 justify-between gap-1 px-4 py-3 transition-opacity duration-200"
+    class="flex h-16 min-w-0 justify-between gap-1 py-3 transition-opacity duration-200"
   >
-    <div class="flex min-w-0 flex-shrink-0 items-center gap-1">
+    <div
+      class={`flex min-w-0 flex-shrink-0 items-center gap-1 ${!currentUser ? "md:pl-4" : "md:pl-1.5"}`}
+    >
       <ToggleSidebar {currentUser} />
-      <Logo link="/" file="svg" className="mr-2 flex md:mr-4" />
+      <Logo link="/" file="svg" className="flex" />
     </div>
 
     {
@@ -76,28 +76,31 @@ const currentRole = (currentUser as any)?.profile?.role;
       )
     }
 
-    <div class="flex flex-shrink-0 items-center gap-2">
+    <div class="flex flex-shrink-0 items-center pr-4">
+      <ShareWidget direction="left" globalIconButtonClasses={globalIconButtonClasses} />
+
       {
         currentUser && currentRole !== "Client" && project && (
-          <button
-            type="button"
-            id="punchlist-drawer-toggle"
-            title="View Punchlist"
-            data-drawer-target="punchlist-drawer"
-            data-drawer-show="punchlist-drawer"
-            data-drawer-placement="right"
-            aria-controls="punchlist-drawer"
-            class={globalIconButtonClasses}
-          >
-            <SimpleIcon name="menu-check" size="md" />
-            <span class="sr-only">View Punchlist</span>
-          </button>
-              <PunchlistDrawer
-      {globalIconButtonClasses}
-      currentUser={currentUser}
-      project={project}
-    />
-
+          <>
+            <button
+              type="button"
+              id="punchlist-drawer-toggle"
+              title="View Punchlist"
+              data-drawer-target="punchlist-drawer"
+              data-drawer-show="punchlist-drawer"
+              data-drawer-placement="right"
+              aria-controls="punchlist-drawer"
+              class={globalIconButtonClasses}
+            >
+              <SimpleIcon name="menu-check" size="md" />
+              <span class="sr-only">View Punchlist</span>
+            </button>
+            <PunchlistDrawer
+              {globalIconButtonClasses}
+              currentUser={currentUser}
+              project={project}
+            />
+          </>
         )
       }
       {
@@ -122,7 +125,12 @@ const currentRole = (currentUser as any)?.profile?.role;
                 style="opacity: 0; pointer-events: none;"
               >
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </span>
               <span class="sr-only">Notifications</span>
@@ -137,7 +145,7 @@ const currentRole = (currentUser as any)?.profile?.role;
         )
       }
 
-      <ThemeToggle {currentUser} {session} {isBackend} {globalIconButtonClasses} serverTheme={serverTheme} />
+      <ThemeToggle {currentUser} {session} {isBackend} {globalIconButtonClasses} />
 
       <AuthIcon
         id="account"
@@ -152,109 +160,58 @@ const currentRole = (currentUser as any)?.profile?.role;
   </div>
 </nav>
 
-<script>
-  const logoutBtn = document.getElementById("logout-btn");
-
-  // Logout functionality (only if logout button exists - when authenticated)
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", async () => {
-      // console.log("📋 [HEADER] Logout button clicked");
-      try {
-        // console.log("📋 [HEADER] Sending logout request...");
-        const response = await fetch("/api/auth/signout", {
-          method: "POST",
+<script is:inline>
+  (function () {
+    function run() {
+      var logoutBtn = document.getElementById("logout-btn");
+      if (logoutBtn && !logoutBtn.hasAttribute("data-navbar-logout-bound")) {
+        logoutBtn.setAttribute("data-navbar-logout-bound", "true");
+        logoutBtn.addEventListener("click", function () {
+          fetch("/api/auth/signout", { method: "POST" })
+            .then(function (response) {
+              if (response.ok) {
+                var url = new URL(window.location.origin);
+                url.searchParams.set("message", "logout_success");
+                window.location.href = url.toString();
+              } else {
+                if (typeof window.showNotice === "function") {
+                  window.showNotice("error", "Logout Failed", "There was an error logging out. Please try again.", 0);
+                } else {
+                  alert("There was an error logging out. Please try again.");
+                }
+              }
+            })
+            .catch(function (err) { console.error("Logout error:", err); });
         });
-        // console.log("📋 [HEADER] Logout response status:", response.status);
+      }
 
-        if (response.ok) {
-          // console.log("📋 [HEADER] Logout successful, redirecting...");
-
-          // Simple redirect to home page with success message
-          const url = new URL(window.location.origin);
-          url.searchParams.set("message", "logout_success");
-          window.location.href = url.toString();
-        } else {
-          // console.error("📋 [HEADER] Logout failed with status:", response.status);
-
-          // Show error modal if logout fails
-          if (typeof window.showNotice === "function") {
-            window.showNotice(
-              "error",
-              "Logout Failed",
-              "There was an error logging out. Please try again.",
-              0 // No auto-hide for errors
-            );
-          } else {
-            // Fallback if showNotice is not available
-            alert("There was an error logging out. Please try again.");
+      var navbar = document.getElementById("main-navbar");
+      if (navbar && !navbar.hasAttribute("data-navbar-modal-bound")) {
+        navbar.setAttribute("data-navbar-modal-bound", "true");
+        function isMobile() { return window.innerWidth < 768; }
+        var observer = new MutationObserver(function () {
+          if (!isMobile()) return;
+          var modals = document.querySelectorAll('[id*="modal"]');
+          var hasVisible = false;
+          modals.forEach(function (modal) {
+            if (!modal.classList.contains("hidden") && modal.classList.contains("flex")) hasVisible = true;
+          });
+          navbar.style.opacity = hasVisible ? "0" : "1";
+          navbar.style.pointerEvents = hasVisible ? "none" : "auto";
+        });
+        observer.observe(document.body, { attributes: true, attributeFilter: ["class"], subtree: true, childList: true });
+        window.addEventListener("resize", function () {
+          if (!isMobile() && navbar.style.opacity === "0") {
+            navbar.style.opacity = "1";
+            navbar.style.pointerEvents = "auto";
           }
-        }
-      } catch (error) {
-        console.error("📋 [HEADER] Logout error:", error);
+        });
       }
-    });
-  }
-
-  // Hide navbar on mobile when modals open
-  function setupNavbarHideOnModal() {
-    const navbar = document.getElementById("main-navbar");
-    if (!navbar) return;
-
-    // Check if device is mobile (screen width < 768px)
-    function isMobile() {
-      return window.innerWidth < 768;
     }
-
-    // Observe for modal visibility changes
-    const observer = new MutationObserver((mutations) => {
-      if (!isMobile()) return;
-
-      // Check if any modal is visible
-      const modals = document.querySelectorAll('[id*="modal"]');
-      let hasVisibleModal = false;
-
-      modals.forEach((modal) => {
-        const isVisible = !modal.classList.contains("hidden") && modal.classList.contains("flex");
-        if (isVisible) {
-          hasVisibleModal = true;
-        }
-      });
-
-      // Hide or show navbar based on modal visibility
-      if (hasVisibleModal) {
-        navbar.style.opacity = "0";
-        navbar.style.pointerEvents = "none";
-      } else {
-        navbar.style.opacity = "1";
-        navbar.style.pointerEvents = "auto";
-      }
-    });
-
-    // Observe the body for modal changes
-    observer.observe(document.body, {
-      attributes: true,
-      attributeFilter: ["class"],
-      subtree: true,
-      childList: true,
-    });
-
-    // Also listen for window resize to re-check mobile status
-    window.addEventListener("resize", () => {
-      if (!isMobile() && navbar.style.opacity === "0") {
-        navbar.style.opacity = "1";
-        navbar.style.pointerEvents = "auto";
-      }
-    });
-  }
-
-  // navbar-at-top is synced by BannerAlertsLoader's reveal-scroll logic: translateY 0 === at top (all screens)
-
-  // Initialize on DOM ready
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", setupNavbarHideOnModal);
-  } else {
-    setupNavbarHideOnModal();
-  }
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run);
+    else run();
+    setTimeout(run, 400);
+  })();
 </script>
 <style>
   /* z-100 only at top of page; z-50 when scrolled */

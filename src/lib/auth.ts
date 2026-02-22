@@ -198,8 +198,7 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
           errorMessage.includes("Invalid Refresh Token") ||
           errorMessage.includes("Already Used")
         ) {
-          // Expected when multiple tabs/requests refresh at once or across instances; no need to log at warn
-          console.debug("🔐 [AUTH] Refresh token already used (concurrent request race condition)");
+          // Expected when multiple tabs/requests refresh at once; no log to avoid server log noise
           // Don't clear cookies - they might be valid for another request
           return {
             isAuth: false,

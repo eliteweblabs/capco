@@ -1006,5 +1006,4 @@ export const refreshManager = RefreshManager.getInstance();
 // Make it globally available for easy access
 if (typeof window !== "undefined") {
   (window as any).refreshManager = refreshManager;
-  console.log("[---INIT] refresh-manager loaded (polling for Staff/Admin)");
 }
