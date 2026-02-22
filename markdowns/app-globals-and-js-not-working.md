@@ -1,6 +1,19 @@
 # When “JS doesn’t work” (dropdowns, form steps, etc.)
 
-## What’s going on
+## Checklist from "Astro works on localhost but JavaScript doesn't"
+
+1. **Client-side vs server-side**
+   Interactive JS here is in `<script>` (or `is:inline`) in the template, not in frontmatter. App.astro, MultiStepForm, Navbar, etc. all follow that; frontmatter is server-only.
+
+2. **Files deployed correctly**
+   With `output: "server"`, client chunks go under `dist/`. On the **live site**, open DevTools → Network, reload, and see if any `_astro/*.js` requests return **404**. If so, the server isn't serving static assets. Try opening a chunk URL directly in the browser (e.g. `https://your-domain.com/_astro/[hash].js`).
+
+3. **Incorrect file paths**
+   If the app is served at a subpath (e.g. `example.com/app/`), set `base: '/app/'` in `astro.config.mjs`. At root domain, paths are usually fine.
+
+---
+
+## What's going on
 
 1. **app-globals is turned off in production**  
    In `App.astro`, the script that loads `app-globals` is commented out because in Astro 5 production build that chunk can end up empty or broken, and loading it was stopping all later scripts (e.g. no TRACE 5 in the console).

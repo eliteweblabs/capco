@@ -6,6 +6,8 @@
  * - data-src="actual-image-url"
  */
 
+if (typeof window !== "undefined" && (window as any).__jsOrderLog) (window as any).__jsOrderLog("lazy-load-images");
+
 export function initLazyLoading() {
   if (typeof window === "undefined") return;
 

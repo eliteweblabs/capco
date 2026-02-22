@@ -28,6 +28,8 @@
  * - fade: Simple fade only
  */
 
+if (typeof window !== "undefined" && (window as any).__jsOrderLog) (window as any).__jsOrderLog("scroll-animations");
+
 interface ScrollAnimationOptions {
   /** Threshold for triggering (0-1, default 0.1) */
   threshold?: number;

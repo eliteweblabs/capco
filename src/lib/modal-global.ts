@@ -16,6 +16,7 @@ import {
 
 // Make functions globally available
 if (typeof window !== "undefined") {
+  if ((window as any).__jsOrderLog) (window as any).__jsOrderLog("modal-global");
   window.showModal = showModal;
   window.hideModal = hideModal;
   window.removeModal = removeModal;

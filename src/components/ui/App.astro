@@ -266,6 +266,12 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
     <!-- Theme detection - MUST be first to be available for all components -->
     <script is:inline>
       (function () {
+        window.__jsOrder = 0;
+        window.__jsOrderLog = function (label) {
+          window.__jsOrder = (window.__jsOrder || 0) + 1;
+          console.log("[JS-ORDER]", window.__jsOrder, label);
+        };
+        window.__jsOrderLog("App theme (inline)");
         window.__traceNum = 0;
         window.__traceLog = function (m) {
           window.__traceNum = (window.__traceNum || 0) + 1;
@@ -363,7 +369,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
           }}
         >
       (function () {
-        console.log("[TRACE] App dynamic colors script start");
+        if (window.__jsOrderLog) window.__jsOrderLog("App dynamic colors (inline)");
         // Inject colors and font immediately, synchronously BEFORE any CSS is parsed
         const primary = primaryColor || "#825BDD";
         const secondary = secondaryColor || "#0ea5e9";
@@ -917,7 +923,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
     {/* Flowbite: CDN may load slowly or fail (CSP/network). Fallback below retries and can load script dynamically. */}
     <script src="https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js" defer></script>
     <script is:inline>
-      if (window.__traceLog) window.__traceLog("App: Flowbite script tag loaded, before app-globals");
+      if (window.__jsOrderLog) window.__jsOrderLog("Flowbite script tag (inline after CDN)");
     </script>
 
     {!ONLY_FLOWBITE_AND_THEME && (
@@ -927,7 +933,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
         {/* 8b. Fallback: define critical window.* stubs and re-init Flowbite. Waits for Flowbite if CDN loads late; if still missing, loads script dynamically. */}
         <script is:inline>
           (function () {
-            if (window.__traceLog) window.__traceLog("App: fallback script running (after app-globals tag)");
+            if (window.__jsOrderLog) window.__jsOrderLog("App fallback / ensureGlobals (inline)");
             var flowbiteInited = false;
             function runInitFlowbite() {
               if (flowbiteInited) return;
@@ -983,7 +989,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
         {/* 10. Theme toggle inline */}
         <script is:inline>
       (function () {
-        if (window.__traceLog) window.__traceLog("App: theme toggle script running");
+        if (window.__jsOrderLog) window.__jsOrderLog("App theme toggle (inline)");
         function initThemeToggle() {
           var themeToggle = document.getElementById("theme-toggle");
           var darkIcon = document.getElementById("theme-toggle-dark-icon");
@@ -1025,6 +1031,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
 
     <script is:inline>
       (function () {
+        if (window.__jsOrderLog) window.__jsOrderLog("App overscroll scale (inline)");
         var getOverscrollPercent = window.getOverscrollPercent;
         if (typeof getOverscrollPercent !== "function") return;
 
@@ -1087,6 +1094,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
       <>
         {/* 12. DOMContentLoaded init (notification, sidebar) */}
     <script>
+      if (typeof window !== "undefined" && window.__jsOrderLog) window.__jsOrderLog("App DOMContentLoaded-init (module)");
       document.addEventListener("DOMContentLoaded", async () => {
         try {
           if (typeof (window as any).hideOnFormFocus === "function") {
@@ -1114,7 +1122,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
       <>
         {/* 13. Global Image Error Handler */}
     <script>
-      // Global error handler for broken image URLs (especially Supabase storage)
+      if (typeof window !== "undefined" && window.__jsOrderLog) window.__jsOrderLog("App image error handler (module)");
       document.addEventListener("DOMContentLoaded", () => {
         // Suppress expected console errors in development
         const isDev =
@@ -1236,7 +1244,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js" defer></script>
     <script is:inline>
-      // Wait for AOS library to load before initializing (skip on admin/project)
+      if (window.__jsOrderLog) window.__jsOrderLog("AOS init (inline)");
       window.addEventListener("DOMContentLoaded", function () {
         var path = window.location.pathname;
         if (path.startsWith("/admin") || path.startsWith("/project")) return;

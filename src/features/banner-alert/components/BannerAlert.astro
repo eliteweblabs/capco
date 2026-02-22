@@ -55,6 +55,7 @@ const {
 </div>
 
 <script>
+  if (typeof window !== "undefined" && (window as any).__jsOrderLog) (window as any).__jsOrderLog("BannerAlert manager (module)");
   class BannerAlertManager {
     private static instance: BannerAlertManager;
     private dismissedBanners: Set<string>;
@@ -142,13 +143,10 @@ const {
     }
   }
 
-  // Initialize on page load
-  document.addEventListener("DOMContentLoaded", () => {
+  // Initialize when DOM ready or when script loads (if doc already ready)
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => BannerAlertManager.getInstance());
+  } else {
     BannerAlertManager.getInstance();
-  });
-
-  // SPA disabled: Re-initialize on Astro page transitions
-  // document.addEventListener("astro:page-load", () => {
-  //   BannerAlertManager.getInstance();
-  // });
+  }
 </script>
