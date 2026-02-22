@@ -914,8 +914,8 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
     {/* Cache indicator: dev/test only (localhost or ?cacheIndicator=1) */}
     {isAdmin && <CacheIndicator />}
 
-    {/* Flowbite: use same CDN as working 55cf3925 (unpkg 2.5.2). */}
-    <script src="https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js"></script>
+    {/* Flowbite: CDN may load slowly or fail (CSP/network). Fallback below retries and can load script dynamically. */}
+    <script src="https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js" defer></script>
     <script is:inline>
       if (window.__traceLog) window.__traceLog("App: Flowbite script tag loaded, before app-globals");
     </script>
@@ -924,10 +924,18 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
       <>
         {/* 8. app-globals DISABLED: Astro 5 emits empty chunk in prod; loading it stops all subsequent scripts (no TRACE 5). Fallback below provides stubs so site works. */}
         {/* <script> import "../../scripts/app-globals"; </script> */}
-        {/* 8b. Fallback: define critical window.* stubs and re-init Flowbite so nav/forms/dropdowns work without relying on app-globals chunk. */}
+        {/* 8b. Fallback: define critical window.* stubs and re-init Flowbite. Waits for Flowbite if CDN loads late; if still missing, loads script dynamically. */}
         <script is:inline>
           (function () {
             if (window.__traceLog) window.__traceLog("App: fallback script running (after app-globals tag)");
+            var flowbiteInited = false;
+            function runInitFlowbite() {
+              if (flowbiteInited) return;
+              var w = window;
+              if (typeof w.initFlowbite === "function") {
+                try { w.initFlowbite(); flowbiteInited = true; } catch (e) { console.warn("[App] initFlowbite error:", e); }
+              }
+            }
             function ensureGlobals() {
               if (window.__appGlobalsFallbackDone) return;
               window.__appGlobalsFallbackDone = true;
@@ -941,16 +949,25 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
               if (typeof w.handleUrlNotification !== "function") w.handleUrlNotification = function () {};
               if (typeof w.processUrlNotifications !== "function") w.processUrlNotifications = function () {};
               if (typeof w.hideNotification !== "function") w.hideNotification = function () {};
-              if (typeof w.initFlowbite === "function") w.initFlowbite();
+              runInitFlowbite();
+              [50, 150, 350, 600].forEach(function (ms) {
+                setTimeout(runInitFlowbite, ms);
+              });
+              setTimeout(function () {
+                if (flowbiteInited) return;
+                if (typeof w.initFlowbite === "function") { runInitFlowbite(); return; }
+                var s = document.createElement("script");
+                s.src = "https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js";
+                s.onload = function () { runInitFlowbite(); };
+                s.onerror = function () { console.warn("[App] Flowbite CDN load failed; dropdowns/collapse may not work."); };
+                document.head.appendChild(s);
+              }, 700);
             }
-            function runWhenReady() {
-              if (document.readyState === "loading") {
-                document.addEventListener("DOMContentLoaded", ensureGlobals);
-              } else {
-                ensureGlobals();
-              }
+            if (document.readyState === "loading") {
+              document.addEventListener("DOMContentLoaded", ensureGlobals);
+            } else {
+              ensureGlobals();
             }
-            runWhenReady();
             if (window.__traceLog) window.__traceLog("App: fallback script registered (ensureGlobals on load or now)");
           })();
         </script>
