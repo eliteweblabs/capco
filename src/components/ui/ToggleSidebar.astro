@@ -49,9 +49,8 @@ const responsiveClass = !currentUser ? "md:hidden" : "";
 </button>
 
 <script>
+  import { BREAKPOINTS } from "../../lib/ux-utils";
   if (typeof window !== "undefined" && (window as any).__jsOrderLog) (window as any).__jsOrderLog("ToggleSidebar (module)");
-  /** Tailwind md breakpoint - inlined to avoid import/bundling issues on production */
-  const MD_BREAKPOINT = 768;
 
   /** AbortController to remove previous listeners when re-initing (SPA navigations). */
   let sidebarAbortController: AbortController | null = null;
@@ -75,7 +74,7 @@ const responsiveClass = !currentUser ? "md:hidden" : "";
     // Check if user is authenticated (from first toggle button)
     const isAuth = toggleButtons[0].getAttribute("data-is-auth") === "true";
 
-    const isMobile = () => window.innerWidth < MD_BREAKPOINT;
+    const isMobile = () => window.innerWidth < BREAKPOINTS.MD;
 
     // Track if sidebar is expanded (for desktop hover behavior)
     let isHovering = false;
@@ -416,7 +415,8 @@ const responsiveClass = !currentUser ? "md:hidden" : "";
       if (!btns.length || !sidebar) return;
       if (btns[0].dataset.sidebarInited === "1") return;
       btns[0].dataset.sidebarInited = "1";
-      var isMobile = function () { return window.innerWidth < 768; };
+      var md = (typeof window !== "undefined" && window.BREAKPOINTS?.MD) || 768;
+      var isMobile = function () { return window.innerWidth < md; };
       btns.forEach(function (btn) {
         btn.addEventListener("click", function () {
           if (isMobile()) {

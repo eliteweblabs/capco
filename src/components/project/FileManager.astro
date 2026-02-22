@@ -810,14 +810,23 @@ const canDeleteFiles =
       };
     }
 
+    let uploadInProgress = false;
+
     async function handleFileUpload(files) {
       if (!files || files.length === 0) {
         return;
       }
 
+      if (uploadInProgress) {
+        if (window.showNotice) window.showNotice("info", "Upload in progress", "Please wait for the current upload to finish.", 2000);
+        return;
+      }
+      uploadInProgress = true;
+
       // Validate files before upload
       const validationResult = validateFiles(files);
       if (!validationResult.valid) {
+        uploadInProgress = false;
         console.error("❌ [FILE-MANAGER] File validation failed:", validationResult.errors);
         showError(`Upload failed: ${validationResult.errors.join(", ")}`);
         return;
@@ -916,6 +925,7 @@ const canDeleteFiles =
 
       // Hide progress and show final summary
       setTimeout(() => {
+        uploadInProgress = false;
         progressDiv?.classList.add("hidden");
 
         // Auto-check-in (unlock) any previously checked out files when new version is uploaded

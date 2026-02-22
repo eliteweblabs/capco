@@ -324,7 +324,14 @@ if (!isAdminOrStaff) {
       if (files.length > 0) handleFileUpload(files);
     });
 
+    let uploadInProgress = false;
+
     async function handleFileUpload(files) {
+      if (uploadInProgress) {
+        if (window.showNotice) window.showNotice("info", "Upload in progress", "Please wait for the current upload to finish.", 2000);
+        return;
+      }
+
       // Filter to only images
       const imageFiles = files.filter((file) => file.type.startsWith("image/"));
 
@@ -333,6 +340,7 @@ if (!isAdminOrStaff) {
         return;
       }
 
+      uploadInProgress = true;
       progressDiv?.classList.remove("hidden");
       progressBar.style.width = "0%";
 
@@ -386,6 +394,7 @@ if (!isAdminOrStaff) {
       }
 
       setTimeout(() => {
+        uploadInProgress = false;
         progressDiv?.classList.add("hidden");
         loadMarketingImages();
       }, 1000);

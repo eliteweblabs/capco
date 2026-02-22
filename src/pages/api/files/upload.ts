@@ -146,6 +146,49 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
+    // Duplicate upload check: if same file was uploaded by same user in same location within last 2 min, return existing
+    // Prevents double upload when site refreshes during/after upload
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+    const { data: recentDuplicate } = await supabaseAdmin
+      .from("files")
+      .select("id, fileName, filePath, fileSize, fileType, title, comments, isPrivate, projectId, uploadedAt, bucketName")
+      .eq("projectId", parseInt(projectId as string))
+      .eq("fileName", file.name)
+      .eq("targetLocation", targetDirectory)
+      .eq("authorId", currentUser.id)
+      .gte("uploadedAt", twoMinutesAgo)
+      .order("uploadedAt", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (recentDuplicate && recentDuplicate.fileSize === file.size) {
+      console.log(`📁 [FILES-UPLOAD] Duplicate detected (recent upload), returning existing: ${recentDuplicate.id}`);
+      const dupBucket = recentDuplicate.bucketName || bucketName || "project-media";
+      const { data: urlData } = supabaseAdmin.storage
+        .from(dupBucket)
+        .getPublicUrl(recentDuplicate.filePath);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          data: {
+            id: recentDuplicate.id,
+            fileName: recentDuplicate.fileName,
+            filePath: recentDuplicate.filePath,
+            fileSize: recentDuplicate.fileSize,
+            mimeType: recentDuplicate.fileType,
+            publicUrl: urlData.publicUrl,
+            projectId: recentDuplicate.projectId,
+            title: recentDuplicate.title,
+            comments: recentDuplicate.comments,
+            isPrivate: recentDuplicate.isPrivate,
+            createdAt: recentDuplicate.uploadedAt,
+          },
+          message: "File already uploaded (duplicate prevented)",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
     // Generate unique file path with URL-safe filename
     const fileExtension = file.name.split(".").pop() || "";
     const fileName = file.name.replace(/\.[^/.]+$/, ""); // Remove extension

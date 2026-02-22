@@ -1,6 +1,7 @@
 import { getIcon } from "../lib/simple-icons";
 import { setupConsoleInterceptor } from "../lib/console-interceptor";
 import {
+  BREAKPOINTS,
   isMobile,
   isTablet,
   isDesktop,
@@ -26,6 +27,7 @@ import { validatePhone, formatPhoneAsYouType } from "../lib/phone-validation";
 // Single source for global (window.*) functions. Components keep their own JS; only shared globals here.
 if (typeof window !== "undefined") {
   const w = window as any;
+  w.BREAKPOINTS = BREAKPOINTS;
   if (typeof w.showNotice !== "function") w.showNotice = function () {};
   if (typeof w.showModal !== "function") w.showModal = function () {};
   if (typeof w.hideModal !== "function") w.hideModal = function () {};
@@ -76,6 +78,8 @@ declare global {
     isTablet?: () => boolean;
     isDesktop?: () => boolean;
     getViewportSize?: () => "mobile" | "tablet" | "desktop";
+    /** Breakpoint constants (SM, MOBILE_MAX, MD, LG, XL, 2XL) - from ux-utils */
+    BREAKPOINTS?: typeof BREAKPOINTS;
     debounce?: <T extends (...args: any[]) => any>(func: T, wait: number) => T;
     throttle?: <T extends (...args: any[]) => any>(func: T, limit: number) => T;
     truncateString?: (str: string, maxLength?: number, suffix?: string) => string;
