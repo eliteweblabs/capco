@@ -2,6 +2,7 @@
 /**
  * Root layout shell: head, theme, nav, footer, global scripts.
  * Refactor notes and script order: see markdowns/APP-COMPONENT-REVIEW.md
+ * Note: currentUser and session are always from checkAuth(Astro.cookies), not from props.
  */
 interface Props {
   title?: string;
@@ -725,6 +726,10 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
     {/* Cache indicator: dev/test only (localhost or ?cacheIndicator=1) */}
     {isAdmin && <CacheIndicator />}
 
+    {/* Globals (showNotice, etc.) before auth so Google OAuth can show errors */}
+    {!ONLY_FLOWBITE_AND_THEME && (
+      <script src="../../scripts/app-globals.ts"></script>
+    )}
     {/* Google OAuth: single module for "Sign in with Google" (dropdown, login form, etc.) */}
     <script src="../../lib/auth-google.ts"></script>
     {/* Flowbite: CDN may load slowly or fail (CSP/network). Fallback below retries and can load script dynamically. */}
@@ -831,9 +836,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
 
     {!ONLY_FLOWBITE_AND_THEME && (
       <>
-        {/* 8. All global (window.*) functions: single file. Component JS stays in components. */}
-        <script src="../../scripts/app-globals.ts"></script>
-        {/* 9. hold-progress-init */}
+        {/* 8. hold-progress-init (app-globals loaded earlier, before auth-google) */}
         <script>
           import "../../scripts/hold-progress-init";
         </script>
