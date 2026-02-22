@@ -61,6 +61,52 @@ import LayoutAuthCallback from "../../components/layouts/LayoutAuthCallback.astr
   </div>
 </LayoutAuthCallback>
 
+{/* Inline: show OAuth errors and detect when main script never runs (module load failure) so we never fail silently. */}
+<script is:inline>
+  (function () {
+    var params = new URLSearchParams(window.location.search);
+    var hashParams = new URLSearchParams((window.location.hash || "").substring(1));
+    var err = params.get("error") || hashParams.get("error");
+    var errDesc = params.get("error_description") || hashParams.get("error_description") || params.get("message") || hashParams.get("message");
+    var code = params.get("code") || hashParams.get("code");
+
+    function showFallbackError(msg) {
+      var loading = document.getElementById("loading-container");
+      var errEl = document.getElementById("error");
+      var errMsg = document.getElementById("error-message");
+      var redirectNote = document.getElementById("error-redirect");
+      var back = document.getElementById("back-link");
+      if (loading) loading.classList.add("hidden");
+      if (errEl && errMsg) {
+        errMsg.textContent = msg;
+        errEl.classList.remove("hidden");
+        if (redirectNote) redirectNote.textContent = "";
+        if (back) back.classList.remove("hidden");
+      }
+    }
+
+    if (err) {
+      var msg = errDesc || err;
+      if (err === "access_denied") msg = "You cancelled sign-in or access was denied.";
+      else if (err === "session_expired") msg = "Your session expired. Please sign in again.";
+      showFallbackError(msg);
+      setTimeout(function () {
+        window.location.href = "/auth/login?error=oauth_failed&message=" + encodeURIComponent(msg);
+      }, 3000);
+      return;
+    }
+
+    if (code) {
+      setTimeout(function () {
+        var errEl = document.getElementById("error");
+        var loading = document.getElementById("loading-container");
+        if (loading && !loading.classList.contains("hidden") && errEl && errEl.classList.contains("hidden")) {
+          showFallbackError("Sign-in did not complete. Please try again from the login page.");
+        }
+      }, 12000);
+    }
+  })();
+</script>
 <script>
   // Show "Taking too long?" escape hatch after 8s (avoids stuck loading when DB/network is slow)
   const slowTimeout = setTimeout(() => {
@@ -503,9 +549,14 @@ import LayoutAuthCallback from "../../components/layouts/LayoutAuthCallback.astr
       if (!response.ok) {
         const errorText = await response.text();
         console.error("[AUTH-CALLBACK] Server callback error:", response.status, errorText);
-        showError("Failed to set authentication cookies");
+        let serverMsg = "Failed to set authentication cookies.";
+        try {
+          const j = JSON.parse(errorText);
+          if (j && typeof j.error === "string") serverMsg = j.error;
+        } catch (_) { /* ignore */ }
+        showError(serverMsg);
         setTimeout(() => {
-          window.location.href = "/auth/login?error=cookie_set_failed";
+          window.location.href = "/auth/login?error=cookie_set_failed&message=" + encodeURIComponent(serverMsg);
         }, 3000);
         return;
       }
@@ -556,6 +607,12 @@ import LayoutAuthCallback from "../../components/layouts/LayoutAuthCallback.astr
     }
   }
 
-  // Handle callback when page loads
-  handleCallback();
+  // Handle callback when page loads; catch any unhandled rejection so we never fail silently
+  handleCallback().catch((err) => {
+    console.error("[AUTH-CALLBACK] Unhandled error:", err);
+    showError(err instanceof Error ? err.message : "Sign-in failed. Please try again.");
+    setTimeout(() => {
+      window.location.href = "/auth/login?error=unexpected_error";
+    }, 3000);
+  });
 </script>

@@ -20,6 +20,7 @@ const currentRole = currentUser?.profile?.role;
 import SimpleIcon from "../common/SimpleIcon.astro";
 import Dropdown from "./Dropdown.astro";
 import CheckInButton from "../common/CheckInButton.astro";
+import PageSizeToggle from "./PageSizeToggle.astro";
 ---
 
 <!-- Login popover: AuthIcon uses data-popover-target when not authenticated -->
@@ -69,23 +70,7 @@ import CheckInButton from "../common/CheckInButton.astro";
       <span class="text-sm font-medium text-gray-900 dark:text-white">Sign Out</span>
     </button>
 
-    <button
-      type="button"
-      id="page-size-toggle"
-      title="Toggle larger page elements"
-      class="dark:hover:bg-primary-950/30 relative flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50 p-4 text-center transition-colors hover:border-primary-300 hover:bg-primary-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-primary-600"
-      aria-pressed="false"
-    >
-      <span id="page-size-icon-in">
-        <SimpleIcon name="zoom-in" size="xl" class="text-primary-500 dark:text-primary-400" />
-      </span>
-      <span id="page-size-icon-out" class="hidden">
-        <SimpleIcon name="zoom-out" size="xl" class="text-primary-500 dark:text-primary-400" />
-      </span>
-      <span id="page-size-toggle-label" class="text-sm font-medium text-gray-900 dark:text-white">
-        Larger
-      </span>
-    </button>
+    <PageSizeToggle variant="tile" idPrefix="dropdown-" />
 
     {(currentRole === "Admin" || currentRole === "Staff") && <CheckInButton tile />}
   </div>
@@ -109,8 +94,3 @@ import CheckInButton from "../common/CheckInButton.astro";
     )
   }
 </div>
-<script is:inline>
-  document.addEventListener("DOMContentLoaded", function () {
-    if (typeof window.initPageSizeToggle === "function") window.initPageSizeToggle();
-  });
-</script>

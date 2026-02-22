@@ -26,12 +26,12 @@ import LayoutFullForm from "../../components/layouts/LayoutFullForm.astro";
 <LayoutFullForm title="Login / Register" description="Login or register to access your dashboard">
   <LoginForm redirectUrl={redirectUrl} />
 </LayoutFullForm>
-{/* Inline fallback so Google button works even when the module chunk doesn't load. Replaced by login-form-client.ts when it loads (client-side OAuth with window.location.origin). */}
+{/* Inline fallback: if module never loads, send to same page with provider=google so a refresh may run the module. Avoids server-side google-start which has no code_verifier in browser and breaks callback. */}
 <script is:inline define:vars={{ redirectUrl }}>
   (function () {
     function fallbackGoogleSignup() {
       var dest = (document.querySelector('input[name="redirect"]') && document.querySelector('input[name="redirect"]').value) || redirectUrl || '/project/dashboard';
-      window.location.href = '/api/auth/google-start?redirect=' + encodeURIComponent(dest);
+      window.location.href = '/auth/login?provider=google&redirect=' + encodeURIComponent(dest);
     }
     window.handleGoogleSignup = fallbackGoogleSignup;
     document.addEventListener('click', function (e) {
