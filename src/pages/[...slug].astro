@@ -37,6 +37,12 @@ const excludedPaths = [
   ".map",
 ];
 
+// Static assets / favicon – return 404 without hitting content loader (avoids log noise)
+const staticExtensions = [".svg", ".ico", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".woff", ".woff2", ".ttf", ".eot"];
+if (staticExtensions.some((ext) => pageSlug.toLowerCase().endsWith(ext))) {
+  return new Response(null, { status: 404 });
+}
+
 // _astro is Astro's build output; /_astro or /_astro/... must not hit content loader
 if (pageSlug === "_astro" || pageSlug.startsWith("_astro/")) {
   return new Response(null, { status: 404 });

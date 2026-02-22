@@ -26,8 +26,9 @@ export const GET: APIRoute = async ({ request }) => {
     const themeColor = data.primaryColor || "#825BDD";
     const description = data.globalCompanySlogan || "Fire protection project management";
 
-    // Use dynamic favicon API for company-specific icon; fallback to static
+    // Multi-site: dynamic APIs serve DB icon or redirect to per-deployment static files
     const iconSvg = `${base}/api/favicon.svg`;
+    const iconPng = `${base}/api/favicon.png`;
 
     const manifest = {
       name,
@@ -41,8 +42,8 @@ export const GET: APIRoute = async ({ request }) => {
       scope: "/",
       icons: [
         { src: iconSvg, sizes: "any", type: "image/svg+xml", purpose: "any maskable" },
-        { src: "/favicon.png", sizes: "192x192", type: "image/png", purpose: "any" },
-        { src: "/favicon.png", sizes: "512x512", type: "image/png", purpose: "any" },
+        { src: iconPng, sizes: "192x192", type: "image/png", purpose: "any" },
+        { src: iconPng, sizes: "512x512", type: "image/png", purpose: "any" },
       ],
       categories: ["business", "productivity"],
       shortcuts: [

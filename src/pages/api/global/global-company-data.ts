@@ -105,9 +105,10 @@ export const globalCompanyData = async () => {
     website = pub || (rail ? (rail.startsWith("http") ? rail : `https://${rail}`) : "");
   }
 
-  // Favicon paths - consistent format with leading slash
+  // Favicon paths - used by manifest/link tags; per-site via static files or optional DB URL
   const faviconSvgPath = "/img/favicon.svg";
   const faviconPngPath = "/img/favicon.png";
+  const faviconPngUrl = get("faviconPngUrl") || ""; // Optional: full URL or path to PNG (for /api/favicon.png)
 
   return {
     globalCompanyName: get("companyName", "RAILWAY_PROJECT_NAME") || "Company Name Not Set",
@@ -131,6 +132,7 @@ export const globalCompanyData = async () => {
     // Favicon file paths (used in manifest.json and link tags)
     globalCompanyFaviconSvg: faviconSvgPath,
     globalCompanyFaviconPng: faviconPngPath,
+    faviconPngUrl,
 
     // Theme colors
     primaryColor: get("primaryColor", "GLOBAL_COLOR_PRIMARY"),
