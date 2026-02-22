@@ -1,5 +1,8 @@
 ---
-/** Layout modes (used by layout components and CMS template): default | fullwidth | minimal | centered | fullscreen */
+/**
+ * Root layout shell: head, theme, nav, footer, global scripts.
+ * Refactor notes and script order: see markdowns/APP-COMPONENT-REVIEW.md
+ */
 interface Props {
   title?: string;
   description?: string;
@@ -53,7 +56,7 @@ const {
   hideFooter = false,
 } = Astro.props;
 
-/** When true: only Flowbite + theme scripts run (for finding what breaks nav/forms). Set to false to restore all scripts. Reverted to false to match working 55cf3925. */
+/** Minimal mode: when true, only Flowbite + theme run (debug nav/forms). See markdowns/APP-COMPONENT-REVIEW.md. */
 const ONLY_FLOWBITE_AND_THEME = false;
 
 const stripHtml = (s: string | undefined | null): string =>
@@ -262,304 +265,107 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
       </>
     )}
 
-    {/* KEPT: Theme detection - required for Flowbite dark mode */}
-    <!-- Theme detection - MUST be first to be available for all components -->
-    <script is:inline>
-      (function () {
-        window.__jsOrder = 0;
-        window.__jsOrderLog = function (label) {
-          window.__jsOrder = (window.__jsOrder || 0) + 1;
-          console.log("[JS-ORDER]", window.__jsOrder, label);
-        };
-        window.__jsOrderLog("App theme (inline)");
-        window.__traceNum = 0;
-        window.__traceLog = function (m) {
-          window.__traceNum = (window.__traceNum || 0) + 1;
-          console.log("[TRACE " + window.__traceNum + "] " + m);
-        };
-        window.addEventListener("error", function (e) {
-          if (window.__traceLog) window.__traceLog("ERROR: " + (e.message || String(e)));
-        });
-        window.addEventListener("unhandledrejection", function (e) {
-          var msg = (e.reason && (e.reason.message || String(e.reason))) || "unknown";
-          if (window.__traceLog) window.__traceLog("UNHANDLED REJECTION: " + msg);
-        });
-        window.__traceLog("App theme script start");
-        // Initialize dark mode FIRST to prevent flash (IIFE avoids duplicate-declaration if script is inlined twice)
-        var hasExplicitPreference = localStorage.getItem("color-theme") !== null;
-
-        function setThemeCookie(theme) {
-          document.cookie = "theme=" + theme + "; path=/; max-age=31536000; SameSite=Lax";
-          console.log("[THEME-CLIENT] Cookie set to:", theme);
-          console.log("[THEME-CLIENT] All cookies:", document.cookie);
-          var cookies = document.cookie.split(";").reduce(function (acc, cookie) {
-            var parts = cookie.trim().split("=");
-            acc[parts[0]] = parts[1];
-            return acc;
-          }, {});
-          console.log("[THEME-CLIENT] Parsed cookies:", cookies);
-          console.log("[THEME-CLIENT] Theme cookie value:", cookies.theme);
-        }
-
-        function applyTheme(mode) {
-          if (mode === "dark") {
-            document.documentElement.classList.add("dark");
-          } else {
-            document.documentElement.classList.remove("dark");
-          }
-          localStorage.setItem("color-theme", mode);
-          setThemeCookie(mode);
-        }
-
-        if (hasExplicitPreference) {
-          applyTheme(localStorage.getItem("color-theme") || "light");
-        } else {
-          applyTheme(window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-        }
-
-        window.isDarkMode = function () {
-          var hasDarkClass = document.documentElement.classList.contains("dark");
-          var localStorageTheme = localStorage.getItem("color-theme");
-          var systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-          if (hasDarkClass) return true;
-          if (localStorageTheme !== null) return localStorageTheme === "dark";
-          return systemPrefersDark;
-        };
-
-        window.currentTheme = window.isDarkMode() ? "dark" : "light";
-
-        /* page-size-plugin: must run inline before CSS to avoid FOUC (see src/lib/page-size-plugin.ts) */
-        var pageSize = localStorage.getItem("page-size") || "normal";
-        document.documentElement.setAttribute("data-page-size", pageSize);
-
-        var ua = navigator.userAgent;
-        var isIOS = /iPad|iPhone|iPod/.test(ua);
-        var versionMatch = ua.match(/Version\/(\d+)/);
-        var major = versionMatch ? parseInt(versionMatch[1], 10) : 0;
-        if (isIOS && major > 0 && major < 14) {
-          window.__legacySafari = true;
-        }
-        if (window.__traceLog) window.__traceLog("App theme script end");
-      })();
-    </script>
-    {!ONLY_FLOWBITE_AND_THEME && (
-      <>
-        {/* 3. init-auth-globals */}
-        <script>
-          import "../../scripts/init-auth-globals";
-        </script>
-      </>
-    )}
+    <!-- Theme + bootstrap globals: must run first (Flowbite dark mode, page-size, __legacySafari). -->
+    <script src="../../scripts/theme-init.ts"></script>
+    {/* Auth/phone/page-size globals are in app-globals.ts */}
 
     <!-- Critical CMS colors (server-rendered) so first paint uses DB colors before any script -->
     <style is:global set:html={criticalColorsCss}></style>
 
     {!ONLY_FLOWBITE_AND_THEME && (
       <>
-        {/* 4. Dynamic Color & Font Injection */}
+        {/* 4. Dynamic Color & Font Injection – single source: lib/color-utils for palettes */}
         <script
-          is:inline
           define:vars={{
             primaryColor,
             secondaryColor,
             fontFamily,
             secondaryFontFamily,
-            globalCompanyName,
           }}
         >
-      (function () {
-        if (window.__jsOrderLog) window.__jsOrderLog("App dynamic colors (inline)");
-        // Inject colors and font immediately, synchronously BEFORE any CSS is parsed
-        const primary = primaryColor || "#825BDD";
-        const secondary = secondaryColor || "#0ea5e9";
-        const font = fontFamily || "Outfit Variable";
-        const secondaryFont = secondaryFontFamily || "sans-serif";
+          import { generateColorPalette } from "@/lib/color-utils";
 
-        // Font loading configuration - maps font names to Google Fonts URLs
-        const fontConfigs = {
-          "Outfit Variable": null, // Loaded via npm package
-          Roboto:
-            "https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap",
-          "Open Sans":
-            "https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap",
-          Lato: "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",
-          Montserrat:
-            "https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap",
-          Poppins:
-            "https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap",
-          Inter: "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap",
-          Raleway:
-            "https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;600;700&display=swap",
-          "Source Sans Pro":
-            "https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600;700&display=swap",
-          Nunito:
-            "https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap",
-          "Playfair Display":
-            "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap",
-          Merriweather:
-            "https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&display=swap",
-          Oswald:
-            "https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;600;700&display=swap",
-          Lora: "https://fonts.googleapis.com/css2?family=Lora:wght@400;700&display=swap",
-          "PT Sans": "https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap",
-          Ubuntu: "https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;700&display=swap",
-          "Noto Sans":
-            "https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;600;700&display=swap",
-          "Work Sans":
-            "https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;600;700&display=swap",
-          "Crimson Text":
-            "https://fonts.googleapis.com/css2?family=Crimson+Text:wght@400;700&display=swap",
-          "Fira Sans":
-            "https://fonts.googleapis.com/css2?family=Fira+Sans:wght@300;400;600;700&display=swap",
-          "Dancing Script":
-            "https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&display=swap",
-          "Bebas Neue": "https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap",
-          Comfortaa:
-            "https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;600;700&display=swap",
-          Quicksand:
-            "https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;600;700&display=swap",
-          Rubik: "https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;600;700&display=swap",
-          "Josefin Sans":
-            "https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;600;700&display=swap",
-          "Libre Baskerville":
-            "https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap",
-          Cabin: "https://fonts.googleapis.com/css2?family=Cabin:wght@400;600;700&display=swap",
-          Dosis: "https://fonts.googleapis.com/css2?family=Dosis:wght@300;400;600;700&display=swap",
-          Arvo: "https://fonts.googleapis.com/css2?family=Arvo:wght@400;700&display=swap",
-          "Titillium Web":
-            "https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600;700&display=swap",
-          Mukta: "https://fonts.googleapis.com/css2?family=Mukta:wght@300;400;600;700&display=swap",
-          Karla: "https://fonts.googleapis.com/css2?family=Karla:wght@300;400;600;700&display=swap",
-          Barlow:
-            "https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;600;700&display=swap",
-          "DM Sans": "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;700&display=swap",
-          Manrope:
-            "https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600;700&display=swap",
-          "Space Grotesk":
-            "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600;700&display=swap",
-          "Plus Jakarta Sans":
-            "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap",
-        };
+          if (window.__jsOrderLog) window.__jsOrderLog("App dynamic colors");
+          const primary = primaryColor || "#825BDD";
+          const secondary = secondaryColor || "#0ea5e9";
+          const font = fontFamily || "Outfit Variable";
+          const secondaryFont = secondaryFontFamily || "sans-serif";
 
-        // Load font dynamically if not already loaded
-        function loadFont(fontName) {
-          const url = fontConfigs[fontName];
-          if (!url) return; // Skip if no URL (e.g., Outfit Variable loaded via npm)
+          const fontConfigs = {
+            "Outfit Variable": null,
+            Roboto: "https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap",
+            "Open Sans": "https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap",
+            Lato: "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",
+            Montserrat: "https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap",
+            Poppins: "https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap",
+            Inter: "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap",
+            Raleway: "https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;600;700&display=swap",
+            "Source Sans Pro": "https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600;700&display=swap",
+            Nunito: "https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap",
+            "Playfair Display": "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap",
+            Merriweather: "https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&display=swap",
+            Oswald: "https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;600;700&display=swap",
+            Lora: "https://fonts.googleapis.com/css2?family=Lora:wght@400;700&display=swap",
+            "PT Sans": "https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap",
+            Ubuntu: "https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;700&display=swap",
+            "Noto Sans": "https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;600;700&display=swap",
+            "Work Sans": "https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;600;700&display=swap",
+            "Crimson Text": "https://fonts.googleapis.com/css2?family=Crimson+Text:wght@400;700&display=swap",
+            "Fira Sans": "https://fonts.googleapis.com/css2?family=Fira+Sans:wght@300;400;600;700&display=swap",
+            "Dancing Script": "https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&display=swap",
+            "Bebas Neue": "https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap",
+            Comfortaa: "https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;600;700&display=swap",
+            Quicksand: "https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;600;700&display=swap",
+            Rubik: "https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;600;700&display=swap",
+            "Josefin Sans": "https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;600;700&display=swap",
+            "Libre Baskerville": "https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap",
+            Cabin: "https://fonts.googleapis.com/css2?family=Cabin:wght@400;600;700&display=swap",
+            Dosis: "https://fonts.googleapis.com/css2?family=Dosis:wght@300;400;600;700&display=swap",
+            Arvo: "https://fonts.googleapis.com/css2?family=Arvo:wght@400;700&display=swap",
+            "Titillium Web": "https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600;700&display=swap",
+            Mukta: "https://fonts.googleapis.com/css2?family=Mukta:wght@300;400;600;700&display=swap",
+            Karla: "https://fonts.googleapis.com/css2?family=Karla:wght@300;400;600;700&display=swap",
+            Barlow: "https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;600;700&display=swap",
+            "DM Sans": "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;700&display=swap",
+            Manrope: "https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600;700&display=swap",
+            "Space Grotesk": "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600;700&display=swap",
+            "Plus Jakarta Sans": "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap",
+          };
 
-          // Check if font link already exists
-          const existingLink = document.querySelector(`link[href="${url}"]`);
-          if (existingLink) {
-            console.log("[Font] Already loaded:", fontName);
-            return;
+          function loadFont(fontName) {
+            const url = fontConfigs[fontName];
+            if (!url) return;
+            if (document.querySelector(`link[href="${url}"]`)) return;
+            const link = document.createElement("link");
+            link.rel = "stylesheet";
+            link.href = url;
+            link.crossOrigin = "anonymous";
+            document.head.appendChild(link);
           }
+          loadFont(font);
+          loadFont(secondaryFont);
 
-          // Create and inject Google Font link
-          const link = document.createElement("link");
-          link.rel = "stylesheet";
-          link.href = url;
-          link.crossOrigin = "anonymous";
-          document.head.appendChild(link);
-          console.log("[Font] Loading font:", fontName);
-        }
-
-        // Load primary and secondary fonts
-        loadFont(font);
-        loadFont(secondaryFont);
-
-        // Generate color palettes inline (same algorithm as dynamic-colors.ts)
-        function hexToHsl(hex) {
-          const r = parseInt(hex.slice(1, 3), 16) / 255;
-          const g = parseInt(hex.slice(3, 5), 16) / 255;
-          const b = parseInt(hex.slice(5, 7), 16) / 255;
-          const max = Math.max(r, g, b);
-          const min = Math.min(r, g, b);
-          let h = 0,
-            s = 0;
-          const l = (max + min) / 2;
-          if (max !== min) {
-            const d = max - min;
-            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-            switch (max) {
-              case r:
-                h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
-                break;
-              case g:
-                h = ((b - r) / d + 2) / 6;
-                break;
-              case b:
-                h = ((r - g) / d + 4) / 6;
-                break;
+          const root = document.documentElement;
+          const primaryPalette = generateColorPalette(primary);
+          const secondaryPalette = generateColorPalette(secondary);
+          Object.entries(primaryPalette).forEach(([shade, color]) => {
+            if (shade !== "DEFAULT" && !Number.isNaN(Number(shade))) {
+              root.style.setProperty(`--color-primary-${shade}`, color);
             }
-          }
-          return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
-        }
-
-        function hslToHex(h, s, l) {
-          l /= 100;
-          const a = (s * Math.min(l, 1 - l)) / 100;
-          const f = (n) => {
-            const k = (n + h / 30) % 12;
-            const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-            return Math.round(255 * color)
-              .toString(16)
-              .padStart(2, "0");
-          };
-          return `#${f(0)}${f(8)}${f(4)}`;
-        }
-
-        function generatePalette(baseColor) {
-          if (!baseColor || !baseColor.match(/^#[0-9A-F]{6}$/i)) {
-            baseColor = "#3b82f6";
-          }
-          const [h, s, l] = hexToHsl(baseColor);
-          return {
-            50: hslToHex(h, Math.max(s - 20, 10), Math.min(l + 45, 95)),
-            100: hslToHex(h, Math.max(s - 15, 15), Math.min(l + 40, 90)),
-            200: hslToHex(h, Math.max(s - 10, 20), Math.min(l + 30, 85)),
-            300: hslToHex(h, Math.max(s - 5, 25), Math.min(l + 20, 75)),
-            400: hslToHex(h, s, Math.min(l + 10, 65)),
-            500: baseColor,
-            600: hslToHex(h, Math.min(s + 5, 90), Math.max(l - 10, 25)),
-            700: hslToHex(h, Math.min(s + 10, 95), Math.max(l - 20, 20)),
-            800: hslToHex(h, Math.min(s + 15, 100), Math.max(l - 30, 15)),
-            900: hslToHex(h, Math.min(s + 20, 100), Math.max(l - 40, 10)),
-            950: hslToHex(h, Math.min(s + 25, 100), Math.max(l - 50, 5)),
-          };
-        }
-
-        // Inject colors IMMEDIATELY - document.documentElement exists even before DOMContentLoaded
-        const root = document.documentElement;
-        const primaryPalette = generatePalette(primary);
-        const secondaryPalette = generatePalette(secondary);
-
-        Object.entries(primaryPalette).forEach(([shade, color]) => {
-          root.style.setProperty(`--color-primary-${shade}`, color);
-        });
-
-        Object.entries(secondaryPalette).forEach(([shade, color]) => {
-          root.style.setProperty(`--color-secondary-${shade}`, color);
-        });
-
-        // Inject font families
-        root.style.setProperty("--font-family", font);
-        root.style.setProperty("--font-family-secondary", secondaryFont);
-
-        console.log("[App] ✅ Dynamic colors and fonts injected immediately:", {
-          primary,
-          secondary,
-          font,
-          secondaryFont,
-        });
-      })();
+          });
+          Object.entries(secondaryPalette).forEach(([shade, color]) => {
+            if (shade !== "DEFAULT" && !Number.isNaN(Number(shade))) {
+              root.style.setProperty(`--color-secondary-${shade}`, color);
+            }
+          });
+          root.style.setProperty("--font-family", font);
+          root.style.setProperty("--font-family-secondary", secondaryFont);
         </script>
       </>
     )}
 
     <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="author" content={globalCompanyName} />
     <meta name="format-detection" content="telephone=no" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -1025,55 +831,8 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
 
     {!ONLY_FLOWBITE_AND_THEME && (
       <>
-        {/* 8. app-globals DISABLED: Astro 5 emits empty chunk in prod; loading it stops all subsequent scripts (no TRACE 5). Fallback below provides stubs so site works. */}
-        {/* <script> import "../../scripts/app-globals"; </script> */}
-        {/* 8b. Fallback: define critical window.* stubs and re-init Flowbite. Waits for Flowbite if CDN loads late; if still missing, loads script dynamically. */}
-        <script is:inline>
-          (function () {
-            if (window.__jsOrderLog) window.__jsOrderLog("App fallback / ensureGlobals (inline)");
-            var flowbiteInited = false;
-            function runInitFlowbite() {
-              if (flowbiteInited) return;
-              var w = window;
-              if (typeof w.initFlowbite === "function") {
-                try { w.initFlowbite(); flowbiteInited = true; } catch (e) { console.warn("[App] initFlowbite error:", e); }
-              }
-            }
-            function ensureGlobals() {
-              if (window.__appGlobalsFallbackDone) return;
-              window.__appGlobalsFallbackDone = true;
-              var w = window;
-              if (typeof w.showNotice !== "function") w.showNotice = function () {};
-              if (typeof w.showModal !== "function") w.showModal = function () {};
-              if (typeof w.hideModal !== "function") w.hideModal = function () {};
-              if (typeof w.removeModal !== "function") w.removeModal = function () {};
-              if (typeof w.lockBodyScroll !== "function") w.lockBodyScroll = function () {};
-              if (typeof w.unlockBodyScroll !== "function") w.unlockBodyScroll = function () {};
-              if (typeof w.handleUrlNotification !== "function") w.handleUrlNotification = function () {};
-              if (typeof w.processUrlNotifications !== "function") w.processUrlNotifications = function () {};
-              if (typeof w.hideNotification !== "function") w.hideNotification = function () {};
-              runInitFlowbite();
-              [50, 150, 350, 600].forEach(function (ms) {
-                setTimeout(runInitFlowbite, ms);
-              });
-              setTimeout(function () {
-                if (flowbiteInited) return;
-                if (typeof w.initFlowbite === "function") { runInitFlowbite(); return; }
-                var s = document.createElement("script");
-                s.src = "https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js";
-                s.onload = function () { runInitFlowbite(); };
-                s.onerror = function () { console.warn("[App] Flowbite CDN load failed; dropdowns/collapse may not work."); };
-                document.head.appendChild(s);
-              }, 700);
-            }
-            if (document.readyState === "loading") {
-              document.addEventListener("DOMContentLoaded", ensureGlobals);
-            } else {
-              ensureGlobals();
-            }
-            if (window.__traceLog) window.__traceLog("App: fallback script registered (ensureGlobals on load or now)");
-          })();
-        </script>
+        {/* 8. All global (window.*) functions: single file. Component JS stays in components. */}
+        <script src="../../scripts/app-globals.ts"></script>
         {/* 9. hold-progress-init */}
         <script>
           import "../../scripts/hold-progress-init";
@@ -1081,111 +840,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
       </>
     )}
 
-    {!ONLY_FLOWBITE_AND_THEME && (
-      <>
-        {/* 10. Theme toggle inline */}
-        <script is:inline>
-      (function () {
-        if (window.__jsOrderLog) window.__jsOrderLog("App theme toggle (inline)");
-        function initThemeToggle() {
-          var themeToggle = document.getElementById("theme-toggle");
-          var darkIcon = document.getElementById("theme-toggle-dark-icon");
-          var lightIcon = document.getElementById("theme-toggle-light-icon");
-          if (!themeToggle || !darkIcon || !lightIcon) return;
-          if (themeToggle.dataset.themeToggleInited === "1") return;
-          themeToggle.dataset.themeToggleInited = "1";
-          function syncIcons(isDark) {
-            if (isDark) {
-              darkIcon.classList.add("hidden");
-              lightIcon.classList.remove("hidden");
-            } else {
-              darkIcon.classList.remove("hidden");
-              lightIcon.classList.add("hidden");
-            }
-          }
-          syncIcons(document.documentElement.classList.contains("dark"));
-          themeToggle.addEventListener("click", function () {
-            var isDark = document.documentElement.classList.contains("dark");
-            var newTheme = isDark ? "light" : "dark";
-            if (isDark) {
-              document.documentElement.classList.remove("dark");
-              localStorage.setItem("color-theme", "light");
-            } else {
-              document.documentElement.classList.add("dark");
-              localStorage.setItem("color-theme", "dark");
-            }
-            syncIcons(!isDark);
-            document.cookie = "theme=" + newTheme + "; path=/; max-age=31536000; SameSite=Lax";
-            if (typeof window.currentTheme !== "undefined") window.currentTheme = newTheme;
-            if (typeof window.updateThemeSync === "function") window.updateThemeSync();
-          });
-        }
-        if (document.readyState === "loading")
-          document.addEventListener("DOMContentLoaded", initThemeToggle);
-        else initThemeToggle();
-      })();
-    </script>
-
-    <script is:inline>
-      (function () {
-        if (window.__jsOrderLog) window.__jsOrderLog("App overscroll scale (inline)");
-        var getOverscrollPercent = window.getOverscrollPercent;
-        if (typeof getOverscrollPercent !== "function") return;
-
-        var MIN_SCALE = 0.9;
-        var MAX_SCALE = 1.25;
-        var overscrollScaleEls = [];
-        var wasInRange = true;
-
-        function scaleFromPercent(p) {
-          if (p >= 0 && p <= 100) return 1;
-          if (p > 100) return Math.min(MAX_SCALE, 1 + (p - 100) / 100);
-          return Math.max(MIN_SCALE, 1 + p / 100);
-        }
-
-        function applyOverscrollScale() {
-          var p = getOverscrollPercent();
-          var inRange = p >= 0 && p <= 100;
-          if (wasInRange && !inRange) {
-            console.log("overscroll started", Math.round(p * 10) / 10 + "%");
-          }
-          wasInRange = inRange;
-
-          var scale = scaleFromPercent(p);
-          if (overscrollScaleEls.length === 0)
-            overscrollScaleEls = Array.from(document.querySelectorAll(".overscroll-scale"));
-          overscrollScaleEls.forEach(function (el) {
-            el.style.transform = "scale(" + scale + ")";
-          });
-        }
-
-        var ticking = false;
-        function onScrollOrWheel() {
-          if (ticking) return;
-          ticking = true;
-          requestAnimationFrame(function () {
-            applyOverscrollScale();
-            ticking = false;
-          });
-        }
-
-        function init() {
-          var scrollTarget = document.getElementById("reveal-scroll") || window;
-          scrollTarget.addEventListener("scroll", onScrollOrWheel, { passive: true });
-          window.addEventListener("wheel", onScrollOrWheel, { passive: true });
-          applyOverscrollScale();
-        }
-
-        if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", init);
-        } else {
-          setTimeout(init, 0);
-        }
-      })();
-        </script>
-        {/* 11. Overscroll scale - above */}
-      </>
-    )}
+    {/* Theme toggle and overscroll scale: in app-globals.ts DOMContentLoaded */}
 
     {!ONLY_FLOWBITE_AND_THEME && (
       <>

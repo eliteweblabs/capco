@@ -1,7 +1,6 @@
 /**
- * Expose auth/profile helpers on window so inline scripts (UserDropdown, PhoneAndSMS)
- * can use them without importing. Prevents 404s when SPA merges HTML and browser
- * tries to resolve raw import paths like /lib/page-size-plugin.
+ * Superseded by app-globals.ts (initPageSizeToggle, validatePhone, formatPhoneAsYouType).
+ * Kept for reference; do not load from App.
  */
 import { initPageSizeToggle } from "../lib/page-size-plugin";
 import { validatePhone, formatPhoneAsYouType } from "../lib/phone-validation";

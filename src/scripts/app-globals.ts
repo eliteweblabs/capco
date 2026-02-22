@@ -20,6 +20,28 @@ import {
   isValidEmail,
 } from "../lib/global-display-utils";
 import { initFlowbite } from "flowbite";
+import { initPageSizeToggle } from "../lib/page-size-plugin";
+import { validatePhone, formatPhoneAsYouType } from "../lib/phone-validation";
+
+// Single source for global (window.*) functions. Components keep their own JS; only shared globals here.
+if (typeof window !== "undefined") {
+  const w = window as any;
+  if (typeof w.showNotice !== "function") w.showNotice = function () {};
+  if (typeof w.showModal !== "function") w.showModal = function () {};
+  if (typeof w.hideModal !== "function") w.hideModal = function () {};
+  if (typeof w.removeModal !== "function") w.removeModal = function () {};
+  if (typeof w.lockBodyScroll !== "function") w.lockBodyScroll = function () {};
+  if (typeof w.unlockBodyScroll !== "function") w.unlockBodyScroll = function () {};
+  if (typeof w.handleUrlNotification !== "function") w.handleUrlNotification = function () {};
+  if (typeof w.processUrlNotifications !== "function") w.processUrlNotifications = function () {};
+  if (typeof w.hideNotification !== "function") w.hideNotification = function () {};
+  w.initPageSizeToggle = initPageSizeToggle;
+  w.validatePhone = validatePhone;
+  w.formatPhoneAsYouType = formatPhoneAsYouType;
+}
+
+// Modal system (overwrites no-op stubs above)
+import "../lib/modal-global";
 
 if (typeof window !== "undefined" && (window as any).__traceLog) (window as any).__traceLog("app-globals.ts running");
 
@@ -1604,6 +1626,72 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Inject icons into .input-with-icon[data-icon] (e.g. MultiStepForm)
     if ((window as any).initInputWithIcon) (window as any).initInputWithIcon();
+
+    // Theme toggle (navbar dark/light button)
+    const themeToggle = document.getElementById("theme-toggle");
+    const darkIcon = document.getElementById("theme-toggle-dark-icon");
+    const lightIcon = document.getElementById("theme-toggle-light-icon");
+    if (themeToggle && darkIcon && lightIcon && !(themeToggle as any).dataset?.themeToggleInited) {
+      (themeToggle as any).dataset.themeToggleInited = "1";
+      const syncIcons = (isDark: boolean) => {
+        if (isDark) {
+          darkIcon.classList.add("hidden");
+          lightIcon.classList.remove("hidden");
+        } else {
+          darkIcon.classList.remove("hidden");
+          lightIcon.classList.add("hidden");
+        }
+      };
+      syncIcons(document.documentElement.classList.contains("dark"));
+      themeToggle.addEventListener("click", () => {
+        const isDark = document.documentElement.classList.contains("dark");
+        const newTheme = isDark ? "light" : "dark";
+        if (isDark) {
+          document.documentElement.classList.remove("dark");
+          localStorage.setItem("color-theme", "light");
+        } else {
+          document.documentElement.classList.add("dark");
+          localStorage.setItem("color-theme", "dark");
+        }
+        syncIcons(!isDark);
+        document.cookie = "theme=" + newTheme + "; path=/; max-age=31536000; SameSite=Lax";
+        if (typeof (window as any).currentTheme !== "undefined") (window as any).currentTheme = newTheme;
+        if (typeof (window as any).updateThemeSync === "function") (window as any).updateThemeSync();
+      });
+    }
+
+    // Overscroll scale (.overscroll-scale elements)
+    const getOverscrollPercent = (window as any).getOverscrollPercent;
+    if (typeof getOverscrollPercent === "function") {
+      const MIN_SCALE = 0.9;
+      const MAX_SCALE = 1.25;
+      let overscrollScaleEls: HTMLElement[] = [];
+      let wasInRange = true;
+      const scaleFromPercent = (p: number) => {
+        if (p >= 0 && p <= 100) return 1;
+        if (p > 100) return Math.min(MAX_SCALE, 1 + (p - 100) / 100);
+        return Math.max(MIN_SCALE, 1 + p / 100);
+      };
+      const applyOverscrollScale = () => {
+        const p = getOverscrollPercent();
+        const inRange = p >= 0 && p <= 100;
+        if (wasInRange && !inRange) console.log("overscroll started", Math.round(p * 10) / 10 + "%");
+        wasInRange = inRange;
+        const scale = scaleFromPercent(p);
+        if (overscrollScaleEls.length === 0) overscrollScaleEls = Array.from(document.querySelectorAll(".overscroll-scale"));
+        overscrollScaleEls.forEach((el) => { el.style.transform = "scale(" + scale + ")"; });
+      };
+      let ticking = false;
+      const onScrollOrWheel = () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => { applyOverscrollScale(); ticking = false; });
+      };
+      const scrollTarget = document.getElementById("reveal-scroll") || window;
+      scrollTarget.addEventListener("scroll", onScrollOrWheel, { passive: true });
+      window.addEventListener("wheel", onScrollOrWheel, { passive: true });
+      applyOverscrollScale();
+    }
 
     // Global theme sync utility - updates theme attribute on elements with data-theme-sync
     (window as any).updateThemeSync = () => {
