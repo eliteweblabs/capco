@@ -26,5 +26,22 @@ import LayoutFullForm from "../../components/layouts/LayoutFullForm.astro";
 <LayoutFullForm title="Login / Register" description="Login or register to access your dashboard">
   <LoginForm redirectUrl={redirectUrl} />
 </LayoutFullForm>
-<!-- Load login script by src so it gets its own chunk (avoids Astro 5 empty page-script chunk). -->
+{/* Inline fallback so Google button works even when the module chunk doesn't load. Replaced by login-form-client.ts when it loads (client-side OAuth with window.location.origin). */}
+<script is:inline define:vars={{ redirectUrl }}>
+  (function () {
+    function fallbackGoogleSignup() {
+      var dest = (document.querySelector('input[name="redirect"]') && document.querySelector('input[name="redirect"]').value) || redirectUrl || '/project/dashboard';
+      window.location.href = '/api/auth/google-start?redirect=' + encodeURIComponent(dest);
+    }
+    window.handleGoogleSignup = fallbackGoogleSignup;
+    document.addEventListener('click', function (e) {
+      var btn = e.target && e.target.closest && e.target.closest('.provider-btn[data-provider="google"]');
+      if (btn && !btn.disabled) {
+        e.stopImmediatePropagation();
+        fallbackGoogleSignup();
+      }
+    }, true);
+  })();
+</script>
+<!-- Load login script by src so it gets its own chunk (avoids Astro 5 empty page-script chunk). Replaces handleGoogleSignup with full client-side OAuth (window.location.origin). -->
 <script src="../../features/forms/components/login-form-client.ts"></script>
