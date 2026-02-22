@@ -1,7 +1,7 @@
 ---
 /**
- * Blank test page for Google sign-in. Nothing but the button.
- * If this works, the flow is correct. No App, no forms, no other scripts.
+ * Google OAuth entry: when reached (e.g. from login fallback link), auto-starts OAuth
+ * so one click from login goes straight to Google. Also shows the button if OAuth doesn't start.
  */
 import "../../styles/global.css";
 import GoogleSignInButton from "../../components/auth/GoogleSignInButton.astro";
@@ -17,7 +17,13 @@ const redirectTo = Astro.url.searchParams.get("redirect") || "/project/dashboard
     <title>Sign in with Google</title>
     <link rel="icon" type="image/svg+xml" href="/api/favicon.svg" />
   </head>
-  <body class="flex min-h-dvh items-center justify-center bg-gray-50 dark:bg-gray-900">
+  <body class="flex min-h-dvh items-center justify-center bg-gray-50 dark:bg-gray-900" data-redirect={redirectTo}>
     <GoogleSignInButton redirect={redirectTo} />
+    {/* Auto-start OAuth when this page loads (e.g. from login "Sign in with Google" fallback) so user isn't stuck on a second click */}
+    <script>
+      import { startGoogleSignIn } from "../../lib/auth-google";
+      const redirect = document.body?.dataset?.redirect || new URL(window.location.href).searchParams.get("redirect") || "/project/dashboard";
+      startGoogleSignIn(redirect);
+    </script>
   </body>
 </html>
