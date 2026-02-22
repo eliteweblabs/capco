@@ -1,23 +1,32 @@
 ---
 /**
- * Document head: meta, title, links, favicons, OG/Twitter, critical CSS.
- * Derives icon and OG image URLs from CMS/project data.
+ * Document head: meta, title, links, favicons, OG/Twitter.
+ * Composes CriticalColors and DynamicColorsAndFonts for colors/fonts.
  */
+import CriticalColors from "./CriticalColors.astro";
+import DynamicColorsAndFonts from "./DynamicColorsAndFonts.astro";
+
 interface Props {
   safeTitle: string;
   safeDescription: string;
   globalCompanyName: string;
   primaryColor: string;
+  secondaryColor?: string;
+  backgroundColor?: string;
+  backgroundColorDark?: string;
+  fontFamily?: string;
+  secondaryFontFamily?: string;
   /** Raw icon from CMS (SVG string, URL, or undefined → /api/favicon.svg) */
   globalCompanyIcon?: string;
   /** When on a project page, prefer project featured image for OG */
   project?: { featuredImageData?: { publicUrl?: string } };
   /** Default OG image from CMS */
   ogImage?: string;
-  criticalColorsCss: string;
   customCss?: string;
   canonicalUrl: string;
   generator: string;
+  /** When false (e.g. ONLY_FLOWBITE_AND_THEME), skip dynamic color & font script */
+  includeDynamicColorsAndFonts?: boolean;
 }
 
 const {
@@ -25,13 +34,18 @@ const {
   safeDescription,
   globalCompanyName,
   primaryColor,
+  secondaryColor = "#0ea5e9",
+  backgroundColor = "#ffffff",
+  backgroundColorDark = "#0a0a0a",
+  fontFamily = "Outfit Variable",
+  secondaryFontFamily = "sans-serif",
   globalCompanyIcon,
   project,
   ogImage = "",
-  criticalColorsCss,
   customCss,
   canonicalUrl,
   generator,
+  includeDynamicColorsAndFonts = true,
 } = Astro.props;
 
 // Icon: DB SVG (data URI), CMS URL, or fallback
@@ -79,8 +93,12 @@ const titleWithBrand = safeTitle + " → " + globalCompanyName;
 const ogImageAlt = globalCompanyName + " - " + safeDescription;
 ---
 
-<!-- Critical CMS colors (server-rendered) so first paint uses DB colors before any script -->
-<style is:global set:html={criticalColorsCss}></style>
+<CriticalColors
+  primaryColor={primaryColor || "#825BDD"}
+  secondaryColor={secondaryColor}
+  backgroundColor={backgroundColor}
+  backgroundColorDark={backgroundColorDark}
+/>
 
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -159,4 +177,13 @@ const ogImageAlt = globalCompanyName + " - " + safeDescription;
 <!-- Custom CSS from CMS -->
 {customCss?.trim() && (
   <style is:inline set:html={customCss} data-source="cms-custom-css" />
+)}
+
+{includeDynamicColorsAndFonts && (
+  <DynamicColorsAndFonts
+    primaryColor={primaryColor || "#825BDD"}
+    secondaryColor={secondaryColor || "#0ea5e9"}
+    fontFamily={fontFamily || "Outfit Variable"}
+    secondaryFontFamily={secondaryFontFamily || "sans-serif"}
+  />
 )}

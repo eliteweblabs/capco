@@ -1,0 +1,38 @@
+---
+/**
+ * Server-rendered critical :root color CSS for first paint (before any script).
+ * Single source: lib/color-utils.
+ */
+import { generateColorPalette, hexToRgb } from "@/lib/color-utils";
+
+interface Props {
+  primaryColor?: string;
+  secondaryColor?: string;
+  backgroundColor?: string;
+  backgroundColorDark?: string;
+}
+
+const {
+  primaryColor = "#825BDD",
+  secondaryColor = "#0ea5e9",
+  backgroundColor = "#ffffff",
+  backgroundColorDark = "#0a0a0a",
+} = Astro.props;
+
+const primaryPalette = generateColorPalette(primaryColor);
+const secondaryPalette = generateColorPalette(secondaryColor);
+const criticalColorVars = [
+  ...Object.entries(primaryPalette)
+    .filter(([k]) => k !== "DEFAULT" && !Number.isNaN(Number(k)))
+    .map(([shade, color]) => "--color-primary-" + shade + ": " + color + ";"),
+  ...Object.entries(secondaryPalette)
+    .filter(([k]) => k !== "DEFAULT" && !Number.isNaN(Number(k)))
+    .map(([shade, color]) => "--color-secondary-" + shade + ": " + color + ";"),
+  "--color-background: " + hexToRgb(backgroundColor) + ";",
+  "--color-background-dark: " + hexToRgb(backgroundColorDark) + ";",
+].join("\n");
+const criticalColorsCss = ":root {\n  " + criticalColorVars + "\n}";
+---
+
+<!-- Critical CMS colors so first paint uses DB colors before any script -->
+<style is:global set:html={criticalColorsCss}></style>
