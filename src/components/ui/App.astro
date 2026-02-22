@@ -919,6 +919,31 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
         <script>
           import "../../scripts/app-globals";
         </script>
+        {/* 8b. Fallback when app-globals chunk is empty (Astro 5): define critical window.* stubs and re-init Flowbite so nav/forms/dropdowns work. */}
+        <script is:inline>
+          (function () {
+            function ensureGlobals() {
+              if (window.__appGlobalsFallbackDone) return;
+              window.__appGlobalsFallbackDone = true;
+              var w = window;
+              if (typeof w.showNotice !== "function") w.showNotice = function () {};
+              if (typeof w.showModal !== "function") w.showModal = function () {};
+              if (typeof w.hideModal !== "function") w.hideModal = function () {};
+              if (typeof w.removeModal !== "function") w.removeModal = function () {};
+              if (typeof w.lockBodyScroll !== "function") w.lockBodyScroll = function () {};
+              if (typeof w.unlockBodyScroll !== "function") w.unlockBodyScroll = function () {};
+              if (typeof w.handleUrlNotification !== "function") w.handleUrlNotification = function () {};
+              if (typeof w.processUrlNotifications !== "function") w.processUrlNotifications = function () {};
+              if (typeof w.hideNotification !== "function") w.hideNotification = function () {};
+              if (typeof w.initFlowbite === "function") w.initFlowbite();
+            }
+            if (document.readyState === "loading") {
+              document.addEventListener("DOMContentLoaded", ensureGlobals);
+            } else {
+              ensureGlobals();
+            }
+          })();
+        </script>
         {/* 9. hold-progress-init */}
         <script>
           import "../../scripts/hold-progress-init";
