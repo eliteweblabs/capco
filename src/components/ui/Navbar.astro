@@ -76,7 +76,7 @@ const currentRole = (currentUser as any)?.profile?.role;
       )
     }
 
-    <div class="flex flex-shrink-0 items-center pr-4">
+    <div class="flex flex-shrink-0 items-center gap-2 pr-4">
       <ShareWidget direction="left" globalIconButtonClasses={globalIconButtonClasses} />
 
       {
@@ -175,31 +175,46 @@ const currentRole = (currentUser as any)?.profile?.role;
                 window.location.href = url.toString();
               } else {
                 if (typeof window.showNotice === "function") {
-                  window.showNotice("error", "Logout Failed", "There was an error logging out. Please try again.", 0);
+                  window.showNotice(
+                    "error",
+                    "Logout Failed",
+                    "There was an error logging out. Please try again.",
+                    0
+                  );
                 } else {
                   alert("There was an error logging out. Please try again.");
                 }
               }
             })
-            .catch(function (err) { console.error("Logout error:", err); });
+            .catch(function (err) {
+              console.error("Logout error:", err);
+            });
         });
       }
 
       var navbar = document.getElementById("main-navbar");
       if (navbar && !navbar.hasAttribute("data-navbar-modal-bound")) {
         navbar.setAttribute("data-navbar-modal-bound", "true");
-        function isMobile() { return window.innerWidth < 768; }
+        function isMobile() {
+          return window.innerWidth < 768;
+        }
         var observer = new MutationObserver(function () {
           if (!isMobile()) return;
           var modals = document.querySelectorAll('[id*="modal"]');
           var hasVisible = false;
           modals.forEach(function (modal) {
-            if (!modal.classList.contains("hidden") && modal.classList.contains("flex")) hasVisible = true;
+            if (!modal.classList.contains("hidden") && modal.classList.contains("flex"))
+              hasVisible = true;
           });
           navbar.style.opacity = hasVisible ? "0" : "1";
           navbar.style.pointerEvents = hasVisible ? "none" : "auto";
         });
-        observer.observe(document.body, { attributes: true, attributeFilter: ["class"], subtree: true, childList: true });
+        observer.observe(document.body, {
+          attributes: true,
+          attributeFilter: ["class"],
+          subtree: true,
+          childList: true,
+        });
         window.addEventListener("resize", function () {
           if (!isMobile() && navbar.style.opacity === "0") {
             navbar.style.opacity = "1";
