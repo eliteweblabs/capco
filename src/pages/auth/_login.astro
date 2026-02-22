@@ -1,8 +1,9 @@
 ---
-// Handle OAuth callback if code is present (MUST be first)
+// Handle OAuth callback if code is present (MUST be first). Preserve full query (state, redirect).
 const authCode = Astro.url.searchParams.get("code");
 if (authCode) {
-  return Astro.redirect(`/api/auth/callback?code=${authCode}`);
+  const query = Astro.url.search ? Astro.url.search : `?code=${encodeURIComponent(authCode)}`;
+  return Astro.redirect(`/api/auth/callback${query}`);
 }
 
 // Get auth data directly

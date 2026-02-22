@@ -320,71 +320,80 @@ import LayoutAuthCallback from "../../components/layouts/LayoutAuthCallback.astr
         return;
       }
 
-      console.log("[AUTH-CALLBACK] Code found in URL, relying on Supabase automatic detection...");
-      console.log("[AUTH-CALLBACK] Current URL:", window.location.href);
-      console.log("[AUTH-CALLBACK] Code from URL:", code);
-
-      // With detectSessionInUrl: true, Supabase should automatically detect and exchange the code
-      // We don't need to manually check for code_verifier - Supabase handles it internally
-      // Just ensure the code is in the URL (which we've already done at the top of the script)
-
-      // CRITICAL: Restore the code to the URL for Supabase's automatic detection
-      // Supabase's detectSessionInUrl: true requires the code to be in the URL
-      // Since we captured it immediately, restore it if it was stripped
-      // Do this BEFORE Supabase client initialization to ensure it can detect it
+      // Restore code to URL if stripped (Supabase detectSessionInUrl reads from URL)
       if (
         code &&
         !window.location.search.includes("code=") &&
         !window.location.hash.includes("code=")
       ) {
-        console.log(
-          "[AUTH-CALLBACK] Code was stripped from URL, restoring for Supabase auto-detection..."
-        );
         const newUrl = new URL(window.location.href);
         newUrl.searchParams.set("code", code);
-        // Use replaceState to update URL without reloading - this is critical for Supabase's auto-detection
         window.history.replaceState({}, "", newUrl.toString());
-        console.log("[AUTH-CALLBACK] URL restored with code:", newUrl.toString());
-
-        // Give Supabase a moment to detect the restored code
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
 
-      // CRITICAL: Rely on Supabase's automatic detection
-      // With detectSessionInUrl: true, Supabase should automatically detect the code and exchange it
-      // We'll wait for the auth state change listener to fire, then check getSession() as fallback
+      let data: { session?: any } | undefined;
+      let exchangeError: any = null;
 
-      let data, exchangeError;
-
-      // Wait for auth state change (Supabase's automatic detection)
-      // Increase timeout to give Supabase more time to process
+      // Try explicit exchange first (more reliable than relying on detectSessionInUrl timing)
+      console.log("[AUTH-CALLBACK] Exchanging code for session...");
       try {
-        console.log(
-          "[AUTH-CALLBACK] Waiting for Supabase automatic session detection (up to 10 seconds)..."
-        );
-        const autoSession = await Promise.race([
-          authStatePromise,
-          new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 10000)),
-        ]).catch(() => null);
-
-        if (autoSession) {
-          console.log("[AUTH-CALLBACK] ✅ Session received via auth state change!");
-          data = { session: autoSession };
-          exchangeError = null;
-        } else {
-          console.log("[AUTH-CALLBACK] Auth state change didn't fire, checking getSession()...");
+        const exchangeResult = await supabase.auth.exchangeCodeForSession(code);
+        data = exchangeResult.data;
+        exchangeError = exchangeResult.error;
+        if (data?.session && !exchangeError) {
+          console.log("[AUTH-CALLBACK] ✅ Exchange succeeded immediately");
+          // Skip to POST + redirect below (same path as success)
+        } else if (exchangeError) {
+          console.warn("[AUTH-CALLBACK] Initial exchange failed:", exchangeError.message);
         }
       } catch (err) {
-        console.log("[AUTH-CALLBACK] Auth state change error:", err);
+        console.warn("[AUTH-CALLBACK] Initial exchange exception:", err);
+        exchangeError = err instanceof Error ? err : new Error(String(err));
       }
 
-      // Check if session was already set by automatic detection
+      // If explicit exchange didn't succeed, try automatic detection (auth state / getSession)
       if (!data?.session) {
-        console.log("[AUTH-CALLBACK] Checking getSession() for existing session...");
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        console.log("[AUTH-CALLBACK] Trying automatic session detection...");
+        try {
+          const autoSession = await Promise.race([
+            authStatePromise,
+            new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 8000)),
+          ]).catch(() => null);
+          if (autoSession) {
+            data = { session: autoSession };
+            exchangeError = null;
+            console.log("[AUTH-CALLBACK] ✅ Session from auth state change");
+          }
+        } catch (_) {}
 
+        if (!data?.session) {
+          const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+          if (sessionData?.session && !sessionError) {
+            data = sessionData;
+            exchangeError = null;
+            console.log("[AUTH-CALLBACK] ✅ Session from getSession()");
+          }
+        }
+
+        if (!data?.session && !exchangeError) {
+          // Last resort: try manual exchange again (e.g. after automatic detection ran)
+          console.log("[AUTH-CALLBACK] Attempting manual exchangeCodeForSession...");
+          try {
+            const exchangeResult = await supabase.auth.exchangeCodeForSession(code);
+            data = exchangeResult.data;
+            exchangeError = exchangeResult.error;
+          } catch (err) {
+            exchangeError = err instanceof Error ? err : new Error(String(err));
+          }
+        }
+      }
+
+      // If we still don't have a session, run the previous manual exchange + code_verifier check path for a clear error
+      if (!data?.session && !exchangeError) {
+        console.log("[AUTH-CALLBACK] Checking getSession() and code verifier for manual exchange...");
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
         if (sessionData?.session && !sessionError) {
-          console.log("[AUTH-CALLBACK] ✅ Session found via getSession()!");
           data = sessionData;
           exchangeError = null;
         } else {
@@ -486,7 +495,7 @@ import LayoutAuthCallback from "../../components/layouts/LayoutAuthCallback.astr
         const errorMsg = exchangeError.message || "";
 
         if (errorMsg.includes("code verifier") || errorMsg.includes("Code verifier")) {
-          // Code verifier issue - user needs to sign in again from scratch
+          // Code verifier issue - sign-in started in another tab/window or storage was cleared
           console.warn(
             "[AUTH-CALLBACK] Code verifier missing - clearing auth state and redirecting"
           );
@@ -502,10 +511,12 @@ import LayoutAuthCallback from "../../components/layouts/LayoutAuthCallback.astr
             console.log("[AUTH-CALLBACK] Cleared stale localStorage keys:", keysToRemove);
           }
 
-          showError("Session expired. Redirecting to sign in...");
+          showError(
+            "Sign-in link expired or was opened in a different window. Please click “Sign in with Google” again on the login page (same browser tab)."
+          );
           setTimeout(() => {
             window.location.href = "/auth/login?error=session_expired&message=Please+sign+in+again";
-          }, 1500);
+          }, 4000);
           return;
         }
 

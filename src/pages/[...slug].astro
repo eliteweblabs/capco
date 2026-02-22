@@ -6,11 +6,11 @@
  */
 
 // OAuth callback: if provider redirected to / with ?code=, redirect to API before any rendering
-// (avoids ResponseSentError from redirecting after layout has started streaming)
+// Preserve full query string (state, redirect, etc.) so PKCE and post-login redirect work
 const oauthCode = Astro.url.searchParams.get("code");
 if (oauthCode) {
-  const params = new URLSearchParams(Astro.url.searchParams);
-  return Astro.redirect(`/api/auth/callback?${params.toString()}`);
+  const query = Astro.url.search || `?code=${encodeURIComponent(oauthCode)}`;
+  return Astro.redirect(`/api/auth/callback${query}`);
 }
 
 import { checkAuth } from "../lib/auth";

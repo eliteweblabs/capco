@@ -26,9 +26,15 @@ export default defineConfig({
   experimental: {
     preserveScriptOrder: true,
   },
-  site: env.RAILWAY_PUBLIC_DOMAIN?.startsWith("http")
-    ? env.RAILWAY_PUBLIC_DOMAIN
-    : `https://${env.RAILWAY_PUBLIC_DOMAIN || "capcofire.com"}`, // Set your production domain
+  // In development use localhost so URLs never switch to production; production uses env or fallback
+  site:
+    process.env.NODE_ENV === "development"
+      ? "http://localhost:4321"
+      : env.RAILWAY_PUBLIC_DOMAIN?.startsWith("http")
+        ? env.RAILWAY_PUBLIC_DOMAIN
+        : env.RAILWAY_PUBLIC_DOMAIN
+          ? `https://${env.RAILWAY_PUBLIC_DOMAIN}`
+          : "https://capcofire.com",
   output: "server",
   adapter: node({
     mode: "standalone",
@@ -132,9 +138,8 @@ export default defineConfig({
       "process.env.STRIPE_PUBLISHABLE_KEY": JSON.stringify(env.STRIPE_PUBLISHABLE_KEY),
       "process.env.RESEND_WEBHOOK_SECRET": JSON.stringify(env.RESEND_WEBHOOK_SECRET),
       "process.env.GLOBAL_COLOR_SECONDARY": JSON.stringify(env.GLOBAL_COLOR_SECONDARY),
-      "process.env.RAILWAY_PUBLIC_DOMAIN": JSON.stringify(
-        env.RAILWAY_PUBLIC_DOMAIN || "https://capcofire.com"
-      ),
+      // Do not default to production URL so local dev uses request origin / localhost
+      "process.env.RAILWAY_PUBLIC_DOMAIN": JSON.stringify(env.RAILWAY_PUBLIC_DOMAIN || ""),
       "process.env.PUBLIC_URL": JSON.stringify(
         env.PUBLIC_URL ||
           (env.RAILWAY_PUBLIC_DOMAIN

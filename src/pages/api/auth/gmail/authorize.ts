@@ -8,7 +8,7 @@ import { checkAuth } from "../../../../lib/auth";
  * Redirects user to Google for Gmail authorization
  */
 
-export const GET: APIRoute = async ({ cookies, redirect }) => {
+export const GET: APIRoute = async ({ cookies, redirect, url }) => {
   try {
     const { currentUser } = await checkAuth(cookies);
 
@@ -16,28 +16,31 @@ export const GET: APIRoute = async ({ cookies, redirect }) => {
       return redirect("/login?redirect=/api/auth/gmail/authorize");
     }
 
-    // Debug: Check environment variables
     const clientId = import.meta.env.GMAIL_CLIENT_ID;
     const clientSecret = import.meta.env.GMAIL_CLIENT_SECRET;
-    const publicUrl =
+    // Use request origin first so localhost stays localhost; env only as fallback
+    const baseUrl =
+      (url?.origin && url.origin !== "null") ||
       process.env.PUBLIC_URL ||
       (process.env.RAILWAY_PUBLIC_DOMAIN
         ? process.env.RAILWAY_PUBLIC_DOMAIN.startsWith("http")
           ? process.env.RAILWAY_PUBLIC_DOMAIN
           : `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
-        : import.meta.env.PUBLIC_URL) || "http://localhost:4321";
+        : import.meta.env.PUBLIC_URL) ||
+      "http://localhost:4321";
+    const callbackUrl = `${baseUrl}/api/auth/gmail/callback`;
 
     console.log("[GMAIL-AUTH] Environment check:", {
       hasClientId: !!clientId,
       hasClientSecret: !!clientSecret,
-      hasPublicUrl: !!publicUrl,
+      callbackUrl,
       clientIdPreview: clientId?.substring(0, 20) + "...",
     });
 
     const oauth2Client = new google.auth.OAuth2(
       clientId,
       clientSecret,
-      `${publicUrl}/api/auth/gmail/callback`
+      callbackUrl
     );
 
     const authUrl = oauth2Client.generateAuthUrl({

@@ -1,45 +1,43 @@
 import type { APIRoute } from "astro";
 
-// Helper function to get the correct origin in production (handles proxy/load balancer)
+// Prefer request URL so localhost stays localhost; env only when request origin unavailable
 function getOrigin(url: URL, request: Request): string {
-  // Check for explicit production URL environment variable first
+  const forwardedProto =
+    request.headers.get("x-forwarded-proto") || request.headers.get("x-forwarded-protocol");
+  const forwardedHost = request.headers.get("x-forwarded-host") || request.headers.get("host");
+  const host = forwardedHost || request.headers.get("host");
+  const proto =
+    forwardedProto ||
+    (url.protocol === "https:" ? "https" : "http");
+
+  if (host) {
+    const origin = `${proto}://${host}`;
+    try {
+      new URL(origin);
+      console.log("🔐 [GOOGLE-OAUTH] Using request-derived origin:", origin);
+      return origin;
+    } catch (e) {
+      console.warn("⚠️ [GOOGLE-OAUTH] Invalid origin from headers, trying url.origin");
+    }
+  }
+
+  if (url.origin && url.origin !== "null") {
+    console.log("🔐 [GOOGLE-OAUTH] Using url.origin:", url.origin);
+    return url.origin;
+  }
+
   const productionUrl = import.meta.env.PUBLIC_SITE_URL || import.meta.env.SITE_URL;
   if (productionUrl) {
     try {
-      const prodUrl = new URL(productionUrl);
-      console.log("🔐 [GOOGLE-OAUTH] Using production URL from env:", prodUrl.origin);
+      const prodUrl = new URL(productionUrl.startsWith("http") ? productionUrl : `https://${productionUrl}`);
+      console.log("🔐 [GOOGLE-OAUTH] Using env fallback origin:", prodUrl.origin);
       return prodUrl.origin;
     } catch (e) {
-      console.warn(
-        "⚠️ [GOOGLE-OAUTH] Invalid production URL in env, falling back to header detection"
-      );
+      console.warn("⚠️ [GOOGLE-OAUTH] Invalid production URL in env");
     }
   }
 
-  // In production, use forwarded headers if available (Railway/Cloudflare/etc)
-  if (import.meta.env.PROD) {
-    const forwardedProto =
-      request.headers.get("x-forwarded-proto") || request.headers.get("x-forwarded-protocol");
-    const forwardedHost = request.headers.get("x-forwarded-host") || request.headers.get("host");
-
-    if (forwardedProto && forwardedHost) {
-      const origin = `${forwardedProto}://${forwardedHost}`;
-      console.log("🔐 [GOOGLE-OAUTH] Using forwarded headers origin:", origin);
-      return origin;
-    }
-
-    // Fallback: use host header with https in production
-    const host = request.headers.get("host");
-    if (host) {
-      const origin = `https://${host}`;
-      console.log("🔐 [GOOGLE-OAUTH] Using host header origin:", origin);
-      return origin;
-    }
-  }
-
-  // Development fallback
-  console.log("🔐 [GOOGLE-OAUTH] Using url.origin fallback:", url.origin);
-  return url.origin;
+  return url.origin || "http://localhost:4321";
 }
 
 export const GET: APIRoute = async ({ url, redirect, cookies, request }) => {

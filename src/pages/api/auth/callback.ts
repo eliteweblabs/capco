@@ -42,10 +42,11 @@ export const GET: APIRoute = async ({ url, redirect, cookies }) => {
   }
 
   // Otherwise, this is Supabase OAuth - redirect to client-side handler
+  // Preserve full query string (code, state, redirect, etc.) so callback page gets everything
   console.log("[---AUTH-CALLBACK] Supabase OAuth detected, redirecting to client-side handler");
-  const params = new URLSearchParams(url.search);
-  if (params.toString()) {
-    return redirect(`/auth/callback?${params.toString()}`);
+  const query = url.search ? (url.search.startsWith("?") ? url.search : `?${url.search}`) : "";
+  if (query) {
+    return redirect(`/auth/callback${query}`);
   }
 
   // No parameters, redirect to home

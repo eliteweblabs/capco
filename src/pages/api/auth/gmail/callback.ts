@@ -35,18 +35,21 @@ export const GET: APIRoute = async ({ url, redirect }) => {
 
     const userId = state;
 
-    const publicUrl =
+    // Use request origin first so localhost stays localhost; env only as fallback
+    const baseUrl =
+      (url?.origin && url.origin !== "null") ||
       process.env.PUBLIC_URL ||
       (process.env.RAILWAY_PUBLIC_DOMAIN
         ? process.env.RAILWAY_PUBLIC_DOMAIN.startsWith("http")
           ? process.env.RAILWAY_PUBLIC_DOMAIN
           : `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
-        : import.meta.env.PUBLIC_URL) || "http://localhost:4321";
+        : import.meta.env.PUBLIC_URL) ||
+      "http://localhost:4321";
 
     const oauth2Client = new google.auth.OAuth2(
       import.meta.env.GMAIL_CLIENT_ID,
       import.meta.env.GMAIL_CLIENT_SECRET,
-      `${publicUrl}/api/auth/gmail/callback`
+      `${baseUrl}/api/auth/gmail/callback`
     );
 
     // Exchange code for tokens

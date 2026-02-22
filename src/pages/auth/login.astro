@@ -4,7 +4,9 @@
 // slot after that, so redirects there come too late.
 const authCode = Astro.url.searchParams.get("code");
 if (authCode) {
-  return Astro.redirect(`/api/auth/callback?code=${authCode}`);
+  // Preserve full URL (state, redirect, etc.) so PKCE and post-login redirect work
+  const query = Astro.url.search ? Astro.url.search : `?code=${encodeURIComponent(authCode)}`;
+  return Astro.redirect(`/api/auth/callback${query}`);
 }
 
 let redirectUrl = Astro.url.searchParams.get("redirect") || "/project/dashboard";
@@ -26,7 +28,7 @@ import LayoutFullForm from "../../components/layouts/LayoutFullForm.astro";
 <LayoutFullForm title="Login / Register" description="Login or register to access your dashboard">
   <LoginForm redirectUrl={redirectUrl} />
 </LayoutFullForm>
-{/* Inline fallback: if module never loads, send to same page with provider=google so a refresh may run the module. Avoids server-side google-start which has no code_verifier in browser and breaks callback. */}
+{/* Inline fallback only sets handleGoogleSignup; the module's click handler runs the real OAuth (no redirect to login?provider=google) to avoid login loop. */}
 <script is:inline define:vars={{ redirectUrl }}>
   (function () {
     function fallbackGoogleSignup() {
@@ -34,13 +36,6 @@ import LayoutFullForm from "../../components/layouts/LayoutFullForm.astro";
       window.location.href = '/auth/login?provider=google&redirect=' + encodeURIComponent(dest);
     }
     window.handleGoogleSignup = fallbackGoogleSignup;
-    document.addEventListener('click', function (e) {
-      var btn = e.target && e.target.closest && e.target.closest('.provider-btn[data-provider="google"]');
-      if (btn && !btn.disabled) {
-        e.stopImmediatePropagation();
-        fallbackGoogleSignup();
-      }
-    }, true);
   })();
 </script>
 <!-- Load login script by src so it gets its own chunk (avoids Astro 5 empty page-script chunk). Replaces handleGoogleSignup with full client-side OAuth (window.location.origin). -->

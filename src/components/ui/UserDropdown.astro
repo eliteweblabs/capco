@@ -13,10 +13,11 @@ interface Props {
   onOpen?: string;
 }
 
-// Redirect to API callback only when code is on a page that shouldn't handle it
+// Redirect to API callback only when code is on a page that shouldn't handle it. Preserve full query.
 const authCode = Astro.url.searchParams.get("code");
 if (authCode && !Astro.url.pathname.startsWith("/auth/callback")) {
-  return Astro.redirect(`/api/auth/callback?code=${authCode}`);
+  const query = Astro.url.search ? Astro.url.search : `?code=${encodeURIComponent(authCode)}`;
+  return Astro.redirect(`/api/auth/callback${query}`);
 }
 
 const {

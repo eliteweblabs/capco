@@ -8,8 +8,27 @@ import { supabase } from "../../../lib/supabase";
 
 export const prerender = false;
 
-/** Prefer explicit production URL so callbacks never point at localhost when deployed. */
+/** Use request URL first so localhost stays localhost; env fallback only when request origin is unavailable. */
 function getOrigin(request: Request, url: URL): string {
+  // First: use request-derived origin (so local dev and current host always match)
+  const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
+  const proto =
+    request.headers.get("x-forwarded-proto") ||
+    request.headers.get("x-forwarded-protocol") ||
+    (url.protocol === "https:" ? "https" : "http");
+  if (host) {
+    const origin = `${proto}://${host}`;
+    try {
+      new URL(origin);
+      return origin;
+    } catch {
+      // fall through
+    }
+  }
+  if (url.origin && url.origin !== "null") {
+    return url.origin;
+  }
+  // Fallback only when request gives no usable origin (e.g. server-to-server)
   const explicit =
     (typeof import.meta !== "undefined" && (import.meta.env?.PUBLIC_SITE_URL || import.meta.env?.SITE_URL)) ||
     (typeof process !== "undefined" && (process.env.PUBLIC_SITE_URL || process.env.SITE_URL));
@@ -32,15 +51,7 @@ function getOrigin(request: Request, url: URL): string {
       // fall through
     }
   }
-  const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
-  const proto =
-    request.headers.get("x-forwarded-proto") ||
-    request.headers.get("x-forwarded-protocol") ||
-    (url.protocol === "https:" ? "https" : "http");
-  if (host && host !== "localhost" && !host.startsWith("localhost:")) {
-    return `${proto}://${host}`;
-  }
-  return url.origin;
+  return url.origin || "http://localhost:4321";
 }
 
 export const GET: APIRoute = async ({ url, redirect, request }) => {
