@@ -122,41 +122,6 @@ if (currentUser && (currentRole === "Admin" || currentRole === "Staff")) {
   }
 }
 
-// Icon sources - multi-site: DB icon (data URI), or dynamic API that serves DB SVG / redirects to static
-let iconSrc: string;
-if (
-  globalCompanyIcon &&
-  (globalCompanyIcon.includes("<svg") || globalCompanyIcon.includes("<?xml"))
-) {
-  const encoded = Buffer.from(globalCompanyIcon).toString("base64");
-  iconSrc = "data:image/svg+xml;base64," + encoded;
-} else if (globalCompanyIcon && typeof globalCompanyIcon === "string") {
-  iconSrc = globalCompanyIcon;
-} else {
-  iconSrc = "/api/favicon.svg";
-}
-
-// Apple Touch Icon: Safari/iOS needs a URL (no data URI). Use dynamic API so each site can use static /favicon.png or globalSettings.faviconPngUrl
-const appleTouchIconSrc = iconSrc.startsWith("data:")
-  ? "/api/favicon.png"
-  : iconSrc.includes(".png")
-    ? iconSrc
-    : "/api/favicon.png";
-
-// OG Image URL for social sharing - prefer project featured image when on project page, else CMS setting
-const ogImageSrc = project?.featuredImageData?.publicUrl || ogImage || "";
-const ogImageType = ogImageSrc?.includes(".gif")
-  ? "image/gif"
-  : ogImageSrc?.includes(".svg")
-    ? "image/svg+xml"
-    : ogImageSrc?.includes(".png")
-      ? "image/png"
-      : ogImageSrc?.includes(".jpg") || ogImageSrc?.includes(".jpeg")
-        ? "image/jpeg"
-        : ogImageSrc?.includes(".webp")
-          ? "image/webp"
-          : "image/png";
-
 // Get navigation data
 import { navigation } from "@/pages/api/utils/navigation";
 import { isBackendPage, isAuthPage, isContactPage } from "../../pages/api/utils/backend-page-check";
@@ -203,6 +168,7 @@ import SpeedDial from "../ui/SpeedDial.astro";
 import AdminVoiceAssistantWidget from "../admin/AdminVoiceAssistantWidget.astro";
 import CacheIndicator from "./CacheIndicator.astro";
 import CMSPreloader from "./CMSPreloader.astro";
+import AppHead from "./AppHead.astro";
 
 const isAdmin = currentUser?.profile?.role === "Admin";
 
@@ -270,8 +236,19 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
     <script src="../../scripts/theme-init.ts"></script>
     {/* Auth/phone/page-size globals are in app-globals.ts */}
 
-    <!-- Critical CMS colors (server-rendered) so first paint uses DB colors before any script -->
-    <style is:global set:html={criticalColorsCss}></style>
+    <AppHead
+      safeTitle={safeTitle}
+      safeDescription={safeDescription}
+      globalCompanyName={globalCompanyName}
+      primaryColor={primaryColor ?? ""}
+      globalCompanyIcon={globalCompanyIcon}
+      project={project}
+      ogImage={ogImage}
+      criticalColorsCss={criticalColorsCss}
+      customCss={customCss}
+      canonicalUrl={Astro.url.href}
+      generator={Astro.generator}
+    />
 
     {!ONLY_FLOWBITE_AND_THEME && (
       <>
@@ -365,116 +342,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
       </>
     )}
 
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="author" content={globalCompanyName} />
-    <meta name="format-detection" content="telephone=no" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="application-name" content={globalCompanyName || "App"} />
 
-    <!-- Preconnect to Google Fonts for better performance -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <title>
-      {safeTitle + " → " + globalCompanyName}
-    </title>
-    <meta name="description" content={safeDescription} />
-    <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content={primaryColor} />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta
-      name="apple-mobile-web-app-title"
-      content={globalCompanyName && globalCompanyName !== "Company Name Not Set"
-        ? globalCompanyName
-        : "App"}
-    />
-    <meta name="generator" content={Astro.generator} />
-    <meta name="referrer" content="strict-origin-when-cross-origin" />
-    <meta http-equiv="Cross-Origin-Embedder-Policy" content="unsafe-none" />
-    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin-allow-popups" />
-    <!-- Open Graph / Facebook / iOS Preview -->
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content={globalCompanyName} />
-    <meta property="og:url" content={Astro.url.href} />
-    <meta property="og:title" content={safeTitle + " → " + globalCompanyName} />
-    <meta property="og:description" content={safeDescription} />
-    {
-      ogImageSrc && (
-        <>
-          <meta property="og:image" content={ogImageSrc} />
-          <meta property="og:image:secure_url" content={ogImageSrc} />
-          <meta property="og:image:type" content={ogImageType} />
-          <meta property="og:image:width" content="1200" />
-          <meta property="og:image:height" content="630" />
-          <meta property="og:image:alt" content={globalCompanyName + " - " + safeDescription} />
-        </>
-      )
-    }
-
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={safeTitle + " → " + globalCompanyName} />
-    <meta name="twitter:description" content={safeDescription} />
-    {ogImageSrc && <meta name="twitter:image" content={ogImageSrc} />}
-    {
-      ogImageSrc && (
-        <meta name="twitter:image:alt" content={globalCompanyName + " - " + safeDescription} />
-      )
-    }
-
-    <!-- iOS / iMessage Preview -->
-    <meta name="robots" content="max-image-preview:large" />
-
-    <link rel="canonical" href={Astro.url.href} />
-    <link rel="stylesheet" href="https://flowbite.com/application-ui/demo/app.css" />
-    <!-- Font Awesome for icons -->
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
-      crossorigin="anonymous"
-      referrerpolicy="no-referrer"
-    />
-
-    <!-- Favicons and App Icons -->
-    <link rel="apple-touch-icon" sizes="180x180" href={appleTouchIconSrc} />
-    <link
-      rel="icon"
-      type={globalCompanyIcon?.includes("<svg") || globalCompanyIcon?.includes("<?xml")
-        ? "image/svg+xml"
-        : "image/png"}
-      sizes="32x32"
-      href={iconSrc}
-    />
-    <link
-      rel="icon"
-      type={globalCompanyIcon?.includes("<svg") || globalCompanyIcon?.includes("<?xml")
-        ? "image/svg+xml"
-        : "image/png"}
-      sizes="16x16"
-      href={iconSrc}
-    />
-    <link
-      rel="icon"
-      type={globalCompanyIcon?.includes("<svg") || globalCompanyIcon?.includes("<?xml")
-        ? "image/svg+xml"
-        : "image/png"}
-      href={iconSrc}
-    />
-    <link rel="manifest" href="/manifest.json" />
-    <link rel="mask-icon" href={iconSrc} color="#5bbad5" />
-    <meta name="msapplication-TileColor" content={primaryColor} />
-    <meta name="theme-color" content={primaryColor} />
-
-    <!-- Custom CSS from CMS Global Settings -->
-    {
-      customCss && customCss.trim() && (
-        <style is:inline set:html={customCss} data-source="cms-custom-css" />
-      )
-    }
 
     {!ONLY_FLOWBITE_AND_THEME && (
       <>

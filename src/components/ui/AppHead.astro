@@ -1,0 +1,162 @@
+---
+/**
+ * Document head: meta, title, links, favicons, OG/Twitter, critical CSS.
+ * Derives icon and OG image URLs from CMS/project data.
+ */
+interface Props {
+  safeTitle: string;
+  safeDescription: string;
+  globalCompanyName: string;
+  primaryColor: string;
+  /** Raw icon from CMS (SVG string, URL, or undefined → /api/favicon.svg) */
+  globalCompanyIcon?: string;
+  /** When on a project page, prefer project featured image for OG */
+  project?: { featuredImageData?: { publicUrl?: string } };
+  /** Default OG image from CMS */
+  ogImage?: string;
+  criticalColorsCss: string;
+  customCss?: string;
+  canonicalUrl: string;
+  generator: string;
+}
+
+const {
+  safeTitle,
+  safeDescription,
+  globalCompanyName,
+  primaryColor,
+  globalCompanyIcon,
+  project,
+  ogImage = "",
+  criticalColorsCss,
+  customCss,
+  canonicalUrl,
+  generator,
+} = Astro.props;
+
+// Icon: DB SVG (data URI), CMS URL, or fallback
+let iconSrc: string;
+if (
+  globalCompanyIcon &&
+  (globalCompanyIcon.includes("<svg") || globalCompanyIcon.includes("<?xml"))
+) {
+  const encoded = Buffer.from(globalCompanyIcon).toString("base64");
+  iconSrc = "data:image/svg+xml;base64," + encoded;
+} else if (globalCompanyIcon && typeof globalCompanyIcon === "string") {
+  iconSrc = globalCompanyIcon;
+} else {
+  iconSrc = "/api/favicon.svg";
+}
+
+const appleTouchIconSrc = iconSrc.startsWith("data:")
+  ? "/api/favicon.png"
+  : iconSrc.includes(".png")
+    ? iconSrc
+    : "/api/favicon.png";
+
+const iconType: "image/svg+xml" | "image/png" =
+  globalCompanyIcon && (globalCompanyIcon.includes("<svg") || globalCompanyIcon.includes("<?xml"))
+    ? "image/svg+xml"
+    : "image/png";
+
+// OG image: project featured image when on project page, else CMS
+const ogImageSrc = project?.featuredImageData?.publicUrl || ogImage || "";
+const ogImageType = ogImageSrc?.includes(".gif")
+  ? "image/gif"
+  : ogImageSrc?.includes(".svg")
+    ? "image/svg+xml"
+    : ogImageSrc?.includes(".png")
+      ? "image/png"
+      : ogImageSrc?.includes(".jpg") || ogImageSrc?.includes(".jpeg")
+        ? "image/jpeg"
+        : ogImageSrc?.includes(".webp")
+          ? "image/webp"
+          : "image/png";
+
+const displayName =
+  globalCompanyName && globalCompanyName !== "Company Name Not Set" ? globalCompanyName : "App";
+const titleWithBrand = safeTitle + " → " + globalCompanyName;
+const ogImageAlt = globalCompanyName + " - " + safeDescription;
+---
+
+<!-- Critical CMS colors (server-rendered) so first paint uses DB colors before any script -->
+<style is:global set:html={criticalColorsCss}></style>
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="author" content={globalCompanyName} />
+<meta name="application-name" content={displayName} />
+<meta name="description" content={safeDescription} />
+<meta name="generator" content={generator} />
+<meta name="referrer" content="strict-origin-when-cross-origin" />
+<meta name="format-detection" content="telephone=no" />
+<meta name="robots" content="max-image-preview:large" />
+
+<!-- PWA / mobile web app -->
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content={displayName} />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+<!-- Theme and tile color -->
+<meta name="theme-color" content={primaryColor} />
+<meta name="msapplication-TileColor" content={primaryColor} />
+
+<!-- Security / COOP-COEP (allow popups for OAuth, etc.) -->
+<meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin-allow-popups" />
+<meta http-equiv="Cross-Origin-Embedder-Policy" content="unsafe-none" />
+
+<title>{titleWithBrand}</title>
+<link rel="canonical" href={canonicalUrl} />
+<link rel="manifest" href="/manifest.json" />
+
+<!-- Preconnect for performance -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+<!-- Open Graph -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content={globalCompanyName} />
+<meta property="og:url" content={canonicalUrl} />
+<meta property="og:title" content={titleWithBrand} />
+<meta property="og:description" content={safeDescription} />
+<meta property="og:locale" content="en_US" />
+{ogImageSrc && (
+  <>
+    <meta property="og:image" content={ogImageSrc} />
+    <meta property="og:image:secure_url" content={ogImageSrc} />
+    <meta property="og:image:type" content={ogImageType} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={ogImageAlt} />
+  </>
+)}
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={titleWithBrand} />
+<meta name="twitter:description" content={safeDescription} />
+{ogImageSrc && <meta name="twitter:image" content={ogImageSrc} />}
+{ogImageSrc && <meta name="twitter:image:alt" content={ogImageAlt} />}
+
+<!-- Stylesheets -->
+<link rel="stylesheet" href="https://flowbite.com/application-ui/demo/app.css" />
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+  integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+  crossorigin="anonymous"
+  referrerpolicy="no-referrer"
+/>
+
+<!-- Favicons and app icons -->
+<link rel="apple-touch-icon" sizes="180x180" href={appleTouchIconSrc} />
+<link rel="icon" type={iconType} sizes="32x32" href={iconSrc} />
+<link rel="icon" type={iconType} sizes="16x16" href={iconSrc} />
+<link rel="icon" type={iconType} href={iconSrc} />
+<link rel="mask-icon" href={iconSrc} color="#5bbad5" />
+
+<!-- Custom CSS from CMS -->
+{customCss?.trim() && (
+  <style is:inline set:html={customCss} data-source="cms-custom-css" />
+)}
