@@ -1,16 +1,12 @@
 ---
 // Client-side OAuth callback handler for PKCE flow
 // This page runs in the browser where the code verifier is stored in localStorage
-// Uses LayoutAuthCallback (minimal, no App) to avoid ResponseSentError during OAuth redirect
 import SimpleIcon from "../../components/common/SimpleIcon.astro";
 import LoadingSpinner from "../../components/ui/LoadingSpinner.astro";
 import LayoutAuthCallback from "../../components/layouts/LayoutAuthCallback.astro";
 ---
 
-<LayoutAuthCallback
-  title="Signing you in"
-  description="Please wait while we complete authentication"
->
+<LayoutAuthCallback title="Signing you in" description="Please wait while we complete authentication">
   <div
     id="loading-container"
     class="flex w-full flex-col items-center justify-center gap-6"
@@ -69,13 +65,19 @@ import LayoutAuthCallback from "../../components/layouts/LayoutAuthCallback.astr
   </div>
 </LayoutAuthCallback>
 
-{/* Inline: show OAuth errors and detect when main script never runs (module load failure) so we never fail silently. */}
+{
+  /* Inline: show OAuth errors and detect when main script never runs (module load failure) so we never fail silently. */
+}
 <script is:inline>
   (function () {
     var params = new URLSearchParams(window.location.search);
     var hashParams = new URLSearchParams((window.location.hash || "").substring(1));
     var err = params.get("error") || hashParams.get("error");
-    var errDesc = params.get("error_description") || hashParams.get("error_description") || params.get("message") || hashParams.get("message");
+    var errDesc =
+      params.get("error_description") ||
+      hashParams.get("error_description") ||
+      params.get("message") ||
+      hashParams.get("message");
     var code = params.get("code") || hashParams.get("code");
 
     function showFallbackError(msg) {
@@ -108,7 +110,12 @@ import LayoutAuthCallback from "../../components/layouts/LayoutAuthCallback.astr
       setTimeout(function () {
         var errEl = document.getElementById("error");
         var loading = document.getElementById("loading-container");
-        if (loading && !loading.classList.contains("hidden") && errEl && errEl.classList.contains("hidden")) {
+        if (
+          loading &&
+          !loading.classList.contains("hidden") &&
+          errEl &&
+          errEl.classList.contains("hidden")
+        ) {
           showFallbackError("Sign-in did not complete. Please try again from the login page.");
         }
       }, 12000);
@@ -373,7 +380,9 @@ import LayoutAuthCallback from "../../components/layouts/LayoutAuthCallback.astr
             exchangeError = null;
             console.log("[AUTH-CALLBACK] ✅ Session from auth state change");
           }
-        } catch (_) {}
+        } catch (_) {
+          /* ignore */
+        }
 
         if (!data?.session) {
           const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
@@ -399,7 +408,9 @@ import LayoutAuthCallback from "../../components/layouts/LayoutAuthCallback.astr
 
       // If we still don't have a session, run the previous manual exchange + code_verifier check path for a clear error
       if (!data?.session && !exchangeError) {
-        console.log("[AUTH-CALLBACK] Checking getSession() and code verifier for manual exchange...");
+        console.log(
+          "[AUTH-CALLBACK] Checking getSession() and code verifier for manual exchange..."
+        );
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
         if (sessionData?.session && !sessionError) {
           data = sessionData;
@@ -531,7 +542,9 @@ import LayoutAuthCallback from "../../components/layouts/LayoutAuthCallback.astr
 
         showError(`Session exchange failed: ${exchangeError.message}`);
         setTimeout(() => {
-          window.location.href = "/auth/login?error=session_exchange_failed&message=" + encodeURIComponent(exchangeError.message || "");
+          window.location.href =
+            "/auth/login?error=session_exchange_failed&message=" +
+            encodeURIComponent(exchangeError.message || "");
         }, 5000);
         return;
       }
@@ -573,10 +586,13 @@ import LayoutAuthCallback from "../../components/layouts/LayoutAuthCallback.astr
         try {
           const j = JSON.parse(errorText);
           if (j && typeof j.error === "string") serverMsg = j.error;
-        } catch (_) { /* ignore */ }
+        } catch (_) {
+          /* ignore */
+        }
         showError(serverMsg);
         setTimeout(() => {
-          window.location.href = "/auth/login?error=cookie_set_failed&message=" + encodeURIComponent(serverMsg);
+          window.location.href =
+            "/auth/login?error=cookie_set_failed&message=" + encodeURIComponent(serverMsg);
         }, 3000);
         return;
       }

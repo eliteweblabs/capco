@@ -1,8 +1,24 @@
 ---
-/**
- * Test login: redirects to standalone Google sign-in page.
- * For full login form without App, use /auth/login or /auth/google.
- */
+import "../styles/global.css";
+import GoogleSignInButton from "../components/auth/GoogleSignInButton.astro";
+
 const redirect = Astro.url.searchParams.get("redirect") || "/project/dashboard";
-return Astro.redirect(`/auth/google?redirect=${encodeURIComponent(redirect)}`);
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL ?? "";
+const supabaseKey = import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE ?? "";
 ---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test Login</title>
+    <script is:inline define:vars={{ supabaseUrl, supabaseKey }}>
+      window.__PUBLIC_SUPABASE_URL__ = supabaseUrl;
+      window.__PUBLIC_SUPABASE_PUBLISHABLE__ = supabaseKey;
+    </script>
+  </head>
+  <body class="flex min-h-dvh items-center justify-center bg-gray-50">
+    <GoogleSignInButton redirect={redirect} />
+  </body>
+</html>

@@ -1,12 +1,15 @@
 ---
 /**
- * Google OAuth entry: when reached (e.g. from login fallback link), auto-starts OAuth
- * so one click from login goes straight to Google. Also shows the button if OAuth doesn't start.
+ * Standalone Google sign-in page. No App layout.
+ * Injects Supabase env so getSupabaseClient() works on this minimal page.
+ * Button click starts OAuth — same flow as the login form's Google button.
  */
 import "../../styles/global.css";
 import GoogleSignInButton from "../../components/auth/GoogleSignInButton.astro";
 
 const redirectTo = Astro.url.searchParams.get("redirect") || "/project/dashboard";
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL ?? "";
+const supabaseKey = import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE ?? "";
 ---
 
 <!doctype html>
@@ -16,14 +19,13 @@ const redirectTo = Astro.url.searchParams.get("redirect") || "/project/dashboard
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sign in with Google</title>
     <link rel="icon" type="image/svg+xml" href="/api/favicon.svg" />
+    {/* Supabase env for client: this page has no App, so nothing else sets these. Must run before any auth script. */}
+    <script is:inline define:vars={{ supabaseUrl, supabaseKey }}>
+      window.__PUBLIC_SUPABASE_URL__ = supabaseUrl;
+      window.__PUBLIC_SUPABASE_PUBLISHABLE__ = supabaseKey;
+    </script>
   </head>
   <body class="flex min-h-dvh items-center justify-center bg-gray-50 dark:bg-gray-900" data-redirect={redirectTo}>
     <GoogleSignInButton redirect={redirectTo} />
-    {/* Auto-start OAuth when this page loads (e.g. from login "Sign in with Google" fallback) so user isn't stuck on a second click */}
-    <script>
-      import { startGoogleSignIn } from "../../lib/auth-google";
-      const redirect = document.body?.dataset?.redirect || new URL(window.location.href).searchParams.get("redirect") || "/project/dashboard";
-      startGoogleSignIn(redirect);
-    </script>
   </body>
 </html>

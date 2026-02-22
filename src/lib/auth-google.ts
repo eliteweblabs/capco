@@ -44,18 +44,44 @@ export async function startGoogleSignIn(redirectDestination?: string): Promise<v
 
   const callbackUrl = `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`;
 
+  console.log("[AUTH-GOOGLE] Starting OAuth with callbackUrl:", callbackUrl);
+
   try {
-    const { error } = await supabase.auth.signInWithOAuth({
+    // Use skipBrowserRedirect to capture the generated URL for debugging, then navigate manually
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo: callbackUrl,
         queryParams: { access_type: "offline", prompt: "consent" },
+        skipBrowserRedirect: true,
       },
     });
-    if (error && (window as any).showNotice) {
-      (window as any).showNotice("error", "Sign In Error", error.message);
+
+    if (error) {
+      console.error("[AUTH-GOOGLE] signInWithOAuth error:", error.message);
+      if ((window as any).showNotice) {
+        (window as any).showNotice("error", "Sign In Error", error.message);
+      }
+      return;
     }
+
+    if (!data?.url) {
+      console.error("[AUTH-GOOGLE] No OAuth URL returned from Supabase");
+      if ((window as any).showNotice) {
+        (window as any).showNotice("error", "Sign In Error", "Could not start Google sign-in. Please try again.");
+      }
+      return;
+    }
+
+    // Log the full OAuth URL so redirect_to can be verified in DevTools
+    console.log("[AUTH-GOOGLE] OAuth URL generated:", data.url);
+    const oauthUrl = new URL(data.url);
+    const redirectToParam = oauthUrl.searchParams.get("redirect_to");
+    console.log("[AUTH-GOOGLE] redirect_to parameter:", redirectToParam ?? "(not found — may be encoded in state)");
+
+    window.location.href = data.url;
   } catch (err) {
+    console.error("[AUTH-GOOGLE] Unexpected error:", err);
     if ((window as any).showNotice) {
       (window as any).showNotice("error", "Sign In Error", "An unexpected error occurred");
     }
