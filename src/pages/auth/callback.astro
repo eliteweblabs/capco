@@ -49,7 +49,15 @@ import LayoutAuthCallback from "../../components/layouts/LayoutAuthCallback.astr
   </div>
 
   <div id="back-link" class="mt-8 hidden">
-    <div class="flex content-center items-center justify-center">
+    <div class="flex flex-wrap content-center items-center justify-center gap-3">
+      <a
+        id="retry-google-link"
+        href="/auth/google"
+        class="inline-flex items-center gap-2 rounded-full bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700"
+      >
+        <SimpleIcon name="google" size="sm" />
+        Try again with Google
+      </a>
       <a
         href="/auth/login"
         class="inline-flex items-center gap-2 rounded-full bg-gray-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-600"
@@ -512,18 +520,19 @@ import LayoutAuthCallback from "../../components/layouts/LayoutAuthCallback.astr
           }
 
           showError(
-            "Sign-in link expired or was opened in a different window. Please click “Sign in with Google” again on the login page (same browser tab)."
+            "Sign-in could not be completed (security code missing). Use “Try again with Google” below in this same tab, or start from the login page in one tab only."
           );
-          setTimeout(() => {
-            window.location.href = "/auth/login?error=session_expired&message=Please+sign+in+again";
-          }, 4000);
+          const redirectNote = document.getElementById("error-redirect");
+          if (redirectNote) redirectNote.textContent = "";
+          const backLink = document.getElementById("back-link");
+          if (backLink) backLink.classList.remove("hidden");
           return;
         }
 
         showError(`Session exchange failed: ${exchangeError.message}`);
         setTimeout(() => {
-          window.location.href = "/auth/login?error=session_exchange_failed";
-        }, 3000);
+          window.location.href = "/auth/login?error=session_exchange_failed&message=" + encodeURIComponent(exchangeError.message || "");
+        }, 5000);
         return;
       }
 

@@ -40,8 +40,7 @@ if (typeof window !== "undefined") {
   w.formatPhoneAsYouType = formatPhoneAsYouType;
 }
 
-// Modal system (overwrites no-op stubs above)
-import "../lib/modal-global";
+// No modals in this project; showModal/hideModal/removeModal stay as no-op stubs above.
 
 if (typeof window !== "undefined" && (window as any).__traceLog) (window as any).__traceLog("app-globals.ts running");
 
