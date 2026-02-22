@@ -53,8 +53,8 @@ const {
   hideFooter = false,
 } = Astro.props;
 
-/** When true: only Flowbite + theme scripts run (for finding what breaks nav/forms). Set to false to restore all scripts. */
-const ONLY_FLOWBITE_AND_THEME = true;
+/** When true: only Flowbite + theme scripts run (for finding what breaks nav/forms). Set to false to restore all scripts. Reverted to false to match working 55cf3925. */
+const ONLY_FLOWBITE_AND_THEME = false;
 
 const stripHtml = (s: string | undefined | null): string =>
   (s ?? "")
@@ -601,6 +601,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
     <meta name="robots" content="max-image-preview:large" />
 
     <link rel="canonical" href={Astro.url.href} />
+    <link rel="stylesheet" href="https://flowbite.com/application-ui/demo/app.css" />
     <!-- Font Awesome for icons -->
     <link
       rel="stylesheet"
@@ -898,11 +899,8 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
     {/* Cache indicator: dev/test only (localhost or ?cacheIndicator=1) */}
     {isAdmin && <CacheIndicator />}
 
-    {/* Flowbite: include via CDN per https://flowbite.com/docs/getting-started/astro/ (is:inline so it runs in prod; version matches package.json). */}
-    <script
-      is:inline
-      src="https://cdn.jsdelivr.net/npm/flowbite@4.0.1/dist/flowbite.min.js"
-    />
+    {/* Flowbite: use same CDN as working 55cf3925 (unpkg 2.5.2). */}
+    <script src="https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js"></script>
 
     {!ONLY_FLOWBITE_AND_THEME && (
       <>
