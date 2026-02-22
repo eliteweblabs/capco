@@ -1,0 +1,39 @@
+---
+/**
+ * Single Google sign-in button. Self-contained: script imports auth-google and wires click.
+ * Use on any page; no other auth UI or scripts required.
+ */
+interface Props {
+  redirect?: string;
+  class?: string;
+}
+
+const { redirect = "/project/dashboard", class: className = "" } = Astro.props;
+
+import SimpleIcon from "../common/SimpleIcon.astro";
+---
+
+<button
+  type="button"
+  data-google-signin-button
+  data-redirect={redirect}
+  class:list={[
+    "inline-flex items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-6 py-3 text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700",
+    className,
+  ]}
+  aria-label="Sign in with Google"
+>
+  <SimpleIcon name="google" size="lg" class="provider-icon-color" />
+  <span>Sign in with Google</span>
+</button>
+
+<script>
+  import { startGoogleSignIn } from "../../lib/auth-google";
+  const btn = document.querySelector<HTMLButtonElement>("[data-google-signin-button]");
+  if (btn) {
+    btn.addEventListener("click", () => {
+      const redirect = btn.dataset.redirect || "/project/dashboard";
+      startGoogleSignIn(redirect);
+    });
+  }
+</script>

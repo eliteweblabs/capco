@@ -1,42 +1,8 @@
 ---
 /**
- * Testing page: login form only, no App.astro.
- * Use to verify LoginForm / Google OAuth without the main app layout.
+ * Test login: redirects to standalone Google sign-in page.
+ * For full login form without App, use /auth/login or /auth/google.
  */
-const redirectUrl = Astro.url.searchParams.get("redirect") || "/project/dashboard";
-
-// import "../../styles/global.css";
-import LoginForm from "../features/forms/components/LoginForm.astro";
+const redirect = Astro.url.searchParams.get("redirect") || "/project/dashboard";
+return Astro.redirect(`/auth/google?redirect=${encodeURIComponent(redirect)}`);
 ---
-
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Test Login (no App)</title>
-    <link rel="icon" type="image/svg+xml" href="/api/favicon.svg" />
-  </head>
-  <body class="flex min-h-dvh items-center justify-center bg-gray-50 p-4 dark:bg-gray-900">
-    <main class="w-full max-w-md">
-      <h1 class="mb-6 text-center text-lg font-medium text-gray-700 dark:text-gray-300">
-        Test Login (no App.astro)
-      </h1>
-      <LoginForm redirectUrl={redirectUrl} />
-    </main>
-    <script is:inline define:vars={{ redirectUrl }}>
-      (function () {
-        function fallbackGoogleSignup() {
-          var dest =
-            (document.querySelector('input[name="redirect"]') &&
-              document.querySelector('input[name="redirect"]').value) ||
-            redirectUrl ||
-            "/project/dashboard";
-          window.location.href = "/auth/login?provider=google&redirect=" + encodeURIComponent(dest);
-        }
-        window.handleGoogleSignup = fallbackGoogleSignup;
-      })();
-    </script>
-    <script src="../features/forms/components/login-form-client.ts"></script>
-  </body>
-</html>
