@@ -922,11 +922,9 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
 
     {!ONLY_FLOWBITE_AND_THEME && (
       <>
-        {/* 8. app-globals */}
-        <script>
-          import "../../scripts/app-globals";
-        </script>
-        {/* 8b. Fallback when app-globals chunk is empty (Astro 5): define critical window.* stubs and re-init Flowbite so nav/forms/dropdowns work. */}
+        {/* 8. app-globals DISABLED: Astro 5 emits empty chunk in prod; loading it stops all subsequent scripts (no TRACE 5). Fallback below provides stubs so site works. */}
+        {/* <script> import "../../scripts/app-globals"; </script> */}
+        {/* 8b. Fallback: define critical window.* stubs and re-init Flowbite so nav/forms/dropdowns work without relying on app-globals chunk. */}
         <script is:inline>
           (function () {
             if (window.__traceLog) window.__traceLog("App: fallback script running (after app-globals tag)");
