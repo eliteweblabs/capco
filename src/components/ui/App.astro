@@ -271,6 +271,13 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
           window.__traceNum = (window.__traceNum || 0) + 1;
           console.log("[TRACE " + window.__traceNum + "] " + m);
         };
+        window.addEventListener("error", function (e) {
+          if (window.__traceLog) window.__traceLog("ERROR: " + (e.message || String(e)));
+        });
+        window.addEventListener("unhandledrejection", function (e) {
+          var msg = (e.reason && (e.reason.message || String(e.reason))) || "unknown";
+          if (window.__traceLog) window.__traceLog("UNHANDLED REJECTION: " + msg);
+        });
         window.__traceLog("App theme script start");
         // Initialize dark mode FIRST to prevent flash (IIFE avoids duplicate-declaration if script is inlined twice)
         var hasExplicitPreference = localStorage.getItem("color-theme") !== null;
@@ -922,6 +929,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
         {/* 8b. Fallback when app-globals chunk is empty (Astro 5): define critical window.* stubs and re-init Flowbite so nav/forms/dropdowns work. */}
         <script is:inline>
           (function () {
+            if (window.__traceLog) window.__traceLog("App: fallback script running (after app-globals tag)");
             function ensureGlobals() {
               if (window.__appGlobalsFallbackDone) return;
               window.__appGlobalsFallbackDone = true;
@@ -942,6 +950,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
             } else {
               ensureGlobals();
             }
+            if (window.__traceLog) window.__traceLog("App: fallback script registered (ensureGlobals on load or now)");
           })();
         </script>
         {/* 9. hold-progress-init */}
@@ -956,6 +965,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
         {/* 10. Theme toggle inline */}
         <script is:inline>
       (function () {
+        if (window.__traceLog) window.__traceLog("App: theme toggle script running");
         function initThemeToggle() {
           var themeToggle = document.getElementById("theme-toggle");
           var darkIcon = document.getElementById("theme-toggle-dark-icon");

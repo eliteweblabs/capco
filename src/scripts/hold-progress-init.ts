@@ -4,6 +4,7 @@
  * Uses CSS var --hold-progress (0–1) and a child .hold-progress for the bar.
  * On complete: buttons trigger click; others dispatch "holdcomplete" for listeners.
  */
+if (typeof window !== "undefined" && (window as any).__traceLog) (window as any).__traceLog("hold-progress-init.ts running");
 function initHoldProgress() {
   const isTouchDevice = () => window.matchMedia("(hover: none)").matches;
   if (!isTouchDevice()) return;
