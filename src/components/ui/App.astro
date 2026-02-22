@@ -924,7 +924,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
     <script is:inline>
       if (window.__jsOrderLog) window.__jsOrderLog("Flowbite script tag (inline after CDN)");
     </script>
-    {/* Multi-step form fallback: when Astro module chunks don't load, load standalone bundle so form works */}
+    {/* Multi-step form fallback: when Astro module chunks don't load, load typewriter then form so animation runs */}
     <script is:inline>
       (function () {
         function loadFormFallback() {
@@ -937,8 +937,16 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
             s.async = false;
             document.body.appendChild(s);
           }
+          function injectTypewriterThenForm() {
+            var tw = document.createElement("script");
+            tw.src = "/scripts/typewriter.js";
+            tw.async = false;
+            tw.onload = injectFormScript;
+            tw.onerror = injectFormScript;
+            document.body.appendChild(tw);
+          }
           if (window.__PUBLIC_SUPABASE_URL__ && window.__PUBLIC_SUPABASE_PUBLISHABLE__) {
-            injectFormScript();
+            injectTypewriterThenForm();
             return;
           }
           fetch("/api/env/supabase-public")
@@ -946,9 +954,9 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
             .then(function (d) {
               if (d && typeof d.url === "string") window.__PUBLIC_SUPABASE_URL__ = d.url;
               if (d && typeof d.key === "string") window.__PUBLIC_SUPABASE_PUBLISHABLE__ = d.key;
-              injectFormScript();
+              injectTypewriterThenForm();
             })
-            .catch(function () { injectFormScript(); });
+            .catch(function () { injectTypewriterThenForm(); });
         }
         if (document.readyState === "loading") {
           document.addEventListener("DOMContentLoaded", loadFormFallback);

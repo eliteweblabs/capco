@@ -8,10 +8,38 @@ import { supabase } from "../../../lib/supabase";
 
 export const prerender = false;
 
+/** Prefer explicit production URL so callbacks never point at localhost when deployed. */
 function getOrigin(request: Request, url: URL): string {
+  const explicit =
+    (typeof import.meta !== "undefined" && (import.meta.env?.PUBLIC_SITE_URL || import.meta.env?.SITE_URL)) ||
+    (typeof process !== "undefined" && (process.env.PUBLIC_SITE_URL || process.env.SITE_URL));
+  if (explicit) {
+    try {
+      const parsed = new URL(explicit.startsWith("http") ? explicit : `https://${explicit}`);
+      return parsed.origin;
+    } catch {
+      // fall through
+    }
+  }
+  const railway =
+    (typeof import.meta !== "undefined" && (import.meta.env?.RAILWAY_PUBLIC_DOMAIN as string)) ||
+    (typeof process !== "undefined" && process.env.RAILWAY_PUBLIC_DOMAIN);
+  if (railway) {
+    const origin = railway.startsWith("http") ? railway : `https://${railway}`;
+    try {
+      return new URL(origin).origin;
+    } catch {
+      // fall through
+    }
+  }
   const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
-  const proto = request.headers.get("x-forwarded-proto") || (url.protocol === "https:" ? "https" : "http");
-  if (host) return `${proto}://${host}`;
+  const proto =
+    request.headers.get("x-forwarded-proto") ||
+    request.headers.get("x-forwarded-protocol") ||
+    (url.protocol === "https:" ? "https" : "http");
+  if (host && host !== "localhost" && !host.startsWith("localhost:")) {
+    return `${proto}://${host}`;
+  }
   return url.origin;
 }
 
