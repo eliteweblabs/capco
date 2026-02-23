@@ -1261,16 +1261,8 @@ export function createMultiStepFormHandler(
           const valid = await validateStep(currentStep);
           if (valid) {
             await showStep(nextStep);
-          } else {
-            // Validation failed – if button has data-skip (skip mode: label="skip" validLabel="next"), advance to skip step
-            const skipStep = nextBtn.getAttribute("data-skip");
-            if (skipStep) {
-              const skipStepNum = parseInt(skipStep, 10);
-              if (!isNaN(skipStepNum)) {
-                await showStep(skipStepNum);
-              }
-            }
           }
+          // When validation fails we stay on the current step; validateStep() already shows the error and marks fields
         } finally {
           (nextBtn as HTMLButtonElement).disabled = false;
         }

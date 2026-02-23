@@ -27,10 +27,11 @@ const {
 
 const config = normalizeFormConfig(rawConfig);
 
-const { globalInputClasses, multiStepInputClasses } = globalClasses();
+const { globalInputClasses, multiStepInputClasses, multiStepInputCoreClasses } = globalClasses();
 const appendedGlobalInputClasses = `${globalInputClasses} text-center`;
-/** Typewriter-agent style for all JSON config form inputs (no shadow, color-background overwrites dot pattern, blinking caret) */
+/** On wrapper so animated placeholder and icons get size/color; input uses core to fill and inherit */
 const appendedMultiStepInputClasses = multiStepInputClasses;
+const appendedMultiStepInputCoreClasses = multiStepInputCoreClasses;
 
 // Get carrier options for mobile carrier component
 const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
@@ -95,19 +96,21 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
                       set:html={step.title || ""}
                     />
                     {step.moreInfoTooltip && (
-                      <Tooltip
-                        text={step.moreInfoTooltip}
-                        html={true}
-                        position="top"
-                        className="shrink-0"
-                        mobileClickable={true}
-                        tooltipClass="whitespace-normal"
-                      >
-                        <SimpleIcon
-                          name="help-circle"
-                          class="h-5 w-5 shrink-0 text-gray-500 dark:text-gray-400 sm:h-6 sm:w-6 md:h-7 md:w-7 lg:h-9 lg:w-9"
-                        />
-                      </Tooltip>
+                      <span class="step-more-info-tooltip inline-flex shrink-0">
+                        <Tooltip
+                          text={step.moreInfoTooltip}
+                          html={true}
+                          position="top"
+                          className="shrink-0"
+                          mobileClickable={true}
+                          tooltipClass="whitespace-normal"
+                        >
+                          <SimpleIcon
+                            name="help-circle"
+                            class="h-5 w-5 shrink-0 text-gray-500 dark:text-gray-400 sm:h-6 sm:w-6 md:h-7 md:w-7 lg:h-9 lg:w-9"
+                          />
+                        </Tooltip>
+                      </span>
                     )}
                   </h2>
                 )}
@@ -181,20 +184,14 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
               </div>
             ) : step.fields?.length ? (
               <div
-                class:list={[
-                  "step-form-fields-wrapper",
-                  step.fieldLayout === "grid"
-                    ? "grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-6"
-                    : "",
-                  step.response ? "ml-4 sm:ml-6 md:ml-8 lg:ml-10" : "",
-                ]}
+                class="step-form-fields-wrapper flex flex-col gap-3"
                 tabindex="-1"
               >
                 {step.fields.map((field) => (
                   <FormFieldRenderer
                     field={field}
                     context="multistep"
-                    inputClasses={appendedMultiStepInputClasses}
+                    inputClasses={appendedMultiStepInputCoreClasses}
                     initialData={initialData}
                     buttonDefaults={config.buttonDefaults}
                     mobileCarrierOptions={mobileCarrierOptions}
@@ -203,7 +200,7 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
                     wrapperClass={
                       field.type === "hidden"
                         ? ""
-                        : `input-wrapper w-full ${field.columns === 1 ? "md:col-span-2" : ""}`
+                        : `input-wrapper w-full ${appendedMultiStepInputClasses}`
                     }
                   />
                 ))}
@@ -259,7 +256,6 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
                 step.buttons.filter((b) => b.type !== "choice").length === 1
                   ? "justify-end"
                   : "justify-between",
-                step.response ? "ml-4 sm:ml-6 md:ml-8 lg:ml-10" : "",
               ]}
             >
               {step.buttons
@@ -447,6 +443,19 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
     overflow: visible;
   }
 
+  /* More-info tooltip: fade in after title (typewriter complete) */
+  .step-content.has-typewriter .step-more-info-tooltip {
+    opacity: 0;
+    transition: opacity 0.25s ease-out;
+  }
+  .step-content.typewriter-complete .step-more-info-tooltip {
+    opacity: 1;
+    transition-delay: 150ms;
+  }
+  .step-content:not(.has-typewriter) .step-more-info-tooltip {
+    opacity: 1;
+  }
+
   /* Inner elements: opacity tied to wrapper reveal (no per-element stagger) */
   .step-content.has-typewriter .input-wrapper,
   .step-content.has-typewriter .inline-address-search-wrapper,
@@ -505,7 +514,8 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
   [data-multi-step-form][data-test-no-cascade] .inline-address-search-wrapper,
   [data-multi-step-form][data-test-no-cascade] button,
   [data-multi-step-form][data-test-no-cascade] a,
-  [data-multi-step-form][data-test-no-cascade] textarea {
+  [data-multi-step-form][data-test-no-cascade] textarea,
+  [data-multi-step-form][data-test-no-cascade] .step-more-info-tooltip {
     opacity: 1 !important;
     transition: none !important;
     transition-delay: 0ms !important;

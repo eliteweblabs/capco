@@ -2,9 +2,12 @@ export const globalClasses = () => {
   return {
     globalInputClasses:
       "text-base bg-transparent shadow-secondary-inner-md w-full border-0 py-2.5 px-4 text-gray-900 transition-colors duration-200 placeholder:text-gray-600 focus:outline-none scrollbar-hide dark:text-white dark:placeholder:text-gray-300",
-    /** Typewriter-agent style for JSON config (MultiStepForm) inputs: no box shadow, color-background so content overwrites dot pattern, visible caret next to icon/placeholder. shrink-to-fit allows font to drop when text overflows. */
+    /** Applied to the input wrapper so it affects animated placeholder and input icons. Height and text size here; input uses multiStepInputCoreClasses to fill and inherit. */
     multiStepInputClasses:
-      "h-14 sm:h-16 md:h-18 lg:h-20 text-xl sm:text-2xl md:text-3xl lg:text-4xl w-full bg-transparent border-0 py-2.5 px-4 text-gray-900 transition-colors duration-200 placeholder:text-gray-500 focus:outline-none dark:text-white dark:placeholder:text-gray-400 text-left",
+      "h-14 sm:h-16 md:h-18 lg:h-20 text-xl sm:text-2xl md:text-3xl lg:text-4xl text-gray-900 transition-colors duration-200 dark:text-white text-left",
+    /** Input-only classes when inside multistep wrapper: fill wrapper; explicit text/color so input doesn't fall back to browser defaults. */
+    multiStepInputCoreClasses:
+      "w-full h-full bg-transparent border-0 py-2.5 px-4 text-xl sm:text-2xl md:text-3xl lg:text-4xl text-left text-gray-900 placeholder:text-gray-500 focus:outline-none transition-colors duration-200 dark:text-white dark:placeholder:text-gray-400",
     primaryTextClasses: "text-gray-900 dark:text-gray-100",
     secondaryTextClasses: "text-gray-800 dark:text-gray-200",
     // Flowbite-standard icon-only button (gray/secondary)
