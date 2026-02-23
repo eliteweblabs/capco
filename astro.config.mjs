@@ -23,9 +23,7 @@ const env = { ...process.env, ...loaded };
 
 // https://astro.build/config
 export default defineConfig({
-  experimental: {
-    preserveScriptOrder: true,
-  },
+  // preserveScriptOrder was added in Astro 5.5; removed for Astro 4
   // When RAILWAY_PUBLIC_DOMAIN is unset (local dev) use localhost so URLs never switch to production
   site: env.RAILWAY_PUBLIC_DOMAIN
     ? env.RAILWAY_PUBLIC_DOMAIN.startsWith("http")
@@ -70,10 +68,9 @@ export default defineConfig({
         ),
       },
     },
-    // Support older Safari (e.g. iPad Air on iOS 12) – transpile optional chaining (?.)
-    // and nullish coalescing (??) which require Safari 13.1+
+    // es2022: required for top-level await in Astro 4 build. (Previously es2018 for iOS 12; downgrade to Astro 4 needed newer target.)
     build: {
-      target: "es2018",
+      target: "es2022",
       rollupOptions: {
         external: (id) => {
           // gray-matter uses Node APIs – exclude from client bundle
