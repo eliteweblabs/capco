@@ -207,9 +207,8 @@ const canDeleteFiles =
 
   // Load files for the project
   async function loadProjectFiles() {
+    const url = `/api/files/get?projectId=${currentProjectId}&targetLocation=documents&bucketName=${bucket}&_t=${Date.now()}`;
     try {
-      const url = `/api/files/get?projectId=${currentProjectId}&targetLocation=documents&bucketName=${bucket}&_t=${Date.now()}`;
-
       const response = await fetch(url, {
         cache: "no-cache",
         headers: {
@@ -219,7 +218,26 @@ const canDeleteFiles =
         },
       });
 
-      const data = await response.json();
+      const raw = await response.text();
+      let data;
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch (parseErr) {
+        console.error("❌ [FILE-MANAGER] API returned non-JSON. Status:", response.status, "Body snippet:", raw.slice(0, 200));
+        window.showNotice(
+          "error",
+          "Invalid response from server (status " + response.status + "). Check console for details.",
+          "24refWQ3reqfewc4Q#"
+        );
+        return;
+      }
+
+      if (!response.ok) {
+        const msg = data.error || data.details || response.statusText || "Request failed";
+        console.error("❌ [FILE-MANAGER] API error:", response.status, data);
+        window.showNotice("error", "Failed to load project files: " + msg, "24refWQ3reqfewc4Q#");
+        return;
+      }
 
       if (data.success) {
         files = data.data || [];
@@ -257,20 +275,21 @@ const canDeleteFiles =
         console.log("🔧 [FILE-MANAGER] Full API response:", data);
         window.showNotice(
           "error",
-          "Failed to load project files: " + data.error,
+          "Failed to load project files: " + (data.error || "Unknown error"),
           "24refWQ3reqfewc4Q#"
         );
       }
     } catch (error) {
-      console.error("❌ [FILE-MANAGER] Error loading files:", error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      console.error("❌ [FILE-MANAGER] Error loading files:", err);
       console.error("🔧 [FILE-MANAGER] Error details:", {
-        message: error.message,
-        stack: error.stack,
-        name: error.name,
+        message: err.message,
+        stack: err.stack,
+        name: err.name,
       });
       window.showNotice(
         "error",
-        "Error loading project files: " + error.message,
+        "Error loading project files: " + err.message,
         "24refWQ3reqfewc4Q#"
       );
     }
