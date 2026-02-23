@@ -620,6 +620,43 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
   }
 </style>
 
+{/* Inline: move focus to new step when step changes. Runs even if handler bundle is pending or doFocus doesn't run. */}
+<script is:inline>
+  (function () {
+    document.addEventListener("multistep-step-change", function (e) {
+      var stepNumber = (e.detail && e.detail.stepNumber) || 0;
+      var form = (e.target && e.target.closest && e.target.closest("form")) || document.querySelector("[data-multi-step-form] form");
+      if (!form) return;
+      var active = document.activeElement;
+      if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.tagName === "SELECT") && (active.type || "") !== "hidden" && form.contains(active)) {
+        active.blur();
+        console.log("[MULTISTEP-FOCUS] inline: blurred previous input on step change", stepNumber);
+      }
+      function focusFirstInActive() {
+        var wrapper = document.querySelector("[data-multi-step-form]");
+        if (!wrapper) return;
+        var step = wrapper.querySelector(".step-content.active");
+        if (!step) return;
+        var smsChoice = step.querySelector('button.sms-choice[data-sms-value="true"]');
+        if (smsChoice) {
+          smsChoice.focus();
+          console.log("[MULTISTEP-FOCUS] inline: focused sms button for step", stepNumber);
+          return;
+        }
+        var first = step.querySelector("input:not([type=hidden]):not([readonly]), textarea, select");
+        if (first && first.focus) {
+          first.focus();
+          console.log("[MULTISTEP-FOCUS] inline: focused first input for step", stepNumber, first.name || first.id);
+        } else {
+          console.log("[MULTISTEP-FOCUS] inline: no focusable field in step", stepNumber);
+        }
+      }
+      setTimeout(focusFirstInActive, 50);
+      setTimeout(focusFirstInActive, 450);
+    });
+  })();
+</script>
+
 <script>
   if (typeof window !== "undefined" && (window as any).__jsOrderLog) (window as any).__jsOrderLog("MultiStepForm (module)");
   import { initializeMultiStepForm } from "../../../lib/multi-step-form-handler";

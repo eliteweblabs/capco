@@ -289,6 +289,26 @@ export function createMultiStepFormHandler(
     // Activate target step: only first panel slides up on load; when switching steps we skip slide-in to avoid jump
     const isFirstLoad = !currentActiveStep;
     targetStep.classList.add("active");
+
+    // Move focus off the previous step so it doesn't stay on a now-inactive input
+    if (currentActiveStep && currentActiveStep !== targetStep) {
+      const active = document.activeElement as HTMLElement;
+      const inForm = active && form.contains(active);
+      const inPrevStep = active && currentActiveStep.contains(active);
+      console.log("[MULTISTEP-FOCUS] blur check:", {
+        stepNumber,
+        activeTag: active?.tagName,
+        activeId: active?.id,
+        activeName: (active as HTMLInputElement)?.name,
+        inForm: !!inForm,
+        inPrevStep: !!inPrevStep,
+        willBlur: !!(active && inForm && inPrevStep),
+      });
+      if (active && inForm && inPrevStep) {
+        (active as HTMLElement).blur();
+        console.log("[MULTISTEP-FOCUS] blurred previous step input");
+      }
+    }
     // if (isFirstLoad) {
     //   targetStep.classList.remove("initial-load");
     // } else {
@@ -411,50 +431,59 @@ export function createMultiStepFormHandler(
       }
     }
 
-    // Auto-focus when panel is done. On touch: skip programmatic focus entirely.
-    // showStep is reached only after await validateStep(), so we're outside the user gesture.
-    // Programmatic focus would not open iOS keypad. User taps the input wrapper → tap-to-focus
-    // in MultiStepForm.astro runs in click handler (same gesture) → keypad opens.
-    const hasTypewriter = targetStep.classList.contains("has-typewriter");
-    if (!hasTypewriter) {
-      const isTouch = typeof window !== "undefined" && "ontouchstart" in window;
-      if (isTouch) {
-        // Don't focus on touch: gesture chain broken by async validateStep.
-        // Tap-to-focus handles it when user taps the field.
+    // Always move focus to the new step's first field so focus isn't left on the previous input.
+    // Delay: longer for typewriter steps (after cascade); shorter for non-typewriter.
+    const cursorFraction = 0.4;
+    const scrollFormToCursor = (element: HTMLElement) => {
+      if (!formEl) return;
+      const formRect = formEl.getBoundingClientRect();
+      const elementRect = element.getBoundingClientRect();
+      const delta = elementRect.top - (formRect.top + formEl.clientHeight * cursorFraction);
+      formEl.scrollBy({ top: delta, behavior: "smooth" });
+    };
+    const doFocus = () => {
+      const activeBefore = document.activeElement as HTMLElement;
+      const smsChoiceButtons = targetStep.querySelectorAll("button.sms-choice");
+      if (smsChoiceButtons.length > 0) {
+        const yesButton = targetStep.querySelector(
+          'button[data-sms-value="true"]'
+        ) as HTMLElement;
+        if (yesButton) {
+          yesButton.focus();
+          scrollFormToCursor(yesButton);
+          console.log("[MULTISTEP-FOCUS] doFocus: focused sms yes button", {
+            stepNumber,
+            activeBefore: activeBefore?.tagName + "#" + (activeBefore?.id || (activeBefore as HTMLInputElement)?.name),
+            activeAfter: document.activeElement?.tagName + "#" + (document.activeElement?.id || (document.activeElement as HTMLInputElement)?.name),
+          });
+        } else {
+          console.log("[MULTISTEP-FOCUS] doFocus: no sms yes button found in step", stepNumber);
+        }
       } else {
-        const formEl = document.getElementById(formId) as HTMLFormElement;
-        const cursorFraction = 0.4;
-        const scrollFormToCursor = (element: HTMLElement) => {
-          if (!formEl) return;
-          const formRect = formEl.getBoundingClientRect();
-          const elementRect = element.getBoundingClientRect();
-          const delta = elementRect.top - (formRect.top + formEl.clientHeight * cursorFraction);
-          formEl.scrollBy({ top: delta, behavior: "smooth" });
-        };
-        const doFocus = () => {
-          const smsChoiceButtons = targetStep.querySelectorAll("button.sms-choice");
-          if (smsChoiceButtons.length > 0) {
-            const yesButton = targetStep.querySelector(
-              'button[data-sms-value="true"]'
-            ) as HTMLElement;
-            if (yesButton) {
-              yesButton.focus();
-              scrollFormToCursor(yesButton);
-            }
-          } else {
-            const firstInput = targetStep.querySelector(
-              "input:not([type=hidden]):not([readonly]), textarea, select"
-            ) as HTMLInputElement | HTMLTextAreaElement | null;
-            if (firstInput?.focus) {
-              firstInput.focus();
-              scrollFormToCursor(firstInput);
-            }
-          }
-        };
-        setTimeout(doFocus, 400);
+        const firstInput = targetStep.querySelector(
+          "input:not([type=hidden]):not([readonly]), textarea, select"
+        ) as HTMLInputElement | HTMLTextAreaElement | null;
+        if (firstInput?.focus) {
+          firstInput.focus();
+          scrollFormToCursor(firstInput);
+          console.log("[MULTISTEP-FOCUS] doFocus: focused first input", {
+            stepNumber,
+            inputId: firstInput.id,
+            inputName: (firstInput as HTMLInputElement).name,
+            activeBefore: activeBefore?.tagName + "#" + (activeBefore?.id || (activeBefore as HTMLInputElement)?.name),
+            activeAfter: document.activeElement?.tagName + "#" + (document.activeElement?.id || (document.activeElement as HTMLInputElement)?.name),
+          });
+        } else {
+          console.log("[MULTISTEP-FOCUS] doFocus: no first input found in step", stepNumber, {
+            targetStepHasInputs: !!targetStep.querySelector("input, textarea, select"),
+          });
+        }
       }
-    }
-    // Steps with typewriter: focus + keypad run from MultiStepForm typewriter-complete → cascade transitionend
+    };
+    const hasTypewriter = targetStep.classList.contains("has-typewriter");
+    const focusDelayMs = hasTypewriter ? 900 : 400; // typewriter: after cascade; else soon
+    console.log("[MULTISTEP-FOCUS] scheduling doFocus in", focusDelayMs, "ms for step", stepNumber, { hasTypewriter });
+    setTimeout(doFocus, focusDelayMs);
   }
 
   // Validate current step
