@@ -3,6 +3,7 @@
  * Catch-all page router – CMS content from database via getPageContent.
  * Renders MarkdownPage with layout, component shortcodes, and 404 on missing content.
  * OAuth callback and path exclusions preserved.
+ * Fetch content and redirect here (before any render) to avoid ResponseSentError.
  */
 
 // OAuth callback: if provider redirected to / with ?code=, redirect to API before any rendering
@@ -13,6 +14,7 @@ if (oauthCode) {
 }
 
 import { checkAuth } from "../lib/auth";
+import { getPageContent } from "../lib/content";
 import MarkdownPage from "../components/common/MarkdownPage.astro";
 
 const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
@@ -32,6 +34,12 @@ if (pageSlug === "_astro" || pageSlug.startsWith("_astro/")) {
 if (excludedPaths.some((path) => pageSlug.includes(path))) {
   return new Response(null, { status: 404 });
 }
+
+// Fetch content in the page so redirect happens before any response is sent (avoids ResponseSentError)
+const pageContent = await getPageContent(pageSlug);
+if (!pageContent) {
+  return Astro.redirect("/404");
+}
 ---
 
-<MarkdownPage slug={pageSlug} {currentUser} {session} {supabase} />
+<MarkdownPage slug={pageSlug} pageContent={pageContent} {currentUser} {session} {supabase} />

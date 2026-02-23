@@ -3,8 +3,10 @@
  * MarkdownPage Component
  * Convention-based component loading: <ComponentName /> → tries to load from common locations
  * No registry needed - if file exists, load it; if not, skip it
+ * When used from [...slug].astro, pageContent is passed in so redirect is done in the page (avoids ResponseSentError).
  */
 
+import type { PageContent } from "../../lib/content";
 import { getPageContent } from "../../lib/content";
 import { marked } from "marked";
 import { parseComponentShortcodes, type ComponentShortcode } from "../../lib/markdown-components";
@@ -19,14 +21,16 @@ import LayoutFullForm from "../layouts/LayoutFullForm.astro";
 
 interface Props {
   slug: string;
+  /** When provided (e.g. from [...slug].astro), use this and do not redirect; avoids ResponseSentError */
+  pageContent?: PageContent | null;
   currentUser?: any;
   session?: any;
   supabase?: any;
 }
 
-const { slug, currentUser, session, supabase } = Astro.props;
+const { slug, pageContent: pageContentProp, currentUser, session, supabase } = Astro.props;
 
-const pageContent = await getPageContent(slug);
+const pageContent = pageContentProp ?? (await getPageContent(slug));
 
 if (!pageContent) {
   return Astro.redirect("/404");
