@@ -75,7 +75,7 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
           <div
             class:list={[
               "step-content w-full min-w-full space-y-8 overflow-y-visible p-2 sm:space-y-8 sm:p-4 md:my-0", // leave mt-20 for tooltips MUST MATGCG INPUTD,
-              step.stepNumber === 1 ? "first-step" : "",
+              step.stepNumber === 1 ? "first-step active" : "",
             ]}
             data-step={step.stepNumber}
             data-hide-progress-bar={step.hideProgressBar ? "true" : "false"}
@@ -1629,8 +1629,21 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
         field.addEventListener("change", () => updateValidityState(field));
         field.addEventListener("blur", () => updateValidityState(field));
       } else {
-        field.addEventListener("input", () => updateValidityState(field));
-        field.addEventListener("blur", () => updateValidityState(field));
+        let inputDebounce: ReturnType<typeof setTimeout> | null = null;
+        field.addEventListener("input", () => {
+          if (inputDebounce) clearTimeout(inputDebounce);
+          inputDebounce = setTimeout(() => {
+            inputDebounce = null;
+            updateValidityState(field);
+          }, 150);
+        });
+        field.addEventListener("blur", () => {
+          if (inputDebounce) {
+            clearTimeout(inputDebounce);
+            inputDebounce = null;
+          }
+          updateValidityState(field);
+        });
       }
 
       field.addEventListener("focus", () => {

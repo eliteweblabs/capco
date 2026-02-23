@@ -34,6 +34,10 @@ if (!pageContent) {
 
 const template = pageContent.template || "default";
 
+// Normalize <Component/> to <Component /> so both parse reliably (CMS may store without space)
+const rawContent = pageContent.content || "";
+const normalizedContent = rawContent.replace(/<([A-Z][a-zA-Z0-9]*)\/>/g, "<$1 />");
+
 const layouts = {
   default: LayoutDefault,
   fullwidth: LayoutFullWidth,
@@ -46,7 +50,7 @@ const layouts = {
 const Layout = layouts[template as keyof typeof layouts] || LayoutDefault;
 
 // Parse component shortcodes from markdown
-const components = parseComponentShortcodes(pageContent.content);
+const components = parseComponentShortcodes(normalizedContent);
 
 console.log(
   "[MarkdownPage] Found components:",
@@ -93,7 +97,7 @@ if (needsFeaturedProjects) {
 
 // Replace components with inline markers (rendered server-side, no client replacement needed)
 const PLACEHOLDER_PREFIX = "__MARKDOWNPAGE_COMPONENT_";
-let markdownContent = pageContent.content;
+let markdownContent = normalizedContent;
 for (let i = 0; i < components.length; i++) {
   markdownContent = markdownContent.replace(
     components[i]!.fullMatch,
