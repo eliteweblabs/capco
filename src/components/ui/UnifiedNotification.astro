@@ -868,11 +868,18 @@
       modalData = typeOrObject;
     } else {
       // Legacy format with individual parameters
+      // Default duration: 4s for success/info/warning, 0 (persist) for error when not specified
+      const defaultDuration =
+        duration !== undefined
+          ? duration
+          : typeOrObject === "error"
+            ? 6000
+            : 4000;
       modalData = {
         type: typeOrObject,
         title: title || "",
         message: message || "",
-        duration: duration || 0,
+        duration: defaultDuration,
         actions: redirectOrActions,
         persist: persist || false,
       };
@@ -893,12 +900,20 @@
     console.log("🔔 [TOAST] Is redirect:", isRedirect);
     console.log("🔔 [TOAST] Redirect data:", redirectData);
 
+    // Apply default duration when not specified (fixes notifications that never time out)
+    const resolvedDuration =
+      modalData.duration !== undefined
+        ? modalData.duration
+        : modalData.type === "error"
+          ? 6000
+          : 4000;
+
     // Prepare notification options
     const notificationOptions = {
       type: modalData.type,
       title: modalData.title,
       message: modalData.message,
-      duration: modalData.duration, // Don't set default duration - let it be undefined for persistent toasts
+      duration: resolvedDuration,
       persist: modalData.persist, // Pass through the persist parameter
       modal: modalData.modal !== undefined ? modalData.modal : false, // Default to false (toast)
       actions: isRedirect ? undefined : modalData.actions,

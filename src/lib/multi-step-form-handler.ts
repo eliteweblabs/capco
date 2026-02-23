@@ -1623,6 +1623,36 @@ export function createMultiStepFormHandler(
   };
 }
 
+/** Setup hide-on-input for animated placeholders so they disappear when the input has data. */
+function setupAnimatedPlaceholderHideOnInput(form: HTMLFormElement): void {
+  const inputs = form.querySelectorAll(
+    'input[data-has-animated-placeholder="true"]'
+  ) as NodeListOf<HTMLInputElement>;
+  inputs.forEach((input) => {
+    const span = form.querySelector(
+      `.animated-placeholder[data-for="${input.id}"]`
+    ) as HTMLElement | null;
+    if (!span) return;
+
+    const checkAndHidePlaceholder = (): void => {
+      const hasValue = (input.value ?? "").trim().length > 0;
+      let isAutofilled = false;
+      try {
+        isAutofilled = input.matches(":-webkit-autofill") || input.matches(":autofill");
+      } catch {
+        /* ignore */
+      }
+      span.style.display = hasValue || isAutofilled ? "none" : "";
+    };
+
+    input.addEventListener("input", checkAndHidePlaceholder);
+    input.addEventListener("change", checkAndHidePlaceholder);
+    input.addEventListener("focus", checkAndHidePlaceholder);
+    input.addEventListener("blur", checkAndHidePlaceholder);
+    checkAndHidePlaceholder();
+  });
+}
+
 // New simplified initialization function for forms with skip logic
 export function initializeMultiStepForm(
   form: HTMLFormElement,
@@ -1631,6 +1661,11 @@ export function initializeMultiStepForm(
     formConfig?: any;
   } = {}
 ) {
+  if (form.hasAttribute("data-multistep-inited")) {
+    return;
+  }
+  form.setAttribute("data-multistep-inited", "1");
+
   const { initialData = {}, formConfig } = options;
 
   console.log("[MULTISTEP-FORM] Initializing form with skip logic", { formId: form.id });
@@ -1742,6 +1777,9 @@ export function initializeMultiStepForm(
   };
 
   handler.init(); // init now uses initialStep so correct step shows from start
+
+  // Setup animated placeholder hide-on-input (ensures placeholder disappears when input has data)
+  setupAnimatedPlaceholderHideOnInput(form);
 
   // Expose handler on form so focus listener can call setActiveStepByFocus when user scrolls up to edit
   (form as HTMLFormElement & { multiStepHandler?: MultiStepFormHandler }).multiStepHandler =

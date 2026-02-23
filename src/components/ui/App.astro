@@ -448,7 +448,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
     <script is:inline>
       if (window.__jsOrderLog) window.__jsOrderLog("Flowbite script tag (inline after CDN)");
     </script>
-    {/* Multi-step form fallback: when Astro module chunks don't load, load typewriter then form so animation runs */}
+    {/* Multi-step form fallback: load form init first (critical), then typewriter (animation) so Next button works immediately */}
     <script is:inline>
       (function () {
         function loadFormFallback() {
@@ -461,26 +461,23 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
             s.async = false;
             document.body.appendChild(s);
           }
-          function injectTypewriterThenForm() {
+          function injectTypewriter() {
             var tw = document.createElement("script");
             tw.src = "/scripts/typewriter.js";
-            tw.async = false;
-            tw.onload = injectFormScript;
-            tw.onerror = injectFormScript;
+            tw.async = true;
             document.body.appendChild(tw);
           }
-          if (window.__PUBLIC_SUPABASE_URL__ && window.__PUBLIC_SUPABASE_PUBLISHABLE__) {
-            injectTypewriterThenForm();
-            return;
+          injectFormScript();
+          injectTypewriter();
+          if (!window.__PUBLIC_SUPABASE_URL__ || !window.__PUBLIC_SUPABASE_PUBLISHABLE__) {
+            fetch("/api/env/supabase-public")
+              .then(function (r) { return r.ok ? r.json() : {}; })
+              .then(function (d) {
+                if (d && typeof d.url === "string") window.__PUBLIC_SUPABASE_URL__ = d.url;
+                if (d && typeof d.key === "string") window.__PUBLIC_SUPABASE_PUBLISHABLE__ = d.key;
+              })
+              .catch(function () {});
           }
-          fetch("/api/env/supabase-public")
-            .then(function (r) { return r.ok ? r.json() : {}; })
-            .then(function (d) {
-              if (d && typeof d.url === "string") window.__PUBLIC_SUPABASE_URL__ = d.url;
-              if (d && typeof d.key === "string") window.__PUBLIC_SUPABASE_PUBLISHABLE__ = d.key;
-              injectTypewriterThenForm();
-            })
-            .catch(function () { injectTypewriterThenForm(); });
         }
         if (document.readyState === "loading") {
           document.addEventListener("DOMContentLoaded", loadFormFallback);
@@ -584,161 +581,84 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
     </script>
 
     {!ONLY_FLOWBITE_AND_THEME && (
-      <>
-        {/* 8. hold-progress-init (app-globals loaded earlier, before auth-google) */}
-        <script>
-          import "../../scripts/hold-progress-init";
-        </script>
-      </>
+      <script src="/scripts/app-page-scripts.js" data-script="hold-progress-init" />
     )}
 
     {/* Theme toggle: inline fallback above; app-globals.ts also binds (uses data-theme-toggle-inited to avoid double-init). Overscroll scale: app-globals.ts DOMContentLoaded */}
 
     {!ONLY_FLOWBITE_AND_THEME && (
-      <>
-        {/* 12. DOMContentLoaded init (notification, sidebar) */}
-    <script>
-      if (typeof window !== "undefined" && (window as any).__jsOrderLog) (window as any).__jsOrderLog("App DOMContentLoaded-init (module)");
-      document.addEventListener("DOMContentLoaded", async () => {
-        try {
-          if (typeof (window as any).hideOnFormFocus === "function") {
-            (window as any).hideOnFormFocus();
-          }
-          const notificationBell = document.getElementById("notification-bell");
-          if (notificationBell && typeof (window as any).initializeNotificationCount === "function") {
-            await (window as any).initializeNotificationCount();
-          }
-          const ensureSidebar = (window as any).__ensureSidebarInit;
-          if (typeof ensureSidebar === "function") {
-            ensureSidebar();
-            setTimeout(ensureSidebar, 400);
-            setTimeout(ensureSidebar, 1200);
-          }
-        } catch (error) {
-          console.error("🔔 [APP] Error in DOMContentLoaded init:", error);
-        }
-      });
-    </script>
-      </>
+      <script is:inline>
+        (function () {
+          if (typeof window !== "undefined" && window.__jsOrderLog) window.__jsOrderLog("App DOMContentLoaded-init (inline)");
+          document.addEventListener("DOMContentLoaded", async function () {
+            try {
+              if (typeof window.hideOnFormFocus === "function") window.hideOnFormFocus();
+              var bell = document.getElementById("notification-bell");
+              if (bell && typeof window.initializeNotificationCount === "function") {
+                await window.initializeNotificationCount();
+              }
+              var ensureSidebar = window.__ensureSidebarInit;
+              if (typeof ensureSidebar === "function") {
+                ensureSidebar();
+                setTimeout(ensureSidebar, 400);
+                setTimeout(ensureSidebar, 1200);
+              }
+            } catch (e) {
+              console.error("🔔 [APP] Error in DOMContentLoaded init:", e);
+            }
+          });
+        })();
+      </script>
     )}
 
     {!ONLY_FLOWBITE_AND_THEME && (
-      <>
-        {/* 13. Global Image Error Handler */}
-    <script>
-      if (typeof window !== "undefined" && (window as any).__jsOrderLog) (window as any).__jsOrderLog("App image error handler (module)");
-      document.addEventListener("DOMContentLoaded", () => {
-        // Suppress expected console errors in development
-        const isDev =
-          window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-
-        // Handle all img elements with error handling
-        const images = document.querySelectorAll("img");
-
-        images.forEach((img) => {
-          img.addEventListener("error", (event) => {
-            const target = event.target;
-            const src = (target as HTMLImageElement).src;
-
-            // Check if it's a Supabase storage URL that's failing
-            if (src && src.includes("supabase.co/storage")) {
-              // Only log in production, silent in dev to reduce console noise
-              if (!isDev) {
-                console.warn("⚠️ [IMAGE-ERROR] Supabase storage image failed to load:", src);
-              }
-
-              // Hide the broken image and show a fallback
-              (target as HTMLElement).style.display = "none";
-
-              // Create a fallback element if it doesn't exist
-              if (
-                !(target as HTMLElement).nextElementSibling?.classList.contains("image-fallback")
-              ) {
-                const fallback = document.createElement("div");
-                fallback.className =
-                  "image-fallback bg-gray-200 flex items-center justify-center text-gray-500";
-                fallback.style.width = (target as HTMLElement).style.width || "100%";
-                fallback.style.height = (target as HTMLElement).style.height || "100%";
-                fallback.innerHTML = "📷";
-                (target as HTMLElement).parentNode?.insertBefore(
-                  fallback,
-                  (target as HTMLElement).nextSibling
-                );
+      <script is:inline>
+        (function () {
+          if (typeof window !== "undefined" && window.__jsOrderLog) window.__jsOrderLog("App image error handler (inline)");
+          document.addEventListener("DOMContentLoaded", function () {
+            var isDev = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+            function handleImgError(event) {
+              var target = event.target;
+              var src = target.src;
+              if (src && src.includes("supabase.co/storage")) {
+                if (!isDev) console.warn("⚠️ [IMAGE-ERROR] Supabase storage image failed to load:", src);
+                target.style.display = "none";
+                if (!target.nextElementSibling || !target.nextElementSibling.classList.contains("image-fallback")) {
+                  var fallback = document.createElement("div");
+                  fallback.className = "image-fallback bg-gray-200 flex items-center justify-center text-gray-500";
+                  fallback.style.width = target.style.width || "100%";
+                  fallback.style.height = target.style.height || "100%";
+                  fallback.innerHTML = "📷";
+                  target.parentNode.insertBefore(fallback, target.nextSibling);
+                }
               }
             }
-          });
-        });
-
-        // Handle dynamically added images
-        const observer = new MutationObserver((mutations) => {
-          mutations.forEach((mutation) => {
-            mutation.addedNodes.forEach((node) => {
-              if (node.nodeType === Node.ELEMENT_NODE) {
-                const element = node as HTMLElement;
-                const newImages = element.querySelectorAll("img");
-                newImages.forEach((img) => {
-                  img.addEventListener("error", (event) => {
-                    const target = event.target;
-                    const src = (target as HTMLImageElement).src;
-
-                    if (src && src.includes("supabase.co/storage")) {
-                      console.warn("⚠️ [IMAGE-ERROR] Supabase storage image failed to load:", src);
-                      (target as HTMLElement).style.display = "none";
-
-                      if (
-                        !(target as HTMLElement).nextElementSibling?.classList.contains(
-                          "image-fallback"
-                        )
-                      ) {
-                        const fallback = document.createElement("div");
-                        fallback.className =
-                          "image-fallback bg-gray-200 flex items-center justify-center text-gray-500";
-                        fallback.style.width = (target as HTMLElement).style.width || "100%";
-                        fallback.style.height = (target as HTMLElement).style.height || "100%";
-                        fallback.innerHTML = "📷";
-                        (target as HTMLElement).parentNode?.insertBefore(
-                          fallback,
-                          (target as HTMLElement).nextSibling
-                        );
-                      }
-                    }
-                  });
+            document.querySelectorAll("img").forEach(function (img) { img.addEventListener("error", handleImgError); });
+            var obs = new MutationObserver(function (mutations) {
+              mutations.forEach(function (m) {
+                m.addedNodes.forEach(function (node) {
+                  if (node.nodeType === 1 && node.querySelectorAll) {
+                    node.querySelectorAll("img").forEach(function (img) { img.addEventListener("error", handleImgError); });
+                  }
                 });
-              }
+              });
             });
+            obs.observe(document.body, { childList: true, subtree: true });
           });
-        });
-
-        observer.observe(document.body, {
-          childList: true,
-          subtree: true,
-        });
-      });
-
-      // Global error handler for unhandled promise rejections (network errors)
-      window.addEventListener("unhandledrejection", (event) => {
-        if (
-          event.reason &&
-          event.reason.message &&
-          event.reason.message.includes("ERR_CONNECTION_CLOSED")
-        ) {
-          console.warn(
-            "⚠️ [NETWORK-ERROR] Connection closed error suppressed:",
-            event.reason.message
-          );
-          event.preventDefault(); // Prevent the error from showing in console
-        }
-      });
-
-      // Global error handler for general errors
-      window.addEventListener("error", (event) => {
-        if (event.message && event.message.includes("ERR_CONNECTION_CLOSED")) {
-          console.warn("⚠️ [NETWORK-ERROR] Connection closed error suppressed:", event.message);
-          event.preventDefault(); // Prevent the error from showing in console
-        }
-      });
-    </script>
-      </>
+          window.addEventListener("unhandledrejection", function (e) {
+            if (e.reason && e.reason.message && e.reason.message.includes("ERR_CONNECTION_CLOSED")) {
+              console.warn("⚠️ [NETWORK-ERROR] Connection closed error suppressed:", e.reason.message);
+              e.preventDefault();
+            }
+          });
+          window.addEventListener("error", function (e) {
+            if (e.message && e.message.includes("ERR_CONNECTION_CLOSED")) {
+              console.warn("⚠️ [NETWORK-ERROR] Connection closed error suppressed:", e.message);
+              e.preventDefault();
+            }
+          });
+        })();
+      </script>
     )}
 
     {!ONLY_FLOWBITE_AND_THEME && (
@@ -766,22 +686,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
       </>
     )}
 
-    {!ONLY_FLOWBITE_AND_THEME && (
-      <>
-        {/* 15. scroll-animations */}
-        <script>
-          import "../../scripts/scroll-animations";
-        </script>
-        {/* 16. lazy-load-images */}
-        <script>
-          import "../../scripts/lazy-load-images";
-        </script>
-        {/* 17. project-item-handlers */}
-        <script>
-          import "../../scripts/project-item-handlers";
-        </script>
-      </>
-    )}
+    {/* 15-17. scroll-animations, lazy-load-images, project-item-handlers - in app-page-scripts.js above */}
 
     {/* <!-- Plausible Analytics Script --> */}
     {/* {plausibleTrackingScript && <Fragment set:html={plausibleTrackingScript} />} */}
