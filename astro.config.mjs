@@ -71,6 +71,7 @@ export default defineConfig({
     // es2022: required for top-level await in Astro 4 build. (Previously es2018 for iOS 12; downgrade to Astro 4 needed newer target.)
     build: {
       target: "es2022",
+      assetsInlineLimit: 0,
       rollupOptions: {
         external: (id) => {
           // gray-matter uses Node APIs – exclude from client bundle

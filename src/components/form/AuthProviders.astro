@@ -7,9 +7,11 @@ import SimpleIcon from "../common/SimpleIcon.astro";
 
 interface Props {
   mode?: "login" | "register";
+  /** Redirect path after auth (for Google href fallback when auth-google module doesn't load). */
+  redirectUrl?: string;
 }
 
-const { mode = "login" } = Astro.props;
+const { mode = "login", redirectUrl = "/project/dashboard" } = Astro.props;
 const btnClasses = "provider-btn w-12 object-contain sm:w-14 md:w-16";
 ---
 
@@ -64,12 +66,13 @@ const btnClasses = "provider-btn w-12 object-contain sm:w-14 md:w-16";
     <span class="sr-only">Email</span>
   </button>
 
-  <!-- Google: OAuth via auth-google.ts (document click listener). Fallback: href when module doesn't load (e.g. prod). -->
+  <!-- Google: OAuth via auth-google.ts (document click listener). Fallback: href to API starts auth when module doesn't load (no-JS). -->
   <Tooltip text="Sign in with Google" position="top" hideOnMobile>
     <a
-      href="/auth/google"
+      href={`/api/auth/google-start?redirect=${encodeURIComponent(redirectUrl)}`}
       class={`${btnClasses} no-underline`}
       data-provider="google"
+      data-redirect={redirectUrl}
       title="Sign in with Google"
       aria-label="Sign in with Google"
       role="button"

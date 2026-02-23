@@ -7,7 +7,10 @@ import { getSupabaseClient } from "./supabase-client";
 
 const DEFAULT_REDIRECT = "/project/dashboard";
 
-function getRedirectFromPage(): string {
+function getRedirectFromPage(target?: HTMLElement | null): string {
+  const btn = target?.closest?.('.provider-btn[data-provider="google"]') as HTMLElement | null;
+  const dataRedirect = btn?.getAttribute?.("data-redirect")?.trim();
+  if (dataRedirect) return dataRedirect;
   const input = document.querySelector('input[name="redirect"]') as HTMLInputElement | null;
   return input?.value?.trim() || DEFAULT_REDIRECT;
 }
@@ -134,7 +137,7 @@ function installGlobalHandler(): void {
       if (btn && !btn.disabled) {
         e.preventDefault();
         e.stopImmediatePropagation();
-        startGoogleSignIn();
+        startGoogleSignIn(getRedirectFromPage(btn));
       }
     },
     true
