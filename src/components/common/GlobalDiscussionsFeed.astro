@@ -462,39 +462,57 @@ const {
     }
 
     private updateStats(stats: any) {
-      document.getElementById("total-discussions")!.textContent = stats.total.toString();
-      document.getElementById("recent-discussions")!.textContent = stats.recent_24h.toString();
-      document.getElementById("active-users-discussions")!.textContent =
-        stats.active_users_24h.toString();
-      document.getElementById("completed-discussions")!.textContent = stats.completed.toString();
+      const el = (id: string) => document.getElementById(id);
+      if (el("total-discussions")) el("total-discussions")!.textContent = stats.total.toString();
+      if (el("recent-discussions")) el("recent-discussions")!.textContent = stats.recent_24h.toString();
+      if (el("active-users-discussions"))
+        el("active-users-discussions")!.textContent = stats.active_users_24h.toString();
+      if (el("completed-discussions"))
+        el("completed-discussions")!.textContent = stats.completed.toString();
     }
 
     private showLoading() {
-      document.getElementById("discussions-feed-loading")!.classList.remove("hidden");
-      document.getElementById("discussions-feed-error")!.classList.add("hidden");
-      document.getElementById("discussions-feed-empty")!.classList.add("hidden");
-      document.getElementById("discussions-feed-content")!.classList.add("hidden");
+      const loading = document.getElementById("discussions-feed-loading");
+      const err = document.getElementById("discussions-feed-error");
+      const empty = document.getElementById("discussions-feed-empty");
+      const content = document.getElementById("discussions-feed-content");
+      if (loading) loading.classList.remove("hidden");
+      if (err) err.classList.add("hidden");
+      if (empty) empty.classList.add("hidden");
+      if (content) content.classList.add("hidden");
     }
 
     private showError() {
-      document.getElementById("discussions-feed-loading")!.classList.add("hidden");
-      document.getElementById("discussions-feed-error")!.classList.remove("hidden");
-      document.getElementById("discussions-feed-empty")!.classList.add("hidden");
-      document.getElementById("discussions-feed-content")!.classList.add("hidden");
+      const loading = document.getElementById("discussions-feed-loading");
+      const err = document.getElementById("discussions-feed-error");
+      const empty = document.getElementById("discussions-feed-empty");
+      const content = document.getElementById("discussions-feed-content");
+      if (loading) loading.classList.add("hidden");
+      if (err) err.classList.remove("hidden");
+      if (empty) empty.classList.add("hidden");
+      if (content) content.classList.add("hidden");
     }
 
     private showEmpty() {
-      document.getElementById("discussions-feed-loading")!.classList.add("hidden");
-      document.getElementById("discussions-feed-error")!.classList.add("hidden");
-      document.getElementById("discussions-feed-empty")!.classList.remove("hidden");
-      document.getElementById("discussions-feed-content")!.classList.add("hidden");
+      const loading = document.getElementById("discussions-feed-loading");
+      const err = document.getElementById("discussions-feed-error");
+      const empty = document.getElementById("discussions-feed-empty");
+      const content = document.getElementById("discussions-feed-content");
+      if (loading) loading.classList.add("hidden");
+      if (err) err.classList.add("hidden");
+      if (empty) empty.classList.remove("hidden");
+      if (content) content.classList.add("hidden");
     }
 
     private showContent() {
-      document.getElementById("discussions-feed-loading")!.classList.add("hidden");
-      document.getElementById("discussions-feed-error")!.classList.add("hidden");
-      document.getElementById("discussions-feed-empty")!.classList.add("hidden");
-      document.getElementById("discussions-feed-content")!.classList.remove("hidden");
+      const loading = document.getElementById("discussions-feed-loading");
+      const err = document.getElementById("discussions-feed-error");
+      const empty = document.getElementById("discussions-feed-empty");
+      const content = document.getElementById("discussions-feed-content");
+      if (loading) loading.classList.add("hidden");
+      if (err) err.classList.add("hidden");
+      if (empty) empty.classList.add("hidden");
+      if (content) content.classList.remove("hidden");
     }
 
     private async loadMore() {
@@ -510,8 +528,9 @@ const {
     }
   }
 
-  // Initialize when DOM is ready
+  // Initialize when DOM is ready – only if feed container exists (avoids classList-of-null on pages without this component)
   document.addEventListener("DOMContentLoaded", () => {
+    if (!document.getElementById("discussions-feed-loading")) return;
     new GlobalDiscussionsFeedManager();
   });
 </script>
