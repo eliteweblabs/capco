@@ -270,15 +270,14 @@ import Button from "../common/Button.astro";
 
     // Handle button interaction - works for both touch and click
     if (speedDialButton) {
-      // Touch event handler for mobile
+      // Touch event handler for mobile. Only preventDefault when cancelable to avoid [Intervention] warning.
       speedDialButton.addEventListener(
         "touchstart",
         function (e) {
           touchHandled = true;
           e.stopPropagation();
-          e.preventDefault(); // Prevent click from firing
+          if (e.cancelable) e.preventDefault(); // Prevent click from firing; skip if e.g. scroll in progress
           toggleSpeedDial();
-          // Reset flag after a delay to allow click as fallback if needed
           setTimeout(() => {
             touchHandled = false;
           }, 400);

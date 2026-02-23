@@ -643,6 +643,48 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
       true
     );
 
+    // Type-to-focus fallback: if focus is in the form but not on an input and user types, focus first field in active step (fixes autofocus race)
+    document.addEventListener(
+      "keydown",
+      (e) => {
+        const form = document.querySelector("[data-multi-step-form]");
+        if (!form?.contains(e.target as Node)) return;
+        const active = document.activeElement as HTMLElement;
+        const isField =
+          active &&
+          (active.tagName === "INPUT" ||
+            active.tagName === "TEXTAREA" ||
+            active.tagName === "SELECT") &&
+          (active as HTMLInputElement).type !== "hidden";
+        if (isField) return;
+        const stepContent = form.querySelector(".step-content.active") as HTMLElement | null;
+        if (!stepContent) return;
+        const firstInput = stepContent.querySelector(
+          "input:not([type=hidden]):not([readonly]), textarea, select"
+        ) as HTMLInputElement | HTMLTextAreaElement | null;
+        if (!firstInput?.focus) return;
+        firstInput.focus();
+        const key = e.key;
+        const isPrintable =
+          key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && !e.repeat;
+        if (isPrintable && (firstInput.tagName === "INPUT" || firstInput.tagName === "TEXTAREA")) {
+          const inputEl = firstInput as HTMLInputElement | HTMLTextAreaElement;
+          const type = (firstInput as HTMLInputElement).type;
+          if (type !== "email" && type !== "number" && type !== "tel" && type !== "url") {
+            e.preventDefault();
+            const start = inputEl.selectionStart ?? inputEl.value.length;
+            const end = inputEl.selectionEnd ?? inputEl.value.length;
+            const before = inputEl.value.slice(0, start);
+            const after = inputEl.value.slice(end);
+            inputEl.value = before + key + after;
+            inputEl.setSelectionRange(start + 1, start + 1);
+            inputEl.dispatchEvent(new Event("input", { bubbles: true }));
+          }
+        }
+      },
+      true
+    );
+
     // Shrink-to-fit: when multi-step input text overflows, reduce font size until it fits
     const MIN_FONT_PX = 12;
     function shrinkToFit(el: HTMLInputElement | HTMLTextAreaElement) {
