@@ -22,7 +22,7 @@ With `output: "server"` (SSR), Astro’s production build does **not** emit comp
 
 ## What we did
 
-- **Theme toggle:** The logic was moved from `ThemeToggle.astro` into `App.astro` as an `is:inline` script. `ThemeToggle.astro` is now markup-only (the button); the behavior lives in the layout so it is always emitted.
+- **Theme toggle:** An `is:inline` script in `App.astro` wires the theme toggle so it works when the app-globals chunk fails to load (e.g. production SSR). `ThemeToggle.astro` is markup-only (the button). `app-globals.ts` also binds on DOMContentLoaded; both use `data-theme-toggle-inited` to avoid double-init.
 
 ## For other broken components
 
