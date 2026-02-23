@@ -481,25 +481,28 @@ function initOneTypewriterElement(element: HTMLElement): void {
   initializeTypewriterInstance(element, text);
 }
 
-// Set up mutation observer for dynamically added elements
-const observer = new MutationObserver((mutations) => {
-  mutations.forEach((mutation) => {
-    mutation.addedNodes.forEach((node) => {
-      if (node instanceof HTMLElement) {
-        if (node.classList.contains("typewriter-text")) {
-          initOneTypewriterElement(node);
+// Set up mutation observer for dynamically added elements (defer until body exists - app-init loads in head)
+function attachTypewriterObserver() {
+  if (!document.body) {
+    document.addEventListener("DOMContentLoaded", attachTypewriterObserver, { once: true });
+    return;
+  }
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
+        if (node instanceof HTMLElement) {
+          if (node.classList.contains("typewriter-text")) {
+            initOneTypewriterElement(node);
+          }
+          const children = node.querySelectorAll(".typewriter-text") as NodeListOf<HTMLElement>;
+          children.forEach(initOneTypewriterElement);
         }
-        const children = node.querySelectorAll(".typewriter-text") as NodeListOf<HTMLElement>;
-        children.forEach(initOneTypewriterElement);
-      }
+      });
     });
   });
-});
-
-observer.observe(document.body, {
-  childList: true,
-  subtree: true,
-});
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+attachTypewriterObserver();
 
 document.addEventListener("multistep-step-change", () => {
   triggerActiveStepTypewriter();

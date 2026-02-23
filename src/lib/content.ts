@@ -350,7 +350,8 @@ async function getDefaultPageContent(slug: string): Promise<PageContent | null> 
     contact: {
       title: "Contact Us",
       description: "Get in touch with our fire protection experts",
-      content: "# Contact Us\n\nGet in touch with our team.",
+      template: "fullform",
+      content: "<ContactForm />",
     },
     privacy: {
       title: "Privacy Policy",

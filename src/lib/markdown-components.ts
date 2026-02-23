@@ -65,7 +65,8 @@ export function parseComponentShortcodes(content: string): ComponentShortcode[] 
   }
 
   // Second pass: Match self-closing tags (supports attribute values containing ">")
-  const selfClosingStartRegex = /<([A-Z][a-zA-Z0-9]*)(\s|$)/g;
+  // Accept both <Component /> and <Component/> (lookahead so findSelfClosingTagEnd can find />)
+  const selfClosingStartRegex = /<([A-Z][a-zA-Z0-9]*)(?=\s|\/|$)/g;
   while ((match = selfClosingStartRegex.exec(content)) !== null) {
     const matchStart = match.index;
     const componentName = match[1];
