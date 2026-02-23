@@ -216,11 +216,8 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
       </>
     )}
 
-    <!-- Theme + bootstrap globals: must run first (Flowbite dark mode, page-size, __legacySafari). -->
-    <script>
-      import "../../scripts/theme-init";
-    </script>
-    {/* Auth/phone/page-size globals are in app-globals.ts */}
+    {/* Pre-bundled app-init (theme, notification, typewriter). app-globals + auth-google loaded in body. */}
+    {!ONLY_FLOWBITE_AND_THEME && <script is:inline src="/scripts/app-init.js"></script>}
 
     <AppHead
       safeTitle={safeTitle}
@@ -243,21 +240,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
 
     {!ONLY_FLOWBITE_AND_THEME && (
       <>
-        {/* 5. Notification count loader */}
-        <script>
-          import {
-            initializeNotificationCount,
-            loadNotificationCount,
-            refreshNotificationCount,
-            updateNotificationBellCount,
-          } from "@/lib/notification-count-loader";
-
-          (window as any).initializeNotificationCount = initializeNotificationCount;
-          (window as any).updateNotificationBellCount = updateNotificationBellCount;
-          (window as any).loadNotificationCount = loadNotificationCount;
-          (window as any).refreshNotificationCount = refreshNotificationCount;
-        </script>
-        {/* 6. Global typewriter */}
+        {/* 6. Global typewriter (runSimpleTypewriter - vanilla, no import) */}
         <script>
       (function () {
         const DONE_ATTR = "data-typewriter-done";
@@ -304,17 +287,6 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
           initLoadingTypewriters();
         }
       })();
-        </script>
-        {/* 7. typewriter-text */}
-        <script>
-          import {
-            initTypewriterTexts,
-            triggerActiveStepTypewriter,
-            skipActiveTypewriterToEnd,
-          } from "../../scripts/typewriter-text";
-          window.initTypewriterTexts = initTypewriterTexts;
-          window.triggerActiveStepTypewriter = triggerActiveStepTypewriter;
-          window.skipActiveTypewriterToEnd = skipActiveTypewriterToEnd;
         </script>
       </>
     )}
@@ -468,15 +440,14 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
     {/* Cache indicator: dev/test only (localhost or ?cacheIndicator=1) */}
     {isAdmin && <CacheIndicator />}
 
-    {/* Globals (showNotice, etc.) before auth so Google OAuth can show errors */}
+    {/* app-globals + auth-google: Astro scripts (may have empty chunks in prod; form fallback loads multistep) */}
     {!ONLY_FLOWBITE_AND_THEME && (
       <script>
-        import "../../scripts/app-globals";
+        import("../../scripts/app-globals");
       </script>
     )}
-    {/* Google OAuth: single module for "Sign in with Google" (dropdown, login form, etc.) */}
     <script>
-      import "../../lib/auth-google";
+      import("../../lib/auth-google");
     </script>
     {/* Flowbite: CDN may load slowly or fail (CSP/network). Fallback below retries and can load script dynamically. */}
     <script src="https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js" defer></script>
