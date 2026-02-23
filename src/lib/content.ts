@@ -263,20 +263,30 @@ export async function getSiteConfig(): Promise<SiteConfig> {
     if (chunks.length > 0) envConfigJson = chunks.join("");
   }
 
-  // 1d. config-${RAILWAY_PROJECT_NAME}.json then config.json (client-specific config by project name)
+  // 1d. config-${globalCompanyName}.json, then config-${RAILWAY_PROJECT_NAME}.json, then config.json (per-instance forms/site config)
   if (!envConfigJson) {
+    const slugify = (s: string) =>
+      s
+        .toLowerCase()
+        .replace(/[^a-z0-9-]/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "")
+        .trim();
+    const companyName = companyData?.globalCompanyName || "";
+    const companySlug =
+      companyName && companyName !== "Company Name Not Set" ? slugify(companyName) : "";
     const projectName = process.env.RAILWAY_PROJECT_NAME || "";
-    const slug = projectName
-      .toLowerCase()
-      .replace(/[^a-z0-9-]/g, "-")
-      .replace(/-+/g, "-")
-      .trim();
+    const railwaySlug = slugify(projectName);
     const dataDir = join(process.cwd(), "public", "data");
     const distDataDir = join(process.cwd(), "dist", "client", "data");
     const candidates: string[] = [];
-    if (slug) {
-      candidates.push(join(dataDir, `config-${slug}.json`));
-      candidates.push(join(distDataDir, `config-${slug}.json`));
+    if (companySlug) {
+      candidates.push(join(dataDir, `config-${companySlug}.json`));
+      candidates.push(join(distDataDir, `config-${companySlug}.json`));
+    }
+    if (railwaySlug && railwaySlug !== companySlug) {
+      candidates.push(join(dataDir, `config-${railwaySlug}.json`));
+      candidates.push(join(distDataDir, `config-${railwaySlug}.json`));
     }
     candidates.push(join(dataDir, "config.json"));
     candidates.push(join(distDataDir, "config.json"));

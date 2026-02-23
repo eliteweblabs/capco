@@ -1,4 +1,4 @@
-// DEPRECATED: Project list columns are now in config JSON (config.json or config-${RAILWAY_PROJECT_NAME}.json)
+// DEPRECATED: Project list columns are now in config JSON (config-${globalCompanyName}.json, config-${RAILWAY_PROJECT_NAME}.json, or config.json)
 // under projectListColumns. This file is kept for reference only.
 // /**
 //  * Project List Table Configuration - CAPCO Design Group (default)

@@ -1,7 +1,7 @@
 /**
  * Project List Table Configuration
  * Generic, JSON-driven column config for the project dashboard table.
- * All client-specific columns come from config (config.json or config-${RAILWAY_PROJECT_NAME}.json)
+ * All client-specific columns come from config (config-${globalCompanyName}.json, config-${RAILWAY_PROJECT_NAME}.json, or config.json)
  * under projectListColumns. No company-specific code; fallback default when config has no columns.
  */
 
@@ -74,7 +74,7 @@ const DEFAULT_PROJECT_LIST_COLUMNS: ProjectListColumnConfig[] = [
 ];
 
 /**
- * Get project list table columns from site config (config.json or config-${RAILWAY_PROJECT_NAME}.json).
+ * Get project list table columns from site config (config-${globalCompanyName}.json, config-${RAILWAY_PROJECT_NAME}.json, or config.json).
  * Client-specific layout is entirely in config under projectListColumns.
  */
 export async function getProjectListTableColumns(): Promise<ProjectListColumnConfig[]> {
