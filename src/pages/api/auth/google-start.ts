@@ -8,9 +8,35 @@ import { supabase } from "../../../lib/supabase";
 
 export const prerender = false;
 
-/** Use request URL first so localhost stays localhost; env fallback only when request origin is unavailable. */
+/** Use request URL for localhost; prefer RAILWAY_PUBLIC_DOMAIN in production so OAuth never redirects to localhost. */
 function getOrigin(request: Request, url: URL): string {
-  // First: use request-derived origin (so local dev and current host always match)
+  const railway =
+    (typeof import.meta !== "undefined" && (import.meta.env?.RAILWAY_PUBLIC_DOMAIN as string)) ||
+    (typeof process !== "undefined" && process.env.RAILWAY_PUBLIC_DOMAIN);
+  const explicit =
+    (typeof import.meta !== "undefined" && (import.meta.env?.PUBLIC_SITE_URL || import.meta.env?.SITE_URL)) ||
+    (typeof process !== "undefined" && (process.env.PUBLIC_SITE_URL || process.env.SITE_URL));
+
+  // Production: prefer RAILWAY_PUBLIC_DOMAIN so we never accidentally use localhost
+  if (railway) {
+    const origin = railway.startsWith("http") ? railway : `https://${railway}`;
+    try {
+      const parsed = new URL(origin);
+      return parsed.origin;
+    } catch {
+      // fall through
+    }
+  }
+  if (explicit) {
+    try {
+      const parsed = new URL(explicit.startsWith("http") ? explicit : `https://${explicit}`);
+      return parsed.origin;
+    } catch {
+      // fall through
+    }
+  }
+
+  // Request-derived origin (for local dev and when env not set)
   const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
   const proto =
     request.headers.get("x-forwarded-proto") ||
@@ -28,30 +54,10 @@ function getOrigin(request: Request, url: URL): string {
   if (url.origin && url.origin !== "null") {
     return url.origin;
   }
-  // Fallback only when request gives no usable origin (e.g. server-to-server)
-  const explicit =
-    (typeof import.meta !== "undefined" && (import.meta.env?.PUBLIC_SITE_URL || import.meta.env?.SITE_URL)) ||
-    (typeof process !== "undefined" && (process.env.PUBLIC_SITE_URL || process.env.SITE_URL));
-  if (explicit) {
-    try {
-      const parsed = new URL(explicit.startsWith("http") ? explicit : `https://${explicit}`);
-      return parsed.origin;
-    } catch {
-      // fall through
-    }
-  }
-  const railway =
-    (typeof import.meta !== "undefined" && (import.meta.env?.RAILWAY_PUBLIC_DOMAIN as string)) ||
-    (typeof process !== "undefined" && process.env.RAILWAY_PUBLIC_DOMAIN);
-  if (railway) {
-    const origin = railway.startsWith("http") ? railway : `https://${railway}`;
-    try {
-      return new URL(origin).origin;
-    } catch {
-      // fall through
-    }
-  }
-  return url.origin || "http://localhost:4321";
+
+  const fallback = "http://localhost:4321";
+  console.warn("[auth/google-start] getOrigin fallback to localhost – set RAILWAY_PUBLIC_DOMAIN or PUBLIC_SITE_URL for production");
+  return fallback;
 }
 
 export const GET: APIRoute = async ({ url, redirect, request }) => {
@@ -61,6 +67,8 @@ export const GET: APIRoute = async ({ url, redirect, request }) => {
   const redirectTo = url.searchParams.get("redirect") || "/project/dashboard";
   const origin = getOrigin(request, url);
   const callbackUrl = `${origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`;
+
+  console.log("[auth/google-start] OAuth redirectTo:", callbackUrl, "| origin:", origin);
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",

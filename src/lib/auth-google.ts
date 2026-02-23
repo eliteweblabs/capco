@@ -121,6 +121,7 @@ export function handleLoginPageQueryParams(): void {
 
 /** Attach global handler and click listener. Call once when script loads. */
 function installGlobalHandler(): void {
+  (window as any).startGoogleSignIn = startGoogleSignIn;
   (window as any).handleGoogleSignup = (e?: Event) => {
     if (e) e.preventDefault();
     startGoogleSignIn();

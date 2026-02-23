@@ -1,0 +1,21 @@
+---
+description: Use Railway MCP or Railway CLI to set deployment env vars; never just document steps
+alwaysApply: true
+---
+
+# Railway Deployment Environment Config
+
+When configuring OAuth, redirects, or any deployment env vars (e.g. `RAILWAY_PUBLIC_DOMAIN`, `PUBLIC_SITE_URL`):
+
+1. **Use Railway MCP first** – If Railway MCP is available (`list-variables`, `set-variables`), use it to list and set variables directly. The server is configured in `~/.cursor/mcp.json`.
+
+2. **Use Railway CLI otherwise** – If Railway CLI is installed and authenticated (`railway whoami`), run:
+   - `railway variables` – list current vars
+   - `railway variables --set "PUBLIC_SITE_URL=https://<domain>"` – set a variable
+   - `railway link` (interactive) or switch projects as needed for capco vs rothco
+
+3. **Never only document** – Do not create markdown instructions alone. Execute the config via MCP or CLI, then optionally update markdowns as a record.
+
+**Key vars for OAuth / live site:**
+- `RAILWAY_PUBLIC_DOMAIN` – often set by Railway automatically (e.g. `rothco-firstbranch.up.railway.app`)
+- `PUBLIC_SITE_URL` – full URL fallback, e.g. `https://rothco-firstbranch.up.railway.app`

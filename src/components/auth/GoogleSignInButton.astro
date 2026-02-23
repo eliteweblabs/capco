@@ -27,13 +27,21 @@ import SimpleIcon from "../common/SimpleIcon.astro";
   <span>Sign in with Google</span>
 </button>
 
-<script>
-  import { startGoogleSignIn } from "../../lib/auth-google";
-  const btn = document.querySelector<HTMLButtonElement>("[data-google-signin-button]");
-  if (btn) {
-    btn.addEventListener("click", () => {
-      const redirect = btn.dataset.redirect || "/project/dashboard";
-      startGoogleSignIn(redirect);
+<script is:inline>
+  (function () {
+    var btn = document.querySelector("[data-google-signin-button]");
+    if (!btn) return;
+    function go() {
+      var r = btn.getAttribute("data-redirect") || "/project/dashboard";
+      if (typeof window.startGoogleSignIn === "function") {
+        window.startGoogleSignIn(r);
+        return;
+      }
+      window.location.href = "/api/auth/google-start?redirect=" + encodeURIComponent(r);
+    }
+    btn.addEventListener("click", function (e) {
+      e.preventDefault();
+      go();
     });
-  }
+  })();
 </script>

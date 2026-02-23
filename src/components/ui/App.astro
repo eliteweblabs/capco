@@ -440,15 +440,12 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
     {/* Cache indicator: dev/test only (localhost or ?cacheIndicator=1) */}
     {isAdmin && <CacheIndicator />}
 
-    {/* app-globals + auth-google: Astro scripts (may have empty chunks in prod; form fallback loads multistep) */}
+    {/* app-globals: pre-bundled to public/scripts/app-globals.js (avoids Astro chunk 404 + import-statement errors) */}
     {!ONLY_FLOWBITE_AND_THEME && (
-      <script>
-        import("../../scripts/app-globals");
-      </script>
+      <script src="/scripts/app-globals.js"></script>
     )}
-    <script>
-      import("../../lib/auth-google");
-    </script>
+    {/* auth-google: pre-bundled (avoids Astro chunk 404 so Google OAuth works in prod) */}
+    <script src="/scripts/auth-google.js"></script>
     {/* Flowbite: CDN may load slowly or fail (CSP/network). Fallback below retries and can load script dynamically. */}
     <script src="https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js" defer></script>
     <script is:inline>
