@@ -1,8 +1,8 @@
 ---
 /**
- * Catch-all page router – framework only, no CMS content.
- * Renders layout shell (App, navbar, footer) with empty main area.
- * OAuth, exclusions, and 404 handling preserved.
+ * Catch-all page router – CMS content from database via getPageContent.
+ * Renders MarkdownPage with layout, component shortcodes, and 404 on missing content.
+ * OAuth callback and path exclusions preserved.
  */
 
 // OAuth callback: if provider redirected to / with ?code=, redirect to API before any rendering
@@ -13,7 +13,7 @@ if (oauthCode) {
 }
 
 import { checkAuth } from "../lib/auth";
-import FrameworkPage from "../components/common/FrameworkPage.astro";
+import MarkdownPage from "../components/common/MarkdownPage.astro";
 
 const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
 
@@ -34,4 +34,4 @@ if (excludedPaths.some((path) => pageSlug.includes(path))) {
 }
 ---
 
-<FrameworkPage slug={pageSlug} {currentUser} {session} {supabase} />
+<MarkdownPage slug={pageSlug} {currentUser} {session} {supabase} />
