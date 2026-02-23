@@ -109,7 +109,7 @@ Return ONLY a JSON array, no other text.`;
     }
 
     // Remove duplicates and limit to 10
-    tags = [...new Set(tags)].slice(0, 10);
+    tags = Array.from(new Set(tags)).slice(0, 10);
 
     return new Response(
       JSON.stringify({

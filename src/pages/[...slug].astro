@@ -1,12 +1,11 @@
 ---
 /**
- * Dynamic Markdown Page Router
- * Catches all routes and renders from markdown files
- * Template selection handled by MarkdownPage component
+ * Catch-all page router – framework only, no CMS content.
+ * Renders layout shell (App, navbar, footer) with empty main area.
+ * OAuth, exclusions, and 404 handling preserved.
  */
 
 // OAuth callback: if provider redirected to / with ?code=, redirect to API before any rendering
-// Preserve full query string (state, redirect, etc.) so PKCE and post-login redirect work
 const oauthCode = Astro.url.searchParams.get("code");
 if (oauthCode) {
   const query = Astro.url.search || `?code=${encodeURIComponent(oauthCode)}`;
@@ -14,52 +13,25 @@ if (oauthCode) {
 }
 
 import { checkAuth } from "../lib/auth";
-import { getPageContent } from "../lib/content";
-import MarkdownPage from "../components/common/MarkdownPage.astro";
+import FrameworkPage from "../components/common/FrameworkPage.astro";
 
-// Get auth state
 const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
 
-// Get slug from URL (e.g., /terms -> "terms", /about/team -> "about/team")
 const { slug } = Astro.params;
 const pageSlug = slug || "home";
 
-// Exclude technical paths that shouldn't be treated as content pages
-const excludedPaths = [
-  "scripts/",
-  "api/",
-  "_astro/",
-  "assets/",
-  "public/",
-  ".js",
-  ".ts",
-  ".css",
-  ".map",
-];
-
-// Static assets / favicon – return 404 without hitting content loader (avoids log noise)
+const excludedPaths = ["scripts/", "api/", "_astro/", "assets/", "public/", ".js", ".ts", ".css", ".map"];
 const staticExtensions = [".svg", ".ico", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".woff", ".woff2", ".ttf", ".eot"];
+
 if (staticExtensions.some((ext) => pageSlug.toLowerCase().endsWith(ext))) {
   return new Response(null, { status: 404 });
 }
-
-// _astro is Astro's build output; /_astro or /_astro/... must not hit content loader
 if (pageSlug === "_astro" || pageSlug.startsWith("_astro/")) {
   return new Response(null, { status: 404 });
 }
-
-// Check if this is a technical path that should be skipped
 if (excludedPaths.some((path) => pageSlug.includes(path))) {
   return new Response(null, { status: 404 });
 }
-
-// Try to load content from markdown
-const pageContent = await getPageContent(pageSlug);
-
-// If no markdown file exists, return 404
-if (!pageContent) {
-  return Astro.redirect("/404");
-}
 ---
 
-<MarkdownPage slug={pageSlug} {currentUser} {session} {supabase} />
+<FrameworkPage slug={pageSlug} {currentUser} {session} {supabase} />
