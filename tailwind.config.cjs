@@ -1,11 +1,10 @@
 /** @type {import('tailwindcss').Config} */
 
-// Tailwind Configuration
+// Tailwind Configuration (CommonJS for Tailwind IntelliSense and plugin resolution)
 // Colors and fonts are now managed via CMS global settings and injected as CSS variables at runtime
-// This config uses CSS variables so values can be updated dynamically from the database
 // See: src/components/common/App.astro for dynamic color/font injection
 
-export default {
+module.exports = {
   content: ["./src/**/*.{astro,js,ts,jsx,tsx,vue,svelte}", "./node_modules/flowbite/**/*.js"],
   darkMode: "class", // Esto permite usar 'dark:' en clases
   safelist: [
@@ -106,7 +105,6 @@ export default {
           950: "#0a0a0a",
         },
         // Brand Colors - Use CSS variables so they can be updated dynamically from database
-        // These CSS variables are set in colors.css and can be overridden at runtime
         primary: {
           DEFAULT: "var(--color-primary-500)",
           50: "var(--color-primary-50)",
@@ -177,33 +175,6 @@ export default {
           950: "#450a0a",
         },
 
-        // // Background Colors
-        // background: {
-        //   light: "#fafafa",
-        //   dark: "#0a0a0a",
-        //   card: "#fafafa",
-        //   "card-dark": "#171717",
-        // },
-
-        // Text Colors
-        // text: {
-        //   primary: primaryColorPalette[500], // Use the actual primary color
-        //   "primary-dark": "#fafafa",
-        //   secondary: "#525252",
-        //   "secondary-dark": "#a3a3a3",
-        //   muted: "#737373",
-        //   "muted-dark": "#737373",
-        // },
-
-        // Border Colors
-        // border: {
-        //   light: "#e5e5e5",
-        //   dark: "#404040",
-        //   muted: "#f5f5f5",
-        //   "muted-dark": "#262626",
-        // },
-
-        // Add border support for custom colors
         red: {
           200: "#fecaca",
           300: "#fca5a5",
@@ -215,7 +186,6 @@ export default {
           900: "#7f1d1d",
         },
 
-        // Icon Colors
         icon: {
           primary: "#6E6E6E",
           "primary-dark": "#a3a3a3",
@@ -247,7 +217,6 @@ export default {
             display: "none",
           },
         },
-        // Custom shadow utilities with primary color using color-mix for opacity
         ".shadow-primary-sm": {
           "box-shadow": "0 1px 2px 0 color-mix(in srgb, var(--color-primary-500) 5%, transparent)",
         },
@@ -271,7 +240,6 @@ export default {
           "box-shadow":
             "0 25px 50px -12px color-mix(in srgb, var(--color-primary-500) 25%, transparent)",
         },
-        // Inner shadow variants (equal on all sides)
         ".shadow-primary-inner-sm": {
           "box-shadow":
             "inset 0 0 3px 0 color-mix(in srgb, var(--color-primary-500) 7%, transparent)",
