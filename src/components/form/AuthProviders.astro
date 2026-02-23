@@ -64,18 +64,19 @@ const btnClasses = "provider-btn w-12 object-contain sm:w-14 md:w-16";
     <span class="sr-only">Email</span>
   </button>
 
-  <!-- Google: OAuth via handleGoogleSignup (login/register) or redirect to login page (dropdown/popper) -->
+  <!-- Google: OAuth via auth-google.ts (document click listener). Fallback: href when module doesn't load (e.g. prod). -->
   <Tooltip text="Sign in with Google" position="top" hideOnMobile>
-    <button
-      type="button"
-      class={btnClasses}
+    <a
+      href="/auth/google"
+      class={`${btnClasses} no-underline`}
       data-provider="google"
       title="Sign in with Google"
       aria-label="Sign in with Google"
+      role="button"
     >
       <SimpleIcon name="google" size="md" class="provider-icon provider-icon-color" />
       <span class="sr-only">Google</span>
-    </button>
+    </a>
   </Tooltip>
 
   <!-- Apple -->
@@ -142,26 +143,3 @@ const btnClasses = "provider-btn w-12 object-contain sm:w-14 md:w-16";
   </Tooltip>
 </div>
 
-<script>
-  import { startGoogleSignIn } from "../../lib/auth-google";
-
-  function attachProviderListeners() {
-    const googleBtn = document.querySelector<HTMLButtonElement>('.provider-btn[data-provider="google"]');
-    if (googleBtn && !googleBtn.dataset.authAttached) {
-      googleBtn.dataset.authAttached = "1";
-      googleBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        const redirect =
-          (document.querySelector<HTMLInputElement>('input[name="redirect"]')?.value) ||
-          "/project/dashboard";
-        startGoogleSignIn(redirect);
-      });
-    }
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", attachProviderListeners);
-  } else {
-    attachProviderListeners();
-  }
-</script>

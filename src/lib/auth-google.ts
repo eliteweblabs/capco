@@ -132,6 +132,7 @@ function installGlobalHandler(): void {
         '.provider-btn[data-provider="google"]'
       ) as HTMLButtonElement | null;
       if (btn && !btn.disabled) {
+        e.preventDefault();
         e.stopImmediatePropagation();
         startGoogleSignIn();
       }
