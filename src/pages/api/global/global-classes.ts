@@ -1,7 +1,7 @@
 export const globalClasses = () => {
   return {
     globalInputClasses:
-      "text-base bg-transparent shadow-secondary-inner-md w-full border-0 py-2.5 px-4 text-gray-900 transition-colors duration-200 placeholder:text-gray-600 focus:outline-none scrollbar-hide dark:bg-[var(--color-background)] dark:text-white dark:placeholder:text-gray-300",
+      "text-base bg-transparent shadow-secondary-inner-md w-full border-0 py-2.5 px-4 text-gray-900 transition-colors duration-200 placeholder:text-gray-600 focus:outline-none scrollbar-hide dark:text-white dark:placeholder:text-gray-300",
     /** Typewriter-agent style for JSON config (MultiStepForm) inputs: no box shadow, color-background so content overwrites dot pattern, visible caret next to icon/placeholder. shrink-to-fit allows font to drop when text overflows. */
     multiStepInputClasses:
       "h-14 sm:h-16 md:h-18 lg:h-20 text-xl sm:text-2xl md:text-3xl lg:text-4xl w-full bg-transparent border-0 py-2.5 px-4 text-gray-900 transition-colors duration-200 placeholder:text-gray-500 focus:outline-none dark:text-white dark:placeholder:text-gray-400 text-left",

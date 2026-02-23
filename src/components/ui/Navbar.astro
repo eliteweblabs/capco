@@ -3,10 +3,9 @@ import AuthIcon from "../common/AuthIcon.astro";
 import Logo from "./Logo.astro";
 import ToggleSidebar from "./ToggleSidebar.astro";
 import BannerAlertsLoader from "../../features/banner-alert/components/BannerAlertsLoader.astro";
-import SimpleIcon from "../common/SimpleIcon.astro";
 import ThemeToggle from "./ThemeToggle.astro";
-import NotificationsDropdown from "./NotificationsDropdown.astro";
-import PunchlistDrawer from "../project/PunchlistDrawer.astro";
+import NotificationBellButton from "./NotificationBellButton.astro";
+import PunchlistDrawerButton from "./PunchlistDrawerButton.astro";
 import ShareWidget from "./ShareWidget.astro";
 
 interface Props {
@@ -41,7 +40,6 @@ const {
   template,
   hideFooter = false,
 } = Astro.props;
-const currentRole = (currentUser as any)?.profile?.role;
 ---
 
 <!-- shadow-[0_4px_6px_-1px_rgba(0,0,0,0.07)] dark:shadow-[0_4px_6px_-1px_rgba(255,255,255,0.05)] from below -->
@@ -79,71 +77,15 @@ const currentRole = (currentUser as any)?.profile?.role;
     <div class="flex flex-shrink-0 items-center gap-2 pr-4">
       <ShareWidget direction="left" globalIconButtonClasses={globalIconButtonClasses} />
 
-      {
-        currentUser && currentRole !== "Client" && project && (
-          <>
-            <button
-              type="button"
-              id="punchlist-drawer-toggle"
-              title="View Punchlist"
-              data-drawer-target="punchlist-drawer"
-              data-drawer-show="punchlist-drawer"
-              data-drawer-placement="right"
-              aria-controls="punchlist-drawer"
-              class={globalIconButtonClasses}
-            >
-              <SimpleIcon name="menu-check" size="md" />
-              <span class="sr-only">View Punchlist</span>
-            </button>
-            <PunchlistDrawer
-              {globalIconButtonClasses}
-              currentUser={currentUser}
-              project={project}
-            />
-          </>
-        )
-      }
-      {
-        currentUser && (
-          <>
-            <button
-              type="button"
-              id="notification-bell"
-              title="Notifications"
-              data-popover-toggle="notifications-dropdown"
-              data-popover-trigger="click"
-              data-popover-target="notifications-dropdown"
-              class={`relative ${globalIconButtonClasses}`}
-              aria-label="View notifications"
-            >
-              <span class="auth-icon-default">
-                <SimpleIcon name="notification-bell" size="md" />
-              </span>
-              <span
-                class="auth-icon-close absolute inset-0 flex items-center justify-center transition-opacity"
-                aria-hidden="true"
-                style="opacity: 0; pointer-events: none;"
-              >
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </span>
-              <span class="sr-only">Notifications</span>
-            </button>
-            <NotificationsDropdown
-              id="notifications"
-              closeButton={false}
-              {globalIconButtonClasses}
-              {currentUser}
-            />
-          </>
-        )
-      }
+      <PunchlistDrawerButton
+        currentUser={currentUser}
+        project={project}
+        globalIconButtonClasses={globalIconButtonClasses}
+      />
+      <NotificationBellButton
+        currentUser={currentUser}
+        globalIconButtonClasses={globalIconButtonClasses}
+      />
 
       <ThemeToggle {currentUser} {session} {isBackend} {globalIconButtonClasses} />
 

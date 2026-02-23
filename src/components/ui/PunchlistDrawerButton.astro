@@ -1,0 +1,41 @@
+---
+/**
+ * Punchlist drawer toggle button for the navbar.
+ * Renders nothing when user is not logged in, is a Client, or when no project context.
+ */
+import SimpleIcon from "../common/SimpleIcon.astro";
+import PunchlistDrawer from "../project/PunchlistDrawer.astro";
+
+interface Props {
+  currentUser?: any;
+  project?: any;
+  globalIconButtonClasses?: string;
+}
+
+const { currentUser, project, globalIconButtonClasses = "" } = Astro.props;
+const currentRole = currentUser?.profile?.role;
+const show = currentUser && currentRole !== "Client" && project;
+---
+
+{show && (
+<>
+<button
+  type="button"
+  id="punchlist-drawer-toggle"
+  title="View Punchlist"
+  data-drawer-target="punchlist-drawer"
+  data-drawer-show="punchlist-drawer"
+  data-drawer-placement="right"
+  aria-controls="punchlist-drawer"
+  class={globalIconButtonClasses}
+>
+  <SimpleIcon name="menu-check" size="md" />
+  <span class="sr-only">View Punchlist</span>
+</button>
+<PunchlistDrawer
+  globalIconButtonClasses={globalIconButtonClasses}
+  currentUser={currentUser}
+  project={project}
+/>
+</>
+)}

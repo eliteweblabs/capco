@@ -3,6 +3,119 @@ import Button from "../common/Button.astro";
 import Tooltip from "../ui/Tooltip.astro";
 ---
 
+
+<div
+  class="mx-auto flex h-full w-full max-w-screen-xl items-center justify-between"
+  style="overscroll-behavior-y: contain;"
+  data-dynamic-height="minHeight"
+>
+<div class="flex flex-col items-center justify-center px-4">
+  <div class="bg-radial-gradient relative z-1 mb-0 inline-block text-left">
+    <a
+      href="project/dashboard"
+      class="mb-6 inline-flex items-center justify-between rounded-full px-1 py-1 pr-4 text-sm text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700"
+      role="alert"
+    >
+      <span
+        class="mr-2 rounded-full bg-primary-600 px-4 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600"
+        >New</span
+      >
+      <span class="text-sm font-medium">Streamlined Web App Workflow</span>
+      <svg
+        class="ml-2 h-5 w-5"
+        fill="currentColor"
+        viewBox="0 0 20 20"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+          clip-rule="evenodd"></path>
+      </svg>
+    </a>
+    <h1 class="mb-4 select-none text-5xl font-bold md:text-6xl">
+      <span data-aos="fade-up" data-aos-delay="200">Expert Fire<br /></span>
+      <span data-aos="fade-up" data-aos-delay="400">Alarm & Sprinkler<br /></span>
+      <span data-aos="fade-up" data-aos-delay="600">Designers</span>
+    </h1>
+    <p class="mb-6 max-w-2xl text-gray-500 dark:text-gray-400 md:mx-0 md:mb-8 md:text-xl">
+      <span class="hidden select-none md:block" data-aos="fade-up" data-aos-delay="400"
+        >Combined 50+ years of experience in permitting & expediting...<br /><br />
+      </span>
+      <span class="inline-block" data-aos="fade-up" data-aos-delay="800">
+        Submittals delivered in 48 hours <span class="hidden md:inline"
+          >with guaranteed approval at a fraction of the cost of traditional firms.<Tooltip
+            position="right"
+            className="text-red-500"
+            text={`After deposit & document submission`}>*</Tooltip
+          ></span
+        >
+      </span>
+    </p>
+
+    <div class="smoke-button hidden">
+      <span class="smoke-particle"></span>
+      <span class="smoke-particle"></span>
+      <span class="smoke-particle"></span>
+      <span class="smoke-particle"></span>
+      <span class="smoke-particle"></span>
+      <Button
+        variant="outline"
+        size="md"
+        onclick="window.location.href='/auth/register'"
+        class="pulse"
+        dataAttributes={{
+          "data-aos": "fade-up",
+          "data-aos-delay": "1000",
+        }}>Get Started</Button
+      >
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const emailInput = document.getElementById("quick-register-email");
+    const nextBtn = document.getElementById("next-btn");
+
+    if (emailInput && nextBtn) {
+      // Email validation function
+      const isValidEmail = window.isValidEmail ?? ((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
+
+      // Show/hide next button based on email validity
+      function toggleNextButton() {
+        const email = (emailInput as HTMLInputElement)?.value?.trim();
+        if (isValidEmail(email)) {
+          nextBtn?.classList.remove("hidden");
+        } else {
+          nextBtn?.classList.add("hidden");
+        }
+      }
+
+      // Listen for input changes
+      emailInput.addEventListener("input", toggleNextButton);
+      emailInput.addEventListener("blur", toggleNextButton);
+
+      // Handle next button click
+      nextBtn.addEventListener("click", function () {
+        const email = (emailInput as HTMLInputElement)?.value.trim();
+        if (isValidEmail(email)) {
+          const encodedEmail = encodeURIComponent(email);
+          window.location.href = `/auth/register&email=${encodedEmail}`;
+        }
+      });
+
+      // Handle Enter key on email input
+      emailInput.addEventListener("keypress", function (e) {
+        if (e.key === "Enter" && !nextBtn.classList.contains("hidden")) {
+          nextBtn.click();
+        }
+      });
+    }
+  });
+</script>
+
 <style>
   .smoke-button {
     display: inline-block;
@@ -174,112 +287,3 @@ import Tooltip from "../ui/Tooltip.astro";
     content: "";
   }
 </style>
-
-<div
-  class="mx-auto flex h-full w-full max-w-screen-xl items-center justify-between"
-  style="overscroll-behavior-y: contain;"
->
-  <div class="bg-radial-gradient relative z-1 mb-0 inline-block text-left">
-    <a
-      href="project/dashboard"
-      class="mb-6 inline-flex items-center justify-between rounded-full px-1 py-1 pr-4 text-sm text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700"
-      role="alert"
-    >
-      <span
-        class="mr-2 rounded-full bg-primary-600 px-4 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600"
-        >New</span
-      >
-      <span class="text-sm font-medium">Streamlined Web App Workflow</span>
-      <svg
-        class="ml-2 h-5 w-5"
-        fill="currentColor"
-        viewBox="0 0 20 20"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          fill-rule="evenodd"
-          d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-          clip-rule="evenodd"></path>
-      </svg>
-    </a>
-    <h1 class="mb-4 select-none text-5xl font-bold md:text-6xl">
-      <span data-aos="fade-up" data-aos-delay="200">Expert Fire<br /></span>
-      <span data-aos="fade-up" data-aos-delay="400">Alarm & Sprinkler<br /></span>
-      <span data-aos="fade-up" data-aos-delay="600">Designers</span>
-    </h1>
-    <p class="mb-6 max-w-2xl text-gray-500 dark:text-gray-400 md:mx-0 md:mb-8 md:text-xl">
-      <span class="hidden select-none md:block" data-aos="fade-up" data-aos-delay="400"
-        >Combined 50+ years of experience in permitting & expediting...<br /><br />
-      </span>
-      <span class="inline-block" data-aos="fade-up" data-aos-delay="800">
-        Submittals delivered in 48 hours <span class="hidden md:inline"
-          >with guaranteed approval at a fraction of the cost of traditional firms.<Tooltip
-            position="right"
-            className="text-red-500"
-            text={`After deposit & document submission`}>*</Tooltip
-          ></span
-        >
-      </span>
-    </p>
-
-    <div class="smoke-button hidden">
-      <span class="smoke-particle"></span>
-      <span class="smoke-particle"></span>
-      <span class="smoke-particle"></span>
-      <span class="smoke-particle"></span>
-      <span class="smoke-particle"></span>
-      <Button
-        variant="outline"
-        size="md"
-        onclick="window.location.href='/auth/register'"
-        class="pulse"
-        dataAttributes={{
-          "data-aos": "fade-up",
-          "data-aos-delay": "1000",
-        }}>Get Started</Button
-      >
-    </div>
-  </div>
-</div>
-
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const emailInput = document.getElementById("quick-register-email");
-    const nextBtn = document.getElementById("next-btn");
-
-    if (emailInput && nextBtn) {
-      // Email validation function
-      const isValidEmail = window.isValidEmail ?? ((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
-
-      // Show/hide next button based on email validity
-      function toggleNextButton() {
-        const email = (emailInput as HTMLInputElement)?.value?.trim();
-        if (isValidEmail(email)) {
-          nextBtn?.classList.remove("hidden");
-        } else {
-          nextBtn?.classList.add("hidden");
-        }
-      }
-
-      // Listen for input changes
-      emailInput.addEventListener("input", toggleNextButton);
-      emailInput.addEventListener("blur", toggleNextButton);
-
-      // Handle next button click
-      nextBtn.addEventListener("click", function () {
-        const email = (emailInput as HTMLInputElement)?.value.trim();
-        if (isValidEmail(email)) {
-          const encodedEmail = encodeURIComponent(email);
-          window.location.href = `/auth/register&email=${encodedEmail}`;
-        }
-      });
-
-      // Handle Enter key on email input
-      emailInput.addEventListener("keypress", function (e) {
-        if (e.key === "Enter" && !nextBtn.classList.contains("hidden")) {
-          nextBtn.click();
-        }
-      });
-    }
-  });
-</script>

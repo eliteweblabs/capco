@@ -2,7 +2,7 @@
 export default {
   // Tailwind plugin must be last (https://tailwindcss.com/blog/automatic-class-sorting-with-prettier)
   plugins: ["prettier-plugin-astro", "prettier-plugin-tailwindcss"],
-  tailwindConfig: "./tailwind.config.mjs",
+  tailwindConfig: "./tailwind.config.cjs",
   semi: true,
   singleQuote: false,
   tabWidth: 2,

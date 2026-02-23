@@ -298,6 +298,7 @@ const { currentUser, projectId } = Astro.props;
     }
 
     private initialize() {
+      if (!document.getElementById("ai-chat-agent")) return;
       const input = document.getElementById("ai-chat-input") as HTMLTextAreaElement;
       const sendBtn = document.getElementById("ai-chat-send") as HTMLButtonElement;
       const newConvBtn = document.getElementById("new-conversation-btn");
@@ -727,6 +728,8 @@ const { currentUser, projectId } = Astro.props;
         const response = await fetch("/api/agent/conversations", {
           credentials: "include",
         });
+
+        if (response.status === 401) return;
 
         const data = await response.json();
 

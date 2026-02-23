@@ -327,7 +327,7 @@ const activeTabIndex = validTabs.indexOf(activeTab);
     }
 
     handleCopyToForm(e: Event) {
-      const btn = e.target.closest(".copy-notification-btn");
+      const btn = e.target as HTMLElement;
       if (!btn) return;
       const title = btn.getAttribute("data-title") ?? "";
       const message = btn.getAttribute("data-message") ?? "";
@@ -335,31 +335,31 @@ const activeTabIndex = validTabs.indexOf(activeTab);
       const priority = btn.getAttribute("data-priority") ?? "normal";
       const actionUrl = btn.getAttribute("data-action-url") ?? "";
       const actionText = btn.getAttribute("data-action-text") ?? "";
-      document.getElementById("title").value = title;
-      document.getElementById("message").value = message;
-      document.getElementById("type").value = type;
-      document.getElementById("priority").value = priority;
-      document.getElementById("actionUrl").value = actionUrl;
-      document.getElementById("actionText").value = actionText;
+      (document.getElementById("title") as HTMLInputElement).value = title;
+      (document.getElementById("message") as HTMLTextAreaElement).value = message;
+      (document.getElementById("type") as HTMLSelectElement).value = type;
+      (document.getElementById("priority") as HTMLSelectElement).value = priority;
+      (document.getElementById("actionUrl") as HTMLInputElement).value = actionUrl;
+      (document.getElementById("actionText") as HTMLInputElement).value = actionText;
       window.switchNotificationsTab?.("create");
     }
 
     async handleSubmit(e) {
       e.preventDefault();
 
-      const submitBtn = document.getElementById("submit-btn");
+      const submitBtn = document.getElementById("submit-btn") as HTMLButtonElement;
       const originalText = submitBtn?.textContent;
 
       try {
         if (submitBtn) {
-          submitBtn.disabled = true;
+          submitBtn.disabled = true as unknown as boolean;
           submitBtn.textContent = "Sending...";
         }
 
         const form = e.target;
         const formData = new FormData(form);
-        const recipientsSelect = document.getElementById("recipients");
-        const recipients = Array.from(recipientsSelect?.selectedOptions || []);
+        const recipientsSelect = document.getElementById("recipients") as HTMLSelectElement | null;
+        const recipients = Array.from(recipientsSelect?.selectedOptions ?? []);
 
         if (recipients.length === 0) {
           if (window.showError) {

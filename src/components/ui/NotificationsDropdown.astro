@@ -101,9 +101,9 @@ import LoadingSpinner from "./LoadingSpinner.astro";
     panelId: string;
 
     constructor() {
-      const dropdownId = document
-        .querySelector("[data-dropdown-id]")
-        ?.getAttribute("data-dropdown-id");
+      const dropdownContainer = document.querySelector("[data-dropdown-id]");
+      if (!dropdownContainer) return;
+      const dropdownId = dropdownContainer.getAttribute("data-dropdown-id");
       this.panelId = dropdownId ? `${dropdownId}-dropdown` : "notifications-dropdown";
       this.init();
     }
@@ -221,6 +221,11 @@ import LoadingSpinner from "./LoadingSpinner.astro";
         const response = await fetch("/api/notifications/get?limit=5", {
           credentials: "include",
         });
+
+        if (response.status === 401) {
+          this.showEmpty();
+          return;
+        }
 
         const data = await response.json();
 

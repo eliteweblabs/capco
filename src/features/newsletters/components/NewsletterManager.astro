@@ -429,6 +429,7 @@ const recipientTypeOptions = [
     let selectedUserIds = new Set<string>();
 
     function init() {
+      if (!document.getElementById("newsletter-form")) return;
       console.log("📧 [NEWSLETTER] Initializing...");
       bindFormEvents();
       bindListEvents();
@@ -541,6 +542,9 @@ const recipientTypeOptions = [
     async function loadAllUsers() {
       try {
         const response = await fetch("/api/users/get?role=Admin,Staff,Client&limit=100");
+
+        if (response.status === 401) return;
+
         const result = await response.json();
 
         if (result.data) {
