@@ -167,34 +167,4 @@ const iconRightPadding = "pr-10 sm:pr-12";
   </FormOrDiv>
 </div>
 
-<script>
-  import { initializeStandardForm } from "../../../lib/multi-step-form-handler";
-
-  function runStandardFormInit() {
-    const wrapper = document.querySelector("[data-standard-form]");
-    if (wrapper?.hasAttribute("data-skip-init")) return;
-    const form = wrapper?.querySelector("form[data-form-config]") as HTMLFormElement | null;
-    if (!form) return;
-
-    let formId: string;
-    let formConfig: any;
-    let initialData: Record<string, any> = {};
-    try {
-      const parsed = JSON.parse(form.getAttribute("data-form-config") ?? "{}");
-      formId = parsed.formId;
-      formConfig = parsed.formConfig;
-      initialData = parsed.initialData ?? {};
-    } catch {
-      return;
-    }
-    if (!formId || !formConfig) return;
-
-    initializeStandardForm(form, { initialData, formConfig });
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", runStandardFormInit);
-  } else {
-    runStandardFormInit();
-  }
-</script>
+{/* StandardForm init: handled by pre-bundled init-multistep-form.js (avoids Vite script 500 / import errors) */}

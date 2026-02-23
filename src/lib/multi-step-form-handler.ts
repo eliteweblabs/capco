@@ -1924,6 +1924,8 @@ export function initializeStandardForm(
   form: HTMLFormElement,
   options: { initialData?: Record<string, any>; formConfig?: any } = {}
 ) {
+  if (form.getAttribute("data-standard-form-inited") === "1") return;
+  form.setAttribute("data-standard-form-inited", "1");
   const { initialData = {}, formConfig } = options;
   const formId = form.id;
 

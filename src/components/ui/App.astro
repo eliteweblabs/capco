@@ -161,7 +161,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" data-suppress-console-noise={suppressConsoleNoise ? "1" : "0"}>
   <head>
     {!ONLY_FLOWBITE_AND_THEME && (
       <>
@@ -190,8 +190,8 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
             };
           })();
         </script>
-        <script is:inline define:vars={{ suppressConsoleNoise }}>
-          if (suppressConsoleNoise) {
+        <script is:inline>
+          (function(){var v=document.documentElement.getAttribute("data-suppress-console-noise")==="1";if(v){
             (function () {
               const ow = console.warn, oe = console.error, ol = console.log;
               const skip = function (s) {
@@ -210,8 +210,8 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
                 if (s && (s.includes("NS_BINDING_ABORTED") || s.includes("net::ERR_") || s.includes("_cf_bm") || s.includes("__cf_bm"))) return;
                 ol.apply(console, arguments);
               };
-            })();
-          }
+            })();}
+        })();
         </script>
       </>
     )}
@@ -437,12 +437,12 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
     {/* Cache indicator: dev/test only (localhost or ?cacheIndicator=1) */}
     {isAdmin && <CacheIndicator />}
 
-    {/* app-globals: pre-bundled to public/scripts/app-globals.js (avoids Astro chunk 404 + import-statement errors) */}
+    {/* app-globals: pre-bundled to public/scripts/app-globals.js (avoids Astro chunk 404 + import-statement errors). is:inline prevents Vite from bundling public/ asset. */}
     {!ONLY_FLOWBITE_AND_THEME && (
-      <script src="/scripts/app-globals.js"></script>
+      <script is:inline src="/scripts/app-globals.js"></script>
     )}
-    {/* auth-google: pre-bundled (avoids Astro chunk 404 so Google OAuth works in prod) */}
-    <script src="/scripts/auth-google.js"></script>
+    {/* auth-google: pre-bundled (avoids Astro chunk 404 so Google OAuth works in prod). is:inline prevents Vite from bundling public/ asset. */}
+    <script is:inline src="/scripts/auth-google.js"></script>
     {/* Flowbite: CDN may load slowly or fail (CSP/network). Fallback below retries and can load script dynamically. */}
     <script src="https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js" defer></script>
     <script is:inline>
@@ -581,7 +581,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
     </script>
 
     {!ONLY_FLOWBITE_AND_THEME && (
-      <script src="/scripts/app-page-scripts.js" data-script="hold-progress-init" />
+      <script is:inline src="/scripts/app-page-scripts.js" data-script="hold-progress-init" />
     )}
 
     {/* Theme toggle: inline fallback above; app-globals.ts also binds (uses data-theme-toggle-inited to avoid double-init). Overscroll scale: app-globals.ts DOMContentLoaded */}

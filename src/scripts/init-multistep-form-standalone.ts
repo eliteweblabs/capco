@@ -1,9 +1,29 @@
 /**
  * Standalone entry for multi-step form init. Bundled to public/scripts/init-multistep-form.js
  * so it runs even when Astro module chunks don't load (e.g. 404 in prod).
- * Same logic as MultiStepForm.astro runMultiStepInit.
+ * Handles both MultiStepForm and StandardForm to avoid Vite script 500 / import errors.
  */
-import { initializeMultiStepForm } from "../lib/multi-step-form-handler";
+import { initializeMultiStepForm, initializeStandardForm } from "../lib/multi-step-form-handler";
+
+function runStandardFormInit(): void {
+  const wrapper = document.querySelector("[data-standard-form]");
+  if (wrapper?.hasAttribute("data-skip-init")) return;
+  const form = wrapper?.querySelector("form[data-form-config]") as HTMLFormElement | null;
+  if (!form) return;
+  let formId: string;
+  let formConfig: any;
+  let initialData: Record<string, any> = {};
+  try {
+    const parsed = JSON.parse(form.getAttribute("data-form-config") ?? "{}");
+    formId = parsed.formId;
+    formConfig = parsed.formConfig;
+    initialData = parsed.initialData ?? {};
+  } catch {
+    return;
+  }
+  if (!formId || !formConfig) return;
+  initializeStandardForm(form, { initialData, formConfig });
+}
 
 function runMultiStepInit(): void {
   const forms = document.querySelectorAll("form[data-form-config]");
@@ -52,10 +72,14 @@ function main(): void {
   if (typeof window !== "undefined" && (window as any).__jsOrderLog) {
     (window as any).__jsOrderLog("MultiStepForm standalone (script)");
   }
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", runMultiStepInit);
-  } else {
+  const runAll = () => {
+    runStandardFormInit();
     runMultiStepInit();
+  };
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", runAll);
+  } else {
+    runAll();
   }
 }
 
