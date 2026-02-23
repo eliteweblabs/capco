@@ -166,25 +166,14 @@ import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
   is:inline
   data-astro-rerun
 >
-  console.log("🔄 [DASHBOARD-SCRIPT] ====== SCRIPT IS RUNNING ======");
-  console.log("🔄 [DASHBOARD-SCRIPT] currentUserId:", currentUserId);
-  console.log("🔄 [DASHBOARD-SCRIPT] currentUserRole:", currentUserRole);
-  console.log("🔄 [DASHBOARD-SCRIPT] window.refreshManager:", window.refreshManager);
-  console.log("🔄 [DASHBOARD-SCRIPT] document.readyState:", document.readyState);
-
-  // Start the refresh manager with safe settings
-  console.log("🔄 [DASHBOARD] Starting refresh manager initialization...");
-
-  // Wait for refreshManager to be available
+  // Wait for refreshManager to be available (optional: if not loaded, skip polling quietly)
   function waitForRefreshManager() {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       if (window.refreshManager) {
-        console.log("🔄 [DASHBOARD] RefreshManager already available");
         resolve(window.refreshManager);
         return;
       }
 
-      console.log("🔄 [DASHBOARD] Waiting for RefreshManager...");
       let attempts = 0;
       const maxAttempts = 100; // 5 seconds max (100 * 50ms)
 
@@ -192,20 +181,11 @@ import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
         attempts++;
 
         if (window.refreshManager) {
-          console.log("🔄 [DASHBOARD] RefreshManager now available after", attempts, "attempts");
           clearInterval(checkInterval);
           resolve(window.refreshManager);
         } else if (attempts >= maxAttempts) {
-          console.error(
-            "🔄 [DASHBOARD] ❌ RefreshManager not available after",
-            attempts,
-            "attempts"
-          );
           clearInterval(checkInterval);
-          reject(new Error("RefreshManager not available"));
-        } else if (attempts % 20 === 0) {
-          // Log every second
-          console.log("🔄 [DASHBOARD] Still waiting... attempt", attempts);
+          resolve(null); // Not loaded (e.g. auto-refresh shut off) — skip without error
         }
       }, 50);
     });
@@ -216,23 +196,18 @@ import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
     if (!enableAutoRefresh) return;
     if (!window.location.pathname.startsWith("/project")) return;
     if (currentUserRole !== "Admin" && currentUserRole !== "Staff") return;
-    console.log("🔄 [DASHBOARD] runDashboardInit (path:", window.location.pathname + ")");
+    const refreshManager = await waitForRefreshManager();
+    if (!refreshManager) return; // refresh-manager not loaded — polling disabled, no console spam
     try {
-      const refreshManager = await waitForRefreshManager();
       await initializeRefreshSystem(refreshManager);
     } catch (error) {
-      console.error("🔄 [DASHBOARD] ❌ Failed to initialize refresh system:", error);
-      console.error(
-        "🔄 [DASHBOARD] Polling will not work. Please check that refresh-manager.ts is loaded."
-      );
+      console.error("🔄 [DASHBOARD] Failed to initialize refresh system:", error);
     }
   }
 
   if (document.readyState === "loading") {
-    console.log("🔄 [DASHBOARD] Document is loading, adding DOMContentLoaded listener");
     document.addEventListener("DOMContentLoaded", runDashboardInit);
   } else {
-    console.log("🔄 [DASHBOARD] DOM already loaded or SPA nav, running init now");
     runDashboardInit();
   }
   // SPA disabled: document.addEventListener("astro:page-load", runDashboardInit);
