@@ -68,6 +68,24 @@ function runMultiStepInit(): void {
   });
 }
 
+/** Mark steps with typewriter and listen for typewriter-complete so inputs/buttons cascade after title. */
+function runStepCascadeInit(): void {
+  document.querySelectorAll(".step-content").forEach((step) => {
+    const hasTypewriter = step.querySelector(".typewriter-text");
+    if (hasTypewriter) {
+      step.classList.add("has-typewriter");
+    }
+  });
+
+  document.addEventListener("typewriter-complete", (e) => {
+    const target = (e as CustomEvent).target as HTMLElement;
+    const stepContent = target.closest(".step-content");
+    if (stepContent) {
+      stepContent.classList.add("typewriter-complete");
+    }
+  });
+}
+
 function main(): void {
   if (typeof window !== "undefined" && (window as any).__jsOrderLog) {
     (window as any).__jsOrderLog("MultiStepForm standalone (script)");
@@ -75,6 +93,7 @@ function main(): void {
   const runAll = () => {
     runStandardFormInit();
     runMultiStepInit();
+    runStepCascadeInit();
   };
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", runAll);
