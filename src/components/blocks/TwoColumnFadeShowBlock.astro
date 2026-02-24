@@ -178,32 +178,39 @@ const mobileOrder =
   }
 </style>
 
-<script is:inline>
-  function initFadeshow(root) {
-    var scope = root != null ? root : document;
-    var containers = scope.querySelectorAll("[data-fadeshow]");
-    containers.forEach(function (container) {
-      if (container.dataset && container.dataset.fadeshowInit) return;
+<script>
+  function initFadeshow(root?: Document | Element) {
+    const scope = (root ?? document) as Document;
+    const containers = scope.querySelectorAll<HTMLElement>("[data-fadeshow]");
+    containers.forEach((container) => {
+      if (container.dataset.fadeshowInit) return;
       container.dataset.fadeshowInit = "1";
-      var layers = container.querySelectorAll("[data-fadeshow-layer]");
+      const layers = container.querySelectorAll<HTMLElement>("[data-fadeshow-layer]");
       if (layers.length <= 1) return;
-      var fadeMs = parseInt(container.getAttribute("data-fade-duration") || "1200", 10);
-      container.style.setProperty("--fadeshow-duration", fadeMs + "ms");
+      const fadeMs = parseInt(container.getAttribute("data-fade-duration") ?? "1200", 10);
+      container.style.setProperty("--fadeshow-duration", `${fadeMs}ms`);
 
-      var intervalMs = parseInt(container.getAttribute("data-interval") || "4000", 10);
-      var idx = 0;
-      setInterval(function () {
-        var prev = idx;
+      const intervalMs = parseInt(container.getAttribute("data-interval") ?? "4000", 10);
+      let idx = 0;
+      setInterval(() => {
+        const prev = idx;
         idx = (idx + 1) % layers.length;
-        if (layers[prev]) layers[prev].style.opacity = "0";
-        if (layers[idx]) layers[idx].style.opacity = "1";
+        layers[prev]!.style.opacity = "0";
+        layers[idx]!.style.opacity = "1";
       }, intervalMs);
     });
   }
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", function () { initFadeshow(document); });
-  } else {
+
+  function run() {
     initFadeshow(document);
   }
-  document.addEventListener("astro:after-swap", function () { initFadeshow(document); });
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", run);
+  } else {
+    run();
+  }
+  window.addEventListener("load", run);
+  document.addEventListener("astro:after-swap", () => initFadeshow(document));
+  setTimeout(run, 100);
 </script>
