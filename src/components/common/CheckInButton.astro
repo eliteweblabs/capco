@@ -1,19 +1,23 @@
 ---
 /**
  * CheckInButton: Check in / Check out at location for Admin and Staff.
- * Sends a notification to all Admins with the user's geolocation.
- * Toggles between "Check in" and "Check out" after each click.
+ * - Sends a notification to all Admins with the user's geolocation.
+ * - Starts a billing time entry (optional projectId); check-out ends it.
+ * - While checked in, sends periodic location pings to /api/location/ping for live dashboard.
  */
 import SimpleIcon from "./SimpleIcon.astro";
 
 interface Props {
   globalIconButtonClasses?: string;
   tile?: boolean;
+  /** Optional project to attach this session to (billing + live map). Set when on a project page. */
+  projectId?: number | null;
 }
 
 const {
   globalIconButtonClasses = "inline-flex items-center rounded-full justify-center p-2 text-black dark:text-white hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-700 focus:outline-none",
   tile = false,
+  projectId = null,
 } = Astro.props;
 
 const tileClasses =
@@ -29,6 +33,7 @@ const iconSize = tile ? "xl" : "md";
   aria-label="Check in at location"
   class={buttonClass}
   data-state="checked_out"
+  data-project-id={projectId ?? undefined}
 >
   <span id="check-in-icon" class="check-in-icon" aria-hidden="true">
     <SimpleIcon name="map-pin" size={iconSize} class="text-primary-500 dark:text-primary-400" />
@@ -60,6 +65,8 @@ const iconSize = tile ? "xl" : "md";
 
 <script>
   const STORAGE_KEY = "location-checkin-state";
+  const TIME_ENTRY_KEY = "location-checkin-time-entry-id";
+  const PING_INTERVAL_MS = 60 * 1000; // 1 minute
 
   function getState(): "checked_in" | "checked_out" {
     try {
@@ -73,6 +80,24 @@ const iconSize = tile ? "xl" : "md";
   function setState(state: "checked_in" | "checked_out") {
     try {
       sessionStorage.setItem(STORAGE_KEY, state);
+    } catch (_) {}
+  }
+
+  function getTimeEntryId(): number | null {
+    try {
+      const s = sessionStorage.getItem(TIME_ENTRY_KEY);
+      if (s == null) return null;
+      const n = parseInt(s, 10);
+      return Number.isFinite(n) ? n : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function setTimeEntryId(id: number | null) {
+    try {
+      if (id == null) sessionStorage.removeItem(TIME_ENTRY_KEY);
+      else sessionStorage.setItem(TIME_ENTRY_KEY, String(id));
     } catch (_) {}
   }
 
@@ -115,41 +140,74 @@ const iconSize = tile ? "xl" : "md";
     });
   }
 
+  let pingIntervalId: ReturnType<typeof setInterval> | null = null;
+
+  function stopPingInterval() {
+    if (pingIntervalId != null) {
+      clearInterval(pingIntervalId);
+      pingIntervalId = null;
+    }
+  }
+
+  function startPingInterval(timeEntryId: number, projectIdNum: number | null) {
+    stopPingInterval();
+    const sendPing = () => {
+      getPosition()
+        .then((pos) =>
+          fetch("/api/location/ping", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              timeEntryId,
+              projectId: projectIdNum,
+              lat: pos.lat,
+              lng: pos.lng,
+              accuracy: pos.accuracy,
+            }),
+          })
+        )
+        .catch(() => {});
+    };
+    sendPing(); // send once soon
+    pingIntervalId = setInterval(sendPing, PING_INTERVAL_MS);
+  }
+
   async function handleClick() {
     const btn = document.getElementById("check-in-btn") as HTMLButtonElement | null;
     if (!btn || btn.disabled) return;
 
     const state = getState();
     const isCheckIn = state === "checked_out";
+    const projectIdStr = btn.dataset.projectId;
+    const projectIdNum =
+      projectIdStr != null && projectIdStr !== "" ? parseInt(projectIdStr, 10) : null;
+    const validProjectId = Number.isFinite(projectIdNum) ? projectIdNum : null;
 
     btn.disabled = true;
 
     try {
-      let lat: number;
-      let lng: number;
-      let accuracy: number | undefined;
+      const pos = await getPosition();
+      const lat = pos.lat;
+      const lng = pos.lng;
+      const accuracy = pos.accuracy;
 
+      const body: Record<string, unknown> = {
+        action: isCheckIn ? "check_in" : "check_out",
+        lat,
+        lng,
+        accuracy,
+      };
       if (isCheckIn) {
-        const pos = await getPosition();
-        lat = pos.lat;
-        lng = pos.lng;
-        accuracy = pos.accuracy;
+        if (validProjectId != null) body.projectId = validProjectId;
       } else {
-        const pos = await getPosition();
-        lat = pos.lat;
-        lng = pos.lng;
-        accuracy = pos.accuracy;
+        const teId = getTimeEntryId();
+        if (teId != null) body.timeEntryId = teId;
       }
 
       const res = await fetch("/api/location/check-in", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: isCheckIn ? "check_in" : "check_out",
-          lat,
-          lng,
-          accuracy,
-        }),
+        body: JSON.stringify(body),
       });
 
       const data = await res.json();
@@ -162,13 +220,21 @@ const iconSize = tile ? "xl" : "md";
       setState(newState);
       updateButton(newState);
 
+      if (isCheckIn && data.timeEntryId != null) {
+        setTimeEntryId(data.timeEntryId);
+        startPingInterval(data.timeEntryId, validProjectId);
+      } else {
+        setTimeEntryId(null);
+        stopPingInterval();
+      }
+
       if (typeof (window as any).showNotice === "function") {
         const loc = data.address ?? data.location ?? "your location";
         (window as any).showNotice(
           "success",
           isCheckIn ? "Checked in" : "Checked out",
           isCheckIn
-            ? `Successfully checked in at ${loc}.`
+            ? `Successfully checked in at ${loc}. Timer started for billing.`
             : `Successfully checked out from ${loc}.`,
           3000
         );
@@ -192,7 +258,17 @@ const iconSize = tile ? "xl" : "md";
     const state = getState();
     updateButton(state);
 
+    const teId = getTimeEntryId();
+    if (state === "checked_in" && teId != null) {
+      const projectIdStr = btn.dataset.projectId;
+      const projectIdNum =
+        projectIdStr != null && projectIdStr !== "" ? parseInt(projectIdStr, 10) : null;
+      startPingInterval(teId, Number.isFinite(projectIdNum) ? projectIdNum : null);
+    }
+
     btn.addEventListener("click", handleClick);
+
+    window.addEventListener("beforeunload", stopPingInterval);
   }
 
   if (document.readyState === "loading") {

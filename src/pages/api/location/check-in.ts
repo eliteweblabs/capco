@@ -30,6 +30,10 @@ interface CheckInRequest {
   lat: number;
   lng: number;
   accuracy?: number; // meters
+  /** Project to attach this session to (billing + dashboard). Optional. */
+  projectId?: number | null;
+  /** Required for check_out: the time entry id returned from check_in. */
+  timeEntryId?: number | null;
 }
 
 export const POST: APIRoute = async ({ request, cookies }): Promise<Response> => {
@@ -58,7 +62,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     }
 
     const body: CheckInRequest = await request.json();
-    const { action, lat, lng, accuracy } = body;
+    const { action, lat, lng, accuracy, projectId, timeEntryId } = body;
 
     if (!action || typeof lat !== "number" || typeof lng !== "number") {
       return new Response(JSON.stringify({ error: "action, lat, and lng are required" }), {
@@ -80,6 +84,53 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     const locationLabel = address || coords;
 
     const isCheckIn = action === "check_in";
+
+    // --- Time entry (billing): start on check_in, end on check_out ---
+    let timeEntryIdOut: number | null = null;
+
+    if (isCheckIn) {
+      // End any existing active time entry for this user
+      await supabaseAdmin
+        .from("timeEntries")
+        .update({ endedAt: new Date().toISOString(), updatedAt: new Date().toISOString() })
+        .eq("userId", currentUser.id)
+        .is("endedAt", null);
+
+      const { data: newEntry, error: insertEntryError } = await supabaseAdmin
+        .from("timeEntries")
+        .insert({
+          userId: currentUser.id,
+          projectId: projectId ?? null,
+          startedAt: new Date().toISOString(),
+          notes: null,
+          updatedAt: new Date().toISOString(),
+        })
+        .select("id")
+        .single();
+
+      if (insertEntryError) {
+        console.error("❌ [CHECK-IN] Error creating time entry:", insertEntryError);
+        return new Response(
+          JSON.stringify({ error: "Failed to start time entry", details: insertEntryError.message }),
+          { status: 500, headers: { "Content-Type": "application/json" } }
+        );
+      }
+      timeEntryIdOut = newEntry?.id ?? null;
+    } else if (timeEntryId != null) {
+      const { error: updateError } = await supabaseAdmin
+        .from("timeEntries")
+        .update({
+          endedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        })
+        .eq("id", timeEntryId)
+        .eq("userId", currentUser.id);
+
+      if (updateError) {
+        console.error("❌ [CHECK-IN] Error ending time entry:", updateError);
+      }
+    }
+
     const title = isCheckIn ? "Location Check-In" : "Location Check-Out";
     const message = isCheckIn
       ? `${userName} checked in at ${timeStr}. ${locationLabel}`
@@ -100,6 +151,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
           message: "No admins to notify",
           address: address || undefined,
           location: address || undefined,
+          timeEntryId: timeEntryIdOut ?? undefined,
         }),
         {
           status: 200,
@@ -148,6 +200,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
         action,
         address: address || undefined,
         location: address || undefined,
+        timeEntryId: timeEntryIdOut ?? undefined,
       }),
       {
         status: 200,

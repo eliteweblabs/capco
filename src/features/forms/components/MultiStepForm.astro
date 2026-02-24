@@ -799,7 +799,7 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
       });
     }
 
-    // scrollToBottom: keeps content visible during step transitions (typewriter, cascade). Uses #reveal-scroll when present, else window.
+    // Scroll so the active step (and newly revealed content) is visible. User should never have to scroll to see the next step.
     // Only run when form.config.layout === "multi-step" and form is NOT in a dropdown (login popover, etc.)
     function shouldSkipScrollToBottom(stepsEl: Element): boolean {
       const form = stepsEl.closest("form");
@@ -817,15 +817,24 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
     }
 
     function scrollToBottom() {
-      const revealScroll = document.getElementById("reveal-scroll");
+      const stepsEl = document.querySelector(".multi-step-form-steps");
+      if (!stepsEl || shouldSkipScrollToBottom(stepsEl)) return;
+
+      const revealScroll = document.getElementById("reveal-scroll") as HTMLElement | null;
       if (revealScroll && revealScroll.scrollHeight > revealScroll.clientHeight) {
         revealScroll.scrollTo({
           top: revealScroll.scrollHeight - revealScroll.clientHeight,
           behavior: "smooth",
         });
-      } else {
-        window.scrollTo({
-          top: document.documentElement.scrollHeight - window.innerHeight,
+      }
+
+      const stepsContainer = stepsEl as HTMLElement;
+      if (
+        stepsContainer.scrollHeight > stepsContainer.clientHeight &&
+        stepsContainer.offsetParent != null
+      ) {
+        stepsContainer.scrollTo({
+          top: stepsContainer.scrollHeight - stepsContainer.clientHeight,
           behavior: "smooth",
         });
       }
@@ -882,7 +891,14 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
         observeStepContentForScroll(active, stepsElForScroll);
       };
       syncScrollObserver();
-      document.addEventListener("multistep-step-change", syncScrollObserver);
+      document.addEventListener("multistep-step-change", () => {
+        syncScrollObserver();
+        requestAnimationFrame(() => {
+          scrollToBottom();
+          setTimeout(scrollToBottom, 100);
+          setTimeout(scrollToBottom, 400);
+        });
+      });
     }
 
     // Listen for typewriter completion to trigger content animations (wrapper cascade: 250ms > fields > 250ms > buttons)
@@ -894,6 +910,9 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
       if (stepContent) {
         // Add the class to trigger wrapper cascade (fields at 250ms, buttons at 500ms)
         stepContent.classList.add("typewriter-complete");
+        requestAnimationFrame(() => scrollToBottom());
+        setTimeout(scrollToBottom, 300);
+        setTimeout(scrollToBottom, 600);
 
         // Focus first input after cascade. On touch: skip entirely.
         // typewriter-complete fires async (transitionend/setTimeout); focus would not open iOS keypad.
