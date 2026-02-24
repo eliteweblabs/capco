@@ -30,7 +30,7 @@ const { id, title = "", onOpenCallback, focusSelector, classList } = Astro.props
   class={`${classList ? classList.join(" ") : ""} overflow-y-scroll no-scrollbar invisible fixed z-[1250] inline-block w-full max-w-md overflow-visible bg-gray-200 border border-gray-200 dark:border-gray-800 text-body text-sm opacity-0 transition-opacity duration-300 ease-out dark:bg-gray-800`}
   data-dynamic-height="height"
 >
-  <div class="relative z-100" data-popper-arrow></div>
+  <div class="dropdown-arrow" data-popper-arrow></div>
 
   {
     title && (
@@ -45,10 +45,19 @@ const { id, title = "", onOpenCallback, focusSelector, classList } = Astro.props
 
 <script is:inline>
   (function () {
+    var DROPDOWN_Z = 9999;
+    // Flowbite doesn't portal to body; move panel to body so it (and arrow) paint above navbar (z-100)
+    function moveDropdownsToBody() {
+      document.querySelectorAll("[id$='-dropdown'][data-popover]").forEach(function (panel) {
+        if (panel.parentNode !== document.body) document.body.appendChild(panel);
+        panel.style.zIndex = DROPDOWN_Z;
+      });
+    }
+
     function run() {
-      // Flowbite adds opacity/transition classes when closing; when reopening, only 'hidden' is
-      // removed so the panel can stay invisible. Remove those classes on trigger click so dropdowns
-      // (account, notifications) reopen correctly after being closed.
+      moveDropdownsToBody();
+
+      // Flowbite handles show/hide; we only: move to body on open, reopen classes, on-open callback, focus, close/X UX
       document.querySelectorAll("[id$='-dropdown']").forEach(function (panel) {
         var panelId = panel.id;
         if (!panelId) return;
@@ -60,6 +69,7 @@ const { id, title = "", onOpenCallback, focusSelector, classList } = Astro.props
           if (trigger.hasAttribute("data-onopen-bound")) return;
           trigger.setAttribute("data-onopen-bound", "true");
           trigger.addEventListener("click", function () {
+            moveDropdownsToBody();
             if (panel) {
               panel.classList.remove(
                 "opacity-0",
@@ -156,11 +166,26 @@ const { id, title = "", onOpenCallback, focusSelector, classList } = Astro.props
     }
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run);
     else run();
-    setTimeout(run, 500);
   })();
 </script>
 
 <style>
+  /* Panel above navbar: create stacking context so z-[1250] competes with nav (z-100) when panel is in body */
+  [role="tooltip"][id$="-dropdown"] {
+    isolation: isolate;
+  }
+
+  /* Arrow (pointer) above panel content and navbar – high z-index so it never paints under the nav */
+  [role="tooltip"] > .dropdown-arrow,
+  [role="tooltip"] > [data-popper-arrow] {
+    position: relative;
+    z-index: 9999;
+  }
+  [role="tooltip"] > [data-popper-arrow]:before,
+  [role="tooltip"] > [data-popper-arrow]:after {
+    z-index: inherit;
+  }
+
   /* Only override border-color; Flowbite sets placement-specific border-width for the arrow triangle */
   [role="tooltip"] > [data-popper-arrow]:before {
     border-color: var(--color-gray-200) !important;
