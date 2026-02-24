@@ -1,4 +1,5 @@
 ---
+import Button from "../common/Button.astro";
 import SimpleIcon from "../common/SimpleIcon.astro";
 import DeleteConfirmButton from "../ui/DeleteConfirmButton.astro";
 import StaffSelectTooltip from "../form/StaffSelectTooltip.astro";
@@ -356,15 +357,19 @@ const statusColor = currentStatusColor || "gray";
           if (col.type === "status") {
             return (
               <td class={centerClass}>
-                <a
+                <Button
+                variant="outline"
+                size="xs"
+                  class="group !w-full !px-8"
                   href={`/project/${project.id}?status=${currentStatusTab}`}
-                  style={`background-color: ${statusColor};`}
-                  class="block w-full rounded-sm px-2.5 text-center text-black"
-                  data-project-id={project.id}
-                  data-status={project.status}
+                  dataAttributes={{
+                    "data-project-id": project.id,
+                    "data-status": project.status,
+                  }}
                 >
+                  <span class="absolute left-2 inline-block h-2 w-2 mx-1.5 shrink-0 rounded-full group-hover:animate-pulse-breathe" style={`background-color: ${statusColor}`} aria-hidden="true" />
                   {currentStatusName || "Unknown Status"}
-                </a>
+                </Button>
               </td>
             );
           }

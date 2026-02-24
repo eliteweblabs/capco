@@ -12,7 +12,6 @@ interface Props {
 }
 
 const { currentUser, project, supabaseUrl, id } = Astro.props;
-
 const currentRole = currentUser?.profile?.role;
 
 if (!project || !project.id || currentRole === "Client") {
@@ -20,20 +19,17 @@ if (!project || !project.id || currentRole === "Client") {
 }
 
 const projectId = project.id;
-
 const drawerId = id || "punchlist-drawer";
 const drawerTitle = (project.title || project.address || "Project") + " Punchlist";
 ---
 
 <Drawer id={drawerId} title={drawerTitle} placement="right" size="lg">
-  <div class="flex h-full flex-col" data-dynamic-height="minHeight">
-    <div id="content-punchlist">
-      <div>
-        <div id="punchlist-container" data-project-id={projectId}>
+    <div id="content-punchlist" class="flex min-h-0 flex-1 flex-col">
+        <div id="punchlist-container" class="flex min-h-0 flex-1 flex-col" data-project-id={projectId}>
           {/* Add Punchlist Item Button - Admin Only */}
           {
             currentRole === "Admin" && (
-              <div class="mb-4">
+              <div class="mb-4 shrink-0">
                 <Button
                   id="add-punchlist-item-btn"
                   type="button"
@@ -48,16 +44,14 @@ const drawerTitle = (project.title || project.address || "Project") + " Punchlis
             )
           }
 
-          <div class="mb-6">
-            {/* Punchlist Items List */}
-            <div id="punchlist-items-list" class="space-y-4">
+          <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
+            {/* Punchlist Items List - fills remaining height and scrolls */}
+            <div id="punchlist-items-list" class="min-h-0 flex-1 space-y-4 overflow-y-auto">
               {/* <!-- Punchlist items will be dynamically loaded here --> */}
             </div>
           </div>
         </div>
-      </div>
     </div>
-  </div>
 </Drawer>
 
 <script

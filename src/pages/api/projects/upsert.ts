@@ -440,7 +440,12 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
     }
 
     // Map form data directly to database fields (no manual mapping!)
-    const updateData = mapFormDataToProject(sanitizedData);
+    const rawUpdate = mapFormDataToProject(sanitizedData);
+    // Do not update primary key; id is only used for .eq()
+    const { id: _omit, ...updateData } = rawUpdate as ProjectUpdateFormData & { id?: string };
+    if (Object.keys(updateData).length === 0) {
+      return createErrorResponse("No fields to update", 400);
+    }
     console.log("🔧 [UPDATE-PROJECT] Mapped update data:", updateData);
 
     // Note: updatedAt is automatically set by PostgreSQL trigger
@@ -453,11 +458,16 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
       return createErrorResponse("Database connection not available", 500);
     }
 
+    const projectIdNum = typeof projectId === "string" ? parseInt(projectId, 10) : projectId;
+    if (Number.isNaN(projectIdNum)) {
+      return createErrorResponse("Invalid project ID", 400);
+    }
+
     // Update the project
     const { data: project, error: updateError } = await dbClient
       .from("projects")
       .update(updateData)
-      .eq("id", projectId)
+      .eq("id", projectIdNum)
       .select()
       .single();
 

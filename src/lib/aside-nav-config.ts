@@ -192,6 +192,14 @@ const LEGACY_BUILTIN: Record<string, Omit<AsideNavItem, "id">> = {
       { label: "Settings", href: "/project/settings", allow: ["Admin"] },
     ],
   },
+  "team-locations": {
+    label: "Team Locations",
+    type: "link",
+    href: "/admin/team-locations",
+    icon: "map-pin",
+    position: 49,
+    allow: ["Admin"],
+  },
   notifications: {
     label: "Send Notifications",
     type: "link",

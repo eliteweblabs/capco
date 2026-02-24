@@ -50,11 +50,11 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
         xl: "h-14 w-14 p-0 text-xl rounded-full",
       }
     : {
-        xs: "p-2 text-xs",
-        sm: "p-3 text-sm",
-        md: "p-4 text-md",
-        lg: "p-5 text-lg",
-        xl: "p-6 text-xl",
+        xs: "py-1 px-2 text-[10px]",
+        sm: "py-2 px-3 text-[12px]",
+        md: "py-3 px-4 text-[14px]",
+        lg: "py-4 px-5 text-[16px]",
+        xl: "py-5 px-6 text-[18px]",
       };
 
   // Variant classes using global color system

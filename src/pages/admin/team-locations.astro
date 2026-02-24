@@ -2,10 +2,10 @@
 /**
  * Admin Live Team Locations
  * Shows last known location of team members (Admin/Staff) who have checked in and are sending location pings.
+ * Live Mapbox map + list; data refreshes every 30 seconds.
  */
 import { checkAuth } from "../../lib/auth";
 import LayoutDefault from "../../components/layouts/LayoutDefault.astro";
-import SimpleIcon from "../../components/common/SimpleIcon.astro";
 
 const { currentUser, currentRole } = await checkAuth(Astro.cookies);
 
@@ -16,18 +16,24 @@ if (!currentUser) {
 if (currentRole !== "Admin") {
   return Astro.redirect("/dashboard");
 }
+
+const mapboxToken =
+  import.meta.env.PUBLIC_MAPBOX_ACCESS_TOKEN || import.meta.env.MAPBOX_PUBLIC_KEY || "";
 ---
+
+<link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+<script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
 
 <LayoutDefault
   title="Team Locations"
   description="Live locations of team members who are checked in. Data refreshes every 30 seconds."
 >
-  <div class="mx-auto max-w-4xl px-4 py-8">
+  <div class="mx-auto max-w-6xl px-4 py-8">
     <div class="mb-6">
       <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Team Locations</h1>
       <p class="mt-1 text-gray-600 dark:text-gray-400">
-        Team members (Admin/Staff) who have checked in appear here. Locations update every minute while
-        they are checked in.
+        Team members (Admin/Staff) who have checked in appear on the map and list. Locations update every
+        minute while they are checked in.
       </p>
       <p class="mt-2 text-sm text-gray-500 dark:text-gray-500">
         <span id="last-updated" aria-live="polite">Loading…</span>
@@ -35,10 +41,25 @@ if (currentRole !== "Admin") {
     </div>
 
     <div
+      id="team-locations-map-wrap"
+      class="mb-6 overflow-hidden rounded-lg border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800"
+      data-mapbox-token={mapboxToken}
+      style="min-height: 400px;"
+    >
+      <div id="team-locations-map" class="h-full min-h-[400px] w-full" aria-label="Live team map"></div>
+      <div
+        id="team-locations-map-placeholder"
+        class="flex min-h-[400px] items-center justify-center text-gray-500 dark:text-gray-400"
+      >
+        Loading map…
+      </div>
+    </div>
+
+    <div
       id="team-locations-list"
       class="rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-900"
       role="region"
-      aria-label="Team member locations"
+      aria-label="Team member locations list"
     >
       <div class="p-8 text-center text-gray-500 dark:text-gray-400" id="team-locations-placeholder">
         Loading locations…
@@ -47,10 +68,21 @@ if (currentRole !== "Admin") {
   </div>
 </LayoutDefault>
 
+<style>
+  #team-locations-map-wrap:has(.mapboxgl-map) #team-locations-map-placeholder {
+    display: none;
+  }
+</style>
+
 <script>
   const listEl = document.getElementById("team-locations-list");
   const placeholderEl = document.getElementById("team-locations-placeholder");
   const lastUpdatedEl = document.getElementById("last-updated");
+  const mapWrap = document.getElementById("team-locations-map-wrap");
+  const mapContainer = document.getElementById("team-locations-map");
+
+  let map: any = null;
+  let markers: any[] = [];
 
   function formatTime(iso: string): string {
     try {
@@ -64,7 +96,13 @@ if (currentRole !== "Admin") {
     }
   }
 
-  function render(users: Array<{
+  function escapeHtml(s: string): string {
+    const div = document.createElement("div");
+    div.textContent = s;
+    return div.innerHTML;
+  }
+
+  type UserLocation = {
     userId: string;
     name: string;
     role: string | null;
@@ -73,7 +111,61 @@ if (currentRole !== "Admin") {
     accuracy: number | null;
     projectId: number | null;
     lastPingAt: string;
-  }>) {
+  };
+
+  function initMap() {
+    const mapboxgl = (window as any).mapboxgl;
+    if (!mapboxgl || !mapContainer || !mapWrap) return;
+    const token = mapWrap.getAttribute("data-mapbox-token") || "";
+    if (!token) {
+      const ph = document.getElementById("team-locations-map-placeholder");
+      if (ph) ph.textContent = "Mapbox token not set (PUBLIC_MAPBOX_ACCESS_TOKEN).";
+      return;
+    }
+    mapboxgl.accessToken = token;
+    map = new mapboxgl.Map({
+      container: "team-locations-map",
+      style: "mapbox://styles/mapbox/streets-v11",
+      center: [-98, 39],
+      zoom: 3,
+    });
+    map.addControl(new mapboxgl.NavigationControl(), "top-right");
+  }
+
+  function updateMapMarkers(users: UserLocation[]) {
+    const mapboxgl = (window as any).mapboxgl;
+    if (!map || !mapboxgl || !users.length) {
+      markers.forEach((m) => m.remove());
+      markers = [];
+      return;
+    }
+    markers.forEach((m) => m.remove());
+    markers = [];
+    const bounds = new mapboxgl.LngLatBounds();
+    for (const u of users) {
+      const popupHtml = `
+        <div style="padding: 8px; min-width: 160px;">
+          <p style="font-weight: 600; margin: 0 0 4px;">${escapeHtml(u.name)}</p>
+          <p style="margin: 0; font-size: 12px; color: #666;">${escapeHtml(u.role ?? "—")}</p>
+          <p style="margin: 4px 0 0; font-size: 11px;">Last ping: ${formatTime(u.lastPingAt)}</p>
+          ${u.projectId != null ? `<p style="margin: 2px 0 0; font-size: 11px;">Project #${u.projectId}</p>` : ""}
+        </div>`;
+      const marker = new mapboxgl.Marker({ color: "#2563eb" })
+        .setLngLat([u.lng, u.lat])
+        .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(popupHtml))
+        .addTo(map);
+      markers.push(marker);
+      bounds.extend([u.lng, u.lat]);
+    }
+    if (users.length === 1) {
+      map.setCenter([users[0].lng, users[0].lat]);
+      map.setZoom(14);
+    } else if (users.length > 1) {
+      map.fitBounds(bounds, { padding: 50, maxZoom: 14 });
+    }
+  }
+
+  function renderList(users: UserLocation[]) {
     if (!listEl || !placeholderEl) return;
 
     listEl.querySelectorAll("[data-team-location-row]").forEach((el) => el.remove());
@@ -113,35 +205,36 @@ if (currentRole !== "Admin") {
     });
   }
 
-  function escapeHtml(s: string): string {
-    const div = document.createElement("div");
-    div.textContent = s;
-    return div.innerHTML;
-  }
-
   async function fetchLocations() {
     try {
       const res = await fetch("/api/location/live?minutes=15");
       const data = await res.json();
       if (res.ok && Array.isArray(data.users)) {
-        render(data.users);
+        renderList(data.users);
+        updateMapMarkers(data.users);
         if (lastUpdatedEl) {
           lastUpdatedEl.textContent = `Last updated: ${formatTime(new Date().toISOString())}`;
         }
       } else {
-        if (placeholderEl) {
-          placeholderEl.textContent = "Failed to load locations. Try again later.";
-        }
+        if (placeholderEl) placeholderEl.textContent = "Failed to load locations. Try again later.";
+        updateMapMarkers([]);
       }
     } catch {
-      if (placeholderEl) {
-        placeholderEl.textContent = "Failed to load locations. Try again later.";
-      }
+      if (placeholderEl) placeholderEl.textContent = "Failed to load locations. Try again later.";
+      updateMapMarkers([]);
     }
   }
 
-  fetchLocations();
-  const interval = setInterval(fetchLocations, 30 * 1000);
+  function run() {
+    if ((window as any).mapboxgl) {
+      initMap();
+      fetchLocations();
+    } else {
+      setTimeout(run, 100);
+    }
+  }
+  run();
 
+  const interval = setInterval(fetchLocations, 30 * 1000);
   document.addEventListener("astro:before-swap", () => clearInterval(interval));
 </script>
