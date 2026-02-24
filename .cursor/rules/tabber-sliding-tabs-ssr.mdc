@@ -1,0 +1,22 @@
+---
+description: TabberBlock and SlidingTabs must render correct initial tab state on the server (SSR)
+globs: src/components/blocks/TabberBlock.astro, src/components/common/SlidingTabs.astro
+---
+
+# Tabber / SlidingTabs – Correct State on the Server
+
+Tabbing must work and look correct **before** client JS runs (SSR, no-JS, slow hydration).
+
+## Requirements
+
+1. **SlidingTabs.astro**
+   - The first tab must be marked active on the server: pass `activeItem={0}` (or the desired index) so the first button has `data-active="true"`.
+   - The sliding indicator pill must be **visible** on first paint when `activeItem === 0`: set a default `style` (e.g. `left: 0; width: 8rem;`) on the `[data-sliding-tabs-indicator]` div so the pill is not `width: 0` on the server. Client JS will later set the exact position/size.
+
+2. **TabberBlock.astro**
+   - First panel visible, rest hidden on the server: use `index === 0 ? "" : "hidden"` (or equivalent) on panel `class:list` so only the first `[data-tabber-panel]` is visible without JS.
+   - Do not rely on client-only state to show/hide the first tab’s content.
+
+## Rationale
+
+If the indicator has `width: 0` and only JS sets it, the active tab has no pill until hydration. If panels are shown/hidden only via JS, crawlers or no-JS users see wrong or all content. Keeping initial state correct in HTML avoids that.
