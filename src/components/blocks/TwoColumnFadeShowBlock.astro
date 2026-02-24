@@ -178,32 +178,32 @@ const mobileOrder =
   }
 </style>
 
-<script>
-  function initFadeshow(root?: Document | Element) {
-    const scope = root ?? document;
-    const containers = scope.querySelectorAll("[data-fadeshow]");
-    containers.forEach((container) => {
-      if ((container as HTMLElement).dataset.fadeshowInit) return;
-      (container as HTMLElement).dataset.fadeshowInit = "1";
-      const layers = container.querySelectorAll<HTMLElement>("[data-fadeshow-layer]");
+<script is:inline>
+  function initFadeshow(root) {
+    var scope = root != null ? root : document;
+    var containers = scope.querySelectorAll("[data-fadeshow]");
+    containers.forEach(function (container) {
+      if (container.dataset && container.dataset.fadeshowInit) return;
+      container.dataset.fadeshowInit = "1";
+      var layers = container.querySelectorAll("[data-fadeshow-layer]");
       if (layers.length <= 1) return;
-      const fadeMs = parseInt(container.getAttribute("data-fade-duration") ?? "1200", 10);
-      (container as HTMLElement).style.setProperty("--fadeshow-duration", `${fadeMs}ms`);
+      var fadeMs = parseInt(container.getAttribute("data-fade-duration") || "1200", 10);
+      container.style.setProperty("--fadeshow-duration", fadeMs + "ms");
 
-      const intervalMs = parseInt(container.getAttribute("data-interval") ?? "4000", 10);
-      let idx = 0;
-      setInterval(() => {
-        const prev = idx;
+      var intervalMs = parseInt(container.getAttribute("data-interval") || "4000", 10);
+      var idx = 0;
+      setInterval(function () {
+        var prev = idx;
         idx = (idx + 1) % layers.length;
-        layers[prev]!.style.opacity = "0";
-        layers[idx]!.style.opacity = "1";
+        if (layers[prev]) layers[prev].style.opacity = "0";
+        if (layers[idx]) layers[idx].style.opacity = "1";
       }, intervalMs);
     });
   }
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => initFadeshow(document));
+    document.addEventListener("DOMContentLoaded", function () { initFadeshow(document); });
   } else {
     initFadeshow(document);
   }
-  document.addEventListener("astro:after-swap", () => initFadeshow(document));
+  document.addEventListener("astro:after-swap", function () { initFadeshow(document); });
 </script>
