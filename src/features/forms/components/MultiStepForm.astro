@@ -20,7 +20,7 @@ interface Props {
 
 const {
   config: rawConfig,
-  containerClass = "min-w-md max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto w-full",
+  containerClass = "min-w-md max-w-md sm:min-w-lg sm:max-w-lg md:min-w-xl md:max-w-xl lg:min-w-2xl lg:max-w-2xl mx-auto w-full min-w-0",
   initialData = {},
   testNoCascade = false,
 } = Astro.props;
@@ -43,12 +43,12 @@ const iconLeftPadding = "pl-14 sm:pl-16 md:pl-18 lg:pl-20";
 const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
 ---
 
-<div data-multi-step-form tabindex="-1">
+<div data-multi-step-form class:list={[containerClass]} tabindex="-1">
   <form
     id={config.formId}
     action={config.formAction}
     method={config.formMethod || "post"}
-    class={config.progressBar ? "" : ""}
+    class={`w-full min-w-0 max-w-full ${config.progressBar ? "" : ""}`.trim()}
     data-form-config={JSON.stringify({ formId: config.formId, formConfig: config, initialData })}
     data-project-id={config.formId}
   >
@@ -64,8 +64,7 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
     }
     <div
       class:list={[
-        "multi-step-form-steps expand-down relative flex w-full flex-col items-stretch justify-center pb-16 scrollbar-hide",
-        containerClass,
+        "multi-step-form-steps expand-down relative flex w-full min-w-0 flex-col items-stretch justify-center pb-16 scrollbar-hide",
       ]}
       id={`${config.formId}-steps`}
       data-dynamic-height="minHeight"
@@ -75,7 +74,7 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
         config.steps.map((step) => (
           <div
             class:list={[
-              "step-content w-full min-w-full space-y-8 overflow-y-visible p-2 sm:space-y-8 sm:p-4 md:my-0", // leave mt-20 for tooltips MUST MATGCG INPUTD,
+              "step-content space-y-8 overflow-y-visible p-2 sm:space-y-8 sm:p-4 md:my-0", // leave mt-20 for tooltips MUST MATGCG INPUTD,
               step.stepNumber === 1 ? "first-step active" : "",
             ]}
             data-step={step.stepNumber}
@@ -183,10 +182,7 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
                 ))}
               </div>
             ) : step.fields?.length ? (
-              <div
-                class="step-form-fields-wrapper flex flex-col gap-3"
-                tabindex="-1"
-              >
+              <div class="step-form-fields-wrapper flex flex-col gap-3" tabindex="-1">
                 {step.fields.map((field) => (
                   <FormFieldRenderer
                     field={field}
@@ -288,6 +284,7 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
                       iconClasses="mr-0"
                       iconPosition={btnConfig.iconPosition}
                       type="button"
+                      antispam={button.antispam}
                       class={`${button.type}-step ${button.classes || ""}`}
                       disabled={button.disabled}
                       dataAttributes={{
@@ -620,15 +617,26 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
   }
 </style>
 
-{/* Inline: move focus to new step when step changes. Runs even if handler bundle is pending or doFocus doesn't run. */}
+{
+  /* Inline: move focus to new step when step changes. Runs even if handler bundle is pending or doFocus doesn't run. */
+}
 <script is:inline>
   (function () {
     document.addEventListener("multistep-step-change", function (e) {
       var stepNumber = (e.detail && e.detail.stepNumber) || 0;
-      var form = (e.target && e.target.closest && e.target.closest("form")) || document.querySelector("[data-multi-step-form] form");
+      var form =
+        (e.target && e.target.closest && e.target.closest("form")) ||
+        document.querySelector("[data-multi-step-form] form");
       if (!form) return;
       var active = document.activeElement;
-      if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.tagName === "SELECT") && (active.type || "") !== "hidden" && form.contains(active)) {
+      if (
+        active &&
+        (active.tagName === "INPUT" ||
+          active.tagName === "TEXTAREA" ||
+          active.tagName === "SELECT") &&
+        (active.type || "") !== "hidden" &&
+        form.contains(active)
+      ) {
         active.blur();
         console.log("[MULTISTEP-FOCUS] inline: blurred previous input on step change", stepNumber);
       }
@@ -643,10 +651,16 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
           console.log("[MULTISTEP-FOCUS] inline: focused sms button for step", stepNumber);
           return;
         }
-        var first = step.querySelector("input:not([type=hidden]):not([readonly]), textarea, select");
+        var first = step.querySelector(
+          "input:not([type=hidden]):not([readonly]), textarea, select"
+        );
         if (first && first.focus) {
           first.focus();
-          console.log("[MULTISTEP-FOCUS] inline: focused first input for step", stepNumber, first.name || first.id);
+          console.log(
+            "[MULTISTEP-FOCUS] inline: focused first input for step",
+            stepNumber,
+            first.name || first.id
+          );
         } else {
           console.log("[MULTISTEP-FOCUS] inline: no focusable field in step", stepNumber);
         }
@@ -658,11 +672,13 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
 </script>
 
 <script>
-  if (typeof window !== "undefined" && (window as any).__jsOrderLog) (window as any).__jsOrderLog("MultiStepForm (module)");
+  if (typeof window !== "undefined" && (window as any).__jsOrderLog)
+    (window as any).__jsOrderLog("MultiStepForm (module)");
   import { initializeMultiStepForm } from "../../../lib/multi-step-form-handler";
 
   function runMultiStepPageInit() {
-    if (typeof window !== "undefined" && (window as any).__traceLog) (window as any).__traceLog("MultiStepForm.astro DOMContentLoaded running");
+    if (typeof window !== "undefined" && (window as any).__traceLog)
+      (window as any).__traceLog("MultiStepForm.astro DOMContentLoaded running");
     // Tap-to-focus: tapping the field wrapper focuses the input (iOS keypad requires direct user gesture)
     document.addEventListener(
       "click",
@@ -702,8 +718,7 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
         if (!firstInput?.focus) return;
         firstInput.focus();
         const key = e.key;
-        const isPrintable =
-          key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && !e.repeat;
+        const isPrintable = key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && !e.repeat;
         if (isPrintable && (firstInput.tagName === "INPUT" || firstInput.tagName === "TEXTAREA")) {
           const inputEl = firstInput as HTMLInputElement | HTMLTextAreaElement;
           const type = (firstInput as HTMLInputElement).type;

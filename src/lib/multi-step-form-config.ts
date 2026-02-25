@@ -176,6 +176,8 @@ export interface FormButtonConfig {
   disabled?: boolean; // Whether button is disabled initially
   tooltipText?: string; // Tooltip text on hover
   tooltipPosition?: "top" | "bottom" | "left" | "right"; // Tooltip position (default: top)
+  /** Hold-to-submit (antispam): adds data-hold and progress UI; variant still controls visual style */
+  antispam?: boolean;
   /** Project form: role & status filtering */
   allow?: string[];
   hideAtStatus?: number[];

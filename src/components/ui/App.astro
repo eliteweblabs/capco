@@ -30,7 +30,7 @@ interface Props {
   statusData?: any;
   statusOptions?: Array<{ value: string; label: string }>;
   mainClasses?: string;
-  /** Layout: default | fullwidth | minimal | centered | fullscreen | fullform | reveal-footer | two-column. Drives centering and fullscreen scroll. fullform = full h/w, no reveal-text. Reveal-footer (min-h 100dvh, fixed footer on scroll) is applied site-wide. */
+  /** Layout: default | fullwidth | minimal | centered | fullscreen | fullform | reveal-footer | two-column | authCallback. authCallback = minimal chrome (no nav/footer), DB theme/styles only; use for OAuth callback to avoid ResponseSentError while keeping site look. */
   layout?:
     | "default"
     | "fullwidth"
@@ -39,7 +39,8 @@ interface Props {
     | "fullscreen"
     | "fullform"
     | "reveal-footer"
-    | "two-column";
+    | "two-column"
+    | "authCallback";
   mask?: string;
   horizontalScroll?: boolean;
   hideFooter?: boolean;
@@ -59,6 +60,10 @@ const {
 
 /** Minimal mode: when true, only Flowbite + theme run (debug nav/forms). See markdowns/APP-COMPONENT-REVIEW.md. */
 const ONLY_FLOWBITE_AND_THEME = false;
+
+/** Body touch/scroll classes by layout (computed once to avoid type-narrowing lint in class:list). */
+const bodyTouchClass =
+  layout === "fullform" ? "touch-none overscroll-none" : layout === "authCallback" ? "" : "touch-manipulation";
 
 const stripHtml = (s: string | undefined | null): string =>
   (s ?? "")
@@ -104,9 +109,11 @@ const currentUrl = Astro.url.pathname;
 const currentRole = currentUser?.profile?.role;
 
 // Fetch assigned projects (count + preview) for Staff/Admin — lightweight endpoint, no profiles/files
+// Skip for authCallback layout to keep pipeline minimal and avoid any async that could affect response
 let assignedProjectsCount = 0;
 let assignedProjectsPreview: any[] = [];
-if (currentUser && (currentRole === "Admin" || currentRole === "Staff")) {
+const skipAssignedFetch = layout === "authCallback";
+if (!skipAssignedFetch && currentUser && (currentRole === "Admin" || currentRole === "Staff")) {
   try {
     const cookieHeader = Astro.request.headers.get("Cookie") || "";
     const res = await fetch(`${Astro.url.origin}/api/projects/assigned-summary`, {
@@ -129,12 +136,11 @@ import { isBackendPage, isAuthPage, isContactPage } from "../../pages/api/utils/
 const isBackend = isBackendPage(Astro.url.pathname);
 const isAuthPageResult = isAuthPage(Astro.url.pathname);
 const isContactPageResult = isContactPage(Astro.url.pathname);
-const navigationData = await navigation(
-  currentUrl,
-  isAuth,
-  currentRole || "Client",
-  isBackend || false
-);
+// Skip navigation fetch for authCallback to keep pipeline minimal
+const navigationData =
+  layout === "authCallback"
+    ? { desktopNavigationHTML: "", mobileNavigationHTML: "", visibleNavItems: [] }
+    : await navigation(currentUrl, isAuth, currentRole || "Client", isBackend || false);
 const { desktopNavigationHTML, mobileNavigationHTML, visibleNavItems } = navigationData;
 // SPA disabled: import { ClientRouter } from "astro:transitions";
 import "../../styles/global.css"; // Import Tailwind CSS
@@ -295,25 +301,41 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
 
   <body
     class:list={[
-      "bg-gray-100 antialiased dark:bg-gray-900",
-      layout === "fullform" ? "touch-none overscroll-none" : "touch-manipulation",
+      layout === "authCallback"
+        ? "flex min-h-dvh items-center justify-center bg-gray-50 antialiased dark:bg-gray-900"
+        : "bg-gray-100 antialiased dark:bg-gray-900",
+      bodyTouchClass,
     ]}
   >
-    {/* SPA disabled: re-apply theme and astro:after-swap/astro:page-load scripts */}
-    {/* SPA disabled: debug and runPageInits scripts */}
+    {/* authCallback: minimal chrome so OAuth callback gets DB theme/styles without nav/footer or heavy pipeline */}
+    {
+      layout === "authCallback" ? (
+        <>
+          <div class="flex w-full flex-col items-center justify-center gap-6 p-4" data-dynamic-height="true">
+            <slot />
+          </div>
+          {!ONLY_FLOWBITE_AND_THEME && (
+            <script is:inline src="/scripts/app-globals.js"></script>
+          )}
+          <script is:inline src="/scripts/auth-google.js"></script>
+        </>
+      ) : (
+        <>
+          {/* SPA disabled: re-apply theme and astro:after-swap/astro:page-load scripts */}
+          {/* SPA disabled: debug and runPageInits scripts */}
 
-    <CMSPreloader showByDefault={true} {globalCompanyName} />
+          <CMSPreloader showByDefault={true} {globalCompanyName} />
 
-    <UnifiedNotification />
+          <UnifiedNotification />
 
-    <TutorialOverlay {currentUser} tutorialId="demo-tour" autoStart={false} {isAuth} />
+          <TutorialOverlay {currentUser} tutorialId="demo-tour" autoStart={false} {isAuth} />
 
-    <!-- <DebugPanel {debugData} {currentRole} /> -->
+          <!-- <DebugPanel {debugData} {currentRole} /> -->
 
-    <FeedbackPanel {currentUser} />
+          <FeedbackPanel {currentUser} />
 
-    <div class="flex h-dvh flex-col overflow-hidden md:min-h-0" data-template={layout}>
-      <Navbar
+          <div class="flex h-dvh flex-col overflow-hidden md:min-h-0" data-template={layout}>
+            <Navbar
         {globalIconButtonClasses}
         {desktopNavigationHTML}
         {currentUser}
@@ -691,5 +713,8 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
 
     {/* <!-- Plausible Analytics Script --> */}
     {/* {plausibleTrackingScript && <Fragment set:html={plausibleTrackingScript} />} */}
+        </>
+      )
+    }
   </body>
 </html>

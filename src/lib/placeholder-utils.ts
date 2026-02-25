@@ -388,6 +388,27 @@ export async function replacePlaceholders(
     }
   }
 
+  // Replace GLOBAL_COMPANY_LOGO_BASE_64_DARK / LIGHT (data URI for email; show/hide via .logo-dark / .logo-light and prefers-color-scheme)
+  if (companyData.globalCompanyLogo && companyData.globalCompanyLogo.trim().startsWith("<svg")) {
+    const logoBase64 = Buffer.from(companyData.globalCompanyLogo.trim(), "utf-8").toString(
+      "base64"
+    );
+    const logoDataUri = `data:image/svg+xml;base64,${logoBase64}`;
+    const beforeReplace = result;
+    result = result.replace(
+      /\{\{\s*GLOBAL_COMPANY_LOGO_BASE_64_DARK\s*\}\}/g,
+      logoDataUri
+    );
+    result = result.replace(
+      /\{\{\s*GLOBAL_COMPANY_LOGO_BASE_64_LIGHT\s*\}\}/g,
+      logoDataUri
+    );
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = false;
+    }
+  }
+
   // Replace GLOBAL_COMPANY_ICON_SVG placeholders
   if (companyData.globalCompanyIcon) {
     const beforeReplace = result;

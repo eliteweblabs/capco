@@ -20,8 +20,9 @@ export interface Props {
     | "anchor"
     | "selected"
     | "icon"
-    | "tab"
-    | "antispam";
+    | "tab";
+  /** Hold-to-submit (antispam): adds data-hold and progress UI; variant still controls visual style */
+  antispam?: boolean;
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   href?: string;
   target?: "_blank" | "_self" | "_parent" | "_top";
@@ -101,14 +102,19 @@ if (isPartial) {
   }
 }
 
+// Antispam: separate prop so variant controls style; adds hold progress UI and data-hold
+const isLink = href && !disabled;
+const isAntispam = Astro.props.antispam === true && !isLink;
+const variantForStyle = variant === "antispam" ? "primary" : variant;
+
 // Use shared button styling logic (icon: true when icon-only so size classes are h/w, not padding)
 const isIconOnly = Astro.props.iconOnly === true || variant === "icon";
 const buttonClasses = getButtonClasses({
-  variant: variant as any,
+  variant: variantForStyle as any,
   size: size as any,
   fullWidth,
   focus,
-  className,
+  className: isAntispam ? `antispam-button ${className}`.trim() : className,
   icon: isIconOnly,
 });
 
@@ -137,12 +143,6 @@ const dataAttrs = dataAttributes;
 
 // Add selected classes data attribute if provided
 const selectedDataAttr = selectedClasses ? { "data-selected-classes": selectedClasses } : {};
-
-// Determine if this should be a link or button
-const isLink = href && !disabled;
-
-// Antispam: only for buttons (not links), adds hold-for-5s on mobile
-const isAntispam = variant === "antispam" && !isLink;
 
 // Build attributes object
 const attributes = {
