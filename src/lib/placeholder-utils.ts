@@ -84,6 +84,23 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
+/**
+ * Inject a concrete fill color into an SVG so it renders correctly in email (data URI).
+ * Replaces currentColor so it resolves when the SVG has no CSS context. Also rewrites
+ * common defs pattern ".fill { fill: #xxx }" so logos that hardcode a single fill in
+ * defs get the right color for light vs dark email background.
+ */
+function svgWithFill(svgString: string, fillHex: string): string {
+  const hex = fillHex.startsWith("#") ? fillHex : `#${fillHex}`;
+  let out = svgString.trim();
+  // Replace currentColor (attribute or CSS value)
+  out = out.replace(/\bcurrentColor\b/gi, hex);
+  // Replace defs/style fill that targets a single class (e.g. .fill { fill: #000; })
+  // so both light and dark variants get the correct encoded color
+  out = out.replace(/(\.\w+\s*\{\s*fill\s*:\s*)#([0-9a-fA-F]{3,8})\s*;?\s*\}/gi, `$1${hex}; }`);
+  return out;
+}
+
 /** Wrap text in a project link when projectLink is a valid project URL (not base URL or #) */
 function wrapInProjectLink(text: string, projectLink: string | null): string {
   if (!projectLink || projectLink === "#" || !projectLink.match(/\/project\/\d+/)) return text;
@@ -322,6 +339,15 @@ export async function replacePlaceholders(
     }
   }
 
+  // Replace GLOBAL_BACKGROUND_COLOR / GLOBAL_BACKGROUND_COLOR_LIGHT / GLOBAL_BACKGROUND_COLOR_DARK (from admin/settings for email light/dark)
+  const bgLight = companyData.backgroundColor?.trim() || "#ffffff";
+  const bgDark = companyData.backgroundColorDark?.trim() || "#0a0a0a";
+  const bgLightHex = bgLight.startsWith("#") ? bgLight : `#${bgLight}`;
+  const bgDarkHex = bgDark.startsWith("#") ? bgDark : `#${bgDark}`;
+  result = result.replace(/\{\{\s*GLOBAL_BACKGROUND_COLOR\s*\}\}/g, bgLightHex);
+  result = result.replace(/\{\{\s*GLOBAL_BACKGROUND_COLOR_LIGHT\s*\}\}/g, bgLightHex);
+  result = result.replace(/\{\{\s*GLOBAL_BACKGROUND_COLOR_DARK\s*\}\}/g, bgDarkHex);
+
   // Replace FONT_FAMILY placeholders (use database first, then environment variables or defaults)
   const primaryFontFamily =
     companyData.fontFamily || process.env.FONT_FAMILY || '"Outfit Variable", sans-serif';
@@ -388,25 +414,36 @@ export async function replacePlaceholders(
     }
   }
 
-  // Replace GLOBAL_COMPANY_LOGO_BASE_64_DARK / LIGHT (data URI for email; show/hide via .logo-dark / .logo-light and prefers-color-scheme)
+  // Hosted logo URL for email (Gmail does not support data: or SVG; use PNG at /img/email-logo.png or set emailLogoUrl in admin).
+  const emailLogoUrl =
+    (companyData.emailLogoUrl && companyData.emailLogoUrl.trim()) ||
+    (baseUrl ? `${baseUrl.replace(/\/$/, "")}/img/email-logo.png` : "");
+
+  // Replace GLOBAL_COMPANY_LOGO_BASE_64_DARK / LIGHT and GLOBAL_COMPANY_LOGO_DARK_SRC (prefer hosted URL for Gmail)
+  // Encode fill into SVG so currentColor and defs fill resolve (no CSS context in data URI)
   if (companyData.globalCompanyLogo && companyData.globalCompanyLogo.trim().startsWith("<svg")) {
-    const logoBase64 = Buffer.from(companyData.globalCompanyLogo.trim(), "utf-8").toString(
-      "base64"
-    );
-    const logoDataUri = `data:image/svg+xml;base64,${logoBase64}`;
+    const rawLogo = companyData.globalCompanyLogo.trim();
+    const darkSvg = svgWithFill(rawLogo, "#111827"); // dark logo for light background
+    const lightSvg = svgWithFill(rawLogo, "#ffffff"); // light logo for dark background
+    const darkBase64 = Buffer.from(darkSvg, "utf-8").toString("base64");
+    const lightBase64 = Buffer.from(lightSvg, "utf-8").toString("base64");
+    const darkDataUri = `data:image/svg+xml;base64,${darkBase64}`;
+    const lightDataUri = `data:image/svg+xml;base64,${lightBase64}`;
+    const logoDarkSrc = emailLogoUrl || darkDataUri; // Gmail needs URL; others can use data URI
     const beforeReplace = result;
-    result = result.replace(
-      /\{\{\s*GLOBAL_COMPANY_LOGO_BASE_64_DARK\s*\}\}/g,
-      logoDataUri
-    );
-    result = result.replace(
-      /\{\{\s*GLOBAL_COMPANY_LOGO_BASE_64_LIGHT\s*\}\}/g,
-      logoDataUri
-    );
+    result = result.replace(/\{\{\s*GLOBAL_COMPANY_LOGO_DARK_SRC\s*\}\}/g, logoDarkSrc);
+    result = result.replace(/\{\{\s*GLOBAL_COMPANY_LOGO_BASE_64_DARK\s*\}\}/g, darkDataUri);
+    result = result.replace(/\{\{\s*GLOBAL_COMPANY_LOGO_BASE_64_LIGHT\s*\}\}/g, lightDataUri);
+    if (emailLogoUrl) {
+      result = result.replace(/\{\{\s*GLOBAL_COMPANY_LOGO_EMAIL_URL\s*\}\}/g, emailLogoUrl);
+    }
     if (result !== beforeReplace) {
       placeholderApplied = true;
       addBoldTags = false;
     }
+  } else if (emailLogoUrl) {
+    result = result.replace(/\{\{\s*GLOBAL_COMPANY_LOGO_DARK_SRC\s*\}\}/g, emailLogoUrl);
+    result = result.replace(/\{\{\s*GLOBAL_COMPANY_LOGO_EMAIL_URL\s*\}\}/g, emailLogoUrl);
   }
 
   // Replace GLOBAL_COMPANY_ICON_SVG placeholders

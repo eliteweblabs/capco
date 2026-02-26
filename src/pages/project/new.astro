@@ -1,25 +1,24 @@
 ---
 /**
- * New Project Page - Renders CMS content for /project/new
+ * New Project Page - SlidingTabs: Project Form | PDF Data Extractor
  */
 import { checkAuth } from "../../lib/auth";
 
 import Hero from "../../components/common/Hero.astro";
+import SlidingTabs from "../../components/common/SlidingTabs.astro";
 import ProjectForm from "../../components/project/ProjectForm.astro";
+import PdfExtractor from "../../components/project/PdfExtractor.astro";
 import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
 import { globalCompanyData } from "../api/global/global-company-data.ts";
 import { globalClasses } from "../api/global/global-classes.ts";
 
 const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
-const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
+const { globalInputClasses, primaryTextClasses, secondaryTextClasses, tabContentClasses } =
+  globalClasses();
 const { globalCompanyName } = await globalCompanyData();
 ---
 
-<LayoutFullWidth
-  title="Start a New Project"
-  description="Create a new project"
-  mainClasses="overflow-x-scroll px-4"
->
+<LayoutFullWidth title="Start a New Project" description="Create a new project">
   <>
     <Hero
       title="Start a New Project"
@@ -29,21 +28,64 @@ const { globalCompanyName } = await globalCompanyData();
       {globalInputClasses}
     />
 
-    <div class="transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1) px-4 transition-all duration-200">
-      <div
-        id="project-form-tab-content"
-        class="tab-content relative mb-16 min-h-[calc(100dvh-24rem)] p-4 shadow-lg"
-      >
-        <ProjectForm
-          {currentUser}
-          isNewProject={true}
-          project={undefined}
-          projectStatus={0}
-          {globalInputClasses}
-          {secondaryTextClasses}
-          {primaryTextClasses}
-        />
-      </div>
+    <SlidingTabs
+      navId="new-project-tabs"
+      activeItem={0}
+      urlParam=""
+      switchHandler="switchNewProjectTab"
+      items={[
+        {
+          id: "form-tab",
+          label: "Project Form",
+          variant: "tab",
+          showLabel: true,
+          onclick: "window.switchNewProjectTab('form-content')",
+        },
+        {
+          id: "pdf-tab",
+          label: "PDF Data Extractor",
+          variant: "tab",
+          showLabel: true,
+          onclick: "window.switchNewProjectTab('pdf-content')",
+        },
+      ]}
+    />
+
+    <div id="form-content" role="tabpanel" aria-labelledby="form-tab" class={tabContentClasses}>
+      <ProjectForm
+        {currentUser}
+        isNewProject={true}
+        project={undefined}
+        projectStatus={0}
+        {globalInputClasses}
+        {secondaryTextClasses}
+        {primaryTextClasses}
+      />
+    </div>
+
+    <div
+      id="pdf-content"
+      class="hidden"
+      role="tabpanel"
+      aria-labelledby="pdf-tab"
+      class={tabContentClasses}
+    >
+      <PdfExtractor />
     </div>
   </>
 </LayoutFullWidth>
+
+<script>
+  (window as any).switchNewProjectTab = function (tabId: string) {
+    const formPanel = document.getElementById("form-content");
+    const pdfPanel = document.getElementById("pdf-content");
+    if (!formPanel || !pdfPanel) return;
+    if (tabId === "pdf-content") {
+      formPanel.classList.add("hidden");
+      pdfPanel.classList.remove("hidden");
+    } else {
+      formPanel.classList.remove("hidden");
+      pdfPanel.classList.add("hidden");
+    }
+  };
+</script>

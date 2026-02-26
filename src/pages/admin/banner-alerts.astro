@@ -8,7 +8,12 @@ import DeleteConfirmButton from "../../components/ui/DeleteConfirmButton.astro";
 import SlidingTabs from "../../components/common/SlidingTabs.astro";
 
 import { globalClasses } from "../api/global/global-classes";
-const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
+const {
+  globalAdminContainerClasses,
+  globalInputClasses,
+  primaryTextClasses,
+  secondaryTextClasses,
+} = globalClasses();
 
 // Check authentication
 const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
@@ -84,171 +89,158 @@ const expireOptions = [
   />
 
   <!-- Tabs: Existing Banner Alerts | New -->
-  <div class="mb-6">
-    <SlidingTabs
-      navId="banner-alerts-tab-nav"
-      navClass="border-b border-gray-200 dark:border-gray-700"
-      activeItem={bannerTabParam === "new-banner" ? 1 : 0}
-      urlParam="tab"
-      switchHandler="switchBannerAlertsTab"
-      items={[
-        {
-          id: "tab-existing-banners",
-          label: "Existing Banner Alerts",
-          variant: "tab",
-          showLabel: true,
-          onclick: "window.switchBannerAlertsTab('existing-banners')",
-        },
-        {
-          id: "tab-new-banner",
-          label: "New",
-          variant: "tab",
-          showLabel: true,
-          onclick: "window.switchBannerAlertsTab('new-banner')",
-        },
-      ]}
-    />
-  </div>
+  <SlidingTabs
+    navId="banner-alerts-tab-nav"
+    activeItem={bannerTabParam === "new-banner" ? 1 : 0}
+    urlParam="tab"
+    switchHandler="switchBannerAlertsTab"
+    items={[
+      {
+        id: "tab-existing-banners",
+        label: "Existing Banners",
+        variant: "tab",
+        showLabel: true,
+        onclick: "window.switchBannerAlertsTab('existing-banners')",
+      },
+      {
+        id: "tab-new-banner",
+        label: "Create New Banner",
+        variant: "tab",
+        showLabel: true,
+        onclick: "window.switchBannerAlertsTab('new-banner')",
+      },
+    ]}
+  />
 
   <div id="banner-alerts-tab-content">
     <!-- Tab: Existing Banner Alerts -->
     <div
-      class={`rounded-lg bg-gray-100 shadow-md dark:bg-gray-800 dark:shadow-gray-700 ${bannerTabParam === "new-banner" ? "hidden" : ""}`}
+      class={`${globalAdminContainerClasses} ${bannerTabParam === "new-banner" ? "hidden" : ""}`}
       id="existing-banners"
       role="tabpanel"
       aria-labelledby="tab-existing-banners"
     >
-      <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-        <h2 class="text-lg font-medium text-gray-900 dark:text-white">Existing Banner Alerts</h2>
-      </div>
-      <div id="banners-list" class="p-6">
-        {
-          bannerAlerts.length > 0 ? (
-            <div class="space-y-4">
-              {bannerAlerts.map((banner) => (
-                <div
-                  class={`rounded-lg border p-4 ${banner.isActive ? "border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-900/20" : "border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-700/50"}`}
-                  data-banner-item={banner.id}
-                >
-                  <div class="flex items-start justify-between">
-                    <div class="flex-1">
-                      <div class="flex items-center gap-2">
-                        <span
-                          class={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${
-                            banner.type === "info"
-                              ? "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300"
-                              : banner.type === "success"
-                                ? "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300"
-                                : banner.type === "warning"
-                                  ? "bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300"
-                                  : "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300"
-                          }`}
-                        >
-                          {banner.type}
+      <div id="banners-list" class="banners-list-root p-6">
+        <div class="banner-list-items space-y-4">
+          {
+            bannerAlerts.map((banner) => (
+              <div
+                class={`banner-item rounded-lg border p-4 ${banner.isActive ? "border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-900/20" : "border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-700/50"}`}
+                data-banner-item={banner.id}
+              >
+                <div class="flex items-start justify-between">
+                  <div class="flex-1">
+                    <div class="flex items-center gap-2">
+                      <span
+                        class={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${
+                          banner.type === "info"
+                            ? "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300"
+                            : banner.type === "success"
+                              ? "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300"
+                              : banner.type === "warning"
+                                ? "bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300"
+                                : "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300"
+                        }`}
+                      >
+                        {banner.type}
+                      </span>
+                      <span
+                        class={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${
+                          banner.position === "top"
+                            ? "bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300"
+                            : "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300"
+                        }`}
+                      >
+                        {banner.position}
+                      </span>
+                      {banner.expireMs && (
+                        <span class="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                          {banner.expireMs / 1000}s expire
                         </span>
-                        <span
-                          class={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${
-                            banner.position === "top"
-                              ? "bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300"
-                              : "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300"
-                          }`}
-                        >
-                          {banner.position}
-                        </span>
-                        {banner.expireMs && (
-                          <span class="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                            {banner.expireMs / 1000}s expire
-                          </span>
-                        )}
-                        {!banner.isActive && (
-                          <span class="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                            Inactive
-                          </span>
-                        )}
-                        {banner.targetPages && (
-                          <span
-                            class="inline-flex items-center rounded bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800 dark:bg-sky-900/50 dark:text-sky-300"
-                            title="Only shown on these pages"
-                          >
-                            Pages: {banner.targetPages}
-                          </span>
-                        )}
-                      </div>
-                      {banner.title && (
-                        <h3 class="mt-2 text-xs font-medium text-gray-500 dark:text-gray-400">
-                          Admin Reference: {banner.title}
-                        </h3>
                       )}
-                      <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{banner.content}</p>
-                      <p class="mt-2 text-xs text-gray-400 dark:text-gray-500">
-                        Created: {new Date(banner.createdAt).toLocaleString()}
-                      </p>
+                      {!banner.isActive && (
+                        <span class="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                          Inactive
+                        </span>
+                      )}
+                      {banner.targetPages && (
+                        <span
+                          class="inline-flex items-center rounded bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800 dark:bg-sky-900/50 dark:text-sky-300"
+                          title="Only shown on these pages"
+                        >
+                          Pages: {banner.targetPages}
+                        </span>
+                      )}
                     </div>
-                    <div class="flex flex-shrink-0 gap-2">
-                      <button
-                        type="button"
-                        class="edit-banner-btn flex items-center gap-1 rounded bg-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-                        data-id={banner.id}
-                        data-title={banner.title || ""}
-                        data-content={banner.content || ""}
-                        data-type={banner.type || "info"}
-                        data-position={banner.position || "top"}
-                        data-expire-ms={banner.expireMs || ""}
-                        data-dismissible={banner.dismissible !== false}
-                        data-is-active={banner.isActive !== false}
-                        data-start-date={banner.startDate || ""}
-                        data-end-date={banner.endDate || ""}
-                        data-target-pages={banner.targetPages || ""}
-                      >
-                        <i class="bx bx-edit" />
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        class="toggle-banner-btn flex items-center gap-1 rounded bg-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-                        data-id={banner.id}
-                        data-active={banner.isActive}
-                      >
-                        <i class={`bx ${banner.isActive ? "bx-hide" : "bx-show"}`} />
-                        {banner.isActive ? "Hide" : "Show"}
-                      </button>
-                      <DeleteConfirmButton
-                        id={`delete-banner-${banner.id}`}
-                        variant="icon"
-                        size="sm"
-                        label="Delete"
-                        class="delete-banner-btn"
-                      />
-                    </div>
+                    {banner.title && (
+                      <h3 class="mt-2 text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Admin Reference: {banner.title}
+                      </h3>
+                    )}
+                    <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{banner.content}</p>
+                    <p class="mt-2 text-xs text-gray-400 dark:text-gray-500">
+                      Created: {new Date(banner.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <div class="flex flex-shrink-0 gap-2">
+                    <button
+                      type="button"
+                      class="edit-banner-btn flex items-center gap-1 rounded bg-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                      data-id={banner.id}
+                      data-title={banner.title || ""}
+                      data-content={banner.content || ""}
+                      data-type={banner.type || "info"}
+                      data-position={banner.position || "top"}
+                      data-expire-ms={banner.expireMs || ""}
+                      data-dismissible={banner.dismissible !== false}
+                      data-is-active={banner.isActive !== false}
+                      data-start-date={banner.startDate || ""}
+                      data-end-date={banner.endDate || ""}
+                      data-target-pages={banner.targetPages || ""}
+                    >
+                      <i class="bx bx-edit" />
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      class="toggle-banner-btn flex items-center gap-1 rounded bg-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                      data-id={banner.id}
+                      data-active={banner.isActive}
+                    >
+                      <i class={`bx ${banner.isActive ? "bx-hide" : "bx-show"}`} />
+                      {banner.isActive ? "Hide" : "Show"}
+                    </button>
+                    <DeleteConfirmButton
+                      id={`delete-banner-${banner.id}`}
+                      variant="icon"
+                      size="sm"
+                      label="Delete"
+                      class="delete-banner-btn"
+                    />
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p class="text-gray-500 dark:text-gray-400">No banner alerts created yet</p>
-          )
-        }
+              </div>
+            ))
+          }
+        </div>
+        <p class="banner-empty-state text-gray-500 dark:text-gray-400">
+          No banner alerts created yet
+        </p>
       </div>
     </div>
 
     <!-- Tab: New -->
     <div
-      class={`rounded-lg bg-gray-100 shadow-md dark:bg-gray-800 dark:shadow-gray-700 ${bannerTabParam !== "new-banner" ? "hidden" : ""}`}
+      class={`${globalAdminContainerClasses} ${bannerTabParam !== "new-banner" ? "hidden" : ""}`}
       id="new-banner"
       role="tabpanel"
       aria-labelledby="tab-new-banner"
     >
-      <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-        <h2 id="form-title" class="text-lg font-medium text-gray-900 dark:text-white">
-          Create New Banner Alert
-        </h2>
-      </div>
-
       <form id="banner-form" class="space-y-6 p-6">
         <input type="hidden" id="banner-id" name="id" />
 
         <!-- Preview -->
-        <div id="banner-preview" class="mb-6">
+        <div id="banner-preview" class="!mt-0 mb-6">
           <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
             >Preview (what users will see)</label
           >
@@ -269,7 +261,7 @@ const expireOptions = [
             type="text"
             id="title"
             name="title"
-            class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            class={globalInputClasses}
             placeholder="Internal reference name (not shown to users)"
           />
         </div>
@@ -287,7 +279,7 @@ const expireOptions = [
             name="content"
             rows="3"
             required
-            class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            class={globalInputClasses}
             placeholder="Banner message content (shown to users)"></textarea>
         </div>
 
@@ -400,7 +392,7 @@ const expireOptions = [
               type="datetime-local"
               id="startDate"
               name="startDate"
-              class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              class={globalInputClasses}
             />
           </div>
 
@@ -411,12 +403,7 @@ const expireOptions = [
             >
               End Date (optional)
             </label>
-            <input
-              type="datetime-local"
-              id="endDate"
-              name="endDate"
-              class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            />
+            <input type="datetime-local" id="endDate" name="endDate" class={globalInputClasses} />
           </div>
         </div>
 
@@ -464,6 +451,16 @@ const expireOptions = [
     </div>
   </div>
 </LayoutDefault>
+
+<style>
+  /* Empty state: show when no items; hide when list has items (CSS-only, no template conditional) */
+  .banners-list-root:has(.banner-item) .banner-empty-state {
+    display: none;
+  }
+  .banners-list-root:not(:has(.banner-item)) .banner-list-items {
+    display: none;
+  }
+</style>
 
 <script is:inline>
   // Banner Alerts Admin Manager

@@ -128,6 +128,7 @@ const LEGACY_BUILTIN: Record<string, Omit<AsideNavItem, "id">> = {
     position: 2,
     allow: ["Admin"],
     children: [
+      { label: "Style reference", href: "/admin/components" },
       { label: "Components", href: "/admin/design" },
       { label: "Placeholders", href: "/admin/design/placeholders" },
     ],

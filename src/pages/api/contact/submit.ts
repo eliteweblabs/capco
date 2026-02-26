@@ -215,7 +215,8 @@ CREATE INDEX "idx_contactSubmissions_submittedAt" ON "contactSubmissions"("submi
     const fromEmail = import.meta.env.FROM_EMAIL;
     const fromName = import.meta.env.FROM_NAME;
     const companyData = await globalCompanyData();
-    const baseUrl = new URL(request.url).origin;
+    const { getBaseUrl } = await import("../../../lib/url-utils");
+    const baseUrl = getBaseUrl(request);
 
     if (emailApiKey && fromEmail) {
       try {
@@ -238,9 +239,6 @@ CREATE INDEX "idx_contactSubmissions_submittedAt" ON "contactSubmissions"("submi
           adminEmails
         );
 
-        // Email content for admins
-        const adminSubject = `🔔 New Contact Form Submission - ${firstName} ${lastName}`;
-
         // Get friendly carrier name for display
         let carrierDisplayName = mobileCarrier;
         if (mobileCarrier && mobileCarrierRaw) {
@@ -250,70 +248,40 @@ CREATE INDEX "idx_contactSubmissions_submittedAt" ON "contactSubmissions"("submi
           }
         }
 
-        const adminHtml = `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="utf-8">
-            <style>
-              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-              .header { background: #2563eb; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
-              .content { background: #f8fafc; padding: 30px; border-radius: 0 0 8px 8px; }
-              .field { margin: 15px 0; padding: 10px; background: white; border-radius: 4px; }
-              .label { font-weight: bold; color: #2563eb; }
-              .button { display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <div class="header">
-                <h1>New Contact Form Submission</h1>
-              </div>
-              <div class="content">
-                <div class="field">
-                  <div class="label">Name:</div>
-                  ${firstName} ${lastName}
-                </div>
-                <div class="field">
-                  <div class="label">Email:</div>
-                  <a href="mailto:${email}">${email}</a>
-                </div>
-                ${phone ? `<div class="field"><div class="label">Phone:</div><a href="tel:${phone}">${phone}</a></div>` : ""}
-                ${smsAlerts ? `<div class="field"><div class="label">SMS Alerts:</div>✅ Yes (Updates only, no marketing)</div>` : ""}
-                ${smsAlerts && carrierDisplayName ? `<div class="field"><div class="label">Mobile Carrier:</div>${carrierDisplayName}</div>` : ""}
-                ${company ? `<div class="field"><div class="label">Company:</div>${company}</div>` : ""}
-                ${address ? `<div class="field"><div class="label">Address:</div>${address}</div>` : ""}
-                <div class="field">
-                  <div class="label">Message:</div>
-                  ${message}
-                </div>
-                <a href="mailto:${email}" class="button">Reply to ${firstName}</a>
-              </div>
-            </div>
-          </body>
-          </html>
+        // Admin email content for template ({{CONTENT}} in templates/email/template.html)
+        const adminSubject = `🔔 New Contact Form Submission - ${firstName} ${lastName}`;
+        const adminContent = `
+          <h2>New Contact Form Submission</h2>
+          <p><strong>Name:</strong> ${firstName} ${lastName}</p>
+          <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
+          ${phone ? `<p><strong>Phone:</strong> <a href="tel:${phone}">${phone}</a></p>` : ""}
+          ${smsAlerts ? `<p><strong>SMS Alerts:</strong> Yes (updates only, no marketing)</p>` : ""}
+          ${smsAlerts && carrierDisplayName ? `<p><strong>Mobile Carrier:</strong> ${carrierDisplayName}</p>` : ""}
+          ${company ? `<p><strong>Company:</strong> ${company}</p>` : ""}
+          ${address ? `<p><strong>Address:</strong> ${address}</p>` : ""}
+          <p><strong>Message:</strong></p>
+          <p>${message}</p>
         `;
 
-        // Send email to each admin
-        for (const adminEmail of adminEmails) {
-          await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${emailApiKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              from: `${fromName} <${fromEmail}>`,
-              to: adminEmail,
-              subject: adminSubject,
-              html: adminHtml,
-            }),
-          });
-        }
+        // Use delivery API so admin emails use templates/email/template.html (same as rest of project)
+        await fetch(`${baseUrl}/api/delivery/update-delivery`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            usersToNotify: adminEmails,
+            method: "email",
+            emailSubject: adminSubject,
+            emailContent: adminContent,
+            buttonLink: `${baseUrl}/admin/contact-submissions`,
+            buttonText: "View contact submissions",
+            trackLinks: false,
+          }),
+        });
 
         console.log(
-          `[CONTACT] ✅ Admin notification emails sent to ${adminEmails.length} admin(s)`
+          `[CONTACT] ✅ Admin notification emails sent to ${adminEmails.length} admin(s) (via template)`
         );
 
         // Email confirmation to submitter using the existing template system
@@ -330,9 +298,6 @@ CREATE INDEX "idx_contactSubmissions_submittedAt" ON "contactSubmissions"("submi
         `;
 
         // Use the delivery system with the email template
-        const { getBaseUrl } = await import("../../../lib/url-utils");
-        const baseUrl = getBaseUrl(request);
-
         await fetch(`${baseUrl}/api/delivery/update-delivery`, {
           method: "POST",
           headers: {

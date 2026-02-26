@@ -13,6 +13,8 @@ function initHoldProgress() {
 
   function initElement(el: HTMLElement) {
     if (el.getAttribute("data-hold-inited") === "true") return;
+    const form = el.closest("form");
+    if (form && (form.getAttribute("id") === "login-form" || (form.action || "").includes("signin"))) return;
     el.setAttribute("data-hold-inited", "true");
 
     const holdMs = parseInt(el.getAttribute("data-hold") ?? "3000", 10) || 3000;
@@ -76,7 +78,6 @@ function initHoldProgress() {
     el.addEventListener("touchcancel", reset, { passive: true });
 
     const labelEl = el.querySelector(".hold-button-text");
-    const form = el.closest("form");
     if (labelEl && form) {
       const invalidText = labelEl.textContent?.trim() || "submit";
       const updateLabel = () => {

@@ -1,0 +1,126 @@
+---
+/**
+ * PDF Data Extractor - standalone component for /project/new.
+ * Finds form[data-project-id] in the page and allows selecting text from a PDF to fill form fields.
+ */
+import Dropzone from "../common/Dropzone.astro";
+---
+
+<div id="project-form-pdf-wrapper" class="flex flex-col h-full min-h-[600px]">
+  <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 color-background flex flex-col flex-1 min-h-0">
+    <div id="project-form-pdf-header" class="mb-4">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+        PDF Data Extractor
+      </h3>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+        Upload a PDF, then click on any form field and select text from the PDF to
+        auto-fill it.
+      </p>
+    </div>
+
+    <div id="project-form-pdf-guided-interface" class="hidden mb-4">
+      <div class="mb-4">
+        <div class="flex gap-2 items-center">
+          <input
+            type="text"
+            id="project-form-pdf-current-field-input"
+            class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            placeholder="Select Address"
+          />
+          <button
+            id="project-form-pdf-set-field-btn"
+            type="button"
+            class="hidden px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors font-medium"
+          >
+            Set Address
+          </button>
+        </div>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          Click and drag on the PDF below to select text
+        </p>
+      </div>
+    </div>
+
+    <div id="project-form-pdf-dropzone-container" class="mb-4">
+      <Dropzone
+        id="project-form-pdf-dropzone"
+        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
+        maxSize={50}
+        label="Drop PDF here or click to browse"
+        description="Supported: PDF, DOC, DOCX, JPG, PNG, GIF"
+        required={false}
+      />
+    </div>
+
+    <div id="project-form-pdf-viewer-section" class="hidden relative flex-1 min-h-0">
+      <button
+        id="project-form-pdf-close-btn"
+        type="button"
+        class="absolute top-2 right-2 z-10 bg-red-500 hover:bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center transition-colors shadow-lg"
+        title="Remove PDF"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
+      </button>
+
+      <div class="border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-900 p-2 overflow-y-auto min-h-0">
+        <div id="project-form-pdf-viewer" class="w-full h-full">
+          <div class="text-center text-gray-500 dark:text-gray-400 py-8">
+            <p>PDF will appear here</p>
+          </div>
+        </div>
+      </div>
+      <div
+        id="project-form-pdf-selection-hint"
+        class="hidden mt-2 p-2 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded text-sm text-primary-800 dark:text-primary-300"
+      >
+        <strong>Selection Mode:</strong> Click and drag on the PDF to select text for the
+        focused field.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script is:inline src="/js/pdf.worker.min.js" defer></script>
+<script is:inline src="/js/pdf.min.js" defer></script>
+<script is:inline src="/scripts/pdf-extractor-init.js" defer></script>
+
+<style>
+  #project-form-pdf-viewer-section {
+    transition:
+      opacity 0.3s ease-in-out,
+      transform 0.3s ease-in-out;
+  }
+  #project-form-pdf-viewer-section:not(.hidden) {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+  #project-form-pdf-viewer {
+    width: 100%;
+    height: 100%;
+  }
+  #project-form-pdf-viewer > div {
+    width: 100%;
+  }
+  #project-form-pdf-viewer canvas {
+    max-width: 100%;
+    height: auto;
+  }
+  #project-form-pdf-viewer .relative {
+    width: 100%;
+    max-width: 100%;
+  }
+  @media (max-width: 1023px) {
+    #project-form-pdf-viewer canvas {
+      width: 100% !important;
+    }
+  }
+</style>

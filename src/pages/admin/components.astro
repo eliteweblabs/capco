@@ -1,0 +1,629 @@
+---
+/**
+ * Admin Components & Style Reference
+ * Single reference for all interior page content styles used across admin.
+ * Use this page when building new admin pages or matching existing patterns.
+ *
+ * Full component gallery (buttons, blocks, etc.): /admin/design
+ * Placeholder patterns: /admin/design/placeholders
+ */
+import { checkAuth } from "../../lib/auth";
+import LayoutDefault from "../../components/layouts/LayoutDefault.astro";
+import Button from "../../components/common/Button.astro";
+import Hero from "../../components/common/Hero.astro";
+import DeleteConfirmButton from "../../components/ui/DeleteConfirmButton.astro";
+import CloseButton from "../../components/ui/CloseButton.astro";
+import InputLabelWrap from "../../components/common/__InputLabelWrap.astro";
+import SlidingTabs from "../../components/common/SlidingTabs.astro";
+import { globalClasses } from "../api/global/global-classes";
+import SimpleIcon from "../../components/common/SimpleIcon.astro";
+
+const { currentUser, session } = await checkAuth(Astro.cookies);
+const currentRole = currentUser?.profile?.role;
+
+if (!currentUser || !session) {
+  return Astro.redirect("/auth/login");
+}
+if (currentRole !== "Admin") {
+  return Astro.redirect("/dashboard");
+}
+
+const {
+  globalInputClasses,
+  globalAdminContainerClasses,
+  primaryTextClasses,
+  secondaryTextClasses,
+} = globalClasses();
+---
+
+<LayoutDefault
+  title="Components & Style Reference"
+  description="Admin interior page style reference. Use for any new admin work."
+>
+  <div class="px-4 py-8">
+    <div class="mb-8">
+      <h1 class="{primaryTextClasses} mb-2 text-3xl font-bold">Components & Style Reference</h1>
+      <p class="{secondaryTextClasses} text-gray-600 dark:text-gray-400">
+        Reference for admin interior page content styles. Copy these patterns when building new
+        admin pages. Full component gallery: <a
+          href="/admin/design"
+          class="text-primary-500 hover:underline">Design</a
+        >. Placeholders: <a
+          href="/admin/design/placeholders"
+          class="text-primary-500 hover:underline">Placeholders</a
+        >.
+      </p>
+    </div>
+
+    <!-- ========== 1. Page structure ========== -->
+    <section class="mb-10">
+      <h2 class="mb-4 text-2xl font-bold text-primary-600 dark:text-primary-400">
+        1. Page structure
+      </h2>
+      <div
+        class="mb-4 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-900"
+      >
+        <h3 class="{primaryTextClasses} mb-2 text-lg font-semibold">Wrapper</h3>
+        <p class="mb-2 text-sm text-gray-600 dark:text-gray-400">
+          Standard interior padding: <code class="rounded bg-gray-100 px-1 dark:bg-gray-800"
+            >px-4 py-8</code
+          > on the main content div (as on this page).
+        </p>
+        <pre
+          class="overflow-x-auto rounded bg-gray-100 p-3 text-xs dark:bg-gray-800"><code>&lt;div class="px-4 py-8"&gt;
+  &lt;!-- page content --&gt;
+&lt;/div&gt;</code></pre>
+      </div>
+    </section>
+
+    <!-- ========== 2. Page headers ========== -->
+    <section class="mb-10">
+      <h2 class="mb-4 text-2xl font-bold text-primary-600 dark:text-primary-400">
+        2. Page headers
+      </h2>
+
+      <div
+        class="mb-4 rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900"
+        data-accordion-card
+      >
+        <div
+          class="flex items-center justify-between p-4"
+          data-accordion-target="#ref-header-simple"
+          role="button"
+          tabindex="0"
+          aria-expanded="false"
+          aria-controls="ref-header-simple"
+        >
+          <div>
+            <h3 class="{primaryTextClasses} text-lg font-medium">
+              Simple header (h1 + description)
+            </h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Used on Settings, CMS, Design, etc.
+            </p>
+          </div>
+          <SimpleIcon
+            name="bx-chevron-down"
+            class="h-5 w-5 text-gray-400 transition-transform duration-200"
+          />
+        </div>
+        <div
+          id="ref-header-simple"
+          class="hidden border-t border-gray-200 p-6 dark:border-gray-700"
+        >
+          <div class="mb-6">
+            <h1 class="{primaryTextClasses} mb-2 text-3xl font-bold">Page Title</h1>
+            <p class="text-gray-600 dark:text-gray-400">
+              Short description of the page. Used for settings and list pages.
+            </p>
+          </div>
+          <pre
+            class="overflow-x-auto rounded bg-gray-100 p-3 text-xs dark:bg-gray-800"><code>&lt;div class="mb-6"&gt;
+  &lt;h1 class="mb-2 text-3xl font-bold"&gt;Page Title&lt;/h1&gt;
+  &lt;p class="text-gray-600 dark:text-gray-400"&gt;Description.&lt;/p&gt;
+&lt;/div&gt;</code></pre>
+        </div>
+      </div>
+
+      <div
+        class="mb-4 rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900"
+        data-accordion-card
+      >
+        <div
+          class="flex items-center justify-between p-4"
+          data-accordion-target="#ref-header-card"
+          role="button"
+          tabindex="0"
+          aria-expanded="false"
+          aria-controls="ref-header-card"
+        >
+          <div>
+            <h3 class="{primaryTextClasses} text-lg font-medium">Card header (border-b)</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Used on Send Test, Notifications, etc.
+            </p>
+          </div>
+          <SimpleIcon
+            name="bx-chevron-down"
+            class="h-5 w-5 text-gray-400 transition-transform duration-200"
+          />
+        </div>
+        <div id="ref-header-card" class="hidden border-t border-gray-200 dark:border-gray-700">
+          <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+            <h1 class="{primaryTextClasses} text-2xl font-bold">Card Title</h1>
+            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+              Description inside a card with border-b.
+            </p>
+          </div>
+          <div class="p-6">
+            <p class="text-sm text-gray-500">Card body content here.</p>
+          </div>
+          <pre
+            class="mx-6 mb-6 overflow-x-auto rounded bg-gray-100 p-3 text-xs dark:bg-gray-800"><code>&lt;div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700"&gt;
+  &lt;h1 class="text-2xl font-bold"&gt;Card Title&lt;/h1&gt;
+  &lt;p class="mt-2 text-sm text-gray-600 dark:text-gray-400"&gt;Description.&lt;/p&gt;
+&lt;/div&gt;</code></pre>
+        </div>
+      </div>
+
+      <div
+        class="mb-4 rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900"
+        data-accordion-card
+      >
+        <div
+          class="flex items-center justify-between p-4"
+          data-accordion-target="#ref-header-hero"
+          role="button"
+          tabindex="0"
+          aria-expanded="false"
+          aria-controls="ref-header-hero"
+        >
+          <div>
+            <h3 class="{primaryTextClasses} text-lg font-medium">Hero header</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Used on Banner Alerts and similar.
+            </p>
+          </div>
+          <SimpleIcon
+            name="bx-chevron-down"
+            class="h-5 w-5 text-gray-400 transition-transform duration-200"
+          />
+        </div>
+        <div id="ref-header-hero" class="hidden border-t border-gray-200 dark:border-gray-700">
+          <div class="p-6">
+            <Hero
+              title="Hero Title"
+              description="Use Hero.astro when you want a prominent page header with optional buttons."
+              {primaryTextClasses}
+              {secondaryTextClasses}
+            />
+          </div>
+          <pre
+            class="mx-6 mb-6 overflow-x-auto rounded bg-gray-100 p-3 text-xs dark:bg-gray-800"><code>&lt;Hero
+  title="Hero Title"
+  description="Description."
+  {primaryTextClasses}
+  {secondaryTextClasses}
+/&gt;</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 3. Containers ========== -->
+    <section class="mb-10">
+      <h2 class="mb-4 text-2xl font-bold text-primary-600 dark:text-primary-400">3. Containers</h2>
+      <div
+        class="mb-4 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-900"
+      >
+        <h3 class="{primaryTextClasses} mb-2 text-lg font-semibold">globalAdminContainerClasses</h3>
+        <p class="mb-3 text-sm text-gray-600 dark:text-gray-400">
+          From <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">global-classes.ts</code>: use
+          for tab panels and main content cards (Banner Alerts, Notifications).
+        </p>
+        <div class={globalAdminContainerClasses}>
+          <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+            <h4 class="{primaryTextClasses} font-semibold">Container with header</h4>
+          </div>
+          <div class="p-6">
+            <p class="text-sm text-gray-500">Content. Uses color-background, rounded-lg, shadow.</p>
+          </div>
+        </div>
+        <pre
+          class="mt-4 overflow-x-auto rounded bg-gray-100 p-3 text-xs dark:bg-gray-800"><code>const { globalAdminContainerClasses } = globalClasses();
+&lt;div class={globalAdminContainerClasses}&gt;...&lt;/div&gt;</code></pre>
+      </div>
+      <div
+        class="mb-4 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-900"
+      >
+        <h3 class="{primaryTextClasses} mb-2 text-lg font-semibold">
+          Bordered card (accordion-style)
+        </h3>
+        <p class="mb-3 text-sm text-gray-600 dark:text-gray-400">
+          Standard section card: <code class="rounded bg-gray-100 px-1 dark:bg-gray-800"
+            >rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900</code
+          >
+        </p>
+        <div
+          class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900"
+        >
+          <p class="text-sm text-gray-500">Section content.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 4. Messages / Alerts ========== -->
+    <section class="mb-10">
+      <h2 class="mb-4 text-2xl font-bold text-primary-600 dark:text-primary-400">
+        4. Messages & alerts
+      </h2>
+      <div class="space-y-4">
+        <div
+          class="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/20"
+        >
+          <p class="text-sm text-green-800 dark:text-green-200">Success message.</p>
+        </div>
+        <div
+          class="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20"
+        >
+          <p class="text-sm text-red-800 dark:text-red-200">Error message.</p>
+        </div>
+        <div
+          class="dark:bg-primary-900/20 rounded-lg border border-primary-200 bg-primary-50 p-4 dark:border-primary-800"
+        >
+          <p class="text-sm text-primary-800 dark:text-primary-200">Info / primary message.</p>
+        </div>
+        <div
+          class="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30"
+        >
+          <p class="text-sm text-amber-800 dark:text-amber-200">Warning message.</p>
+        </div>
+      </div>
+      <pre
+        class="mt-4 overflow-x-auto rounded bg-gray-100 p-3 text-xs dark:bg-gray-800"><code>{/* Success */}
+&lt;div class="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/20"&gt;
+  &lt;p class="text-sm text-green-800 dark:text-green-200"&gt;...&lt;/p&gt;
+&lt;/div&gt;
+{/* Error: red-200/red-50, dark:red-800/red-900/20 */}</code></pre>
+    </section>
+
+    <!-- ========== 5. Form elements ========== -->
+    <section class="mb-10">
+      <h2 class="mb-4 text-2xl font-bold text-primary-600 dark:text-primary-400">
+        5. Form elements
+      </h2>
+      <div
+        class="mb-4 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-900"
+      >
+        <h3 class="{primaryTextClasses} mb-3 text-lg font-semibold">
+          globalInputClasses + InputLabelWrap
+        </h3>
+        <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+          Use <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">globalInputClasses</code> from
+          global-classes and <code>InputLabelWrap</code> for labels.
+        </p>
+        <div class="max-w-md space-y-4">
+          <InputLabelWrap id="ref-input-1" label="Text input" show={true}>
+            <input
+              type="text"
+              id="ref-input-1"
+              class={globalInputClasses}
+              placeholder="Placeholder"
+            />
+          </InputLabelWrap>
+          <InputLabelWrap id="ref-input-2" label="Required" required show={true}>
+            <input type="text" id="ref-input-2" class={globalInputClasses} />
+          </InputLabelWrap>
+        </div>
+        <pre
+          class="mt-4 overflow-x-auto rounded bg-gray-100 p-3 text-xs dark:bg-gray-800"><code>const { globalInputClasses } = globalClasses();
+&lt;InputLabelWrap id="field-id" label="Label" show={true}&gt;
+  &lt;input type="text" id="field-id" class={globalInputClasses} /&gt;
+&lt;/InputLabelWrap&gt;</code></pre>
+      </div>
+      <div
+        class="mb-4 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-900"
+      >
+        <h3 class="{primaryTextClasses} mb-3 text-lg font-semibold">
+          Textarea (standard)
+        </h3>
+        <p class="mb-3 text-sm text-gray-600 dark:text-gray-400">
+          Same <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">globalInputClasses</code>.
+          Use <code>resize-y</code> if you want vertical resize only.
+        </p>
+        <div class="max-w-md">
+          <InputLabelWrap id="ref-textarea-1" label="Message" show={true}>
+            <textarea
+              id="ref-textarea-1"
+              name="message"
+              rows={4}
+              class={`${globalInputClasses} resize-y`}
+              placeholder="Enter text..."
+            />
+          </InputLabelWrap>
+        </div>
+        <pre
+          class="mt-4 overflow-x-auto rounded bg-gray-100 p-3 text-xs dark:bg-gray-800"><code>&lt;textarea id="..." class="{'{'}globalInputClasses{'}'} resize-y" rows={4} /&gt;</code></pre>
+      </div>
+      <div
+        class="mb-4 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-900"
+      >
+        <h3 class="{primaryTextClasses} mb-3 text-lg font-semibold">
+          Textarea (expanding)
+        </h3>
+        <p class="mb-3 text-sm text-gray-600 dark:text-gray-400">
+          Add class <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">expanding-textarea</code>
+          so the field grows with content (CSS <code>field-sizing: content</code>). Used in
+          MultiStepForm when field config has <code>"classes": "expanding-textarea"</code>.
+        </p>
+        <div class="max-w-md">
+          <InputLabelWrap id="ref-textarea-expanding" label="Expanding (type to test)" show={true}>
+            <textarea
+              id="ref-textarea-expanding"
+              name="message-expanding"
+              rows={1}
+              class={`${globalInputClasses} expanding-textarea`}
+              placeholder="Type here — field expands as you fill..."
+            />
+          </InputLabelWrap>
+        </div>
+        <pre
+          class="mt-4 overflow-x-auto rounded bg-gray-100 p-3 text-xs dark:bg-gray-800"><code>&lt;textarea class="{'{'}globalInputClasses{'}'} expanding-textarea" rows={1} /&gt;</code></pre>
+      </div>
+      <div
+        class="mb-4 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-900"
+      >
+        <h3 class="{primaryTextClasses} mb-3 text-lg font-semibold">
+          Select
+        </h3>
+        <p class="mb-3 text-sm text-gray-600 dark:text-gray-400">
+          Use <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">globalInputClasses</code> on
+          <code>&lt;select&gt;</code>.
+        </p>
+        <div class="max-w-md">
+          <InputLabelWrap id="ref-select-1" label="Choose option" show={true}>
+            <select id="ref-select-1" name="option" class={globalInputClasses}>
+              <option value="">Select...</option>
+              <option value="a">Option A</option>
+              <option value="b">Option B</option>
+              <option value="c">Option C</option>
+            </select>
+          </InputLabelWrap>
+        </div>
+        <pre
+          class="mt-4 overflow-x-auto rounded bg-gray-100 p-3 text-xs dark:bg-gray-800"><code>&lt;select id="..." name="..." class={globalInputClasses}&gt;...&lt;/select&gt;</code></pre>
+      </div>
+      <div
+        class="mb-4 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-900"
+      >
+        <h3 class="{primaryTextClasses} mb-3 text-lg font-semibold">
+          Toggle button group (single-select)
+        </h3>
+        <p class="mb-3 text-sm text-gray-600 dark:text-gray-400">
+          Use <code>variant="selected"</code> for active, <code>variant="outline"</code> for inactive.
+          Wire with JS.
+        </p>
+        <div class="flex flex-wrap gap-2">
+          <Button type="button" variant="selected" class="text-md">Option A</Button>
+          <Button type="button" variant="outline" class="text-md">Option B</Button>
+          <Button type="button" variant="outline" class="text-md">Option C</Button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 6. Buttons ========== -->
+    <section class="mb-10">
+      <h2 class="mb-4 text-2xl font-bold text-primary-600 dark:text-primary-400">6. Buttons</h2>
+      <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+        Use <code>Button.astro</code> for all buttons. Full gallery: <a
+          href="/admin/design"
+          class="text-primary-500 hover:underline">Design</a
+        >. Use <code>DeleteConfirmButton.astro</code> for delete actions; <code
+          >CloseButton.astro</code
+        > for modals/drawers.
+      </p>
+      <div class="mb-4 flex flex-wrap gap-3">
+        <Button variant="primary">Primary</Button>
+        <Button variant="secondary">Secondary</Button>
+        <Button variant="outline">Outline</Button>
+        <Button variant="danger">Danger</Button>
+        <Button variant="success">Success</Button>
+      </div>
+      <div class="flex flex-wrap items-center gap-4">
+        <DeleteConfirmButton id="ref-delete-demo" />
+        <span class="text-sm text-gray-500">DeleteConfirmButton (2-step confirm)</span>
+      </div>
+      <div class="mt-3 flex flex-wrap items-center gap-4">
+        <CloseButton tooltipText="Close" />
+        <span class="text-sm text-gray-500">CloseButton (for modals/drawers)</span>
+      </div>
+    </section>
+
+    <!-- ========== 7. Tabs ========== -->
+    <section class="mb-10">
+      <h2 class="mb-4 text-2xl font-bold text-primary-600 dark:text-primary-400">7. Tabs</h2>
+      <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+        Use <code>SlidingTabs.astro</code> with <code>variant: "tab"</code>. Match panel visibility
+        to <code>activeItem</code> or URL param.
+      </p>
+      <SlidingTabs
+        navId="ref-tabs-demo"
+        activeItem={0}
+        urlParam="tab"
+        items={[
+          { id: "tab-one", label: "Tab One", variant: "tab", showLabel: true },
+          { id: "tab-two", label: "Tab Two", variant: "tab", showLabel: true },
+        ]}
+      />
+      <div
+        class="rounded-b-lg border border-t-0 border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-900"
+      >
+        <p class="text-sm text-gray-500">Tab panel content. Hide/show by tab index or URL param.</p>
+      </div>
+    </section>
+
+    <!-- ========== 8. Badges / tags ========== -->
+    <section class="mb-10">
+      <h2 class="mb-4 text-2xl font-bold text-primary-600 dark:text-primary-400">
+        8. Badges & tags
+      </h2>
+      <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+        Inline status badges (e.g. Banner Alerts type, list status).
+      </p>
+      <div class="flex flex-wrap gap-2">
+        <span
+          class="inline-flex items-center rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/50 dark:text-blue-300"
+          >info</span
+        >
+        <span
+          class="inline-flex items-center rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/50 dark:text-green-300"
+          >success</span
+        >
+        <span
+          class="inline-flex items-center rounded bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-800 dark:bg-orange-900/50 dark:text-orange-300"
+          >warning</span
+        >
+        <span
+          class="inline-flex items-center rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900/50 dark:text-red-300"
+          >error</span
+        >
+        <span
+          class="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+          >neutral</span
+        >
+      </div>
+      <pre
+        class="mt-4 overflow-x-auto rounded bg-gray-100 p-3 text-xs dark:bg-gray-800"><code>&lt;span class="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300"&gt;success&lt;/span&gt;</code></pre>
+    </section>
+
+    <!-- ========== 9. Tables ========== -->
+    <section class="mb-10">
+      <h2 class="mb-4 text-2xl font-bold text-primary-600 dark:text-primary-400">9. Tables</h2>
+      <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+        Standard admin table wrapper: <code class="rounded bg-gray-100 px-1 dark:bg-gray-800"
+          >overflow-x-auto rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700
+          dark:bg-gray-900</code
+        >. Prefer <code>AccordionDataTable.astro</code> when rows expand.
+      </p>
+      <div
+        class="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-900"
+      >
+        <table class="w-full text-left text-sm text-gray-500 dark:text-gray-400">
+          <thead
+            class="bg-gray-50 text-xs uppercase text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+          >
+            <tr>
+              <th class="px-6 py-3">Column A</th>
+              <th class="px-6 py-3">Column B</th>
+              <th class="px-6 py-3">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-b border-gray-200 dark:border-gray-700">
+              <td class="px-6 py-4">Cell</td>
+              <td class="px-6 py-4">Cell</td>
+              <td class="px-6 py-4"><Button variant="ghost" size="xs">Edit</Button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ========== 10. List items (card rows) ========== -->
+    <section class="mb-10">
+      <h2 class="mb-4 text-2xl font-bold text-primary-600 dark:text-primary-400">
+        10. List items (card rows)
+      </h2>
+      <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+        Bordered list items (e.g. banner list). Active vs inactive styling.
+      </p>
+      <div class="space-y-4">
+        <div
+          class="rounded-lg border border-green-300 bg-green-50 p-4 dark:border-green-700 dark:bg-green-900/20"
+        >
+          <div class="flex items-center justify-between">
+            <span class="{primaryTextClasses} font-medium">Active item</span>
+            <span
+              class="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/50 dark:text-green-300"
+              >active</span
+            >
+          </div>
+        </div>
+        <div
+          class="rounded-lg border border-gray-300 bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-700/50"
+        >
+          <div class="flex items-center justify-between">
+            <span class="{primaryTextClasses} font-medium">Inactive item</span>
+            <span
+              class="rounded bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-600 dark:text-gray-300"
+              >inactive</span
+            >
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== Quick links ========== -->
+    <section
+      class="dark:bg-primary-900/20 rounded-lg border border-primary-200 bg-primary-50 p-6 dark:border-primary-800"
+    >
+      <h2 class="mb-3 text-lg font-semibold text-primary-800 dark:text-primary-200">Quick links</h2>
+      <ul class="list-inside list-disc space-y-1 text-sm text-primary-700 dark:text-primary-300">
+        <li>
+          <a href="/admin/design" class="hover:underline">Design</a> – Full component gallery (buttons,
+          blocks, etc.)
+        </li>
+        <li>
+          <a href="/admin/design/placeholders" class="hover:underline">Placeholders</a> – MultiStepForm
+          and placeholder patterns
+        </li>
+        <li>
+          <a href="/admin/icons" class="hover:underline">Icons</a> – SimpleIcon / BoxIcons reference
+        </li>
+        <li>
+          <code>src/pages/api/global/global-classes.ts</code> – globalInputClasses, globalAdminContainerClasses,
+          primaryTextClasses, secondaryTextClasses
+        </li>
+        <li><code>src/lib/button-styles.ts</code> – Button variants and getButtonClasses()</li>
+      </ul>
+    </section>
+  </div>
+</LayoutDefault>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const accordionButtons = document.querySelectorAll("[data-accordion-target]");
+    accordionButtons.forEach((button) => {
+      button.addEventListener("click", function (this: HTMLElement) {
+        const targetId = this.getAttribute("data-accordion-target");
+        const target = document.querySelector(targetId as string);
+        const isExpanded = this.getAttribute("aria-expanded") === "true";
+        if (target) {
+          if (isExpanded) {
+            target.classList.add("hidden");
+            this.setAttribute("aria-expanded", "false");
+          } else {
+            target.classList.remove("hidden");
+            this.setAttribute("aria-expanded", "true");
+          }
+          const arrow = this.querySelector("svg");
+          if (arrow) {
+            (arrow as Element).classList.toggle("rotate-180");
+          }
+          const parent = this.closest("[data-accordion-card]");
+          if (parent) {
+            const allToggles = parent.querySelectorAll(`[data-accordion-target="${targetId}"]`);
+            allToggles.forEach((toggle) => {
+              if (toggle !== this) {
+                toggle.setAttribute("aria-expanded", String(!isExpanded));
+                const toggleArrow = toggle.querySelector("svg");
+                if (toggleArrow) {
+                  (toggleArrow as Element).classList.toggle("rotate-180");
+                }
+              }
+            });
+          }
+        }
+      });
+    });
+  });
+</script>

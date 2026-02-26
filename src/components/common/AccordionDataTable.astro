@@ -19,6 +19,7 @@
  *   emptyMessage="No items found"
  * />
  */
+import Button from "./Button.astro";
 import SimpleIcon from "./SimpleIcon.astro";
 
 export interface ColumnConfig<T = any> {
@@ -74,6 +75,8 @@ interface Props<T = any> {
   detailRowIdPrefix?: string;
   /** Data attributes for create row (e.g. { editorSlot: "create" } for CMS) */
   createRowDataAttrs?: Record<string, string>;
+  /** Optional id for the create button (e.g. "create-page-btn" for CMS script) */
+  createButtonId?: string;
   /** Enable resizable columns (default: true) */
   resizable?: boolean;
 }
@@ -105,6 +108,7 @@ const {
   chevronClass = "accordion-chevron",
   detailRowIdPrefix,
   createRowDataAttrs,
+  createButtonId,
   resizable = true,
 } = Astro.props;
 
@@ -138,7 +142,7 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
   <div class="overflow-x-auto">
     <table
       id={`${id}-table`}
-      class="w-full min-w-max table-fixed divide-gray-200 text-sm dark:divide-gray-700"
+      class="w-full min-w-max table-fixed divide-gray-200 text-center text-sm dark:divide-gray-700"
       {...resizable && { "data-accordion-resizable": "true", "data-table-id": id }}
     >
       <thead class="text-uppercase color-background select-none text-xs">
@@ -171,13 +175,13 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
             hasActions && (
               <th
                 scope="col"
-                class="color-border-primary w-32 min-w-32 max-w-32 border-r border-gray-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-700 dark:border-gray-700 dark:text-gray-300"
+                class="color-border-primary border-r border-gray-200 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-700 dark:border-gray-700 dark:text-gray-300"
               >
                 Actions
               </th>
             )
           }
-          <th class="w-12 px-2 py-3" aria-label="Expand">&nbsp;</th>
+          <th class="hidden w-12 px-2 py-3" aria-label="Expand">&nbsp;</th>
         </tr>
       </thead>
       <tbody
@@ -185,49 +189,9 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
         class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900"
       >
         {
-          showCreateRow && (
-            <>
-              <tr
-                class={`${triggerClass} select-none border-b border-gray-200 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700`}
-                data-slot={createSlotId}
-                role="button"
-                tabindex="0"
-                aria-expanded="false"
-                aria-controls={detailRowId(createSlotId)}
-                {...(createRowDataAttrs && toDataAttrs(createRowDataAttrs))}
-              >
-                {draggable && <td class="w-10 px-2 py-3">&nbsp;</td>}
-                <td
-                  class="px-4 py-3 text-center text-sm font-medium text-primary-600 dark:text-primary-400"
-                  colspan={columns.length + (hasActions ? 1 : 0)}
-                >
-                  {createRowLabel}
-                </td>
-              </tr>
-              <tr
-                id={detailRowId(createSlotId)}
-                class={`${detailClass} hidden`}
-                data-slot={createSlotId}
-                aria-hidden="true"
-                {...(createRowDataAttrs && toDataAttrs(createRowDataAttrs))}
-              >
-                <td colspan={colspan} class="bg-gray-50 p-0 dark:bg-gray-800/50">
-                  <div
-                    id={`${slotIdPrefix}-${createSlotId}`}
-                    class={`${slotClass} min-h-[120px]`}
-                  />
-                </td>
-              </tr>
-            </>
-          )
-        }
-        {
-          data.length === 0 && !showCreateRow ? (
+          data.length === 0 ? (
             <tr>
-              <td
-                colspan={colspan}
-                class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400"
-              >
+              <td colspan={colspan} class="px-4 py-8 text-sm text-gray-500 dark:text-gray-400">
                 {emptyMessage}
               </td>
             </tr>
@@ -304,7 +268,7 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
                           })()}
                     </td>
                   )}
-                  <td class="w-12 px-2 py-3 align-middle">
+                  <td class="hidden w-12 px-2 py-3 align-middle">
                     <svg
                       class={`${chevronClass} h-5 w-5 rotate-0 text-gray-500 transition-transform`}
                       fill="currentColor"
@@ -337,6 +301,30 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
       </tbody>
     </table>
   </div>
+  {
+    showCreateRow && (
+      <div class="border-t border-gray-200 px-4 py-3 dark:border-gray-700">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          {...(createButtonId && { id: createButtonId })}
+          class="text-primary-600 dark:text-primary-400"
+        >
+          {createRowLabel}
+        </Button>
+        <div
+          id={detailRowId(createSlotId)}
+          class={`${detailClass} hidden rounded-b-lg bg-gray-50 dark:bg-gray-800/50`}
+          data-slot={createSlotId}
+          aria-hidden="true"
+          {...(createRowDataAttrs && toDataAttrs(createRowDataAttrs))}
+        >
+          <div id={`${slotIdPrefix}-${createSlotId}`} class={`${slotClass} min-h-[120px] p-4`} />
+        </div>
+      </div>
+    )
+  }
 </div>
 
 {resizable && <script>import "../../scripts/accordion-data-table-resizable-columns";</script>}

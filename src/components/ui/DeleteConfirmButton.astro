@@ -16,6 +16,7 @@
  */
 
 import Button from "../common/Button.astro";
+import Tooltip from "./Tooltip.astro";
 
 export interface Props {
   id: string;
@@ -54,7 +55,7 @@ const {
 } = Astro.props;
 
 // Build button variant based on whether it's icon-only or with label
-const buttonVariant = "ghost";
+const buttonVariant = "anchor";
 
 // Timer ring SVG size (matches Button icon sizes: xs=24, sm=32, md=40, lg=48, xl=56)
 const timerRingSizeMap = { xs: 24, sm: 32, md: 40, lg: 48, xl: 56 } as const;
@@ -94,27 +95,29 @@ const mergedDataAttributes = {
         title={tooltipText}
         dataAttributes={mergedDataAttributes}
       >
-        <svg
-          width={timerRingSize}
-          height={timerRingSize}
-          viewBox="0 0 44 44"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          class="timer-ring-overlay absolute left-0 top-0"
-        >
-          <circle
-            cx="22"
-            cy="22"
-            r="18"
+        <Tooltip text="Click again to confirm deletion">
+          <svg
+            width={timerRingSize}
+            height={timerRingSize}
+            viewBox="0 0 44 44"
             fill="none"
-            stroke="#ef4444"
-            stroke-width="3"
-            stroke-dasharray="113.1"
-            stroke-dashoffset="113.1"
-            transform="rotate(-90 22 22)"
-            class="timer-icon-test"
-          />
-        </svg>
+            xmlns="http://www.w3.org/2000/svg"
+            class="timer-ring-overlay absolute left-0 top-0"
+          >
+            <circle
+              cx="22"
+              cy="22"
+              r="18"
+              fill="none"
+              stroke="#ef4444"
+              stroke-width="3"
+              stroke-dasharray="113.1"
+              stroke-dashoffset="113.1"
+              transform="rotate(-90 22 22)"
+              class="timer-icon-test"
+            />
+          </svg>
+        </Tooltip>
       </Button>
     </div>
   ) : (
@@ -172,17 +175,6 @@ const mergedDataAttributes = {
   /* Hide trash icon when in confirm state */
   .delete-confirm-wrapper [data-state="confirm"] .delete-confirm-icon {
     display: none;
-  }
-
-  .delete-confirm-btn {
-    position: relative;
-    cursor: pointer;
-    user-select: none;
-  }
-
-  .delete-confirm-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
   }
 </style>
 

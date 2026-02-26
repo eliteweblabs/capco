@@ -34,13 +34,19 @@ import LoadingSpinner from "./LoadingSpinner.astro";
 <Dropdown id={id} {currentUser} {globalIconButtonClasses} title="" onOpenCallback={onOpen}>
   <!-- Panel body: data-dropdown-id passed so script can find panel/triggers (Navbar uses id="notifications") -->
   <div class="min-h-0 flex-1 overflow-y-auto" data-dropdown-id={id}>
-    <!-- Header with Mark all read button -->
-    <div class="align-center flex hidden items-center justify-between">
+    <!-- Header with Mark all read and Archive all -->
+    <div class="flex items-center justify-between gap-2 border-b border-gray-200 px-3 py-2 dark:border-gray-700">
       <button
         id="mark-all-read"
         class="text-sm text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300"
       >
         Mark all read
+      </button>
+      <button
+        id="archive-all"
+        class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+      >
+        Archive all
       </button>
     </div>
 
@@ -159,6 +165,10 @@ import LoadingSpinner from "./LoadingSpinner.astro";
         this.markAllAsRead();
       });
 
+      document.getElementById("archive-all")?.addEventListener("click", () => {
+        this.archiveAll();
+      });
+
       // Mark notifications as viewed when scrolling and auto-load more
       const notificationList = document.getElementById("notification-list");
       notificationList?.addEventListener("scroll", () => {
@@ -217,7 +227,7 @@ import LoadingSpinner from "./LoadingSpinner.astro";
       try {
         this.showLoading();
 
-        const response = await fetch("/api/notifications/get?limit=5", {
+        const response = await fetch("/api/notifications/get?limit=10", {
           credentials: "include",
         });
 
@@ -229,8 +239,15 @@ import LoadingSpinner from "./LoadingSpinner.astro";
         const data = await response.json();
 
         if (data.success) {
-          this.notifications = data.notifications || [];
-          this.hasMore = (data.notifications?.length || 0) >= (data.limit ?? 5);
+          const raw = data.notifications || [];
+          // Unread first, then by createdAt desc
+          this.notifications = [...raw].sort((a, b) => {
+            const aUnread = !a.viewed ? 1 : 0;
+            const bUnread = !b.viewed ? 1 : 0;
+            if (bUnread !== aUnread) return bUnread - aUnread;
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          });
+          this.hasMore = raw.length >= (data.limit ?? 10);
           this.updateBadge(data.unreadCount || 0);
           this.renderNotifications();
         } else if (data.migrationRequired) {
@@ -289,15 +306,14 @@ import LoadingSpinner from "./LoadingSpinner.astro";
     }
 
     createNotificationElement(notification: any) {
+      const isRead = !!notification.viewed;
       const div = document.createElement("div");
-      div.className = `relative notification-item overflow-hidden border-b border-gray-200 dark:border-gray-700 transition-colors ${!notification.viewed ? "dark:bg-primary-900/20" : ""}`;
+      div.className = `relative notification-item overflow-hidden border-b border-gray-200 dark:border-gray-700 transition-colors ${isRead ? "notification-item-read opacity-90 bg-gray-50/80 dark:bg-gray-800/50" : "dark:bg-primary-900/20"}`;
       div.dataset.notificationId = String(notification.id);
-      div.dataset.viewed = String(!!notification.viewed);
+      div.dataset.viewed = String(isRead);
 
       const timeAgo = this.formatTimeAgo(notification.createdAt);
 
-      // Use envelope icon for unread, archive icon for read
-      const isRead = notification.viewed;
       const iconColor = isRead
         ? "text-gray-400 dark:text-gray-500"
         : "text-primary-600 dark:text-primary-400";
@@ -306,7 +322,7 @@ import LoadingSpinner from "./LoadingSpinner.astro";
         : "M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z";
 
       div.innerHTML = `
-        <div class="notification-content p-2 m-2 bg-primary-100 dark:bg-primary-900 flex items-start gap-2 sm:gap-3 relative">
+        <div class="notification-content p-2 m-2 flex items-start gap-2 sm:gap-3 relative">
             <div class="flex-shrink-0">
               <svg class="w-5 h-5 ${iconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${iconPath}"></path>
@@ -334,32 +350,54 @@ import LoadingSpinner from "./LoadingSpinner.astro";
                   : ""
               }
             </div>
-            <div class="delete-confirm-wrapper flex-shrink-0 self-center">
+            <div class="flex flex-shrink-0 items-center gap-0.5 self-center">
+              ${!isRead ? `
               <button
                 type="button"
-                id="delete-notification-${notification.id}"
-                class="delete-confirm-btn rounded-full inline-flex items-center justify-center p-2 text-sm font-medium text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-500 dark:hover:text-gray-200 dark:hover:bg-gray-700 transition-colors"
-                data-state="trash"
-                data-timeout="3000"
-                data-item-type="notification"
-                data-api-endpoint="/api/notifications/delete"
-                data-callback="handleNotificationDelete"
-                title="Delete notification"
+                class="archive-notification-btn rounded-full p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-500 dark:hover:text-gray-300 dark:hover:bg-gray-700 transition-colors"
+                title="Archive"
+                data-notification-id="${notification.id}"
               >
-                <svg class="inline-block delete-confirm-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M3 6h18"></path>
-                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                  <path d="M10 11v6"></path>
-                  <path d="M14 11v6"></path>
-                </svg>
-                <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" class="absolute top-0 left-0 timer-ring-overlay">
-                  <circle cx="22" cy="22" r="18" fill="none" stroke="#ef4444" stroke-width="3" stroke-dasharray="113.1" stroke-dashoffset="113.1" transform="rotate(-90 22 22)" class="timer-icon-test" />
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
                 </svg>
               </button>
+              ` : ""}
+              <div class="delete-confirm-wrapper">
+                <button
+                  type="button"
+                  id="delete-notification-${notification.id}"
+                  class="delete-confirm-btn rounded-full inline-flex items-center justify-center p-2 text-sm font-medium text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-500 dark:hover:text-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  data-state="trash"
+                  data-timeout="3000"
+                  data-item-type="notification"
+                  data-api-endpoint="/api/notifications/delete"
+                  data-callback="handleNotificationDelete"
+                  title="Delete notification"
+                >
+                  <svg class="inline-block delete-confirm-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 6h18"></path>
+                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                    <path d="M10 11v6"></path>
+                    <path d="M14 11v6"></path>
+                  </svg>
+                  <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" class="absolute top-0 left-0 timer-ring-overlay">
+                    <circle cx="22" cy="22" r="18" fill="none" stroke="#ef4444" stroke-width="3" stroke-dasharray="113.1" stroke-dashoffset="113.1" transform="rotate(-90 22 22)" class="timer-icon-test" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
       `;
+
+      const archiveBtn = div.querySelector(".archive-notification-btn");
+      if (archiveBtn) {
+        archiveBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          this.archiveNotification(notification.id);
+        });
+      }
 
       return div;
     }
@@ -409,18 +447,17 @@ import LoadingSpinner from "./LoadingSpinner.astro";
     }
 
     updateNotificationDisplay(notificationId: number) {
-      const element = document.querySelector(`[data-notification-id="${notificationId}"]`);
-      if (element) {
-        element.classList.add("opacity-75", "bg-gray-50", "color-background");
-        element.classList.remove("bg-white", "dark:bg-gray-900");
+      const notification = this.notifications.find((n: any) => n.id === notificationId);
+      if (notification) notification.viewed = true;
 
-        const indicator = element.querySelector(".read-indicator");
-        if (!indicator) {
-          const checkmark = document.createElement("div");
-          checkmark.className = "read-indicator absolute top-2 right-2 text-green-500 text-lg";
-          checkmark.innerHTML = "✓";
-          element.appendChild(checkmark);
-        }
+      const element = document.querySelector(`[data-notification-id="${notificationId}"]`) as HTMLElement | null;
+      if (element) {
+        element.classList.add("notification-item-read", "opacity-90", "bg-gray-50/80", "dark:bg-gray-800/50");
+        element.classList.remove("dark:bg-primary-900/20");
+        element.setAttribute("data-viewed", "true");
+
+        const archiveBtn = element.querySelector(".archive-notification-btn");
+        if (archiveBtn) (archiveBtn as HTMLElement).remove();
       }
     }
 
@@ -504,7 +541,6 @@ import LoadingSpinner from "./LoadingSpinner.astro";
     async markAllAsRead() {
       try {
         const unreadIds = this.notifications.filter((n: any) => !n.viewed).map((n: any) => n.id);
-
         if (unreadIds.length === 0) return;
 
         const response = await fetch("/api/notifications/upsert", {
@@ -530,6 +566,55 @@ import LoadingSpinner from "./LoadingSpinner.astro";
         }
       } catch (error) {
         console.error("❌ [NOTIFICATIONS] Error marking all as read:", error);
+      }
+    }
+
+    async archiveNotification(notificationId: number) {
+      try {
+        const response = await fetch("/api/notifications/upsert", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            notificationIds: [notificationId],
+            viewed: true,
+          }),
+        });
+        if (response.ok) {
+          this.viewedNotifications.add(notificationId);
+          this.updateNotificationDisplay(notificationId);
+          const unreadCount = this.notifications.filter((n: any) => !n.viewed).length;
+          this.updateBadge(unreadCount);
+        }
+      } catch (error) {
+        console.error("❌ [NOTIFICATIONS] Error archiving notification:", error);
+      }
+    }
+
+    async archiveAll() {
+      try {
+        const ids = this.notifications.filter((n: any) => !n.viewed).map((n: any) => n.id);
+        if (ids.length === 0) return;
+
+        const response = await fetch("/api/notifications/upsert", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            notificationIds: ids,
+            viewed: true,
+          }),
+        });
+        if (response.ok) {
+          ids.forEach((id) => this.viewedNotifications.add(id));
+          this.updateBadge(0);
+          await this.loadNotifications();
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          console.error("❌ [NOTIFICATIONS] Error archiving all:", response.status, errorData);
+        }
+      } catch (error) {
+        console.error("❌ [NOTIFICATIONS] Error archiving all:", error);
       }
     }
 

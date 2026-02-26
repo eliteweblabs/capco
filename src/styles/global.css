@@ -8,6 +8,13 @@
   --color-background: 255, 255, 255;
   --color-border: 229, 231, 235;
   --color-border-dark: 52, 52, 52;
+  /* Global background palette (light/dark + 5%/10% steps) */
+  --global-bg-light: #fafafa;
+  --global-bg-light-2: color-mix(in srgb, #fafafa 95%, black);
+  --global-bg-light-3: color-mix(in srgb, #fafafa 90%, black);
+  --global-bg-dark: #0a0a0a;
+  --global-bg-dark-2: color-mix(in srgb, #0a0a0a 95%, white);
+  --global-bg-dark-3: color-mix(in srgb, #0a0a0a 90%, white);
   --input-shadow:
     0 4px 6px -1px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
     0 2px 4px -2px color-mix(in srgb, var(--color-primary-500) 10%, transparent);
@@ -31,6 +38,11 @@ body {
   overflow-y: hidden; /* #reveal-scroll is the scroll container; prevents body/document scroll competition */
   min-height: 100dvh;
   font-family: var(--font-family, "Outfit Variable"), var(--font-family-secondary, sans-serif);
+}
+
+/* Reserve scrollbar space to prevent layout shift when scrollbar appears (modern-css.com) */
+#reveal-scroll {
+  scrollbar-gutter: stable;
 }
 
 /* iOS: contain overscroll so fixed navbar stays in place; use contain not none to avoid blocking normal scroll */
@@ -133,6 +145,50 @@ html[data-page-size="large"] select {
 
 .dark .color-background-80 {
   background-color: rgba(var(--color-background-dark), 0.8);
+}
+
+/* ============================================
+   GLOBAL BACKGROUND COLORS (light/dark + 5%/10% steps)
+   Use instead of ad-hoc bg-gray-* / dark:bg-gray-* in admin and components.
+   ============================================ */
+.global-background-color-light {
+  background-color: var(--global-bg-light);
+}
+.global-background-color-light-2 {
+  background-color: var(--global-bg-light-2);
+}
+.global-background-color-light-3 {
+  background-color: var(--global-bg-light-3);
+}
+
+.global-background-color-dark {
+  background-color: var(--global-bg-dark);
+}
+.global-background-color-dark-2 {
+  background-color: var(--global-bg-dark-2);
+}
+.global-background-color-dark-3 {
+  background-color: var(--global-bg-dark-3);
+}
+
+/* Theme-aware variants: use “surface” background that follows light/dark mode */
+.global-background-surface {
+  background-color: var(--global-bg-light);
+}
+.dark .global-background-surface {
+  background-color: var(--global-bg-dark);
+}
+.global-background-surface-2 {
+  background-color: var(--global-bg-light-2);
+}
+.dark .global-background-surface-2 {
+  background-color: var(--global-bg-dark-2);
+}
+.global-background-surface-3 {
+  background-color: var(--global-bg-light-3);
+}
+.dark .global-background-surface-3 {
+  background-color: var(--global-bg-dark-3);
 }
 
 .color-border {
@@ -1262,12 +1318,14 @@ span[data-refresh][data-edited="true"].fade-out::after {
   stroke-dashoffset: 0 !important;
 }
 
-/* All buttons: no text selection */
+/* All buttons: no text selection; touch-friendly (no tap delay, no tap highlight) */
 button,
 a[role="button"],
 [role="button"] {
   user-select: none;
   -webkit-user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Disable ripple on disabled buttons */
@@ -1624,12 +1682,19 @@ textarea {
 } */
 
 /* Auto-expand textarea with content (field-sizing: content — Chrome 123+, Safari 17.2+) */
+/* Override MultiStepForm's h-full so the field can grow instead of being clamped to wrapper height */
 textarea.expanding-textarea {
   field-sizing: content;
+  height: auto;
   min-height: 2.5rem;
   max-height: 20rem;
   overflow-y: auto;
   resize: none;
+}
+/* Let MultiStepForm .input-wrapper grow when it contains an expanding textarea (wrapper normally has fixed h-14 etc.) */
+.input-wrapper:has(textarea.expanding-textarea) {
+  height: auto;
+  min-height: 3.5rem;
 }
 
 input:not([type="hidden"]):focus,

@@ -161,6 +161,9 @@ export const globalCompanyData = async () => {
     // Custom Footer HTML (injected into footer)
     customFooterHtml: get("customFooterHtml") || "",
 
+    // Optional hosted logo URL for email (Gmail does not support data: or SVG; use PNG URL here or put file at /img/email-logo.png)
+    emailLogoUrl: get("emailLogoUrl") || "",
+
     // Virtual assistant name (contact form, voice, etc.)
     virtualAssistantName: get("virtualAssistantName") || "",
   };

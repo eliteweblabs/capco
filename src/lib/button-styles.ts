@@ -71,7 +71,7 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
     outline:
       "[@media(hover:hover)]:hover:scale-101 [@media(hover:hover)]:hover:-translate-y-0.5 rounded-full border-2 border-primary-500 text-primary-500 [@media(hover:hover)]:hover:bg-primary-500 [@media(hover:hover)]:hover:text-white dark:border-primary-400 dark:text-primary-400 dark:[@media(hover:hover)]:hover:bg-primary-600 dark:[@media(hover:hover)]:hover:text-white backdrop-blur-md",
     ghost:
-      "rounded-full text-primary-500 [@media(hover:hover)]:hover:bg-primary-50 dark:text-primary-400 dark:[@media(hover:hover)]:hover:bg-primary-900/20",
+      "rounded-full text-primary-500 [@media(hover:hover)]:hover:bg-primary-50 dark:text-primary-400 dark:[@media(hover:hover)]:hover:!bg-primary-900/20",
     link: "link text-primary-500 [@media(hover:hover)]:hover:underline [@media(hover:hover)]:hover:text-primary-600 dark:text-primary-400 dark:[@media(hover:hover)]:hover:text-primary-300",
     loading: "bg-primary-500 text-white cursor-not-allowed opacity-75 dark:bg-primary-500",
     disabled:
@@ -80,7 +80,7 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
       "rounded-full bg-primary-500 text-white border-2 border-primary-500 dark:bg-primary-500 dark:border-primary-500",
     anchor:
       "text-gray-800 dark:text-gray-200 [@media(hover:hover)]:hover:text-primary dark:[@media(hover:hover)]:hover:text-primary-dark outline-none focus:outline-none border-none focus:ring-0 focus:ring-offset-0 [@media(hover:hover)]:hover:shadow-none opacity-100 transition-all duration-200",
-    tab: "tab-button sliding-tabs-item",
+    tab: "tab-button sliding-tabs-item text-gray-700 dark:text-gray-300 hover:text-gray-1000 dark:hover:text-gray-100 active:text-primary-500 dark:active:text-primary-400 trasition-all transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
   };
 
   // Focus classes with dashed outline

@@ -29,7 +29,7 @@ if (!id || id === "dashboard") {
 // console.log("🏗️ [PROJECT] Project ID:", id);
 import App from "../../components/ui/App.astro";
 import HeroProject from "../../components/common/HeroProject.astro";
-import SlidingTabs from "../../components/common/SlidingTabs.astro";
+import type { NavItem } from "../../components/common/SlidingTabs.astro";
 import TabFiles from "../../components/project/TabFiles.astro";
 import TabDiscussions from "../../components/project/TabDiscussions.astro";
 import TabProjectForm from "../../components/project/TabProjectForm.astro";
@@ -61,6 +61,18 @@ const defaultTab = validTabs.includes(statusParam || "")
   ? statusParam || "project-form"
   : "project-form";
 const activeTabIndex = validTabs.indexOf(defaultTab);
+
+const projectTabNavItems = [
+  { id: "status-project-form", showLabel: true, label: "Project Form", icon: "edit", variant: "tab", onclick: "window.switchTab('project-form')" },
+  { id: "status-discussion", showLabel: true, label: "Discussion", icon: "message-rounded-dots", variant: "tab", dataAttributes: { "data-count": "0" }, onclick: "window.switchTab('discussion')" },
+  { id: "status-files", showLabel: true, label: "Files", icon: "file", variant: "tab", onclick: "window.switchTab('files')" },
+  { id: "status-proposal", showLabel: true, label: "Proposal", icon: "grid", variant: "tab", onclick: "window.switchTab('proposal')" },
+  { id: "status-contract", showLabel: true, label: "Contract", icon: "pencil", variant: "tab", onclick: "window.switchTab('contract')" },
+  { id: "status-deposit", showLabel: true, label: "Deposit", icon: "credit-card", variant: "tab", onclick: "window.switchTab('deposit')" },
+  { id: "status-activity-log", showLabel: true, label: "Activity Log", icon: "history", variant: "tab", onclick: "window.switchTab('activity-log')", clientHide: true },
+  { id: "status-generate-pdf", showLabel: true, label: "Generate PDF", icon: "adobe", variant: "tab", onclick: "window.switchTab('generate-pdf')", clientHide: true },
+  { id: "status-marketing", showLabel: true, label: "Marketing", icon: "palette", variant: "tab", onclick: "window.switchTab('marketing')", clientHide: true },
+];
 
 // Track which tab should load content server-side
 
@@ -242,94 +254,10 @@ if (currentStatusInt && statusData[currentStatusInt]) {
     {primaryTextClasses}
     {globalInputClasses}
     {globalCompanyName}
+    tabNavItems={projectTabNavItems as NavItem[]}
+    activeTabIndex={activeTabIndex}
   />
 
-  <!-- Tab Navigation -->
-  <SlidingTabs
-    navId="project-tab-nav"
-    navClass="my-4 dark:border-gray-700"
-    activeItem={activeTabIndex}
-    showTooltips={false}
-    {currentUser}
-    items={[
-      {
-        id: "status-project-form",
-        showLabel: true,
-        label: "Project Form",
-        icon: "edit",
-        variant: "tab",
-        onclick: "window.switchTab('project-form')",
-      },
-      {
-        id: "status-discussion",
-        showLabel: true,
-        label: "Discussion",
-        icon: "message-rounded-dots",
-        variant: "tab",
-        dataAttributes: { "data-count": "0" },
-        onclick: "window.switchTab('discussion')",
-      },
-      {
-        id: "status-files",
-        showLabel: true,
-        label: "Files",
-        icon: "file",
-        variant: "tab",
-        onclick: "window.switchTab('files')",
-      },
-      {
-        id: "status-proposal",
-        showLabel: true,
-        label: "Proposal",
-        icon: "grid",
-        variant: "tab",
-        onclick: "window.switchTab('proposal')",
-      },
-      {
-        id: "status-contract",
-        showLabel: true,
-        label: "Contract",
-        icon: "pencil",
-        variant: "tab",
-        onclick: "window.switchTab('contract')",
-      },
-      {
-        id: "status-deposit",
-        showLabel: true,
-        label: "Deposit",
-        icon: "credit-card",
-        variant: "tab",
-        onclick: "window.switchTab('deposit')",
-      },
-      {
-        id: "status-activity-log",
-        showLabel: true,
-        label: "Activity Log",
-        icon: "history",
-        variant: "tab",
-        onclick: "window.switchTab('activity-log')",
-        clientHide: true,
-      },
-      {
-        id: "status-generate-pdf",
-        showLabel: true,
-        label: "Generate PDF",
-        icon: "adobe",
-        variant: "tab",
-        onclick: "window.switchTab('generate-pdf')",
-        clientHide: true,
-      },
-      {
-        id: "status-marketing",
-        showLabel: true,
-        label: "Marketing",
-        icon: "palette",
-        variant: "tab",
-        onclick: "window.switchTab('marketing')",
-        clientHide: true,
-      },
-    ]}
-  />
   <!-- Tab Content -->
   <!-- <div class="grid grid-cols-1 gap-6 lg:grid-cols-1"> -->
   <!-- Project Form Tab -->

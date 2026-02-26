@@ -123,10 +123,17 @@ if (typeof window !== "undefined" && (window as any).__jsOrderLog) (window as an
     return;
   }
 
-  const currentDate = input.getAttribute("data-due-date");
+  let currentDate = input.getAttribute("data-due-date");
   if (!currentDate || currentDate === "") {
-    console.error(`❌ [ADJUST] No current date for project ${projectId}`);
-    return;
+    // No value: use current date/time rounded up to the next hour
+    const now = new Date();
+    const nextHour = new Date(now);
+    nextHour.setMinutes(0, 0, 0);
+    if (nextHour.getTime() <= now.getTime()) {
+      nextHour.setHours(nextHour.getHours() + 1);
+    }
+    currentDate = nextHour.toISOString();
+    console.log(`🕐 [ADJUST] No current date for project ${projectId}; using next hour: ${currentDate}`);
   }
 
   // Validate the date before parsing

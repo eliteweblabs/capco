@@ -155,50 +155,62 @@ export const POST: APIRoute = async ({ request }) => {
       }
     }
 
-    // Send notification email to admin
+    // Send notification email to admins via delivery API (uses templates/email/template.html)
     try {
-      const emailResponse = await fetch(
-        `${new URL(request.url).origin}/api/delivery/update-delivery`,
-        {
+      const { data: admins } = await supabaseAdmin
+        .from("profiles")
+        .select("email")
+        .eq("role", "Admin");
+      let adminEmails = admins?.map((a) => a.email).filter(Boolean) || [];
+      try {
+        const { globalCompanyData } = await import("../global/global-company-data");
+        const companyData = await globalCompanyData();
+        const websiteAdmin = companyData.globalCompanyEmail;
+        if (websiteAdmin && !adminEmails.includes(websiteAdmin)) {
+          adminEmails.push(websiteAdmin);
+        }
+      } catch {
+        // ignore
+      }
+      const { getBaseUrl } = await import("../../../lib/url-utils");
+      const deliveryBaseUrl = getBaseUrl(request);
+      const emailContent = `
+        <h2>New Contact Form Submission</h2>
+        <p><strong>Name:</strong> ${firstName} ${lastName}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Phone:</strong> ${phone || "Not provided"}</p>
+        <p><strong>Company:</strong> ${company || "Not provided"}</p>
+        <p><strong>Address:</strong> ${address || "Not provided"}</p>
+        <p><strong>Project Type:</strong> ${projectType || "Not provided"}</p>
+        <p><strong>Message:</strong></p>
+        <p>${message}</p>
+        <p><strong>Files Uploaded:</strong> ${uploadedFiles.length}</p>
+        ${
+          uploadedFiles.length > 0
+            ? `<p><strong>Uploaded Files:</strong></p><ul>${uploadedFiles.map((f) => `<li>${f.name} (${(f.size / 1024 / 1024).toFixed(2)} MB)</li>`).join("")}</ul>`
+            : ""
+        }
+      `;
+      if (adminEmails.length > 0) {
+        const emailResponse = await fetch(`${deliveryBaseUrl}/api/delivery/update-delivery`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            usersToNotify: ["admin"], // Special flag for admin notifications
+            usersToNotify: adminEmails,
             method: "email",
             emailSubject: `New Contact Form Submission from ${firstName} ${lastName}`,
-            emailContent: `
-            <h2>New Contact Form Submission</h2>
-            <p><strong>Name:</strong> ${firstName} ${lastName}</p>
-            <p><strong>Email:</strong> ${email}</p>
-            <p><strong>Phone:</strong> ${phone || "Not provided"}</p>
-            <p><strong>Company:</strong> ${company || "Not provided"}</p>
-            <p><strong>Address:</strong> ${address || "Not provided"}</p>
-            <p><strong>Project Type:</strong> ${projectType}</p>
-            <p><strong>Message:</strong></p>
-            <p>${message}</p>
-            <p><strong>Files Uploaded:</strong> ${uploadedFiles.length}</p>
-            ${
-              uploadedFiles.length > 0
-                ? `
-            <p><strong>Uploaded Files:</strong></p>
-            <ul>
-              ${uploadedFiles.map((file) => `<li>${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)</li>`).join("")}
-            </ul>
-            `
-                : ""
-            }
-          `,
-            trackLinks: true,
+            emailContent,
+            buttonLink: `${deliveryBaseUrl}/admin/contact-submissions`,
+            buttonText: "View contact submissions",
+            trackLinks: false,
           }),
+        });
+        const emailResult = await emailResponse.json();
+        if (!emailResult.success) {
+          console.error("Error sending notification email:", emailResult.error);
         }
-      );
-
-      const emailResult = await emailResponse.json();
-      if (!emailResult.success) {
-        console.error("Error sending notification email:", emailResult.error);
-        // Don't fail the request if email fails
       }
     } catch (error) {
       console.error("Error sending notification email:", error);

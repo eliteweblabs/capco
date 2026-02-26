@@ -1,7 +1,7 @@
 export const globalClasses = () => {
   return {
     globalInputClasses:
-      "text-base bg-transparent shadow-secondary-inner-md w-full border-0 py-2.5 px-4 text-gray-900 transition-colors duration-200 placeholder:text-gray-600 focus:outline-none scrollbar-hide dark:text-white dark:placeholder:text-gray-300",
+      "w-full rounded-md border border-gray-300 px-3 py-2 text-base text-gray-900 transition-colors duration-200 placeholder:text-gray-600 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500 shadow-secondary-inner-md scrollbar-hide dark:border-gray-600 bg-gray-100 dark:bg-gray-900 dark:text-white dark:placeholder:text-gray-300",
     /** Applied to the input wrapper so it affects animated placeholder and input icons. Height and text size here; input uses multiStepInputCoreClasses to fill and inherit. */
     multiStepInputClasses:
       "h-14 sm:h-16 md:h-18 lg:h-20 text-xl sm:text-2xl md:text-3xl lg:text-4xl text-gray-900 transition-colors duration-200 dark:text-white text-left",
@@ -13,6 +13,9 @@ export const globalClasses = () => {
     // Flowbite-standard icon-only button (gray/secondary)
     globalIconButtonClasses:
       "w-10 h-10 inline-flex items-center rounded-full justify-center p-2 text-black dark:text-white md:hover:bg-gray-100 dark:hover:bg-gray-700 dark:focus:ring-gray-700 focus:outline-none",
+
+    globalAdminContainerClasses: "color-background rounded-lg shadow-md dark:shadow-gray-700",
+    tabContentClasses: "color-background relative mb-16 min-h-[calc(100dvh-24rem)] p-4 shadow-lg",
   };
 };
 

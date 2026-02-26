@@ -348,6 +348,12 @@ export class RefreshManager {
         this.innerHTML = `${count} Active Projects`;
       }
     });
+
+    this.registerCallback("featuredImageUrl", function (this: any, value: string) {
+      const url = value && String(value).trim() ? value : "";
+      this.setAttribute("data-featured-image-url", url);
+      this.style.backgroundImage = url ? `url(${url})` : "none";
+    });
   }
 
   /**

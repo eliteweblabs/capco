@@ -1,5 +1,6 @@
 ---
 import Breadcrumb from "./Breadcrumb.astro";
+import SlidingTabs, { type NavItem } from "./SlidingTabs.astro";
 
 interface Props {
   title: string;
@@ -18,6 +19,10 @@ interface Props {
   statusData?: any;
   fullWidth?: boolean;
   globalCompanyName?: string;
+  /** Tab nav items (e.g. Project Form, Discussion, Files). When set, SlidingTabs is rendered inside the hero. */
+  tabNavItems?: NavItem[];
+  /** Active tab index for SlidingTabs when tabNavItems is used */
+  activeTabIndex?: number;
 }
 
 const {
@@ -37,6 +42,8 @@ const {
   statusData = {},
   fullWidth = false,
   globalCompanyName = "",
+  tabNavItems,
+  activeTabIndex = 0,
 } = Astro.props;
 
 const projectId = project?.id;
@@ -95,6 +102,9 @@ const createDueDateOptions = () => {
 
 const dueDateOptions = createDueDateOptions();
 
+// Use same source as marketing tab (#featured-image-url): featuredImageUrl, else featuredImageData.publicUrl
+const featuredImageUrl = project?.featuredImageUrl || project?.featuredImageData?.publicUrl || null;
+
 // Debug logging for HeroProject component props
 // console.log("🎯 [HERO-PROJECT] HeroProject component props:", {
 //   currentStatusTab,
@@ -108,20 +118,21 @@ const dueDateOptions = createDueDateOptions();
 // });
 ---
 
-<div class={`align-center ${fullWidth ? "col-span-full" : "col-span-8"} justify-between p-4`}>
+<div
+  class={`relative rounded-lg ${fullWidth ? "col-span-full" : "col-span-8"}`}
+>
   {
-    project.featuredImageData?.publicUrl && (
-      <div id="featured-image-background" class="absolute inset-0 -z-10">
-        <img
-          data-src={project.featuredImageData.publicUrl}
-          alt={`Featured image for ${project.address}`}
-          class="lazyload h-32 w-full rounded-lg rounded-b-none object-cover blur-sm transition-transform duration-200 hover:scale-105"
-          width="1200"
-          height="128"
-          referrerpolicy="strict-origin-when-cross-origin"
-          crossorigin="anonymous"
-          onerror="console.warn('Featured image failed to load:', this.src, 'Project ID:', this.closest('[data-project-id]')?.dataset.projectId); this.style.display='none'; const fallback = this.parentElement.querySelector('.featured-image-fallback'); if (fallback) fallback.style.display='flex';"
-        />
+    featuredImageUrl && (
+      <div
+        id="featured-image-background"
+        class="absolute inset-0 -z-10 w-full rounded-lg bg-cover bg-center blur-sm transition-transform duration-200 hover:scale-105"
+        style={`background-image: url(${featuredImageUrl});`}
+        data-refresh="featuredImageUrl"
+        data-project-id={projectId}
+        data-featured-image-url={featuredImageUrl}
+        role="img"
+        aria-label={`Featured image for ${project.address}`}
+      >
         <div class="featured-image-fallback hidden text-center">
           <SimpleIcon name="image-x" class="mx-auto mb-2 h-8 w-8" />
           <p class="text-xs">Image failed to load</p>
@@ -129,27 +140,29 @@ const dueDateOptions = createDueDateOptions();
       </div>
     )
   }
-  <Breadcrumb
-    items={[
-      {
-        label: "",
-        href: "/project/dashboard",
-        icon: "home",
-      },
-      {
-        label: project.title || "Untitled Project",
-        current: false,
-      },
-      {
-        label: currentStatusName,
-        current: true,
-      },
-    ]}
-  />
-</div>
 
-<div class="relative mx-auto flex p-4">
-  <div class="mx-4 ml-0 flex flex-1 flex-col gap-2">
+  <div class={`align-center justify-between p-4`}>
+    <Breadcrumb
+      items={[
+        {
+          label: "",
+          href: "/project/dashboard",
+          icon: "home",
+        },
+        {
+          label: project.title || "Untitled Project",
+          current: false,
+        },
+        {
+          label: currentStatusName,
+          current: true,
+        },
+      ]}
+    />
+  </div>
+
+  <div class="relative mx-auto flex p-4">
+    <div class="mx-4 ml-0 flex flex-1 flex-col gap-2">
     <h1
       class="text-2xl font-medium text-black dark:text-white"
       id="page-project-title"
@@ -163,9 +176,9 @@ const dueDateOptions = createDueDateOptions();
         <p class="text-sm text-gray-500 dark:text-gray-400">{project.client_email}</p>
       )
     }
-  </div>
+    </div>
 
-  <div class="flex-end hidden flex-col sm:flex">
+    <div class="flex-end hidden flex-col sm:flex">
     {
       currentRole !== "Client" && (
         // <SlotMachineModalFunction
@@ -211,7 +224,20 @@ const dueDateOptions = createDueDateOptions();
     >
       New<span class="hidden sm:inline"> Project</span>
     </Button> -->
+    </div>
   </div>
+
+  {
+    tabNavItems && tabNavItems.length > 0 && (
+      <SlidingTabs
+        navId="project-tab-nav"
+        activeItem={activeTabIndex}
+        showTooltips={false}
+        {currentUser}
+        items={tabNavItems}
+      />
+    )
+  }
 </div>
 
 <script type="module" define:vars={{ project, statusData }} is:inline>
