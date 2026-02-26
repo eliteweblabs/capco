@@ -6,14 +6,13 @@
 
 import { getSiteConfig } from "./content";
 
-/** Aside nav item - projectListColumns style with parent/child */
+/** Aside nav item - projectListColumns style with parent/child. Type is optional: inferred from children (dropdown) or href (link). Order = array index. */
 export interface AsideNavItem {
   id: string;
   label: string;
-  type: "link" | "dropdown" | "section";
+  type?: "link" | "dropdown" | "section";
   href?: string;
   icon?: string;
-  position?: number;
   allow?: string[];
   tooltip?: string;
   children?: AsideNavChild[];
@@ -66,11 +65,21 @@ function resolveChildren(
   return out;
 }
 
+/** Infer type from structure when not set: has children → dropdown, else href → link */
+function getItemKind(item: AsideNavItem): "link" | "dropdown" | "section" | null {
+  if (item.type) return item.type;
+  if (item.children?.length) return "dropdown";
+  if (item.href) return "link";
+  return null;
+}
+
 /** Resolve a single config item */
 function resolveItem(item: AsideNavItem, userRole?: string): AsideNavResolvedItem | null {
   if (!isRoleAllowed(item.allow, userRole)) return null;
 
-  if (item.type === "link" && item.href) {
+  const kind = getItemKind(item);
+
+  if (kind === "link" && item.href) {
     return {
       type: "link",
       label: item.label,
@@ -79,18 +88,7 @@ function resolveItem(item: AsideNavItem, userRole?: string): AsideNavResolvedIte
     };
   }
 
-  if (item.type === "dropdown") {
-    const children = resolveChildren(item.children, userRole);
-    if (children.length === 0) return null;
-    return {
-      type: "dropdown",
-      label: item.label,
-      icon: item.icon,
-      children,
-    };
-  }
-
-  if (item.type === "section") {
+  if (kind === "dropdown" || kind === "section") {
     const children = resolveChildren(item.children, userRole);
     if (children.length === 0) return null;
     return {
@@ -111,21 +109,18 @@ const LEGACY_BUILTIN: Record<string, Omit<AsideNavItem, "id">> = {
     type: "link",
     href: "/dashboard",
     icon: "dashboard",
-    position: 0,
   },
   settings: {
     label: "Settings",
     type: "link",
     href: "/admin/settings",
     icon: "settings",
-    position: 1,
     allow: ["Admin"],
   },
   design: {
     label: "Design",
     type: "dropdown",
     icon: "palette",
-    position: 2,
     allow: ["Admin"],
     children: [
       { label: "Style reference", href: "/admin/components" },
@@ -138,7 +133,6 @@ const LEGACY_BUILTIN: Record<string, Omit<AsideNavItem, "id">> = {
     type: "link",
     href: "/admin/cms",
     icon: "dashboard",
-    position: 3,
     allow: ["Admin"],
   },
   media: {
@@ -146,7 +140,6 @@ const LEGACY_BUILTIN: Record<string, Omit<AsideNavItem, "id">> = {
     type: "link",
     href: "/admin/media",
     icon: "image",
-    position: 4,
     allow: ["Admin"],
   },
   alerts: {
@@ -154,7 +147,6 @@ const LEGACY_BUILTIN: Record<string, Omit<AsideNavItem, "id">> = {
     type: "link",
     href: "/admin/banner-alerts",
     icon: "alert",
-    position: 5,
     allow: ["Admin"],
   },
   testimonials: {
@@ -162,7 +154,6 @@ const LEGACY_BUILTIN: Record<string, Omit<AsideNavItem, "id">> = {
     type: "link",
     href: "/admin/testimonials",
     icon: "quote",
-    position: 6,
     allow: ["Admin"],
   },
   "contact-form-leads": {
@@ -170,7 +161,6 @@ const LEGACY_BUILTIN: Record<string, Omit<AsideNavItem, "id">> = {
     type: "link",
     href: "/admin/contact-form-leads",
     icon: "envelope",
-    position: 6.6,
     allow: ["Admin"],
   },
   "global-functions": {
@@ -178,14 +168,12 @@ const LEGACY_BUILTIN: Record<string, Omit<AsideNavItem, "id">> = {
     type: "link",
     href: "/admin/global-functions",
     icon: "code",
-    position: 7,
     allow: ["Admin"],
   },
   projects: {
     label: "Projects",
     type: "dropdown",
     icon: "folder",
-    position: 8,
     children: [
       { label: "Dashboard", href: "/project/dashboard/" },
       { label: "New", href: "/project/new" },
@@ -198,15 +186,20 @@ const LEGACY_BUILTIN: Record<string, Omit<AsideNavItem, "id">> = {
     type: "link",
     href: "/admin/team-locations",
     icon: "map-pin",
-    position: 49,
     allow: ["Admin"],
+  },
+  "time-entries": {
+    label: "Time Entries",
+    type: "link",
+    href: "/admin/time-entries",
+    icon: "clock",
+    allow: ["Admin", "Staff"],
   },
   notifications: {
     label: "Send Notifications",
     type: "link",
     href: "/admin/notifications",
     icon: "zap",
-    position: 50,
     allow: ["Admin"],
   },
 };
@@ -217,14 +210,11 @@ async function getAsideNavItems(userRole?: string): Promise<AsideNavItem[]> {
   const asideNav = (config.navigation as any)?.aside ?? (config as any).asideNav;
   if (Array.isArray(asideNav) && asideNav.length > 0) {
     const first = asideNav[0];
-    if (typeof first === "object" && first !== null && "id" in first && "type" in first) {
-      return asideNav
-        .filter((x: any) => typeof x === "object" && x?.id && x?.type)
-        .sort((a: any, b: any) => (a.position ?? 999) - (b.position ?? 999));
+    if (typeof first === "object" && first !== null && "id" in first) {
+      return asideNav.filter((x: any) => typeof x === "object" && x !== null && x?.id);
     }
     if (typeof first === "string") {
       const items: AsideNavItem[] = [];
-      let pos = 0;
       for (const id of asideNav) {
         if (id === "feature-admin" || id === "feature-tools") {
           const { getSectionNavigation } = await import("./feature-navigation");
@@ -242,7 +232,6 @@ async function getAsideNavItems(userRole?: string): Promise<AsideNavItem[]> {
               label: section === "tools" ? "Tools" : "Admin",
               type: "dropdown",
               icon: section === "admin" ? "settings" : "wrench",
-              position: pos++,
               allow: ["Admin"],
               children,
             });
@@ -251,7 +240,7 @@ async function getAsideNavItems(userRole?: string): Promise<AsideNavItem[]> {
           items.push({ id, ...LEGACY_BUILTIN[id] } as AsideNavItem);
         }
       }
-      return items.sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
+      return items;
     }
   }
   return [];

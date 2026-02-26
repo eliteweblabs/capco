@@ -7,6 +7,8 @@ interface Props {
   currentUser: any;
   assignedProjectsCount?: number;
   assignedProjectsPreview?: any[];
+  /** When set (e.g. on a project page), Check In is shown for Admin/Staff and uses this project. */
+  project?: any;
 }
 
 // Redirect to API callback only when code is on a page that shouldn't handle it. Preserve full query.
@@ -16,10 +18,14 @@ if (authCode && !Astro.url.pathname.startsWith("/auth/callback")) {
   return Astro.redirect(`/api/auth/callback${query}`);
 }
 
-const { currentUser, assignedProjectsCount = 0, assignedProjectsPreview = [] } = Astro.props;
+const {
+  currentUser,
+  assignedProjectsCount = 0,
+  assignedProjectsPreview = [],
+  project = null,
+} = Astro.props;
 const currentRole = currentUser?.profile?.role;
 import SimpleIcon from "../common/SimpleIcon.astro";
-import Dropdown from "./Dropdown.astro";
 import CheckInButton from "../common/CheckInButton.astro";
 import PageSizeToggle from "./PageSizeToggle.astro";
 ---
@@ -73,7 +79,9 @@ import PageSizeToggle from "./PageSizeToggle.astro";
 
     <PageSizeToggle variant="tile" idPrefix="dropdown-" />
 
-    {(currentRole === "Admin" || currentRole === "Staff") && <CheckInButton tile />}
+    {(currentRole === "Admin" || currentRole === "Staff") && project?.id != null && (
+      <CheckInButton tile projectId={project.id} />
+    )}
   </div>
   {
     (currentRole === "Admin" || currentRole === "Staff") && assignedProjectsCount > 0 && (

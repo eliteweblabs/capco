@@ -227,7 +227,7 @@ import LoadingSpinner from "./LoadingSpinner.astro";
       try {
         this.showLoading();
 
-        const response = await fetch("/api/notifications/get?limit=10", {
+        const response = await fetch("/api/notifications/get?limit=25", {
           credentials: "include",
         });
 
@@ -247,7 +247,7 @@ import LoadingSpinner from "./LoadingSpinner.astro";
             if (bUnread !== aUnread) return bUnread - aUnread;
             return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
           });
-          this.hasMore = raw.length >= (data.limit ?? 10);
+          this.hasMore = raw.length >= (data.limit ?? 25);
           this.updateBadge(data.unreadCount || 0);
           this.renderNotifications();
         } else if (data.migrationRequired) {
@@ -502,7 +502,7 @@ import LoadingSpinner from "./LoadingSpinner.astro";
         loadingIndicator.classList.remove("hidden");
       }
 
-      const limit = 10;
+      const limit = 25;
       const offset = this.notifications.length;
 
       try {

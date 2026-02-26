@@ -48,14 +48,14 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 
 <!-- Phone Number Input -->
 <div>
-  <label
+  <!-- <label
     for={id}
     class={hideLabel
       ? "sr-only"
       : "mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"}
   >
     Phone Number {required && <span class="text-red-500">*</span>}
-  </label>
+  </label> -->
   <div class="relative">
     <input
       type="tel"
@@ -83,7 +83,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
 <!-- SMS Alerts Section (only show if showSMS is true) -->
 {
   showSMS && (
-    <div id={smsSectionId} class={value ? "" : "hidden"}>
+    <div id={smsSectionId} class={value && validatePhone(value) ? "" : "hidden"}>
       {/* <!-- SMS Alerts Toggle --> */}
       <div class="flex items-center gap-3 pt-4">
         <div class="flex-1">
@@ -183,7 +183,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       function toggleSmsSection() {
         var phoneValue = phoneInput.value.trim();
         var isValid = validatePhoneNumber(phoneValue);
-        if (isValid || phoneValue) {
+        if (isValid) {
           smsSection.classList.remove("hidden");
           if (phoneIndicator && isValid) {
             phoneIndicator.classList.remove("hidden");
@@ -216,10 +216,7 @@ const mobileCarrierOptions = SMS_UTILS.CARRIERS.map((carrier: any) => ({
       if (phoneInput.value.trim()) {
         phoneInput.value = formatPhone(phoneInput.value);
       }
-      if (phoneInput.value.trim() || smsAlertsCheckbox.checked) {
-        smsSection.classList.remove("hidden");
-        toggleSmsSection();
-      }
+      toggleSmsSection();
       toggleCarrierSelection();
       isUserInteraction = true;
       smsAlertsCheckbox.addEventListener("change", toggleCarrierSelection);

@@ -191,6 +191,9 @@ const iconSize = tile ? "xl" : "md";
       const lng = pos.lng;
       const accuracy = pos.accuracy;
 
+      const notesEl = document.getElementById("check-in-notes") as HTMLInputElement | HTMLTextAreaElement | null;
+      const notes = notesEl?.value != null ? String(notesEl.value).trim() : null;
+
       const body: Record<string, unknown> = {
         action: isCheckIn ? "check_in" : "check_out",
         lat,
@@ -199,9 +202,11 @@ const iconSize = tile ? "xl" : "md";
       };
       if (isCheckIn) {
         if (validProjectId != null) body.projectId = validProjectId;
+        if (notes != null && notes !== "") body.notes = notes;
       } else {
         const teId = getTimeEntryId();
         if (teId != null) body.timeEntryId = teId;
+        if (notes != null && notes !== "") body.notes = notes;
       }
 
       const res = await fetch("/api/location/check-in", {

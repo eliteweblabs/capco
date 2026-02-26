@@ -34,6 +34,8 @@ interface CheckInRequest {
   projectId?: number | null;
   /** Required for check_out: the time entry id returned from check_in. */
   timeEntryId?: number | null;
+  /** Optional notes for this time entry (e.g. what you're working on). */
+  notes?: string | null;
 }
 
 export const POST: APIRoute = async ({ request, cookies }): Promise<Response> => {
@@ -62,7 +64,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     }
 
     const body: CheckInRequest = await request.json();
-    const { action, lat, lng, accuracy, projectId, timeEntryId } = body;
+    const { action, lat, lng, accuracy, projectId, timeEntryId, notes } = body;
 
     if (!action || typeof lat !== "number" || typeof lng !== "number") {
       return new Response(JSON.stringify({ error: "action, lat, and lng are required" }), {
@@ -102,7 +104,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
           userId: currentUser.id,
           projectId: projectId ?? null,
           startedAt: new Date().toISOString(),
-          notes: null,
+          notes: notes != null && String(notes).trim() !== "" ? String(notes).trim() : null,
           updatedAt: new Date().toISOString(),
         })
         .select("id")
@@ -117,12 +119,16 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       }
       timeEntryIdOut = newEntry?.id ?? null;
     } else if (timeEntryId != null) {
+      const updatePayload: { endedAt: string; updatedAt: string; notes?: string } = {
+        endedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      if (notes != null && String(notes).trim() !== "") {
+        updatePayload.notes = String(notes).trim();
+      }
       const { error: updateError } = await supabaseAdmin
         .from("timeEntries")
-        .update({
-          endedAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        })
+        .update(updatePayload)
         .eq("id", timeEntryId)
         .eq("userId", currentUser.id);
 

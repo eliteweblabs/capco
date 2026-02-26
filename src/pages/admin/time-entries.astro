@@ -1,0 +1,299 @@
+---
+/**
+ * Admin Time Tracker
+ * Lists time entries with author, project, start, end, notes. Supports filters and inline edit.
+ */
+import { checkAuth } from "../../lib/auth";
+import LayoutDefault from "../../components/layouts/LayoutDefault.astro";
+import Hero from "../../components/common/Hero.astro";
+import Button from "../../components/common/Button.astro";
+import { globalClasses } from "../api/global/global-classes";
+
+const { currentUser, currentRole } = await checkAuth(Astro.cookies);
+
+if (!currentUser) {
+  return Astro.redirect("/auth/login");
+}
+
+if (currentRole !== "Admin" && currentRole !== "Staff") {
+  return Astro.redirect("/dashboard");
+}
+
+const { globalAdminContainerClasses, globalInputClasses, primaryTextClasses, secondaryTextClasses } =
+  globalClasses();
+
+function defaultFrom(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - 30);
+  return d.toISOString().slice(0, 10);
+}
+function defaultTo(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+---
+
+<LayoutDefault
+  title="Time Entries"
+  description="View and edit time entries (author, project, start, end, notes)."
+>
+  <Hero
+    title="Time Entries"
+    description="Time tracker: check-in sessions with author, project, start, end, and notes."
+    {primaryTextClasses}
+    {secondaryTextClasses}
+  />
+
+  <div class={globalAdminContainerClasses}>
+    <div class="p-6 sm:p-8">
+      <div class="mb-6 flex flex-wrap items-end gap-4">
+        <div>
+          <label for="time-entries-from" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">From</label>
+          <input
+            id="time-entries-from"
+            type="date"
+            class={globalInputClasses}
+            value={defaultFrom()}
+            data-time-entries-filter="from"
+          />
+        </div>
+        <div>
+          <label for="time-entries-to" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">To</label>
+          <input
+            id="time-entries-to"
+            type="date"
+            class={globalInputClasses}
+            value={defaultTo()}
+            data-time-entries-filter="to"
+          />
+        </div>
+        <Button id="time-entries-apply" variant="primary" data-action="apply">
+          Apply
+        </Button>
+      </div>
+
+      <div
+        id="time-entries-table-wrap"
+        class="overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900"
+      >
+        <div id="time-entries-placeholder" class="p-8 text-center text-gray-500 dark:text-gray-400">
+          Loading…
+        </div>
+        <div id="time-entries-table" class="hidden overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-800">
+              <tr>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">Author</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">Project</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">Start</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">End</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">Duration</th>
+                <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">Notes</th>
+                <th scope="col" class="w-24 px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">Edit</th>
+              </tr>
+            </thead>
+            <tbody id="time-entries-tbody" class="divide-y divide-gray-200 dark:divide-gray-700">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</LayoutDefault>
+
+<script define:vars={{ globalInputClasses }}>
+  const placeholderEl = document.getElementById("time-entries-placeholder");
+  const tableWrapEl = document.getElementById("time-entries-table");
+  const tbodyEl = document.getElementById("time-entries-tbody");
+  const fromEl = document.getElementById("time-entries-from");
+  const toEl = document.getElementById("time-entries-to");
+  const applyBtn = document.getElementById("time-entries-apply");
+
+  function formatDateTime(iso) {
+    if (!iso) return "—";
+    try {
+      return new Date(iso).toLocaleString(undefined, {
+        dateStyle: "short",
+        timeStyle: "short",
+      });
+    } catch {
+      return iso;
+    }
+  }
+
+  function formatDuration(minutes) {
+    if (minutes == null) return "—";
+    if (minutes < 60) return `${minutes}m`;
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return m ? `${h}h ${m}m` : `${h}h`;
+  }
+
+  function escapeHtml(s) {
+    if (s == null || s === "") return "";
+    const div = document.createElement("div");
+    div.textContent = s;
+    return div.innerHTML;
+  }
+
+  function toLocalDatetime(iso) {
+    if (!iso) return "";
+    const d = new Date(iso);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const h = String(d.getHours()).padStart(2, "0");
+    const min = String(d.getMinutes()).padStart(2, "0");
+    return `${y}-${m}-${day}T${h}:${min}`;
+  }
+
+  async function fetchEntries() {
+    const from = fromEl?.value || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const to = toEl?.value || new Date().toISOString().slice(0, 10);
+    const url = `/api/time-entries?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to load");
+    return data.entries || [];
+  }
+
+  function renderRow(entry, expandedId) {
+    const tr = document.createElement("tr");
+    tr.dataset.entryId = String(entry.id);
+    tr.className = "border-b border-gray-200 dark:border-gray-700";
+    const isExpanded = expandedId === entry.id;
+    tr.innerHTML = `
+      <td class="px-4 py-2 text-gray-900 dark:text-white">${escapeHtml(entry.author)}</td>
+      <td class="px-4 py-2 text-gray-700 dark:text-gray-300">${escapeHtml(entry.project)}</td>
+      <td class="px-4 py-2 text-gray-700 dark:text-gray-300 whitespace-nowrap">${formatDateTime(entry.start)}</td>
+      <td class="px-4 py-2 text-gray-700 dark:text-gray-300 whitespace-nowrap">${formatDateTime(entry.end)}</td>
+      <td class="px-4 py-2 text-gray-700 dark:text-gray-300">${formatDuration(entry.durationMinutes)}</td>
+      <td class="px-4 py-2 max-w-xs truncate text-gray-600 dark:text-gray-400" title="${escapeHtml(entry.notes || "")}">${escapeHtml(entry.notes || "—")}</td>
+      <td class="px-4 py-2">
+        <button type="button" class="time-entry-edit-btn text-primary-600 hover:underline dark:text-primary-400" data-id="${entry.id}">Edit</button>
+      </td>
+    `;
+    const editBtn = tr.querySelector(".time-entry-edit-btn");
+    editBtn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      window.dispatchEvent(new CustomEvent("time-entries-toggle-edit", { detail: { id: entry.id } }));
+    });
+
+    return tr;
+  }
+
+  function renderEditRow(entry) {
+    const tr = document.createElement("tr");
+    tr.className = "bg-gray-50 dark:bg-gray-800/50";
+    tr.dataset.entryId = String(entry.id);
+    tr.dataset.editRow = "true";
+    tr.innerHTML = `
+      <td colspan="7" class="px-4 py-4">
+        <form class="time-entry-edit-form space-y-3" data-id="${entry.id}">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
+            <textarea name="notes" rows="2" class="${globalInputClasses} w-full" placeholder="Optional notes">${escapeHtml(entry.notes || "")}</textarea>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start</label>
+              <input type="datetime-local" name="startedAt" class="${globalInputClasses}" value="${toLocalDatetime(entry.start)}" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">End</label>
+              <input type="datetime-local" name="endedAt" class="${globalInputClasses}" value="${toLocalDatetime(entry.end)}" />
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button type="submit" class="rounded-md bg-primary-600 px-3 py-2 text-sm font-medium text-white hover:bg-primary-700">Save</button>
+            <button type="button" class="time-entry-cancel-edit rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700" data-id="${entry.id}">Cancel</button>
+          </div>
+        </form>
+      </td>
+    `;
+    const form = tr.querySelector("form");
+    const cancelBtn = tr.querySelector(".time-entry-cancel-edit");
+    form?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const notes = fd.get("notes") != null ? String(fd.get("notes")).trim() : null;
+      const startedAt = fd.get("startedAt");
+      const endedAt = fd.get("endedAt");
+      const payload = {};
+      if (notes !== undefined) payload.notes = notes || null;
+      if (startedAt) payload.startedAt = new Date(startedAt).toISOString();
+      if (endedAt) payload.endedAt = new Date(endedAt).toISOString();
+      try {
+        const res = await fetch(`/api/time-entries/${entry.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Update failed");
+        if (typeof window.showNotice === "function") {
+          window.showNotice("success", "Saved", "Time entry updated.", 2000);
+        }
+        window.dispatchEvent(new CustomEvent("time-entries-toggle-edit", { detail: { id: null } }));
+        loadEntries();
+      } catch (err) {
+        if (typeof window.showNotice === "function") {
+          window.showNotice("error", "Error", err.message || "Failed to update", 5000);
+        } else alert(err.message);
+      }
+    });
+    cancelBtn?.addEventListener("click", () => {
+      window.dispatchEvent(new CustomEvent("time-entries-toggle-edit", { detail: { id: null } }));
+      loadEntries();
+    });
+    return tr;
+  }
+
+  let entries = [];
+  let expandedId = null;
+
+  function loadEntries() {
+    fetchEntries()
+      .then((list) => {
+        entries = list;
+        if (!tbodyEl) return;
+        tbodyEl.innerHTML = "";
+        if (list.length === 0) {
+          if (placeholderEl) {
+            placeholderEl.textContent = "No time entries in this range.";
+            placeholderEl.classList.remove("hidden");
+          }
+          if (tableWrapEl) tableWrapEl.classList.add("hidden");
+          return;
+        }
+        if (placeholderEl) placeholderEl.classList.add("hidden");
+        if (tableWrapEl) tableWrapEl.classList.remove("hidden");
+        list.forEach((entry) => {
+          if (expandedId === entry.id) {
+            tbodyEl.appendChild(renderEditRow(entry));
+          } else {
+            tbodyEl.appendChild(renderRow(entry, expandedId));
+          }
+        });
+      })
+      .catch((err) => {
+        if (placeholderEl) {
+          placeholderEl.textContent = err.message || "Failed to load time entries.";
+          placeholderEl.classList.remove("hidden");
+        }
+        if (tableWrapEl) tableWrapEl.classList.add("hidden");
+      });
+  }
+
+  window.addEventListener("time-entries-toggle-edit", (e) => {
+    const id = e.detail?.id ?? null;
+    if (expandedId === id) {
+      expandedId = null;
+    } else {
+      expandedId = id;
+    }
+    loadEntries();
+  });
+
+  applyBtn?.addEventListener("click", loadEntries);
+  loadEntries();
+</script>
