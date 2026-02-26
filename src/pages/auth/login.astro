@@ -33,6 +33,53 @@ const id = "login-form";
     <div class="mb-8 flex-1">
       <LoginForm redirectUrl={redirectUrl} />
     </div>
+    {/* Fallback: ensure sign-in at least validates when main form script has not inited */}
+    <script is:inline>
+      (function () {
+        function initLoginFallback() {
+          var form = document.querySelector("main form[data-form-config]");
+          if (!form || form.getAttribute("data-standard-form-inited") === "1") return;
+          if (form.getAttribute("data-login-fallback-inited") === "1") return;
+          form.setAttribute("data-login-fallback-inited", "1");
+          var formId = form.id || "login-form";
+          var alertId = formId + "-response-alert";
+          form.addEventListener(
+            "submit",
+            function (e) {
+              if (form.getAttribute("data-standard-form-inited") === "1") return;
+              form.querySelectorAll("input[required]").forEach(function (input) {
+                input.classList.add("touched");
+              });
+              if (!form.checkValidity()) {
+                e.preventDefault();
+                e.stopPropagation();
+                form.reportValidity();
+                var firstInvalid = form.querySelector("input:invalid, textarea:invalid");
+                var alertEl = document.getElementById(alertId);
+                if (alertEl && firstInvalid) {
+                  var msg = firstInvalid.getAttribute("data-error") || firstInvalid.validationMessage || "Please fill in this field correctly";
+                  alertEl.className = "w-full p-2 mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800";
+                  alertEl.innerHTML =
+                    '<div class="flex items-start">' +
+                    '<svg class="mr-2 mt-0.5 h-5 w-5 shrink-0 text-red-800 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>' +
+                    '<div class="mr-8 flex-1 text-base text-red-800 dark:text-red-400">' +
+                    msg.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;") +
+                    "</div></div>";
+                  alertEl.classList.remove("hidden");
+                }
+              }
+            },
+            true
+          );
+        }
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", initLoginFallback);
+        } else {
+          initLoginFallback();
+        }
+        setTimeout(initLoginFallback, 200);
+      })();
+    </script>
     <div class="bottom-0 left-0 right-0 flex border-t border-gray-200 pt-3 dark:border-gray-700">
       <a
         href="/auth/forgot-password"

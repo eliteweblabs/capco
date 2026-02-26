@@ -41,336 +41,337 @@ const formElements = await getFilteredUnifiedFormElements(currentRole, isNewProj
 
 ---
 
-    <div id="project-form-wrapper">
-      <div id="project-form-wrapper">
-        <form
-          class="w-full space-y-4"
-          data-project-id={formId}
-          data-is-new-project={isNewProject}
-          data-current-role={currentRole}
-          data-project-data={JSON.stringify(project || {})}
-          autocomplete="off"
-        >
-          <!-- Unified Form Elements Loop -->
-          <div id="project-form-elements-grid" class="grid grid-cols-6 md:grid-cols-12 gap-4">
-            {
-              formElements.map((element) => {
-                const isReadOnly = isFormElementReadOnly(element, projectStatus);
+<div id="project-form-wrapper">
+  <div id="project-form-wrapper">
+    <form
+      class="w-full space-y-4"
+      data-project-id={formId}
+      data-is-new-project={isNewProject}
+      data-current-role={currentRole}
+      data-project-data={JSON.stringify(project || {})}
+      autocomplete="off"
+    >
+      <!-- Unified Form Elements Loop -->
+      <div id="project-form-elements-grid" class="grid grid-cols-6 md:grid-cols-12 gap-4">
+        {
+          formElements.map((element) => {
+            const isReadOnly = isFormElementReadOnly(element, projectStatus);
 
-                // Handle special cases first
-                if (element.id === "address-input") {
-                  // Determine column class for address field
-                  const columnClass = getColumnClasses(element.columns);
+            // Handle special cases first
+            if (element.id === "address-input") {
+              // Determine column class for address field
+              const columnClass = getColumnClasses(element.columns);
 
-                  return (
-                    <div class={`relative ${columnClass}`}>
-                      {isNewProject ? (
-                        <div class="col-span-12 md:col-span-6 ">
-                        <SlotMachineModal
-                          id="address"
-                          icon="map-pin"
-                          title="Select Address"
-                          options={[]}
-                          selectedValue={project?.address || ""}
-                          placeholder="Search for an address..."
-                          showCloseButton={true}
-                          showCancelButton={true}
-                          buttonText="Select Address *"
-                          buttonClass="w-full mb-4"
-                          buttonVariant="primary"
-                          searchText="Search Address"
-                          searchPlaceholder="Type to search addresses..."
-                          fetchApiEndpoint="/api/google/places-autocomplete"
-                          apiParams={{
-                            types: "address",
-                            components: "country:us",
-                            locationBias: "circle:100@42.3601,-71.0589",
-                          }}
-                          valueField="description"
-                          noResultsText="Type to search addresses..."
-                          currentUser={currentUser}
-                          project={project}
-                          globalInputClasses={globalInputClasses}
-                          currentLocation={true}
-                        />
-                        </div>
-                      ) : (
-                        <input
-                          type="text"
-                          id="address"
-                          name="address"
-                          value={project?.address || ""}
-                          readonly={true}
-                          data-scrap="true"
-                        />
-                      )}
-
-                      {isNewProject && (currentRole === "Admin" || currentRole === "Staff") && (
-                        <IsNewOrExistingClient
-                          globalInputClasses={globalInputClasses}
-                          secondaryTextClasses={secondaryTextClasses}
-                          primaryTextClasses={primaryTextClasses}
-                        />
-                      )}
+              return (
+                <div class={`relative ${columnClass}`}>
+                  {isNewProject ? (
+                    <div class="col-span-12 md:col-span-6 ">
+                    <SlotMachineModal
+                      id="address"
+                      icon="map-pin"
+                      title="Select Address"
+                      options={[]}
+                      selectedValue={project?.address || ""}
+                      placeholder="Search for an address..."
+                      showCloseButton={true}
+                      showCancelButton={true}
+                      buttonText="Select Address *"
+                      buttonClass="w-full mb-4"
+                      buttonVariant="primary"
+                      searchText="Search Address"
+                      searchPlaceholder="Type to search addresses..."
+                      fetchApiEndpoint="/api/google/places-autocomplete"
+                      apiParams={{
+                        types: "address",
+                        components: "country:us",
+                        locationBias: "circle:100@42.3601,-71.0589",
+                      }}
+                      valueField="description"
+                      noResultsText="Type to search addresses..."
+                      currentUser={currentUser}
+                      project={project}
+                      globalInputClasses={globalInputClasses}
+                      currentLocation={true}
+                    />
                     </div>
-                  );
-                }
+                  ) : (
+                    <input
+                      type="text"
+                      id="address"
+                      name="address"
+                      value={project?.address || ""}
+                      readonly={true}
+                      data-scrap="true"
+                    />
+                  )}
 
-                // Handle form fields
-                if (element.type === "field") {
-                  if (element.elementType === "text" || element.elementType === "number") {
-                    const columnClass = getColumnClasses(element.columns);
-
-                    return (
-                      <div class={`relative ${columnClass}`}>
-                        <label
-                          for={`${element.id}`}
-                          class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
-                        >
-                          {element.label}
-                          {element.required ? " *" : ""}
-                        </label>
-                        <input
-                          type={element.elementType === "number" ? "number" : "text"}
-                          id={`${element.id}`}
-                          name={element.name}
-                          value={
-                            project?.[element.name] && project[element.name] !== ""
-                              ? project[element.name]
-                              : element.value || ""
-                          }
-                          class={`${globalInputClasses} ${
-                            isReadOnly ? "cursor-not-allowed bg-gray-100 color-background" : ""
-                          }`}
-                          autocomplete={
-                            element.name === "architect"
-                              ? "organization"
-                              : element.name === "title"
-                                ? "off"
-                                : element.name === "description"
-                                  ? "off"
-                                  : element.name === "nfpaVersion"
-                                    ? "off"
-                                    : element.name === "hazardousMaterial"
-                                      ? "off"
-                                      : element.name === "hpsCommodities"
-                                        ? "off"
-                                        : element.name === "siteAccess"
-                                          ? "off"
-                                          : element.name === "exteriorBeacon"
-                                            ? "off"
-                                            : element.name === "fireSprinklerInstallation"
-                                              ? "off"
-                                              : element.name === "commencementOfConstruction"
-                                                ? "off"
-                                                : element.name === "suppressionDetectionSystems"
-                                                  ? "off"
-                                                  : "off"
-                          }
-                          placeholder={element.placeholder || ""}
-                          required={element.required}
-                          min={element.min}
-                          max={element.max}
-                          step={element.step}
-                          readonly={isReadOnly}
-                          data-field={element.dataField}
-                          data-scrap={element.dataScrap ? "true" : undefined}
-                        />
-                      </div>
-                    );
-                  }
-
-                  if (element.elementType === "textarea") {
-                    const columnClass = getColumnClasses(element.columns);
-
-                    return (
-                      <div class={`relative ${columnClass}`}>
-                        <label
-                          for={`${element.id}`}
-                          class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                        >
-                          {element.label}
-                        </label>
-                   
-                   
-                        <textarea
-                          id={`${element.id}`}
-                          name={element.name}
-                          rows="3"
-                          class={globalInputClasses}
-                          placeholder={element.placeholder || ""}
-                          readonly={isReadOnly}
-                        > {project?.[element.name] && project[element.name] !== "" ? project[element.name] : element.value || ""}</textarea>
-                      </div>
-                    );
-                  }
-
-                  if (element.elementType === "checkbox") {
-                    const columnClass = getColumnClasses(element.columns);
-
-                    const isChecked =
-                      project?.[element.name] === true ||
-                      project?.[element.name] === "true" ||
-                      project?.[element.name] === 1 ||
-                      project?.[element.name] === "1";
-                    return (
-                      <div class={`relative ${columnClass}`}>
-                        <label
-                          class={`inline-flex items-center ${isReadOnly ? "cursor-not-allowed" : "cursor-pointer"}`}
-                        >
-                          <input
-                            type="checkbox"
-                            id={`${element.id}`}
-                            name={element.name}
-                            checked={isChecked}
-                            disabled={isReadOnly}
-                            class="peer sr-only"
-                          />
-                          <div
-                            class={`peer relative h-6 w-11 rounded-full after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-gray-100 after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:border-gray-600 dark:peer-focus:ring-primary-800 rtl:peer-checked:after:-translate-x-full ${
-                              isReadOnly
-                                ? "cursor-not-allowed bg-gray-300 dark:bg-gray-600"
-                                : "bg-gray-200 peer-checked:bg-primary-600 dark:bg-gray-700 dark:peer-checked:bg-primary-600"
-                            }`}
-                          />
-                          <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
-                            {element.label}
-                          </span>
-                        </label>
-                      </div>
-                    );
-                  }
-
-                  if (element.elementType === "component" && element.component === "UnitSlider") {
-                    const columnClass = getColumnClasses(element.columns);
-
-                    return (
-                      <div class={`relative ${columnClass}`}>
-                        <UnitSlider
-                          projectId={formId}
-                          value={
-                            project?.[element.name] && project[element.name] !== ""
-                              ? project[element.name]
-                              : element.value || 1
-                          }
-                          readOnly={isReadOnly}
-                          name={element.name}
-                          label={element.label}
-                          min={element.min}
-                          max={element.max}
-                          step={element.step}
-                        />
-                      </div>
-                    );
-                  }
-                }
-
-                // Handle button groups
-                if (element.type === "button-group") {
-                  const columnClass = getColumnClasses(element.columns);
-
-                  // Parse selected values from project data
-                  let selectedValues = [] as any;
-                  // console.log(`🔍 [PROJECT-FORM] Processing group: ${element.name}, Project data:`, project?.[element.name]);
-                  if (project?.[element.name]) {
-                    if (Array.isArray(project[element.name])) {
-                      selectedValues = project[element.name];
-                    } else if (typeof project[element.name] === "string") {
-                      try {
-                        const parsed = JSON.parse(project[element.name]);
-                        selectedValues = Array.isArray(parsed) ? parsed : [project[element.name]];
-                      } catch {
-                        selectedValues = project[element.name]
-                          .split(",")
-                          .map((s: any) => s.trim())
-                          .filter((s: any) => s);
-                      }
-                    } else {
-                      selectedValues = [project[element.name]];
-                    }
-                  }
-
-                  return (
-                    <div class={`mt-5 space-y-3 ${columnClass}`}>
-                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {element.label}
-                      </label>
-                      <div
-                        class={`mb-4 flex flex-wrap gap-2 ${isReadOnly ? "cursor-not-allowed opacity-75" : ""}`}
-                      >
-                        {element.options?.map((option) => {
-                          const optionValue = typeof option === "string" ? option : option.value;
-                          const optionLabel = typeof option === "string" ? option : option.label;
-                          const isSelected =
-                            selectedValues.includes(optionValue) ||
-                            (typeof option === "object" && option.selected === true);
-                          return (
-                            <ToggleButton
-                              value={optionValue}
-                              group={element.name}
-                              type={element.groupType}
-                              disabled={isReadOnly}
-                              class={`${element.cssClass || ""} ${isSelected ? "toggle-button selected" : "toggle-button"} ${
-                                isReadOnly ? "pointer-events-none" : ""
-                              }`}
-                            >
-                              {optionLabel}
-                            </ToggleButton>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                }
-
-                // Skip actions in main loop - they're handled separately
-                if (element.type === "action") {
-                  return null;
-                }
-
-                return null;
-              })
+                  {isNewProject && (currentRole === "Admin" || currentRole === "Staff") && (
+                    <IsNewOrExistingClient
+                      globalInputClasses={globalInputClasses}
+                      secondaryTextClasses={secondaryTextClasses}
+                      primaryTextClasses={primaryTextClasses}
+                    />
+                  )}
+                </div>
+              );
             }
-          </div>
 
-          <!-- Form Actions Container -->
-            {
-              (() => {
-                const actionElements = formElements.filter((element) => element.type === "action");
-                const buttonCount = actionElements.length;
-                
-                if (buttonCount === 0) return null;
-                
+            // Handle form fields
+            if (element.type === "field") {
+              if (element.elementType === "text" || element.elementType === "number") {
+                const columnClass = getColumnClasses(element.columns);
+
                 return (
-                  <StickyActions columns={buttonCount.toString()}>
-                    {actionElements.map((element) => {
-                      const isReadOnly = isFormElementReadOnly(element, projectStatus);
+                  <div class={`relative ${columnClass}`}>
+                    <label
+                      for={`${element.id}`}
+                      class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    >
+                      {element.label}
+                      {element.required ? " *" : ""}
+                    </label>
+                    <input
+                      type={element.elementType === "number" ? "number" : "text"}
+                      id={`${element.id}`}
+                      name={element.name}
+                      value={
+                        project?.[element.name] && project[element.name] !== ""
+                          ? project[element.name]
+                          : element.value || ""
+                      }
+                      class={`${globalInputClasses} ${
+                        isReadOnly ? "cursor-not-allowed bg-gray-100 color-background" : ""
+                      }`}
+                      autocomplete={
+                        element.name === "architect"
+                          ? "organization"
+                          : element.name === "title"
+                            ? "off"
+                            : element.name === "description"
+                              ? "off"
+                              : element.name === "nfpaVersion"
+                                ? "off"
+                                : element.name === "hazardousMaterial"
+                                  ? "off"
+                                  : element.name === "hpsCommodities"
+                                    ? "off"
+                                    : element.name === "siteAccess"
+                                      ? "off"
+                                      : element.name === "exteriorBeacon"
+                                        ? "off"
+                                        : element.name === "fireSprinklerInstallation"
+                                          ? "off"
+                                          : element.name === "commencementOfConstruction"
+                                            ? "off"
+                                            : element.name === "suppressionDetectionSystems"
+                                              ? "off"
+                                              : "off"
+                      }
+                      placeholder={element.placeholder || ""}
+                      required={element.required}
+                      min={element.min}
+                      max={element.max}
+                      step={element.step}
+                      readonly={isReadOnly}
+                      data-field={element.dataField}
+                      data-scrap={element.dataScrap ? "true" : undefined}
+                    />
+                  </div>
+                );
+              }
+
+              if (element.elementType === "textarea") {
+                const columnClass = getColumnClasses(element.columns);
+
+                return (
+                  <div class={`relative ${columnClass}`}>
+                    <label
+                      for={`${element.id}`}
+                      class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    >
+                      {element.label}
+                    </label>
+
+                    <textarea
+                      id={`${element.id}`}
+                      name={element.name}
+                      rows="3"
+                      class={globalInputClasses}
+                      placeholder={element.placeholder || ""}
+                      readonly={isReadOnly}
+                    > {project?.[element.name] && project[element.name] !== "" ? project[element.name] : element.value || ""}</textarea>
+                  </div>
+                );
+              }
+
+              if (element.elementType === "checkbox") {
+                const columnClass = getColumnClasses(element.columns);
+
+                const isChecked =
+                  project?.[element.name] === true ||
+                  project?.[element.name] === "true" ||
+                  project?.[element.name] === 1 ||
+                  project?.[element.name] === "1";
+                return (
+                  <div class={`relative ${columnClass}`}>
+                    <label
+                      class={`inline-flex items-center ${isReadOnly ? "cursor-not-allowed" : "cursor-pointer"}`}
+                    >
+                      <input
+                        type="checkbox"
+                        id={`${element.id}`}
+                        name={element.name}
+                        checked={isChecked}
+                        disabled={isReadOnly}
+                        class="peer sr-only"
+                      />
+                      <div
+                        class={`peer relative h-6 w-11 rounded-full after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-gray-100 after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:border-gray-600 dark:peer-focus:ring-primary-800 rtl:peer-checked:after:-translate-x-full ${
+                          isReadOnly
+                            ? "cursor-not-allowed bg-gray-300 dark:bg-gray-600"
+                            : "bg-gray-200 peer-checked:bg-primary-600 dark:bg-gray-700 dark:peer-checked:bg-primary-600"
+                        }`}
+                      />
+                      <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
+                        {element.label}
+                      </span>
+                    </label>
+                  </div>
+                );
+              }
+
+              if (element.elementType === "component" && element.component === "UnitSlider") {
+                const columnClass = getColumnClasses(element.columns);
+
+                return (
+                  <div class={`relative ${columnClass}`}>
+                    <UnitSlider
+                      projectId={formId}
+                      value={
+                        project?.[element.name] && project[element.name] !== ""
+                          ? project[element.name]
+                          : element.value || 1
+                      }
+                      readOnly={isReadOnly}
+                      name={element.name}
+                      label={element.label}
+                      min={element.min}
+                      max={element.max}
+                      step={element.step}
+                    />
+                  </div>
+                );
+              }
+            }
+
+            // Handle button groups
+            if (element.type === "button-group") {
+              const columnClass = getColumnClasses(element.columns);
+
+              // Parse selected values from project data
+              let selectedValues = [] as any;
+              // console.log(`🔍 [PROJECT-FORM] Processing group: ${element.name}, Project data:`, project?.[element.name]);
+              if (project?.[element.name]) {
+                if (Array.isArray(project[element.name])) {
+                  selectedValues = project[element.name];
+                } else if (typeof project[element.name] === "string") {
+                  try {
+                    const parsed = JSON.parse(project[element.name]);
+                    selectedValues = Array.isArray(parsed) ? parsed : [project[element.name]];
+                  } catch {
+                    selectedValues = project[element.name]
+                      .split(",")
+                      .map((s: any) => s.trim())
+                      .filter((s: any) => s);
+                  }
+                } else {
+                  selectedValues = [project[element.name]];
+                }
+              }
+
+              return (
+                <div class={`mt-5 space-y-3 ${columnClass}`}>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {element.label}
+                  </label>
+                  <div
+                    class={`mb-4 flex flex-wrap gap-2 ${isReadOnly ? "cursor-not-allowed opacity-75" : ""}`}
+                  >
+                    {element.options?.map((option) => {
+                      const optionValue = typeof option === "string" ? option : option.value;
+                      const optionLabel = typeof option === "string" ? option : option.label;
+                      const isSelected =
+                        selectedValues.includes(optionValue) ||
+                        (typeof option === "object" && option.selected === true);
                       return (
-                        <Button
-                          type={element.elementType === "submit" ? "submit" : "button"}
-                          variant={
-                            element.variant === "info" ? "secondary" : element.variant || "secondary"
-                          }
-                          size="lg"
-                          icon={element.icon}
-                          iconPosition="left"
-                          class={element.cssClass || ""}
-                          id={element.id}
-                          dataAttributes={{
-                            "data-action": element.action || "",
-                            "data-tab": element.tab || "",
-                          }}
+                        <ToggleButton
+                          value={optionValue}
+                          group={element.name}
+                          type={element.groupType}
+                          disabled={isReadOnly}
+                          class={`${element.cssClass || ""} ${isSelected ? "toggle-button selected" : "toggle-button"} ${
+                            isReadOnly ? "pointer-events-none" : ""
+                          }`}
                         >
-                          <span set:html={element.label} />
-                        </Button>
+                          {optionLabel}
+                        </ToggleButton>
                       );
                     })}
-                  </StickyActions>
-                );
-              })()
+                  </div>
+                </div>
+              );
             }
-        </form>
+
+            // Skip actions in main loop - they're handled separately
+            if (element.type === "action") {
+              return null;
+            }
+
+            return null;
+          })
+        }
       </div>
+
+      {/* <!-- Form Actions Container --> */}
+        {
+          (() => {
+            const actionElements = formElements.filter((element) => element.type === "action");
+            const buttonCount = actionElements.length;
+
+            if (buttonCount === 0) return null;
+
+            return (
+              <StickyActions columns={buttonCount.toString()}>
+                {actionElements.map((element) => {
+                  const isReadOnly = isFormElementReadOnly(element, projectStatus);
+                  return (
+                    <Button
+                      type={element.elementType === "submit" ? "submit" : "button"}
+                      variant={
+                        element.variant === "info" ? "secondary" : element.variant || "secondary"
+                      }
+                      size="lg"
+                      icon={element.icon}
+                      iconPosition="left"
+                      class={element.cssClass || ""}
+                      id={element.id}
+                      dataAttributes={{
+                        "data-action": element.action || "",
+                        "data-tab": element.tab || "",
+                      }}
+                    >
+                      <span set:html={element.label} />
+                    </Button>
+                  );
+                })}
+              </StickyActions>
+            );
+          })()
+        }
+    </form>
+  </div>
+</div>
+
 
 <script>
   // Initialize project form

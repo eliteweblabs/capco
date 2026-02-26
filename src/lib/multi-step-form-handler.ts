@@ -1086,8 +1086,8 @@ export function createMultiStepFormHandler(
       const editBtn = target.closest("button.edit-step");
       const skipBtn = target.closest("button.skip-step");
 
-      // Generic choice button handler (for button-groups)
-      if (choiceBtn && !smsChoiceBtn) {
+      // Generic choice button handler (for button-groups) — skip when handled by ToggleButton.astro
+      if (choiceBtn && !smsChoiceBtn && !choiceBtn.hasAttribute("data-group")) {
         if (multistepDebug) {
           console.log("[MULTISTEP-CLICK-DEBUG] form click → choice button", {
             choiceValue: choiceBtn.getAttribute("data-value"),
@@ -1222,6 +1222,18 @@ export function createMultiStepFormHandler(
           nextButton.disabled = false;
         }
 
+        return;
+      }
+
+      // ToggleButton.astro choice (button-group): value/visuals handled by ToggleButton; we only enable Next and conditionals
+      if (choiceBtn && !smsChoiceBtn && choiceBtn.hasAttribute("data-group")) {
+        e.preventDefault();
+        const stepContent = choiceBtn.closest(".step-content");
+        const nextButton = stepContent?.querySelector(
+          "button.next-step, button.submit-step"
+        ) as HTMLButtonElement | null;
+        if (nextButton) nextButton.disabled = false;
+        updateConditionalFields();
         return;
       }
 
@@ -1809,16 +1821,40 @@ export function initializeMultiStepForm(
   return handler;
 }
 
+/** Show validation/error message in the form's inline alert when responseType is "inline". */
+function showInlineValidationError(formId: string, message: string): void {
+  const container = document.getElementById(`${formId}-response-alert`);
+  if (!container) return;
+  const escaped = (s: string) =>
+    s
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  container.className =
+    "w-full p-2 mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800";
+  container.innerHTML = `
+    <div class="flex items-start">
+      <svg class="mr-2 mt-0.5 h-5 w-5 shrink-0 text-red-800 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
+      <div class="mr-8 flex-1 text-base text-red-800 dark:text-red-400">${escaped(message)}</div>
+    </div>`;
+  container.classList.remove("hidden");
+}
+
 /** Validate a flat form container (used by StandardForm). Same validation logic as validateStep. */
 async function validateFormContainer(container: HTMLElement, formConfig?: any): Promise<boolean> {
+  const formId = (container as HTMLFormElement).id || "";
+  const useInline = formConfig?.responseType === "inline";
+
   const inputs = container.querySelectorAll("input[required], textarea[required]");
   for (const input of inputs) {
     const inputEl = input as HTMLInputElement | HTMLTextAreaElement;
     if (!inputEl.checkValidity()) {
       inputEl.classList.add("touched");
-      if ((window as any).showNotice) {
-        const errorMsg =
-          inputEl.getAttribute("data-error") || "Please fill in this field correctly";
+      const errorMsg =
+        inputEl.getAttribute("data-error") || "Please fill in this field correctly";
+      if (useInline && formId) showInlineValidationError(formId, errorMsg);
+      else if ((window as any).showNotice) {
         (window as any).showNotice("error", "Validation Error", errorMsg, 3000);
       }
       return false;
@@ -1830,35 +1866,22 @@ async function validateFormContainer(container: HTMLElement, formConfig?: any): 
   if (phoneInput) {
     const phoneValue = phoneInput.value?.trim() || "";
     if (phoneInput.required && !phoneValue) {
-      if ((window as any).showNotice) {
-        (window as any).showNotice(
-          "error",
-          "Phone Number Required",
-          "Please enter a phone number",
-          3000
-        );
+      const msg = "Please enter a phone number";
+      if (useInline && formId) showInlineValidationError(formId, msg);
+      else if ((window as any).showNotice) {
+        (window as any).showNotice("error", "Phone Number Required", msg, 3000);
       }
       phoneInput.classList.add("touched");
       return false;
     }
     if (phoneValue && !validatePhone(phoneValue)) {
-      const digitsOnly = phoneValue.replace(/\D/g, "");
-      if (digitsOnly.length < 10) {
-        if ((window as any).showNotice) {
-          (window as any).showNotice(
-            "error",
-            "Invalid Phone Number",
-            "Please enter a complete 10-digit phone number",
-            3000
-          );
-        }
-      } else if ((window as any).showNotice) {
-        (window as any).showNotice(
-          "error",
-          "Invalid Phone Number",
-          "Please enter a valid US phone number",
-          3000
-        );
+      const msg =
+        phoneValue.replace(/\D/g, "").length < 10
+          ? "Please enter a complete 10-digit phone number"
+          : "Please enter a valid US phone number";
+      if (useInline && formId) showInlineValidationError(formId, msg);
+      else if ((window as any).showNotice) {
+        (window as any).showNotice("error", "Invalid Phone Number", msg, 3000);
       }
       phoneInput.classList.add("touched");
       return false;
@@ -1880,8 +1903,10 @@ async function validateFormContainer(container: HTMLElement, formConfig?: any): 
           const result = await response.json();
           if (result.available === false) {
             emailInput.classList.add("touched");
-            const loginUrl = `/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`;
-            if ((window as any).showNotice) {
+            const msg = "This email is already registered. Please log in instead.";
+            if (useInline && formId) showInlineValidationError(formId, msg);
+            else if ((window as any).showNotice) {
+              const loginUrl = `/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`;
               (window as any).showNotice(
                 "warning",
                 "Email Already Registered",
@@ -1898,7 +1923,7 @@ async function validateFormContainer(container: HTMLElement, formConfig?: any): 
     }
   }
 
-  // data-validate exists rule
+  // data-validate exists rule (e.g. login: email must exist)
   const validateInputs = container.querySelectorAll(
     "input[data-validate], textarea[data-validate]"
   );
@@ -1922,7 +1947,11 @@ async function validateFormContainer(container: HTMLElement, formConfig?: any): 
             const result = await response.json();
             if (result.available !== false) {
               inputEl.classList.add("touched");
-              if ((window as any).showNotice && validateMessage) {
+              const msg =
+                validateMessage?.replace(/<[^>]*>/g, "").trim() ||
+                "This email is not registered. Please create an account first.";
+              if (useInline && formId) showInlineValidationError(formId, msg);
+              else if ((window as any).showNotice && validateMessage) {
                 (window as any).showNotice("warning", "Not found", validateMessage, 10000);
               }
               return false;

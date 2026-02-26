@@ -27,6 +27,7 @@ export interface FormElementConfig {
   hideAtStatus?: number[];
   readOnlyAtStatus?: number[];
   columns?: number;
+  autocomplete?: string;
   [key: string]: any;
 }
 
@@ -157,6 +158,7 @@ function unifiedToFormElements(pf: any): FormElementConfig[] {
       columns: field.columns ?? 1,
       dataField: field.dataField,
       dataScrap: field.dataScrap,
+      autocomplete: field.autocomplete,
     } as FormElementConfig;
 
     if (field.type === "button-group") {

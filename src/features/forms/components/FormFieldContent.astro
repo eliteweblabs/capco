@@ -126,7 +126,7 @@ const isMultistep = context === "multistep";
   <UnitSlider
     name={field.name}
     label={field.label || field.name}
-    value={Number(field.value) ?? 1}
+    value={(() => { const n = Number(field.value); return Number.isFinite(n) ? n : 1; })()}
     required={field.required}
     min={field.min}
     max={field.max}
@@ -161,7 +161,7 @@ const isMultistep = context === "multistep";
   <UnitSlider
     name={field.name}
     label={field.label || field.name}
-    value={Number(field.value) ?? Number(field.min) ?? 0}
+    value={(() => { const v = Number(field.value); const m = Number(field.min); return Number.isFinite(v) ? v : Number.isFinite(m) ? m : 0; })()}
     required={field.required}
     min={field.min ?? 0}
     max={field.max ?? 100}
@@ -248,30 +248,45 @@ const isMultistep = context === "multistep";
   />
   </>
 ) : field.type === "button-group" ? (
-  <div class="multi-step-button-group flex flex-wrap gap-3" tabindex="-1">
-    {field.buttons?.map((button) => {
-      const btnConfig = getButtonConfig(
-        button,
-        buttonDefaults[button.type as keyof typeof buttonDefaults]
-      );
-      return (
-        <Button
-          id={button.id}
-          variant={btnConfig.variant}
-          size={btnConfig.size || "md"}
-          icon={btnConfig.icon}
-          iconPosition={btnConfig.iconPosition}
-          class={btnConfig.classes}
-          dataAttributes={{
-            ...(button.dataValue && { "data-value": button.dataValue }),
-            ...(button.dataNext !== undefined && { "data-next": String(button.dataNext) }),
-          }}
-        >
-          {btnConfig.label && <span class="button-text" set:html={btnConfig.label} />}
-        </Button>
-      );
-    })}
-  </div>
+  (() => {
+    const raw = initialData[field.name] ?? field.value ?? "";
+    const selectedValues: string[] = Array.isArray(raw)
+      ? raw
+      : typeof raw === "string"
+        ? (() => {
+            try {
+              const p = JSON.parse(raw);
+              return Array.isArray(p) ? p : [raw];
+            } catch {
+              return raw ? raw.split(",").map((s: string) => s.trim()).filter(Boolean) : [];
+            }
+          })()
+        : [];
+    const toggleType = field.toggleType ?? "radio";
+    return (
+      <div class="multi-step-button-group flex flex-wrap gap-3" tabindex="-1">
+        {field.buttons?.map((button) => {
+          const btnConfig = getButtonConfig(
+            button,
+            buttonDefaults[button.type as keyof typeof buttonDefaults]
+          );
+          const optionValue = button.dataValue ?? btnConfig.label ?? "";
+          const optionLabel = btnConfig.label ?? button.dataValue ?? "";
+          const isSelected = selectedValues.includes(optionValue);
+          return (
+            <ToggleButton
+              value={optionValue}
+              group={field.name}
+              type={toggleType}
+              class={`${btnConfig.classes ?? ""} ${isSelected ? "selected bg-primary dark:bg-primary-dark text-white" : ""}`}
+            >
+              {optionLabel ? <span class="button-text" set:html={optionLabel} /> : null}
+            </ToggleButton>
+          );
+        })}
+      </div>
+    );
+  })()
 ) : field.animatedPlaceholders && field.animatedPlaceholders.length > 0 && isMultistep ? (
   <div
     class:list={[

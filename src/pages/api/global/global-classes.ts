@@ -15,7 +15,8 @@ export const globalClasses = () => {
       "w-10 h-10 inline-flex items-center rounded-full justify-center p-2 text-black dark:text-white md:hover:bg-gray-100 dark:hover:bg-gray-700 dark:focus:ring-gray-700 focus:outline-none",
 
     globalAdminContainerClasses: "color-background rounded-lg shadow-md dark:shadow-gray-700",
-    tabContentClasses: "color-background relative mb-16 min-h-[calc(100dvh-24rem)] p-4 shadow-lg",
+    tabContentClasses:
+      "color-background relative mb-16 min-h-[calc(100dvh-24rem)] p-6 sm:p-8 md:p-10 lg:p-12 shadow-lg",
   };
 };
 

@@ -6,23 +6,25 @@
 import { initializeMultiStepForm, initializeStandardForm } from "../lib/multi-step-form-handler";
 
 function runStandardFormInit(): void {
-  const wrapper = document.querySelector("[data-standard-form]");
-  if (wrapper?.hasAttribute("data-skip-init")) return;
-  const form = wrapper?.querySelector("form[data-form-config]") as HTMLFormElement | null;
-  if (!form) return;
-  let formId: string;
-  let formConfig: any;
-  let initialData: Record<string, any> = {};
-  try {
-    const parsed = JSON.parse(form.getAttribute("data-form-config") ?? "{}");
-    formId = parsed.formId;
-    formConfig = parsed.formConfig;
-    initialData = parsed.initialData ?? {};
-  } catch {
-    return;
-  }
-  if (!formId || !formConfig) return;
-  initializeStandardForm(form, { initialData, formConfig });
+  const wrappers = document.querySelectorAll("[data-standard-form]");
+  wrappers.forEach((wrapper) => {
+    if (wrapper.hasAttribute("data-skip-init")) return;
+    const form = wrapper.querySelector("form[data-form-config]") as HTMLFormElement | null;
+    if (!form || form.getAttribute("data-standard-form-inited") === "1") return;
+    let formId: string;
+    let formConfig: any;
+    let initialData: Record<string, any> = {};
+    try {
+      const parsed = JSON.parse(form.getAttribute("data-form-config") ?? "{}");
+      formId = parsed.formId;
+      formConfig = parsed.formConfig;
+      initialData = parsed.initialData ?? {};
+    } catch {
+      return;
+    }
+    if (!formId || !formConfig) return;
+    initializeStandardForm(form, { initialData, formConfig });
+  });
 }
 
 function runMultiStepInit(): void {
@@ -222,10 +224,16 @@ function main(): void {
     runStepCascadeInit();
     setTimeout(() => runAnimatedPlaceholderInit(), 50);
   };
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", runAll);
-  } else {
+  const runWithRetry = () => {
     runAll();
+    // Retry standard form init so forms that render after DOMContentLoaded still get the handler
+    setTimeout(runStandardFormInit, 100);
+    setTimeout(runStandardFormInit, 400);
+  };
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", runWithRetry);
+  } else {
+    runWithRetry();
   }
 }
 
