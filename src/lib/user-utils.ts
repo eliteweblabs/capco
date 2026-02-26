@@ -111,6 +111,23 @@ export function isAdmin(userInfo: UserInfo): boolean {
 }
 
 /**
+ * Check if user is SuperAdmin (cookie-based elevation, not in DB)
+ * @param userInfo - User information object
+ * @returns boolean - True if user is SuperAdmin
+ */
+export function isSuperAdmin(userInfo: UserInfo): boolean {
+  return userInfo.role === "SuperAdmin";
+}
+
+/**
+ * Check if role has admin-level access (Admin or SuperAdmin).
+ * Use for gates that should allow both DB Admin and cookie-based SuperAdmin.
+ */
+export function isAdminOrSuperAdmin(role: string | null | undefined): boolean {
+  return role === "Admin" || role === "SuperAdmin";
+}
+
+/**
  * Check if user is staff
  * @param userInfo - User information object
  * @returns boolean - True if user is staff

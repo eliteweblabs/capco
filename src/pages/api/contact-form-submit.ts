@@ -1,12 +1,12 @@
 import type { APIRoute } from "astro";
 import { createClient } from "@supabase/supabase-js";
-import { globalCompanyData } from "../global/global-company-data";
-import { SMS_UTILS } from "../../../lib/sms-utils";
-import { supabaseAdmin } from "../../../lib/supabase-admin";
+import { globalCompanyData } from "./global/global-company-data";
+import { SMS_UTILS } from "../../lib/sms-utils";
+import { supabaseAdmin } from "../../lib/supabase-admin";
 
 /**
- * Contact Form Submission Handler
- * POST /api/contact/submit
+ * Contact Form Submit API
+ * POST /api/contact-form-submit
  *
  * Handles contact form submissions from the multi-step contact form.
  * Auto-detects missing table and provides setup instructions.
@@ -15,18 +15,40 @@ import { supabaseAdmin } from "../../../lib/supabase-admin";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
-    const formData = await request.formData();
+    const contentType = request.headers.get("Content-Type") || "";
+    let firstName: string;
+    let lastName: string;
+    let email: string;
+    let phone: string;
+    let smsAlerts: boolean;
+    let mobileCarrierRaw: string;
+    let company: string;
+    let address: string;
+    let message: string;
 
-    // Extract form fields
-    const firstName = formData.get("firstName") as string;
-    const lastName = formData.get("lastName") as string;
-    const email = formData.get("email") as string;
-    const phone = formData.get("phone") as string;
-    const smsAlerts = formData.get("smsAlerts") === "true";
-    const mobileCarrierRaw = formData.get("mobileCarrier") as string;
-    const company = formData.get("company") as string;
-    const address = formData.get("address") as string;
-    const message = formData.get("message") as string;
+    if (contentType.includes("application/json")) {
+      const body = (await request.json()) as Record<string, unknown>;
+      firstName = (body.firstName as string) ?? "";
+      lastName = (body.lastName as string) ?? "";
+      email = (body.email as string) ?? "";
+      phone = (body.phone as string) ?? "";
+      smsAlerts = body.smsAlerts === true || body.smsAlerts === "true";
+      mobileCarrierRaw = (body.mobileCarrier as string) ?? "";
+      company = (body.company as string) ?? "";
+      address = (body.address as string) ?? "";
+      message = (body.message as string) ?? "";
+    } else {
+      const formData = await request.formData();
+      firstName = (formData.get("firstName") as string) ?? "";
+      lastName = (formData.get("lastName") as string) ?? "";
+      email = (formData.get("email") as string) ?? "";
+      phone = (formData.get("phone") as string) ?? "";
+      smsAlerts = formData.get("smsAlerts") === "true";
+      mobileCarrierRaw = (formData.get("mobileCarrier") as string) ?? "";
+      company = (formData.get("company") as string) ?? "";
+      address = (formData.get("address") as string) ?? "";
+      message = (formData.get("message") as string) ?? "";
+    }
 
     // Convert mobile carrier ID to gateway domain (same as RegisterForm)
     let mobileCarrier: string | null = null;
@@ -59,7 +81,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const supabaseKey = import.meta.env.SUPABASE_SECRET;
 
     if (!supabaseUrl || !supabaseKey) {
-      console.error("[CONTACT] Supabase credentials not configured");
+      console.error("[CONTACT-FORM-SUBMIT] Supabase credentials not configured");
       return new Response(
         JSON.stringify({
           success: false,
@@ -93,12 +115,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .single();
 
     if (error) {
-      console.error("[CONTACT] Database error:", error);
+      console.error("[CONTACT-FORM-SUBMIT] Database error:", error);
 
       // If table doesn't exist, provide setup instructions
       if (error.code === "42P01") {
-        console.error("[CONTACT] ❌ Table 'contactSubmissions' does not exist!");
-        console.error("[CONTACT] 📋 Quick Setup - Run this SQL in Supabase SQL Editor:");
+        console.error("[CONTACT-FORM-SUBMIT] ❌ Table 'contactSubmissions' does not exist!");
+        console.error("[CONTACT-FORM-SUBMIT] 📋 Quick Setup - Run this SQL in Supabase SQL Editor:");
         console.error(`
 CREATE TABLE "contactSubmissions" (
   id SERIAL PRIMARY KEY,
@@ -158,7 +180,7 @@ CREATE INDEX "idx_contactSubmissions_submittedAt" ON "contactSubmissions"("submi
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Failed to save contact submission",
+          error: "Failed to save contact form lead",
           details: error.message,
         }),
         {
@@ -168,7 +190,7 @@ CREATE INDEX "idx_contactSubmissions_submittedAt" ON "contactSubmissions"("submi
       );
     }
 
-    console.log("[CONTACT] Submission saved:", data);
+    console.log("[CONTACT-FORM-SUBMIT] Lead saved:", data);
 
     // Send in-app notifications to all Admin users
     if (supabaseAdmin) {
@@ -181,15 +203,16 @@ CREATE INDEX "idx_contactSubmissions_submittedAt" ON "contactSubmissions"("submi
         const adminIds = admins?.map((a) => a.id).filter(Boolean) || [];
 
         if (adminIds.length > 0) {
-          const baseUrl = new URL(request.url).origin;
+          const { getBaseUrl } = await import("../../lib/url-utils");
+          const notifBaseUrl = getBaseUrl(request);
           const notifications = adminIds.map((userId) => ({
             userId,
-            title: "New Contact Form Submission",
+            title: "New Contact Form Lead",
             message: `${firstName} ${lastName} (${email}): ${message.slice(0, 100)}${message.length > 100 ? "…" : ""}`,
             type: "info" as const,
             priority: "high" as const,
-            actionUrl: `${baseUrl}/admin/global-activity`,
-            actionText: "View in Admin",
+            actionUrl: `${notifBaseUrl}/admin/contact-form-leads`,
+            actionText: "View leads",
             viewed: false,
           }));
 
@@ -198,15 +221,15 @@ CREATE INDEX "idx_contactSubmissions_submittedAt" ON "contactSubmissions"("submi
             .insert(notifications);
 
           if (notifError) {
-            console.error("[CONTACT] ⚠️ In-app notification insert failed:", notifError);
+            console.error("[CONTACT-FORM-SUBMIT] ⚠️ In-app notification insert failed:", notifError);
           } else {
             console.log(
-              `[CONTACT] ✅ In-app notifications sent to ${adminIds.length} Admin user(s)`
+              `[CONTACT-FORM-SUBMIT] ✅ In-app notifications sent to ${adminIds.length} Admin user(s)`
             );
           }
         }
       } catch (notifErr) {
-        console.error("[CONTACT] ⚠️ In-app notification error:", notifErr);
+        console.error("[CONTACT-FORM-SUBMIT] ⚠️ In-app notification error:", notifErr);
       }
     }
 
@@ -215,7 +238,7 @@ CREATE INDEX "idx_contactSubmissions_submittedAt" ON "contactSubmissions"("submi
     const fromEmail = import.meta.env.FROM_EMAIL;
     const fromName = import.meta.env.FROM_NAME;
     const companyData = await globalCompanyData();
-    const { getBaseUrl } = await import("../../../lib/url-utils");
+    const { getBaseUrl } = await import("../../lib/url-utils");
     const baseUrl = getBaseUrl(request);
 
     if (emailApiKey && fromEmail) {
@@ -235,7 +258,7 @@ CREATE INDEX "idx_contactSubmissions_submittedAt" ON "contactSubmissions"("submi
         }
 
         console.log(
-          `[CONTACT] Sending notifications to ${adminEmails.length} recipient(s):`,
+          `[CONTACT-FORM-SUBMIT] Sending notifications to ${adminEmails.length} recipient(s):`,
           adminEmails
         );
 
@@ -249,9 +272,9 @@ CREATE INDEX "idx_contactSubmissions_submittedAt" ON "contactSubmissions"("submi
         }
 
         // Admin email content for template ({{CONTENT}} in templates/email/template.html)
-        const adminSubject = `🔔 New Contact Form Submission - ${firstName} ${lastName}`;
+        const adminSubject = `🔔 New Contact Form Lead - ${firstName} ${lastName}`;
         const adminContent = `
-          <h2>New Contact Form Submission</h2>
+          <h2>New Contact Form Lead</h2>
           <p><strong>Name:</strong> ${firstName} ${lastName}</p>
           <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
           ${phone ? `<p><strong>Phone:</strong> <a href="tel:${phone}">${phone}</a></p>` : ""}
@@ -274,14 +297,14 @@ CREATE INDEX "idx_contactSubmissions_submittedAt" ON "contactSubmissions"("submi
             method: "email",
             emailSubject: adminSubject,
             emailContent: adminContent,
-            buttonLink: `${baseUrl}/admin/contact-submissions`,
-            buttonText: "View contact submissions",
+            buttonLink: `${baseUrl}/admin/contact-form-leads`,
+            buttonText: "View contact form leads",
             trackLinks: false,
           }),
         });
 
         console.log(
-          `[CONTACT] ✅ Admin notification emails sent to ${adminEmails.length} admin(s) (via template)`
+          `[CONTACT-FORM-SUBMIT] ✅ Admin notification emails sent to ${adminEmails.length} admin(s) (via template)`
         );
 
         // Email confirmation to submitter using the existing template system
@@ -314,13 +337,13 @@ CREATE INDEX "idx_contactSubmissions_submittedAt" ON "contactSubmissions"("submi
           }),
         });
 
-        console.log(`[CONTACT] ✅ Confirmation email sent to ${email}`);
+        console.log(`[CONTACT-FORM-SUBMIT] ✅ Confirmation email sent to ${email}`);
       } catch (emailError) {
-        console.error("[CONTACT] ⚠️ Email sending failed:", emailError);
+        console.error("[CONTACT-FORM-SUBMIT] ⚠️ Email sending failed:", emailError);
         // Don't fail the whole request if email fails
       }
     } else {
-      console.warn("[CONTACT] ⚠️ Email not configured, skipping notifications");
+      console.warn("[CONTACT-FORM-SUBMIT] ⚠️ Email not configured, skipping notifications");
     }
 
     return new Response(
@@ -335,7 +358,7 @@ CREATE INDEX "idx_contactSubmissions_submittedAt" ON "contactSubmissions"("submi
       }
     );
   } catch (error) {
-    console.error("[CONTACT] Unexpected error:", error);
+    console.error("[CONTACT-FORM-SUBMIT] Unexpected error:", error);
     return new Response(
       JSON.stringify({
         success: false,

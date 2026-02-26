@@ -1,0 +1,56 @@
+{
+  "description": "Single master config for all VAPI instances. Per-instance data only; tools and behavior are shared. Run: node scripts/update-vapi-from-master.js [instance-id|all]",
+  "instances": {
+    "capco": {
+      "assistantId": "3ae002d5-fe9c-4870-8034-4c66a9b43b51",
+      "webhookDomainEnv": ["RAILWAY_PUBLIC_DOMAIN", "WEBHOOK_DOMAIN"],
+      "webhookFallback": "https://capcofire.com",
+      "companyNameEnv": "RAILWAY_PROJECT_NAME",
+      "companyNameFallback": "CAPCO Design Group",
+      "calendarType": "calcom",
+      "defaultUsername": "capco",
+      "systemPromptTemplate": "capco-full",
+      "ensureProcessFile": true,
+      "toolIds": [
+        "0b17d3bc-a697-432b-8386-7ed1235fd111",
+        "5b8ac059-9bbe-4a27-985d-70df87f9490d",
+        "5e721363-2451-403b-b835-1015f2b37539",
+        "0d6f3b7f-895d-4ff1-9844-7b963b0e1a2b",
+        "5d6a11c6-0ca2-4a5d-9789-4f92b68cb007",
+        "0fa95b37-a835-41a0-bb22-de2dc18dd5c0",
+        "b37284e9-edde-475f-867d-45ec6a1ca2ca",
+        "1575a00d-30e4-45f5-8b48-5e9d653b5dad"
+      ],
+      "voice": { "provider": "11labs", "voiceId": "paula" },
+      "firstMessage": "Thank you for calling {{COMPANY_NAME}}. How may I assist you today?",
+      "endCallMessage": "Perfect! Thanks for calling {{COMPANY_NAME}}. We'll see you soon. Have a wonderful day!",
+      "logPrefix": "[VAPI-CAPCO]"
+    },
+    "innercity": {
+      "assistantId": "95efd777-6e07-4ff1-99a4-f27030991e34",
+      "webhookDomainEnv": ["INNER_CITY_FIREPROTECTION_WEBHOOK_DOMAIN", "RAILWAY_PUBLIC_DOMAIN"],
+      "webhookFallback": "https://innercityfireprotection.com",
+      "companyName": "Inner City Fire Protection",
+      "ownerName": "Joel Williams",
+      "systemPromptTemplate": "receptionist-innercity",
+      "ensureProcessFile": false,
+      "toolIds": [],
+      "voice": { "provider": "11labs", "voiceId": "paula" },
+      "firstMessage": "Thank you for calling {{COMPANY_NAME}}. How may I help you today?",
+      "endCallMessage": "Thanks for calling {{COMPANY_NAME}}. Have a great day!",
+      "logPrefix": "[VAPI-INNER-CITY]"
+    }
+  },
+  "shared": {
+    "model": {
+      "provider": "anthropic",
+      "model": "claude-3-5-sonnet-20241022",
+      "temperature": 0.7,
+      "maxTokens": 1000
+    },
+    "maxDurationSeconds": 300,
+    "endCallPhrases": ["goodbye", "bye", "that's all", "finished", "end call", "hangup"],
+    "backgroundSound": "office",
+    "silenceTimeoutSeconds": 15
+  }
+}

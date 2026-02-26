@@ -165,10 +165,10 @@ const LEGACY_BUILTIN: Record<string, Omit<AsideNavItem, "id">> = {
     position: 6,
     allow: ["Admin"],
   },
-  "contact-submissions": {
-    label: "Contact Submissions",
+  "contact-form-leads": {
+    label: "Contact Form Leads",
     type: "link",
-    href: "/admin/contact-submissions",
+    href: "/admin/contact-form-leads",
     icon: "envelope",
     position: 6.6,
     allow: ["Admin"],

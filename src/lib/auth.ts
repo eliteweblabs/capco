@@ -2,6 +2,7 @@ import type { User } from "@supabase/supabase-js";
 import { clearAuthCookies, setAuthCookies } from "./auth-cookies";
 import { supabase } from "./supabase";
 import { isBackendPage } from "../pages/api/utils/backend-page-check";
+import { getValidSuperAdminFromCookie } from "./superadmin";
 
 export interface ExtendedUser extends User {
   profile?: any;
@@ -80,14 +81,17 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
       },
     };
 
+    const role = getValidSuperAdminFromCookie(cookies, customUser.id)
+      ? "SuperAdmin"
+      : "Client";
     return {
       isAuth: true,
       session: { user: customUser },
-      currentUser: customUser,
+      currentUser: { ...customUser, profile: { ...customUser.profile, role } },
       accessToken: customSessionToken.value,
       refreshToken: customSessionToken.value,
       supabase: null,
-      currentRole: "Client",
+      currentRole: role,
     };
   }
 
@@ -161,7 +165,8 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
             // Enhance currentUser object with profile data
             currentUser.profile = profile;
             currentRole = profile.role;
-          } else {
+          }
+          if (!currentRole) {
             console.warn("🔐 [AUTH] Failed to get currentUser profile:", {
               userId: currentUser.id,
               userEmail: currentUser.email,
@@ -186,6 +191,10 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
 
               console.warn("🔐 [AUTH] Using default profile for user without profile record");
             }
+          }
+          if (currentUser && getValidSuperAdminFromCookie(cookies, currentUser.id)) {
+            currentRole = "SuperAdmin";
+            if (currentUser.profile) currentUser.profile.role = "SuperAdmin";
           }
         }
       } else {

@@ -4,6 +4,7 @@ import { defineMiddleware } from "astro:middleware";
 import micromatch from "micromatch";
 import { clearAuthCookies, setAuthCookies } from "../lib/auth-cookies";
 import { setupConsoleInterceptor } from "../lib/console-interceptor";
+import { getValidSuperAdminFromCookie } from "../lib/superadmin";
 import { supabase } from "../lib/supabase";
 import { supabaseAdmin } from "../lib/supabase-admin";
 import { globalCompanyData } from "../pages/api/global/global-company-data";
@@ -137,6 +138,9 @@ export const onRequest = defineMiddleware(
           locals.user = data.user;
           locals.email = data.user.email;
           locals.role = profile?.role || "Client";
+          if (data.user && getValidSuperAdminFromCookie(cookies, data.user.id)) {
+            locals.role = "SuperAdmin";
+          }
         }
       }
       const companyData = await globalCompanyData();
@@ -273,6 +277,9 @@ export const onRequest = defineMiddleware(
         locals.user = data.user;
         locals.email = data.user.email;
         locals.role = profile?.role || "Client";
+        if (data.user && getValidSuperAdminFromCookie(cookies, data.user.id)) {
+          locals.role = "SuperAdmin";
+        }
 
         // Set current user in global context for logger access
         globalThis.currentUser = data.user;

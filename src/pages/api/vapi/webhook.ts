@@ -320,7 +320,7 @@ async function handleToolCalls(
         }
 
         // Call existing contact API endpoint
-        const contactResponse = await fetch(`${baseUrl}/api/contact/submit`, {
+        const contactResponse = await fetch(`${baseUrl}/api/contact-form-submit`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

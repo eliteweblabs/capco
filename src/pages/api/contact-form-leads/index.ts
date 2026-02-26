@@ -3,9 +3,9 @@ import { supabaseAdmin } from "../../../lib/supabase-admin";
 import { checkAuth } from "../../../lib/auth";
 
 /**
- * Contact Submissions API
- * GET: List contact form submissions (Admin only)
- * DELETE: Remove submission (Admin only)
+ * Contact Form Leads API
+ * GET: List contact form leads (Admin only)
+ * DELETE: Remove lead (Admin only)
  */
 
 async function requireAdmin(cookies: Astro.Cookies) {
@@ -35,7 +35,7 @@ export const GET: APIRoute = async ({ cookies }) => {
     .order("submittedAt", { ascending: false });
 
   if (error) {
-    console.error("[CONTACT-SUBMISSIONS] List error:", error);
+    console.error("[CONTACT-FORM-LEADS] List error:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { "Content-Type": "application/json" } }
@@ -73,7 +73,7 @@ export const DELETE: APIRoute = async ({ cookies, request }) => {
     .eq("id", id);
 
   if (error) {
-    console.error("[CONTACT-SUBMISSIONS] Delete error:", error);
+    console.error("[CONTACT-FORM-LEADS] Delete error:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { "Content-Type": "application/json" } }

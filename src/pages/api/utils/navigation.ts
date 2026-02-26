@@ -1,5 +1,5 @@
 // Navigation schema
-type UserRole = "any" | "Client" | "Admin" | "Staff";
+type UserRole = "any" | "Client" | "Admin" | "Staff" | "SuperAdmin";
 type NavType = "frontend" | "backend";
 
 interface NavItem {
@@ -115,18 +115,21 @@ export const navigation = async (
 
       // Show frontend items when not on backend pages
       if (item.pageType === "frontend" && !isBackend) {
-        return (
-          item.roles.includes("any") ||
-          (isAuth && currentRole && item.roles.includes(currentRole as UserRole))
-        );
+        const roleMatch =
+          isAuth &&
+          currentRole &&
+          (item.roles.includes(currentRole as UserRole) ||
+            (currentRole === "SuperAdmin" && item.roles.includes("Admin")));
+        return item.roles.includes("any") || !!roleMatch;
       }
 
       // Show backend items when on backend pages and authenticated
       if (item.pageType === "backend" && isBackend && isAuth) {
-        return (
-          item.roles.includes("any") ||
-          (currentRole && item.roles.includes(currentRole as UserRole))
-        );
+        const roleMatch =
+          currentRole &&
+          (item.roles.includes(currentRole as UserRole) ||
+            (currentRole === "SuperAdmin" && item.roles.includes("Admin")));
+        return item.roles.includes("any") || !!roleMatch;
       }
 
       return false;

@@ -50,7 +50,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     let isPrivate: boolean;
 
     if (contentType.includes("multipart/form-data")) {
-      // Handle multipart form data (ContactFormWithUpload)
+      // Handle multipart form data
       const formData = await request.formData();
       file = formData.get("file") as File;
       projectId = formData.get("projectId") as string;

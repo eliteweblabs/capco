@@ -44,7 +44,6 @@ Navigate to `/your-page` (the slug matches the filename without `.md`)
 
 ### Shared Components
 - `<ContactForm/>` - Contact form
-- `<ContactFormWithUpload/>` - Contact form with file upload
 - `<PricingCard title="..." price="..." features="..."/>` - Pricing card
 - `<PDFPreview url="..."/>` - PDF preview
 - `<SpeedDial/>` - Speed dial action button

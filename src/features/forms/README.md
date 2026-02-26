@@ -82,7 +82,7 @@ See `/src/pages/contact.astro` for a complete example.
 
 ## API Endpoint
 
-Form submits to `/api/contact/submit` with the following data:
+Form submits to `/api/contact-form-submit` with the following data:
 
 ```typescript
 {

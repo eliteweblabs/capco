@@ -4,6 +4,7 @@
  * Uses AdminGlobalActivity component for the main content
  */
 import { checkAuth } from "../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../lib/user-utils";
 const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
 const currentRole = currentUser?.profile?.role;
 
@@ -12,8 +13,7 @@ if (!currentUser || !session) {
   return Astro.redirect("/auth/login");
 }
 
-// Check if user is admin
-if (currentRole !== "Admin") {
+if (!isAdminOrSuperAdmin(currentRole)) {
   return Astro.redirect("/dashboard");
 }
 

@@ -1,0 +1,223 @@
+---
+/**
+ * SuperAdmin: activate / deactivate / import / export
+ * Cookie-based elevation; data is not stored in the database.
+ * Load settings when you need them via import or passphrase.
+ */
+import { checkAuth } from "../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../lib/user-utils";
+import LayoutDefault from "../../components/layouts/LayoutDefault.astro";
+import Button from "../../components/common/Button.astro";
+
+const { currentUser, session, currentRole } = await checkAuth(Astro.cookies);
+
+if (!currentUser || !session) {
+  return Astro.redirect("/auth/login");
+}
+
+if (!isAdminOrSuperAdmin(currentRole)) {
+  return Astro.redirect("/dashboard");
+}
+
+const isSuperAdmin = currentRole === "SuperAdmin";
+---
+
+<LayoutDefault
+  title="SuperAdmin"
+  description="Activate, export, or import SuperAdmin access. Data is kept in temporary storage (cookie); use import when you need it."
+>
+  <div class="px-4 py-8">
+    <div class="mb-6">
+      <h1 class="mb-2 text-3xl font-bold">SuperAdmin</h1>
+      <p class="text-gray-600 dark:text-gray-400">
+        SuperAdmin status is not stored in the database. Activate with a passphrase or import a
+        saved token when you need to manage projects; export to save a token for later.
+      </p>
+    </div>
+
+    <div
+      id="superadmin-message"
+      class="mb-4 hidden rounded-lg border p-4"
+      role="alert"
+      aria-live="polite"
+    >
+      <p class="text-sm"></p>
+    </div>
+
+    <div class="space-y-6 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        Current role: <strong>{currentRole}</strong>
+        {isSuperAdmin && (
+          <span class="ml-2 rounded bg-amber-100 px-2 py-0.5 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+            Active
+          </span>
+        )}
+      </p>
+
+      <section class="border-b border-gray-200 pb-6 dark:border-gray-700">
+        <h2 class="mb-3 text-lg font-semibold">Activate</h2>
+        <p class="mb-3 text-sm text-gray-600 dark:text-gray-400">
+          Enter the SuperAdmin passphrase (SUPERADMIN_SECRET) to activate for this browser.
+        </p>
+        <form id="superadmin-activate" class="flex flex-wrap items-end gap-3">
+          <label for="superadmin-passphrase" class="sr-only">Passphrase</label>
+          <input
+            id="superadmin-passphrase"
+            type="password"
+            name="passphrase"
+            autocomplete="off"
+            class="rounded border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            placeholder="Passphrase"
+          />
+          <Button type="submit" variant="primary" size="sm">
+            Activate
+          </Button>
+        </form>
+      </section>
+
+      <section class="border-b border-gray-200 pb-6 dark:border-gray-700">
+        <h2 class="mb-3 text-lg font-semibold">Deactivate</h2>
+        <p class="mb-3 text-sm text-gray-600 dark:text-gray-400">
+          Clear the SuperAdmin cookie. You will keep your normal Admin/Staff/Client role.
+        </p>
+        <Button id="superadmin-deactivate" variant="secondary" size="sm">
+          Deactivate
+        </Button>
+      </section>
+
+      <section class="border-b border-gray-200 pb-6 dark:border-gray-700">
+        <h2 class="mb-3 text-lg font-semibold">Export</h2>
+        <p class="mb-3 text-sm text-gray-600 dark:text-gray-400">
+          Download a token you can save and re-import later (e.g. on another device or after
+          clearing cookies).
+        </p>
+        <Button id="superadmin-export" variant="outline" size="sm">
+          Export token
+        </Button>
+        <pre
+          id="superadmin-export-output"
+          class="mt-3 hidden max-h-40 overflow-auto rounded border border-gray-200 bg-gray-50 p-3 text-xs dark:border-gray-600 dark:bg-gray-900"
+        ></pre>
+      </section>
+
+      <section>
+        <h2 class="mb-3 text-lg font-semibold">Import</h2>
+        <p class="mb-3 text-sm text-gray-600 dark:text-gray-400">
+          Paste a previously exported token to activate SuperAdmin in this browser.
+        </p>
+        <form id="superadmin-import" class="flex flex-col gap-3">
+          <label for="superadmin-import-token" class="sr-only">Token (JSON)</label>
+          <textarea
+            id="superadmin-import-token"
+            name="token"
+            rows="4"
+            class="rounded border border-gray-300 px-3 py-2 font-mono text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            placeholder='Paste exported token (e.g. {"userId":"...","exp":...,"sig":"..."})'
+          ></textarea>
+          <Button type="submit" variant="primary" size="sm">
+            Import
+          </Button>
+        </form>
+      </section>
+    </div>
+  </div>
+</LayoutDefault>
+
+<script>
+  (function () {
+    const messageEl = document.getElementById("superadmin-message");
+    if (!messageEl) return;
+
+    function showMessage(text: string, isError: boolean) {
+      messageEl.classList.remove("hidden");
+      messageEl.classList.toggle("border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20", !isError);
+      messageEl.classList.toggle("border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20", isError);
+      const p = messageEl.querySelector("p");
+      if (p) p.textContent = text;
+    }
+
+    function hideMessage() {
+      messageEl.classList.add("hidden");
+    }
+
+    document.getElementById("superadmin-activate")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const form = e.target as HTMLFormElement;
+      const passphrase = (form.querySelector('[name="passphrase"]') as HTMLInputElement)?.value ?? "";
+      try {
+        const res = await fetch("/api/superadmin/activate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ passphrase }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          showMessage("SuperAdmin activated. Reload the page to see the new role.", false);
+          (form.querySelector('[name="passphrase"]') as HTMLInputElement).value = "";
+        } else {
+          showMessage(data.error || "Activation failed", true);
+        }
+      } catch (err) {
+        showMessage("Request failed", true);
+      }
+    });
+
+    document.getElementById("superadmin-deactivate")?.addEventListener("click", async () => {
+      try {
+        const res = await fetch("/api/superadmin/deactivate", { method: "POST" });
+        const data = await res.json();
+        if (data.success) {
+          showMessage("SuperAdmin deactivated. Reload the page.", false);
+        } else {
+          showMessage(data.error || "Deactivate failed", true);
+        }
+      } catch (err) {
+        showMessage("Request failed", true);
+      }
+    });
+
+    document.getElementById("superadmin-export")?.addEventListener("click", async () => {
+      const output = document.getElementById("superadmin-export-output") as HTMLPreElement;
+      if (!output) return;
+      try {
+        const res = await fetch("/api/superadmin/export");
+        const data = await res.json();
+        if (data.success && data.token) {
+          output.textContent = data.token;
+          output.classList.remove("hidden");
+          showMessage("Token ready. Copy and save it somewhere secure.", false);
+        } else {
+          showMessage(data.error || "Export failed", true);
+        }
+      } catch (err) {
+        showMessage("Request failed", true);
+      }
+    });
+
+    document.getElementById("superadmin-import")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const form = e.target as HTMLFormElement;
+      const token = (form.querySelector('[name="token"]') as HTMLTextAreaElement)?.value?.trim() ?? "";
+      if (!token) {
+        showMessage("Paste a token first", true);
+        return;
+      }
+      try {
+        const res = await fetch("/api/superadmin/import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          showMessage("SuperAdmin imported. Reload the page to see the new role.", false);
+          (form.querySelector('[name="token"]') as HTMLTextAreaElement).value = "";
+        } else {
+          showMessage(data.error || "Import failed", true);
+        }
+      } catch (err) {
+        showMessage("Request failed", true);
+      }
+    });
+  })();
+</script>

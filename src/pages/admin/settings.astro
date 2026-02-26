@@ -5,6 +5,7 @@
  * Settings are stored in database, with fallback to environment variables
  */
 import { checkAuth } from "../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../lib/user-utils";
 import LayoutDefault from "../../components/layouts/LayoutDefault.astro";
 import Button from "../../components/common/Button.astro";
 import DeleteConfirmButton from "../../components/ui/DeleteConfirmButton.astro";
@@ -20,8 +21,7 @@ if (!currentUser || !session) {
   return Astro.redirect("/auth/login");
 }
 
-// Check if user is admin
-if (currentRole !== "Admin") {
+if (!isAdminOrSuperAdmin(currentRole)) {
   return Astro.redirect("/dashboard");
 }
 
