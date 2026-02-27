@@ -46,6 +46,12 @@ const {
   dataTableCreateDetailClasses,
   dataTableCreateSlotClasses,
   dataTableDragThClasses,
+  dataTableSelectThClasses,
+  dataTableSelectTdClasses,
+  dataTableThStickyLeftClasses,
+  dataTableTdStickyLeftClasses,
+  dataTableThStickyRightClasses,
+  dataTableTdStickyRightClasses,
 } = globalClasses();
 
 export interface ColumnConfig<T = any> {
@@ -57,8 +63,8 @@ export interface ColumnConfig<T = any> {
   colSpan?: number;
   /** When true, render cell value as HTML (use for rich content) */
   allowHtml?: boolean;
-  /** Default width in % for resizable columns (e.g. 20 = 20%) */
-  width?: number;
+  /** Default width in % for resizable columns (e.g. 20 = 20%). Use "sticky-left" | "sticky-right" for fixed sticky columns (not resized). */
+  width?: number | "sticky-left" | "sticky-right";
   /** Data attributes for the cell (e.g. data-refresh, data-user-id for refresh-manager) */
   getCellDataAttrs?: (item: T) => Record<string, string>;
 }
@@ -105,6 +111,12 @@ interface Props<T = any> {
   createButtonId?: string;
   /** Enable resizable columns (default: true) */
   resizable?: boolean;
+  /** Show a leading select column with checkboxes (default: false) */
+  showSelectColumn?: boolean;
+  /** Label for the select column header (default: "Select") */
+  selectHeaderLabel?: string;
+  /** When true, the actions column stays sticky on the right when horizontal scrolling (default: false) */
+  actionsColumnSticky?: boolean;
 }
 
 const {
@@ -136,6 +148,9 @@ const {
   createRowDataAttrs,
   createButtonId,
   resizable = true,
+  showSelectColumn = false,
+  selectHeaderLabel = "Select",
+  actionsColumnSticky = false,
 } = Astro.props;
 
 const toDataAttrs = (obj: Record<string, string>) =>
@@ -153,7 +168,14 @@ const detailRowId = detailRowIdPrefix
 const hasActions = actionsRenderer || (actionsComponent && actionsGetProps);
 
 const createSlotId = getCreateSlotId();
-const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1; // +1 for chevron
+const colspan =
+  columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + (showSelectColumn ? 1 : 0) + 1; // +1 for chevron
+
+/** Resizable script only resizes columns with numeric width; sticky columns get data-col-sticky and are skipped */
+const getColWidth = (col: (typeof columns)[0]) =>
+  typeof col.width === "number" ? col.width : 16;
+const isStickyCol = (col: (typeof columns)[0]) =>
+  col.width === "sticky-left" || col.width === "sticky-right";
 ---
 
 <div class={`accordion-data-table ${dataTableCardClasses}`}>
@@ -193,25 +215,49 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
             )
           }
           {
-            columns.map((col) => (
+            showSelectColumn && (
               <th
                 scope="col"
-                data-col-id={col.key}
-                data-col-default-width={col.width ?? 16}
-                style={
-                  resizable
-                    ? `width: ${col.width ?? 16}%; min-width: ${col.width ?? 16}%`
-                    : undefined
-                }
-                class={`${dataTableThClasses} ${col.headerClass || ""}`}
+                class={`${dataTableSelectThClasses} ${dataTableThStickyLeftClasses}`}
+                aria-label={selectHeaderLabel}
               >
-                {col.label}
+                {selectHeaderLabel}
               </th>
-            ))
+            )
+          }
+          {
+            columns.map((col) => {
+              const sticky = isStickyCol(col);
+              const widthPct = getColWidth(col);
+              return (
+                <th
+                  scope="col"
+                  {...(!sticky && {
+                    "data-col-id": col.key,
+                    "data-col-default-width": widthPct,
+                  })}
+                  style={
+                    sticky
+                      ? "width: 8%; min-width: 4rem"
+                      : resizable
+                        ? `width: ${widthPct}%; min-width: ${widthPct}%`
+                        : undefined
+                  }
+                  class={`${dataTableThClasses} ${col.headerClass || ""} ${
+                    col.width === "sticky-left" ? dataTableThStickyLeftClasses : ""
+                  } ${col.width === "sticky-right" ? dataTableThStickyRightClasses : ""}`}
+                >
+                  {col.label}
+                </th>
+              );
+            })
           }
           {
             hasActions && (
-              <th scope="col" class={dataTableActionsThClasses}>
+              <th
+                scope="col"
+                class={`${dataTableActionsThClasses} ${actionsColumnSticky ? dataTableThStickyRightClasses : ""}`}
+              >
                 Actions
               </th>
             )
@@ -261,6 +307,20 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
                       <SimpleIcon name="grip-dots" class="h-5 w-5" />
                     </td>
                   )}
+                  {showSelectColumn && (
+                    <td
+                      class={`${dataTableSelectTdClasses} ${dataTableTdStickyLeftClasses}`}
+                      data-select-cell
+                    >
+                      <input
+                        type="checkbox"
+                        class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700"
+                        aria-label={`Select row ${itemId}`}
+                        data-row-id={itemId}
+                        onclick="event.stopPropagation()"
+                      />
+                    </td>
+                  )}
                   {columns.map((col) => {
                     const value = col.getValue ? col.getValue(item) : (item as any)[col.key];
                     const display = value ?? "—";
@@ -273,7 +333,9 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
                           ])
                         )
                       : {};
-                    const cellClasses = `${dataTableDataCellClasses} ${col.cellClass || ""}`;
+                    const cellClasses = `${dataTableDataCellClasses} ${col.cellClass || ""} ${
+                      col.width === "sticky-left" ? dataTableTdStickyLeftClasses : ""
+                    } ${col.width === "sticky-right" ? dataTableTdStickyRightClasses : ""}`;
                     return col.allowHtml && typeof display === "string" ? (
                       <td class={cellClasses} set:html={display} {...attrs} />
                     ) : (
@@ -283,7 +345,9 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
                     );
                   })}
                   {hasActions && (
-                    <td class={dataTableActionsCellClasses}>
+                    <td
+                      class={`${dataTableActionsCellClasses} ${actionsColumnSticky ? dataTableTdStickyRightClasses : ""}`}
+                    >
                       {actionsRenderer
                         ? actionsRenderer(item)
                         : actionsComponent &&

@@ -77,10 +77,6 @@ class ScrollAnimations {
    */
   init(): void {
     if (this.initialized) return;
-    if (typeof window !== "undefined") {
-      const path = window.location.pathname;
-      if (path.startsWith("/admin") || path.startsWith("/project")) return;
-    }
 
     this.tagMainContentForAnimation();
 

@@ -1,4 +1,6 @@
 // Navigation schema
+import { buttonVariantClasses } from "../../../lib/button-styles";
+
 type UserRole = "any" | "Client" | "Admin" | "Staff" | "SuperAdmin";
 type NavType = "frontend" | "backend";
 
@@ -187,25 +189,13 @@ export const navigation = async (
 
       // Handle button style items
       if (item.buttonStyle && item.href && item.label) {
-        // Map buttonStyle to actual CSS classes (matches button-styles.ts)
-        // If current page, force primary background
-        const buttonStyleMap: Record<string, string> = {
-          primary:
-            "hover:scale-101 rounded-full border-2 border-primary-500 bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600",
-          secondary:
-            "ring-2 ring-inset ring-[currentColor] hover:scale-101 rounded-full border-2 border-secondary-500 bg-secondary-500 text-white hover:bg-secondary-600 dark:bg-secondary-500 dark:hover:bg-secondary-600",
-          outline:
-            "hover:scale-101 rounded-full border-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white dark:border-primary-400 dark:text-primary-400 dark:hover:bg-primary-600 dark:hover:text-white backdrop-blur-md",
-          ghost:
-            "rounded-full text-primary-500 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/20",
-        };
-
-        // If this is the current page button, use primary style with background
+        // Use shared button variant classes from button-styles.ts; if current page, force primary
         const styleClasses = item.isPrimary
-          ? "hover:scale-101 rounded-full border-2 border-primary-500 bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600"
-          : buttonStyleMap[item.buttonStyle] || buttonStyleMap.primary;
+          ? buttonVariantClasses.primary
+          : buttonVariantClasses[item.buttonStyle] || buttonVariantClasses.primary;
         const baseClasses =
           "font-secondary relative inline-flex items-center justify-center font-medium transition-all duration-200";
+
         const sizeClasses = "px-4 py-1 text-sm";
 
         return `<li class="${mobileClass}"><a href="${item.href}" class="${baseClasses} ${sizeClasses} ${styleClasses}">${item.label}</a></li>`;

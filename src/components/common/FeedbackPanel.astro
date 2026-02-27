@@ -10,15 +10,11 @@ interface Props {
 
 const { currentUser } = Astro.props;
 
-// Only show for authenticated users
+// Only show for authenticated users (always render a node so Astro never gets null)
 const isAuth = currentUser && currentUser.id;
-
-if (!isAuth) {
-  // Return empty component for non-authenticated users
-  return;
-}
 ---
 
+{isAuth ? (
 <div id="feedback-widget" class="fixed bottom-4 right-4" style="z-index: 10000;">
   <!-- Feedback panel (floating card, no overlay) -->
   <div
@@ -169,7 +165,7 @@ if (!isAuth) {
 </div>
 
 <script>
-  // Feedback panel (floating card, no modal)
+  {/* // Feedback panel (floating card, no modal) */}
   document.addEventListener("DOMContentLoaded", function () {
     const feedbackButton = document.getElementById("feedback-button") as HTMLButtonElement;
     const feedbackPanel = document.getElementById("feedback-panel") as HTMLDivElement;
@@ -291,6 +287,9 @@ if (!isAuth) {
     updateMessageCount();
   });
 </script>
+) : (
+  <span class="hidden" aria-hidden="true" />
+)}
 
 <style>
   #feedback-widget {

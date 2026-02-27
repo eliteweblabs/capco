@@ -1,0 +1,160 @@
+---
+import { checkAuth } from "../../../lib/auth";
+import LayoutDefault from "../../../components/layouts/LayoutDefault.astro";
+import StatsBlock from "../../../components/blocks/StatsBlock.astro";
+import { globalClasses } from "../../api/global/global-classes";
+
+const { currentUser, session } = await checkAuth(Astro.cookies);
+if (!currentUser || !session || currentUser?.profile?.role !== "Admin") {
+  return Astro.redirect("/auth/login");
+}
+const { primaryTextClasses, secondaryTextClasses } = globalClasses();
+---
+
+<LayoutDefault title="Stats Block" description="Statistics / metrics block component.">
+  <div class="px-4 py-8">
+    <div class="mb-8">
+      <h1 class={`mb-2 text-3xl font-bold ${primaryTextClasses}`}>Stats Block</h1>
+      <p class={`${secondaryTextClasses} text-gray-600 dark:text-gray-400`}>
+        Statistics and metrics display. Variants: simple, cards, gradient, bordered, minimal, dark.
+      </p>
+    </div>
+
+    <div class="space-y-12">
+      <div>
+        <p class="mb-4 text-sm font-medium text-gray-500 dark:text-gray-400">Simple (default)</p>
+        <div class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+          <StatsBlock
+            stat1Value="500+"
+            stat1Label="Projects Completed"
+            stat2Value="98%"
+            stat2Label="Client Satisfaction"
+            stat3Value="24/7"
+            stat3Label="Support"
+            stat4Value="Zero"
+            stat4Label="Security Incidents"
+          />
+        </div>
+      </div>
+
+      <div>
+        <p class="mb-4 text-sm font-medium text-gray-500 dark:text-gray-400">With title and description</p>
+        <div class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+          <StatsBlock
+            title="Trusted by fire protection professionals"
+            description="Numbers that speak for themselves."
+            stat1Value="15+"
+            stat1Label="Years Experience"
+            stat2Value="2,000+"
+            stat2Label="Systems Installed"
+            stat3Value="99.9%"
+            stat3Label="Uptime"
+            stat4Value="24/7"
+            stat4Label="Support"
+          />
+        </div>
+      </div>
+
+      <div>
+        <p class="mb-4 text-sm font-medium text-gray-500 dark:text-gray-400">Cards variant</p>
+        <div class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+          <StatsBlock
+            variant="cards"
+            stat1Value="500+"
+            stat1Label="Projects"
+            stat1Icon="folder"
+            stat2Value="98%"
+            stat2Label="Satisfaction"
+            stat2Icon="heart"
+            stat3Value="24/7"
+            stat3Label="Support"
+            stat3Icon="phone"
+            stat4Value="15+"
+            stat4Label="Years"
+            stat4Icon="award"
+          />
+        </div>
+      </div>
+
+      <div>
+        <p class="mb-4 text-sm font-medium text-gray-500 dark:text-gray-400">Gradient variant</p>
+        <div class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+          <StatsBlock
+            variant="gradient"
+            stat1Value="500+"
+            stat1Label="Projects"
+            stat1Icon="folder"
+            stat2Value="98%"
+            stat2Label="Satisfaction"
+            stat2Icon="heart"
+            stat3Value="24/7"
+            stat3Label="Support"
+            stat4Value="Zero"
+            stat4Label="Incidents"
+            stat4Icon="shield"
+          />
+        </div>
+      </div>
+
+      <div>
+        <p class="mb-4 text-sm font-medium text-gray-500 dark:text-gray-400">Bordered variant</p>
+        <div class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+          <StatsBlock
+            variant="bordered"
+            columns={3}
+            stat1Value="500+"
+            stat1Label="Projects Completed"
+            stat2Value="98%"
+            stat2Label="Client Satisfaction"
+            stat3Value="24/7"
+            stat3Label="Support Available"
+          />
+        </div>
+      </div>
+
+      <div>
+        <p class="mb-4 text-sm font-medium text-gray-500 dark:text-gray-400">Minimal (no icons)</p>
+        <div class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+          <StatsBlock
+            variant="minimal"
+            stat1Value="500+"
+            stat1Label="Projects"
+            stat2Value="98%"
+            stat2Label="Satisfaction"
+            stat3Value="24/7"
+            stat3Label="Support"
+            stat4Value="15+"
+            stat4Label="Years"
+          />
+        </div>
+      </div>
+
+      <div>
+        <p class="mb-4 text-sm font-medium text-gray-500 dark:text-gray-400">Dark variant</p>
+        <div class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+          <StatsBlock
+            variant="dark"
+            stat1Value="500+"
+            stat1Label="Projects"
+            stat1Icon="folder"
+            stat2Value="98%"
+            stat2Label="Satisfaction"
+            stat2Icon="heart"
+            stat3Value="24/7"
+            stat3Label="Support"
+            stat3Icon="phone"
+            stat4Value="Zero"
+            stat4Label="Incidents"
+            stat4Icon="shield"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-8 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        Use flat props <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">stat1Value</code>, <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">stat1Label</code>, <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">stat1Icon</code> (optional), etc. up to stat6. Or pass <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">stats</code> as a JSON array of objects with value, label, and optional icon. Supports <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">variant</code>, <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">columns</code>, <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">title</code>, <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">description</code>, and animation props.
+      </p>
+    </div>
+  </div>
+</LayoutDefault>

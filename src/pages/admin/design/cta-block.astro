@@ -1,0 +1,45 @@
+---
+import { checkAuth } from "../../../lib/auth";
+import LayoutDefault from "../../../components/layouts/LayoutDefault.astro";
+import CTABlock from "../../../components/blocks/CTABlock.astro";
+import { globalClasses } from "../../api/global/global-classes";
+
+const { currentUser, session } = await checkAuth(Astro.cookies);
+if (!currentUser || !session || currentUser?.profile?.role !== "Admin") {
+  return Astro.redirect("/auth/login");
+}
+const { primaryTextClasses, secondaryTextClasses } = globalClasses();
+---
+
+<LayoutDefault title="CTA Block" description="Call-to-action sections.">
+  <div class="px-4 py-8">
+    <h1 class={`mb-2 text-3xl font-bold ${primaryTextClasses}`}>CTA Block</h1>
+    <p class={`mb-6 ${secondaryTextClasses} text-gray-600 dark:text-gray-400`}>Call-to-action sections.</p>
+
+    <div class="space-y-8 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-900">
+      <div>
+        <p class="mb-4 text-sm text-gray-500">Centered</p>
+        <CTABlock
+          title="Ready to Get Started?"
+          description="Join thousands of fire protection professionals using our platform."
+          buttonText="Start Free Trial"
+          buttonHref="/signup"
+          secondaryButtonText="Schedule Demo"
+          secondaryButtonHref="/contact"
+          variant="centered"
+        />
+      </div>
+      <div>
+        <p class="mb-4 text-sm text-gray-500">Split</p>
+        <CTABlock
+          eyebrow="Limited Time Offer"
+          title="Get 30% Off Your First Year"
+          description="Sign up now and save on our professional plan."
+          buttonText="Claim Offer"
+          buttonHref="/signup"
+          variant="split"
+        />
+      </div>
+    </div>
+  </div>
+</LayoutDefault>

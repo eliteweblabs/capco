@@ -21,12 +21,37 @@ if (currentRole !== "Admin") {
 
 const { primaryTextClasses, secondaryTextClasses } = globalClasses();
 
+const demoTableHeaders = [
+  { key: "select", label: "Select", width: "sticky-left", actions: ["select"] },
+  { key: "slug", label: "Slug", width: 24 },
+  { key: "title", label: "Title", width: 56 },
+  { key: "template", label: "Template", width: 20 },
+  { key: "actions", label: "Actions", width: "sticky-right", actions: ["edit", "delete"] },
+];
 const demoTableData = [
   { id: "1", slug: "about", title: "About Us", template: "fullwidth" },
   { id: "2", slug: "contact", title: "Contact", template: "fullwidth" },
   { id: "3", slug: "services", title: "Our Services", template: "fullwidth" },
   { id: "4", slug: "faq", title: "FAQ", template: "fullwidth" },
 ];
+
+type DemoRow = (typeof demoTableData)[number];
+const dataColumns = demoTableHeaders.filter(
+  (h) => h.key !== "select" && h.key !== "actions"
+) as Array<{ key: string; label: string; width: number }>;
+const demoColumns = dataColumns.map((h) => {
+  const width = h.width as number;
+  return {
+    key: h.key,
+    label: h.label,
+    width,
+    getValue: (r: DemoRow) =>
+      (h.key === "title" ? r.title || "—" : (r as Record<string, unknown>)[h.key]) as string,
+    ...(h.key === "title"
+      ? { cellClass: "max-w-64 truncate whitespace-nowrap text-gray-500 dark:text-gray-400" }
+      : {}),
+  };
+});
 ---
 
 <LayoutDefault
@@ -37,46 +62,32 @@ const demoTableData = [
     <div class="mb-8">
       <h1 class={`mb-2 text-3xl font-bold ${primaryTextClasses}`}>Data Table Accordion</h1>
       <p class={`${secondaryTextClasses} text-gray-600 dark:text-gray-400`}>
-        Resizable data table with expandable detail rows. Click a row to expand; drag column edges to resize. Used on <a
-          href="/admin/cms"
-          class="text-primary-500 hover:underline">CMS</a
-        > and <a href="/admin/users" class="text-primary-500 hover:underline">Users</a>.
+        Resizable data table with expandable detail rows. Click a row to expand; drag column edges
+        to resize. Used on CMS and Users.
       </p>
     </div>
 
-    <div
-      class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-900"
-    >
-      <AccordionDataTable
-        id="design-demo-accordion-table"
-        title="Demo table"
-        description="Dummy data. Row actions are demo-only (Edit/Delete)."
-        data={demoTableData}
-        getItemId={(row) => row.id}
-        slotIdPrefix="design-demo-slot"
-        emptyMessage="No rows."
-        columns={[
-          { key: "slug", label: "Slug", getValue: (r) => r.slug, width: 24 },
-          {
-            key: "title",
-            label: "Title",
-            getValue: (r) => r.title || "—",
-            cellClass: "max-w-64 truncate whitespace-nowrap text-gray-500 dark:text-gray-400",
-            width: 56,
-          },
-          { key: "template", label: "Template", getValue: (r) => r.template, width: 20 },
-        ]}
-        actionsComponent={DesignDemoTableRowActions}
-        actionsGetProps={(r) => ({ item: r })}
-      />
-      <div class="mt-4 rounded border border-gray-200 p-4 dark:border-gray-700">
-        <p class="text-sm text-gray-600 dark:text-gray-400">
-          Expand a row to see the detail slot. Column widths are resizable (drag the right edge of a header). Use <code
-            class="rounded bg-gray-100 px-1 dark:bg-gray-800"
-            >global-classes.ts</code
-          > dataTable* classes for styling.
-        </p>
-      </div>
+    <AccordionDataTable
+      id="design-demo-accordion-table"
+      title="Demo table"
+      description="Dummy data. Row actions are demo-only (Edit/Delete). Select column and sticky Actions from demoTableHeaders."
+      data={demoTableData}
+      getItemId={(row) => row.id}
+      slotIdPrefix="design-demo-slot"
+      emptyMessage="No rows."
+      columns={demoColumns}
+      showSelectColumn={true}
+      selectHeaderLabel="Select"
+      actionsColumnSticky={true}
+      actionsComponent={DesignDemoTableRowActions}
+      actionsGetProps={(r) => ({ item: r })}
+    />
+    <div class="mt-4 rounded border border-gray-200 p-4 dark:border-gray-700">
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        Expand a row to see the detail slot. Column widths are resizable (drag the right edge of a
+        header). Use <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">global-classes.ts</code
+        > dataTable* classes for styling.
+      </p>
     </div>
   </div>
 </LayoutDefault>

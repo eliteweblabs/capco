@@ -10,6 +10,7 @@ import InlineAddressSearch from "../../../components/form/InlineAddressSearch.as
 import SlideToggle from "../../../components/form/SlideToggle.astro";
 import UnitSlider from "../../../components/form/UnitSlider.astro";
 import ToggleButton from "../../../components/form/ToggleButton.astro";
+import ToggleButtonGroup from "../../../components/form/ToggleButtonGroup.astro";
 import FileUpload from "../../../components/form/FileUpload.astro";
 import SignaturePadField from "../../../components/form/SignaturePadField.astro";
 import PhoneAndSMS from "../../../components/form/PhoneAndSMS.astro";
@@ -263,28 +264,28 @@ const isMultistep = context === "multistep";
           })()
         : [];
     const toggleType = field.toggleType ?? "radio";
+    const groupButtons = (field.buttons ?? []).map((button: FormButtonConfig) => {
+      const btnConfig = getButtonConfig(
+        button,
+        buttonDefaults[button.type as keyof typeof buttonDefaults]
+      );
+      const optionValue = button.dataValue ?? btnConfig.label ?? "";
+      const optionLabel = btnConfig.label ?? button.dataValue ?? "";
+      return {
+        label: optionLabel ?? optionValue,
+        dataValue: optionValue,
+        classes: btnConfig.classes,
+        labelHtml: optionLabel || undefined,
+      };
+    });
     return (
-      <div class="multi-step-button-group flex flex-wrap gap-3" tabindex="-1">
-        {field.buttons?.map((button) => {
-          const btnConfig = getButtonConfig(
-            button,
-            buttonDefaults[button.type as keyof typeof buttonDefaults]
-          );
-          const optionValue = button.dataValue ?? btnConfig.label ?? "";
-          const optionLabel = btnConfig.label ?? button.dataValue ?? "";
-          const isSelected = selectedValues.includes(optionValue);
-          return (
-            <ToggleButton
-              value={optionValue}
-              group={field.name}
-              type={toggleType}
-              class={`${btnConfig.classes ?? ""} ${isSelected ? "selected bg-primary dark:bg-primary-dark text-white" : ""}`}
-            >
-              {optionLabel ? <span class="button-text" set:html={optionLabel} /> : null}
-            </ToggleButton>
-          );
-        })}
-      </div>
+      <ToggleButtonGroup
+        name={field.name}
+        buttons={groupButtons}
+        toggleType={toggleType}
+        initialValues={selectedValues}
+        tabindex="-1"
+      />
     );
   })()
 ) : field.animatedPlaceholders && field.animatedPlaceholders.length > 0 && isMultistep ? (

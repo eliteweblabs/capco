@@ -1,0 +1,46 @@
+---
+import { checkAuth } from "../../../lib/auth";
+import LayoutDefault from "../../../components/layouts/LayoutDefault.astro";
+import PricingCard from "../../../components/common/PricingCard.astro";
+import { globalClasses } from "../../api/global/global-classes";
+
+const { currentUser, session } = await checkAuth(Astro.cookies);
+if (!currentUser || !session || currentUser?.profile?.role !== "Admin") {
+  return Astro.redirect("/auth/login");
+}
+const { primaryTextClasses, secondaryTextClasses } = globalClasses();
+---
+
+<LayoutDefault title="Pricing Card" description="Pricing display cards.">
+  <div class="px-4 py-8">
+    <h1 class={`mb-2 text-3xl font-bold ${primaryTextClasses}`}>Pricing Card</h1>
+    <p class={`mb-6 ${secondaryTextClasses} text-gray-600 dark:text-gray-400`}>Pricing display cards.</p>
+
+    <div class="grid grid-cols-1 gap-6 rounded-lg border border-gray-200 bg-white p-6 md:grid-cols-3 dark:border-gray-700 dark:bg-gray-900">
+      <PricingCard
+        title="Starter"
+        description="Perfect for small projects"
+        price="$49/mo"
+        features={["5 active projects", "Basic support", "Document storage"]}
+        buttonText="Get Started"
+        buttonHref="/pricing"
+      />
+      <PricingCard
+        title="Professional"
+        description="For growing teams"
+        price="$99/mo"
+        features={["Unlimited projects", "Priority support", "Advanced analytics"]}
+        buttonText="Start Free Trial"
+        buttonHref="/pricing"
+      />
+      <PricingCard
+        title="Enterprise"
+        description="For large organizations"
+        price="Custom"
+        features={["Everything in Pro", "Dedicated support", "Custom integrations"]}
+        buttonText="Contact Sales"
+        buttonHref="/contact"
+      />
+    </div>
+  </div>
+</LayoutDefault>

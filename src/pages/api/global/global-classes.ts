@@ -53,6 +53,24 @@ export const globalClasses = () => {
     dataTableCreateDetailClasses: "rounded-b-lg bg-gray-50 dark:bg-gray-800/50",
     dataTableCreateSlotClasses: "min-h-[120px] p-4",
     dataTableDragThClasses: "w-10 px-2 py-3",
+    /** Select column (checkbox) - narrow fixed width */
+    dataTableSelectThClasses:
+      "color-background color-border-primary border-r border-gray-200 px-2 py-3 font-semibold dark:border-gray-700 w-12 min-w-[3rem]",
+    dataTableSelectTdClasses:
+      "border-r border-gray-200 px-2 py-2 text-sm dark:border-gray-700 w-12 min-w-[3rem]",
+    /** Sticky positioning for first/last columns (e.g. select, actions) */
+    dataTableThStickyLeftClasses: "sticky left-0 z-[1] bg-white dark:bg-gray-900 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_4px_-2px_rgba(0,0,0,0.3)]",
+    dataTableTdStickyLeftClasses: "sticky left-0 z-[1] bg-white dark:bg-gray-900 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_4px_-2px_rgba(0,0,0,0.3)]",
+    dataTableThStickyRightClasses:
+      "sticky right-0 z-[1] bg-white dark:bg-gray-900 shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.1)] dark:shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.3)]",
+    dataTableTdStickyRightClasses:
+      "sticky right-0 z-[1] bg-white dark:bg-gray-900 shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.1)] dark:shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.3)]",
+
+    // Aside / sidebar nav (Aside.astro)
+    navAnchorClasses:
+      "lowercase hover:bg-gray-300 dark:hover:bg-gray-700 flex w-full align-center rounded-lg px-3 py-2 whitespace-nowrap",
+    navActiveClasses: "bg-gray-300 dark:bg-gray-700 font-bold",
+    navSvgClasses: "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400",
   };
 };
 

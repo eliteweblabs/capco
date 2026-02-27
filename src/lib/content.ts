@@ -327,6 +327,26 @@ export async function getSiteConfig(): Promise<SiteConfig> {
     }
   }
 
+  // Fallback: if projectListColumns still missing (e.g. env config without it), load from public/data/config.json
+  if (!Array.isArray((config as any).projectListColumns) || (config as any).projectListColumns.length === 0) {
+    const dataDir = join(process.cwd(), "public", "data");
+    const distDataDir = join(process.cwd(), "dist", "client", "data");
+    for (const dir of [dataDir, distDataDir]) {
+      const dataConfigPath = join(dir, "config.json");
+      if (existsSync(dataConfigPath)) {
+        try {
+          const dataConfig = JSON.parse(readFileSync(dataConfigPath, "utf-8"));
+          if (Array.isArray(dataConfig.projectListColumns) && dataConfig.projectListColumns.length > 0) {
+            (config as any).projectListColumns = dataConfig.projectListColumns;
+            break;
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+  }
+
   cache.set(cacheKey, config);
   siteConfigCacheTimestamp = now;
   return config;

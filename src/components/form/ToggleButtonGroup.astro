@@ -1,0 +1,173 @@
+---
+/**
+ * ToggleButtonGroup – config-driven group of ToggleButton (radio or multi-select).
+ * Matches config.json button-group shape: buttons (type/choice, label, dataValue) or options (value, label, selected).
+ * Use for forms, filters, and design demos. Single source for wrapper layout and semantics.
+ */
+import ToggleButton from "./ToggleButton.astro";
+
+export interface ToggleButtonOption {
+  label: string;
+  value?: string;
+  dataValue?: string;
+  selected?: boolean;
+  classes?: string;
+  /** When set, label is rendered with set:html (e.g. form config HTML labels) */
+  labelHtml?: string;
+}
+
+export interface ToggleButtonGroupProps {
+  /** Form/group name (used as data-group and for hidden input) */
+  name: string;
+  /** Buttons: label + value (or dataValue). Config shape uses dataValue. */
+  buttons: ToggleButtonOption[];
+  /** "radio" = single choice, "multi-select" = multiple */
+  toggleType?: "radio" | "multi-select";
+  /** Pre-selected values (overrides button.selected when provided) */
+  initialValues?: string[];
+  /** When set, prepend an "All" toggle; multi-select only. All selected = only All; selecting any other deselects All. */
+  allToggle?: boolean | { label: string; value: string };
+  class?: string;
+  id?: string;
+  tabindex?: string;
+  disabled?: boolean;
+}
+
+const {
+  name,
+  buttons,
+  toggleType = "radio",
+  initialValues,
+  allToggle,
+  class: className = "",
+  id,
+  tabindex,
+  disabled = false,
+} = Astro.props;
+
+const allOption = allToggle === true
+  ? { label: "All", value: "all" }
+  : typeof allToggle === "object" && allToggle?.label != null && allToggle?.value != null
+    ? allToggle
+    : null;
+
+function normalizeButtons(buttons: ToggleButtonOption[]): Array<{ label: string; value: string; selected: boolean; classes?: string; labelHtml?: string }> {
+  const initialSet = new Set(initialValues ?? []);
+  return buttons
+    .filter((b) => b.label != null || (b.value ?? b.dataValue) != null)
+    .map((b) => {
+      const value = b.value ?? b.dataValue ?? b.label ?? "";
+      const selected = initialSet.size > 0 ? initialSet.has(value) : Boolean(b.selected);
+      return {
+        label: b.label ?? value,
+        value,
+        selected,
+        classes: b.classes,
+        labelHtml: b.labelHtml,
+      };
+    });
+}
+
+let normalized = normalizeButtons(buttons);
+if (allOption && toggleType === "multi-select") {
+  const hasAll = initialValues?.includes(allOption.value) ?? false;
+  normalized = [
+    { label: allOption.label, value: allOption.value, selected: hasAll || (initialValues == null && normalized.every((n) => n.selected)) },
+    ...normalized,
+  ];
+}
+---
+
+<div
+  class={`toggle-button-group flex flex-wrap gap-3 ${className}`.trim()}
+  id={id}
+  tabindex={tabindex ?? "-1"}
+  role="group"
+  aria-label={name}
+  data-group-name={name}
+  {...(allOption && toggleType === "multi-select" ? { "data-all-toggle": allOption.value } : {})}
+>
+  {
+    normalized.map((opt) => (
+      <ToggleButton
+        value={opt.value}
+        group={name}
+        type={toggleType}
+        class={`${opt.classes ?? ""} ${opt.selected ? "selected bg-primary dark:bg-primary-dark text-white" : ""}`.trim()}
+        disabled={disabled}
+      >
+        {opt.labelHtml != null ? <span class="button-text" set:html={opt.labelHtml} /> : opt.label}
+      </ToggleButton>
+    ))
+  }
+</div>
+
+{allOption && toggleType === "multi-select" && (
+  <script>
+    (function () {
+      if ((window as any).__toggleButtonGroupAllListener) return;
+      (window as any).__toggleButtonGroupAllListener = true;
+      document.addEventListener("toggleButtonChange", (e) => {
+        const detail = (e as CustomEvent).detail || {};
+        const { group, value, type, selected } = detail;
+        if (type !== "multi-select" || !group) return;
+
+        const wrapper = document.querySelector(`[data-group-name="${group}"][data-all-toggle]`);
+        if (!wrapper) return;
+
+        const allValue = wrapper.getAttribute("data-all-toggle");
+        if (!allValue) return;
+
+        const allBtn = wrapper.querySelector(`[data-value="${allValue}"]`);
+        const otherBtns = Array.from(wrapper.querySelectorAll(`[data-group="${group}"][data-value]`)).filter(
+          (el) => el.getAttribute("data-value") !== allValue
+        );
+
+        if (value === allValue && selected) {
+          otherBtns.forEach((btn) => {
+            btn.classList.remove("selected", "bg-primary", "dark:bg-primary-dark", "text-white");
+            btn.classList.add("deselected");
+          });
+          const form = wrapper.closest("form");
+          if (form) {
+            let input = form.querySelector(`input[name="${group}"]`) as HTMLInputElement | null;
+            if (!input) {
+              input = document.createElement("input");
+              input.type = "hidden";
+              input.name = group;
+              form.appendChild(input);
+            }
+            input.value = JSON.stringify([allValue]);
+          }
+        } else if (value !== allValue && selected) {
+          if (allBtn) {
+            allBtn.classList.remove("selected", "bg-primary", "dark:bg-primary-dark", "text-white");
+            allBtn.classList.add("deselected");
+          }
+          const form = wrapper.closest("form");
+          if (form) {
+            const input = form.querySelector(`input[name="${group}"]`) as HTMLInputElement | null;
+            if (input) {
+              try {
+                const arr = JSON.parse(input.value || "[]");
+                const next = arr.filter((v) => v !== allValue);
+                input.value = JSON.stringify(next);
+              } catch {
+                input.value = "[]";
+              }
+            }
+          }
+        }
+      });
+    })();
+  </script>
+)}
+
+<style is:global>
+  /* Single place for button-group layout; toggle-button.deselected stays in global.css */
+  .toggle-button-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+</style>

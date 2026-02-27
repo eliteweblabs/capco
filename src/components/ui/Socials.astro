@@ -54,6 +54,7 @@ interface Props {
 
   // Context ID for delete handler (e.g. "aside-company" for Aside sidebar)
   dataSocialsContext?: string;
+  hideIfUser?: boolean;
 }
 
 const {
@@ -65,7 +66,14 @@ const {
   gap = "md",
   className = "",
   dataSocialsContext,
+  hideIfUser = false,
 } = Astro.props;
+
+import { checkAuth } from "../../lib/auth";
+const currentUser = await checkAuth(Astro.cookies);
+// When true, render a hidden placeholder instead of nothing (Astro can't receive null/undefined)
+const hideSocials = hideIfUser && !!currentUser;
+
 // Get social networks from CMS settings
 import { globalCompanyData } from "../../pages/api/global/global-company-data";
 const companyData = await globalCompanyData();
@@ -187,7 +195,11 @@ function getIconClasses(): string {
 }
 ---
 
-{
+{hideSocials ? (
+  <span class="hidden" aria-hidden="true" />
+) : (
+  <div class="contents">
+    {
   socialLinks.length > 0 && (
     <div
       class:list={[
@@ -238,3 +250,5 @@ function getIconClasses(): string {
 }
 
 {showRemove && dataSocialsContext && <script>import "../../scripts/socials-remove-init";</script>}
+  </div>
+)}

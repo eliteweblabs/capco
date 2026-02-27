@@ -36,9 +36,7 @@ const {
   isBackend = false,
 } = Astro.props;
 
-if (isBackend) {
-  return;
-}
+const showShare = !isBackend;
 
 // Build share URLs (url/title/text filled client-side if empty)
 const encodedUrl = url ? encodeURIComponent(url) : "{{SHARE_URL}}";
@@ -50,6 +48,7 @@ const linkedinHref = `https://www.linkedin.com/shareArticle?mini=true&url=${enco
 const facebookHref = `https://www.facebook.com/sharer.php?u=${encodedUrl}&t=${encodedTitle}`;
 ---
 
+{showShare ? (
 <div class={["share-widget-wrapper", className, globalIconButtonClasses].filter(Boolean).join(" ")}>
   <span
     class="share-widget__item relative inline-flex cursor-pointer"
@@ -115,6 +114,9 @@ const facebookHref = `https://www.facebook.com/sharer.php?u=${encodedUrl}&t=${en
     </div>
   </span>
 </div>
+) : (
+  <span class="hidden" aria-hidden="true" />
+)}
 
 <style>
   /* Stacked-coin slide: all 3 start stacked (right), slide left; first stops at slot 1, then 2nd at slot 2, then 3rd at slot 3 */

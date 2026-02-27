@@ -63,7 +63,11 @@ const ONLY_FLOWBITE_AND_THEME = false;
 
 /** Body touch/scroll classes by layout (computed once to avoid type-narrowing lint in class:list). */
 const bodyTouchClass =
-  layout === "fullform" ? "touch-none overscroll-none" : layout === "authCallback" ? "" : "touch-manipulation";
+  layout === "fullform"
+    ? "touch-none overscroll-none"
+    : layout === "authCallback"
+      ? ""
+      : "touch-manipulation";
 
 const stripHtml = (s: string | undefined | null): string =>
   (s ?? "")
@@ -92,8 +96,6 @@ const {
   customCss,
   customFooterHtml,
 } = await globalCompanyData();
-
-
 
 const safeTitle = stripHtml(title) || Astro.url.pathname.replace(/\//g, " ").trim() || "Home";
 const safeDescription = stripHtml(description || globalCompanySlogan || "");
@@ -171,16 +173,20 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
 <!doctype html>
 <html lang="en" data-suppress-console-noise={suppressConsoleNoise ? "1" : "0"}>
   <head>
-    {!ONLY_FLOWBITE_AND_THEME && (
-      <>
-        {/* 1. DOMContentLoaded patch - re-enable first if testing */}
-        <script is:inline src="/scripts/dom-content-loaded-patch.js"></script>
-        <script is:inline src="/scripts/console-suppress.js"></script>
-      </>
-    )}
+    {
+      !ONLY_FLOWBITE_AND_THEME && (
+        <>
+          {/* 1. DOMContentLoaded patch - re-enable first if testing */}
+          <script is:inline src="/scripts/dom-content-loaded-patch.js" />
+          <script is:inline src="/scripts/console-suppress.js" />
+        </>
+      )
+    }
 
-    {/* Pre-bundled app-init (theme, notification, typewriter). app-globals + auth-google loaded in body. */}
-    {!ONLY_FLOWBITE_AND_THEME && <script is:inline src="/scripts/app-init.js"></script>}
+    {
+      /* Pre-bundled app-init (theme, notification, typewriter). app-globals + auth-google loaded in body. */
+    }
+    {!ONLY_FLOWBITE_AND_THEME && <script is:inline src="/scripts/app-init.js" />}
 
     <AppHead
       safeTitle={safeTitle}
@@ -201,16 +207,20 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
       includeDynamicColorsAndFonts={!ONLY_FLOWBITE_AND_THEME}
     />
 
-    {!ONLY_FLOWBITE_AND_THEME && (
-      <>
-        {/* 6. Global typewriter (runSimpleTypewriter - vanilla JS, no TypeScript so it runs in prod) */}
-        <script is:inline src="/scripts/typewriter-inline.js"></script>
-      </>
-    )}
+    {
+      !ONLY_FLOWBITE_AND_THEME && (
+        <>
+          {/* 6. Global typewriter (runSimpleTypewriter - vanilla JS, no TypeScript so it runs in prod) */}
+          <script is:inline src="/scripts/typewriter-inline.js" />
+        </>
+      )
+    }
 
     <!-- Set global user data for client-side components -->
 
-    {/* SPA disabled: persist CMS colors, ClientRouter, prevent swap on 404 - was causing malformed HTML / script errors */}
+    {
+      /* SPA disabled: persist CMS colors, ClientRouter, prevent swap on 404 - was causing malformed HTML / script errors */
+    }
   </head>
 
   <body
@@ -221,17 +231,20 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
       bodyTouchClass,
     ]}
   >
-    {/* authCallback: minimal chrome so OAuth callback gets DB theme/styles without nav/footer or heavy pipeline */}
+    {
+      /* authCallback: minimal chrome so OAuth callback gets DB theme/styles without nav/footer or heavy pipeline */
+    }
     {
       layout === "authCallback" ? (
         <>
-          <div class="flex w-full flex-col items-center justify-center gap-6 p-4" data-dynamic-height="true">
+          <div
+            class="flex w-full flex-col items-center justify-center gap-6 p-4"
+            data-dynamic-height="true"
+          >
             <slot />
           </div>
-          {!ONLY_FLOWBITE_AND_THEME && (
-            <script is:inline src="/scripts/app-globals.js"></script>
-          )}
-          <script is:inline src="/scripts/auth-google.js"></script>
+          {!ONLY_FLOWBITE_AND_THEME && <script is:inline src="/scripts/app-globals.js" />}
+          <script is:inline src="/scripts/auth-google.js" />
         </>
       ) : (
         <>
@@ -246,201 +259,143 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
 
           {/* <!-- <DebugPanel {debugData} {currentRole} /> --> */}
 
-          <FeedbackPanel {currentUser} />
+          {/* <FeedbackPanel {currentUser} /> */}
 
           <div class="flex h-dvh flex-col overflow-hidden md:min-h-0" data-template={layout}>
             <Navbar
-        {globalIconButtonClasses}
-        {desktopNavigationHTML}
-        {currentUser}
-        {session}
-        {supabaseUrl}
-        {id}
-        {projects}
-        assignedProjectsCount={assignedProjectsCount}
-        assignedProjectsPreview={assignedProjectsPreview}
-        {isBackend}
-        {project}
-        pathname={Astro.url.pathname}
-        template={layout}
-        {hideFooter}
-      />
+              {globalIconButtonClasses}
+              {desktopNavigationHTML}
+              {currentUser}
+              {session}
+              {supabaseUrl}
+              {id}
+              {projects}
+              assignedProjectsCount={assignedProjectsCount}
+              assignedProjectsPreview={assignedProjectsPreview}
+              {isBackend}
+              {project}
+              pathname={Astro.url.pathname}
+              template={layout}
+              {hideFooter}
+            />
 
-      <Aside {currentUser} {primaryTextClasses} {mobileNavigationHTML} />
+            <Aside {currentUser} {primaryTextClasses} {mobileNavigationHTML} />
 
-      {/* <!-- Scrolling pane: flex-1 min-h-0 constrains height so this is the scroll container (not body). translateY on mobile for reveal effect. fullform: overscroll-none to prevent pullable rubber-band. --> */}
-      <div
-        id="reveal-scroll"
-        class:list={[
-          "relative z-50 min-h-0 flex-1 touch-pan-y overflow-y-auto bg-gray-100 scrollbar-hide dark:bg-gray-900",
-          layout === "fullform"
-            ? "touch-none overscroll-none overscroll-y-contain"
-            : "overscroll-y-contain",
-        ]}
-      >
-        <div
-          id="main-content"
-          class:list={[
-            // "color-background",
-            // "flex-1 min-w-0",
-            // currentUser ? "transition-duration-[350ms] ease-in-out" : "",
+            {/* <!-- Scrolling pane: flex-1 min-h-0 constrains height so this is the scroll container (not body). translateY on mobile for reveal effect. fullform: overscroll-none to prevent pullable rubber-band. --> */}
+            <div
+              id="reveal-scroll"
+              class:list={[
+                "relative z-50 min-h-0 flex-1 touch-pan-y overflow-y-auto bg-gray-100 scrollbar-hide dark:bg-gray-900",
+                layout === "fullform"
+                  ? "touch-none overscroll-none overscroll-y-contain"
+                  : "overscroll-y-contain",
+              ]}
+            >
+              <div
+                id="main-content"
+                class:list={[
+                  // "color-background",
+                  // "flex-1 min-w-0",
+                  // currentUser ? "transition-duration-[350ms] ease-in-out" : "",
 
-            // (layout === "default"  || layout === "minimal" || !layout) &&
-            //   "",
-            mainClasses,
-            layout === "default" && "px-4 pt-4 sm:px-6 sm:pt-6 md:px-8 md:pt-8 lg:px-10 lg:pt-10",
-          ]}
-          style={currentUser ? "transition-duration: 350ms;" : undefined}
-        >
-          <main>
-            <slot />
-          </main>
+                  // (layout === "default"  || layout === "minimal" || !layout) &&
+                  //   "",
+                  mainClasses,
+                  layout === "default" &&
+                    "px-4 pt-4 sm:px-6 sm:pt-6 md:px-8 md:pt-8 lg:px-10 lg:pt-10",
+                ]}
+                style={currentUser ? "transition-duration: 350ms;" : undefined}
+              >
+                <main>
+                  <slot />
+                </main>
 
-          {
-            !isAuthPageResult && layout !== "fullform" && (
+                {!isAuthPageResult && layout !== "fullform" && <SubFooter />}
+              </div>
+            </div>
 
-             <SubFooter 
-      />
-              
-            )
-          }
-        </div>
-      </div>
-     
-      <Footer
-        {isAuthPageResult}
-        {isContactPageResult}
-        {currentUser}
-        {isBackend}
-        {globalIconButtonClasses}
-        {globalCompanyName}
-        {isBackend}
-        {globalCompanyPhone}
-        {primaryTextClasses}
-        {secondaryTextClasses}
-        {globalInputClasses}
-        {customFooterHtml}
-        {hideFooter}
-      />
+            <Footer
+              {isAuthPageResult}
+              {isContactPageResult}
+              {currentUser}
+              {isBackend}
+              {globalIconButtonClasses}
+              {globalCompanyName}
+              {isBackend}
+              {globalCompanyPhone}
+              {primaryTextClasses}
+              {secondaryTextClasses}
+              {globalInputClasses}
+              {customFooterHtml}
+              {hideFooter}
+            />
 
-      <div id="action-buttons" class="hide-on-form-focus fixed bottom-8 right-4 z-100">
-        {
-          isAdmin ? (
-            <AdminVoiceAssistantWidget {currentUser} {globalCompanyPhone} />
-          ) : (
-            !isAuthPageResult && !isContactPageResult && (
-              <SpeedDial
-                {globalCompanyPhone}
-                currentUser={currentUser || undefined}
-                {isBackend}
-                {primaryTextClasses}
-                {secondaryTextClasses}
-                {globalInputClasses}
-                {globalCompanyName}
-              />
-            )
-          )
-        }
-      </div>
-    </div>
+            <div id="action-buttons" class="hide-on-form-focus fixed bottom-8 right-4 z-100">
+              {isAdmin ? (
+                <AdminVoiceAssistantWidget {currentUser} {globalCompanyPhone} />
+              ) : (
+                !isAuthPageResult &&
+                !isContactPageResult && (
+                  <SpeedDial
+                    {globalCompanyPhone}
+                    currentUser={currentUser || undefined}
+                    {isBackend}
+                    {primaryTextClasses}
+                    {secondaryTextClasses}
+                    {globalInputClasses}
+                    {globalCompanyName}
+                  />
+                )
+              )}
+            </div>
+          </div>
 
-    <CookieBanner />
+          <CookieBanner />
 
-    {/* Cache indicator: dev/test only (localhost or ?cacheIndicator=1) */}
-    {isAdmin && <CacheIndicator />}
+          {/* Cache indicator: dev/test only (localhost or ?cacheIndicator=1) */}
+          {isAdmin && <CacheIndicator />}
 
-    {/* app-globals: pre-bundled to public/scripts/app-globals.js (avoids Astro chunk 404 + import-statement errors). is:inline prevents Vite from bundling public/ asset. */}
-    {!ONLY_FLOWBITE_AND_THEME && (
-      <script is:inline src="/scripts/app-globals.js"></script>
-    )}
-    {/* auth-google: pre-bundled (avoids Astro chunk 404 so Google OAuth works in prod). is:inline prevents Vite from bundling public/ asset. */}
-    <script is:inline src="/scripts/auth-google.js"></script>
-    {/* Flowbite: CDN may load slowly or fail (CSP/network). Fallback below retries and can load script dynamically. */}
-    <script src="https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js" defer></script>
-    <script is:inline>
-      if (window.__jsOrderLog) window.__jsOrderLog("Flowbite script tag (inline after CDN)");
-    </script>
-    {/* Multi-step form fallback: load form init first (critical), then typewriter (animation) so Next button works immediately */}
-    <script is:inline src="/scripts/multistep-form-fallback.js"></script>
-    {/* Alert and banner dismiss: inline so close works when module scripts don't load */}
-    <script is:inline src="/scripts/alert-banner-dismiss.js"></script>
-    {/* Theme toggle: inline so it works when app-globals chunk fails to load (e.g. production SSR) */}
-    <script is:inline src="/scripts/theme-toggle-inline.js"></script>
+          {/* app-globals: pre-bundled to public/scripts/app-globals.js (avoids Astro chunk 404 + import-statement errors). is:inline prevents Vite from bundling public/ asset. */}
+          {!ONLY_FLOWBITE_AND_THEME && <script is:inline src="/scripts/app-globals.js" />}
+          {/* auth-google: pre-bundled (avoids Astro chunk 404 so Google OAuth works in prod). is:inline prevents Vite from bundling public/ asset. */}
+          <script is:inline src="/scripts/auth-google.js" />
+          {/* Flowbite: CDN may load slowly or fail (CSP/network). Fallback below retries and can load script dynamically. */}
+          <script src="https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js" defer />
+          <script is:inline>
+            if (window.__jsOrderLog) window.__jsOrderLog("Flowbite script tag (inline after CDN)");
+          </script>
+          {/* Multi-step form fallback: load form init first (critical), then typewriter (animation) so Next button works immediately */}
+          <script is:inline src="/scripts/multistep-form-fallback.js" />
+          {/* Alert and banner dismiss: inline so close works when module scripts don't load */}
+          <script is:inline src="/scripts/alert-banner-dismiss.js" />
+          {/* Theme toggle: inline so it works when app-globals chunk fails to load (e.g. production SSR) */}
+          <script is:inline src="/scripts/theme-toggle-inline.js" />
 
-    {!ONLY_FLOWBITE_AND_THEME && (
-      <script is:inline src="/scripts/app-page-scripts.js" data-script="hold-progress-init" />
-    )}
+          {!ONLY_FLOWBITE_AND_THEME && (
+            <script is:inline src="/scripts/app-page-scripts.js" data-script="hold-progress-init" />
+          )}
 
-    {/* Theme toggle: inline fallback above; app-globals.ts also binds (uses data-theme-toggle-inited to avoid double-init). Overscroll scale: app-globals.ts DOMContentLoaded */}
+          {/* Theme toggle: inline fallback above; app-globals.ts also binds (uses data-theme-toggle-inited to avoid double-init). Overscroll scale: app-globals.ts DOMContentLoaded */}
 
-    {!ONLY_FLOWBITE_AND_THEME && (
-      <script is:inline src="/scripts/app-domcontentloaded-init.js"></script>
-    )}
+          {!ONLY_FLOWBITE_AND_THEME && (
+            <script is:inline src="/scripts/app-domcontentloaded-init.js" />
+          )}
 
-    <!-- {!ONLY_FLOWBITE_AND_THEME && (
-      <script is:inline>
-        (function () {
-          if (typeof window !== "undefined" && window.__jsOrderLog) window.__jsOrderLog("App image error handler (inline)");
-          document.addEventListener("DOMContentLoaded", function () {
-            var isDev = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-            function handleImgError(event) {
-              var target = event.target;
-              var src = target.src;
-              if (src && src.includes("supabase.co/storage")) {
-                if (isDev) alert("🔍 [IMG-ERROR] Supabase image failed:\n" + src);
-                if (!isDev) console.warn("⚠️ [IMAGE-ERROR] Supabase storage image failed to load:", src);
-                target.style.display = "none";
-                if (!target.nextElementSibling || !target.nextElementSibling.classList.contains("image-fallback")) {
-                  var fallback = document.createElement("div");
-                  fallback.className = "image-fallback bg-gray-200 flex items-center justify-center text-gray-500";
-                  fallback.style.width = target.style.width || "100%";
-                  fallback.style.height = target.style.height || "100%";
-                  fallback.innerHTML = "📷";
-                  target.parentNode.insertBefore(fallback, target.nextSibling);
-                }
-              }
-            }
-            document.querySelectorAll("img").forEach(function (img) { img.addEventListener("error", handleImgError); });
-            var obs = new MutationObserver(function (mutations) {
-              mutations.forEach(function (m) {
-                m.addedNodes.forEach(function (node) {
-                  if (node.nodeType === 1 && node.querySelectorAll) {
-                    node.querySelectorAll("img").forEach(function (img) { img.addEventListener("error", handleImgError); });
-                  }
-                });
-              });
-            });
-            obs.observe(document.body, { childList: true, subtree: true });
-          });
-          window.addEventListener("unhandledrejection", function (e) {
-            if (e.reason && e.reason.message && e.reason.message.includes("ERR_CONNECTION_CLOSED")) {
-              console.warn("⚠️ [NETWORK-ERROR] Connection closed error suppressed:", e.reason.message);
-              e.preventDefault();
-            }
-          });
-          window.addEventListener("error", function (e) {
-            if (e.message && e.message.includes("ERR_CONNECTION_CLOSED")) {
-              console.warn("⚠️ [NETWORK-ERROR] Connection closed error suppressed:", e.message);
-              e.preventDefault();
-            }
-          });
-        })();
-      </script>
-    )} -->
+          {/* Commented out: App image error handler + ERR_CONNECTION_CLOSED suppress (see git history) */}
 
-    {!ONLY_FLOWBITE_AND_THEME && (
-      <>
-    {/* 14. AOS (Animate On Scroll) - Global initialization */}
-    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js" defer></script>
-    <script is:inline src="/scripts/aos-init.js"></script>
-      </>
-    )}
+          {!ONLY_FLOWBITE_AND_THEME && (
+            <>
+              {/* 14. AOS (Animate On Scroll) - Global initialization */}
+              <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
+              <script src="https://unpkg.com/aos@2.3.1/dist/aos.js" defer />
+              <script is:inline src="/scripts/aos-init.js" />
+            </>
+          )}
 
-    {/* 15-17. scroll-animations, lazy-load-images, project-item-handlers - in app-page-scripts.js above */}
+          {/* 15-17. scroll-animations, lazy-load-images, project-item-handlers - in app-page-scripts.js above */}
 
-    {/* <!-- Plausible Analytics Script --> */}
-    {/* {plausibleTrackingScript && <Fragment set:html={plausibleTrackingScript} />} */}
+          {/* <!-- Plausible Analytics Script --> */}
+          {/* {plausibleTrackingScript && <Fragment set:html={plausibleTrackingScript} />} */}
         </>
       )
     }

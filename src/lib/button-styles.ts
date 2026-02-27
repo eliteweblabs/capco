@@ -56,33 +56,6 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
         xl: "py-5 px-6 text-[18px]",
       };
 
-  // Variant classes using global color system
-  const variantClasses = {
-    primary:
-      "[@media(hover:hover)]:hover:scale-101 [@media(hover:hover)]:hover:-translate-y-0.5 transition-all duration-200 rounded-full border-2 border-primary-500 bg-primary-500 text-white [@media(hover:hover)]:hover:bg-primary-600 dark:bg-primary-500 dark:[@media(hover:hover)]:hover:bg-primary-600",
-    secondary:
-      "ring-2 ring-inset ring-[currentColor] [@media(hover:hover)]:hover:scale-101 [@media(hover:hover)]:hover:-translate-y-0.5 transition-all duration-200 rounded-full border-2 border-secondary-500 bg-secondary-500 text-white [@media(hover:hover)]:hover:bg-secondary-600 dark:bg-secondary-500 dark:[@media(hover:hover)]:hover:bg-secondary-600",
-    success:
-      "rounded-full bg-success-500 text-white [@media(hover:hover)]:hover:bg-success-600 dark:bg-success-500 dark:[@media(hover:hover)]:hover:bg-success-600 animate-pulse-breathe",
-    warning:
-      "bg-warning-500 text-white [@media(hover:hover)]:hover:bg-warning-600 dark:bg-warning-500 dark:[@media(hover:hover)]:hover:bg-warning-600",
-    danger:
-      "rounded-full bg-danger-500 text-white [@media(hover:hover)]:hover:bg-danger-600 dark:bg-danger-500 dark:[@media(hover:hover)]:hover:bg-danger-600",
-    outline:
-      "[@media(hover:hover)]:hover:scale-101 [@media(hover:hover)]:hover:-translate-y-0.5 rounded-full border-2 border-primary-500 text-primary-500 [@media(hover:hover)]:hover:bg-primary-500 [@media(hover:hover)]:hover:text-white dark:border-primary-400 dark:text-primary-400 dark:[@media(hover:hover)]:hover:bg-primary-600 dark:[@media(hover:hover)]:hover:text-white backdrop-blur-md",
-    ghost:
-      "rounded-full text-primary-500 [@media(hover:hover)]:hover:bg-primary-50 dark:text-primary-400 dark:[@media(hover:hover)]:hover:!bg-primary-900/20",
-    link: "link text-primary-500 [@media(hover:hover)]:hover:underline [@media(hover:hover)]:hover:text-primary-600 dark:text-primary-400 dark:[@media(hover:hover)]:hover:text-primary-300",
-    loading: "bg-primary-500 text-white cursor-not-allowed opacity-75 dark:bg-primary-500",
-    disabled:
-      "rounded-full bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-60 dark:bg-gray-800 dark:text-gray-500 dark:border-gray-700 disabled",
-    selected:
-      "rounded-full bg-primary-500 text-white border-2 border-primary-500 dark:bg-primary-500 dark:border-primary-500",
-    anchor:
-      "text-gray-800 dark:text-gray-200 [@media(hover:hover)]:hover:text-primary dark:[@media(hover:hover)]:hover:text-primary-dark outline-none focus:outline-none border-none focus:ring-0 focus:ring-offset-0 [@media(hover:hover)]:hover:shadow-none opacity-100 transition-all duration-200",
-    tab: "tab-button sliding-tabs-item text-gray-700 dark:text-gray-300 hover:text-gray-1000 dark:hover:text-gray-100 active:text-primary-500 dark:active:text-primary-400 trasition-all transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-  };
-
   // Focus classes with dashed outline
   const focusClasses = focus
     ? "!outline !outline-2 !outline-dashed !outline-primary-500 !outline-offset-2 dark:!outline-primary-400"
@@ -92,7 +65,7 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
   const buttonClasses = [
     baseClasses,
     sizeClasses[size] || sizeClasses.md,
-    variantClasses[variant] || variantClasses.primary,
+    buttonVariantClasses[variant] || buttonVariantClasses.primary,
     fullWidth ? "w-full" : "",
     focusClasses,
     className,
@@ -102,6 +75,33 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
 
   return buttonClasses;
 }
+
+/** Variant-only class strings (primary, secondary, outline, ghost, etc.). Used by getButtonClasses and by navigation HTML generation. */
+export const buttonVariantClasses: Record<string, string> = {
+  primary:
+    "[@media(hover:hover)]:hover:scale-101 [@media(hover:hover)]:hover:-translate-y-0.5 transition-all duration-200 rounded-full border-2 border-primary-500 bg-primary-500 text-white [@media(hover:hover)]:hover:bg-primary-600 dark:bg-primary-500 dark:[@media(hover:hover)]:hover:bg-primary-600",
+  secondary:
+    "ring-2 ring-inset ring-[currentColor] [@media(hover:hover)]:hover:scale-101 [@media(hover:hover)]:hover:-translate-y-0.5 transition-all duration-200 rounded-full border-2 border-secondary-500 bg-secondary-500 text-white [@media(hover:hover)]:hover:bg-secondary-600 dark:bg-secondary-500 dark:[@media(hover:hover)]:hover:bg-secondary-600",
+  success:
+    "rounded-full bg-success-500 text-white [@media(hover:hover)]:hover:bg-success-600 dark:bg-success-500 dark:[@media(hover:hover)]:hover:bg-success-600 animate-pulse-breathe",
+  warning:
+    "bg-warning-500 text-white [@media(hover:hover)]:hover:bg-warning-600 dark:bg-warning-500 dark:[@media(hover:hover)]:hover:bg-warning-600",
+  danger:
+    "rounded-full bg-danger-500 text-white [@media(hover:hover)]:hover:bg-danger-600 dark:bg-danger-500 dark:[@media(hover:hover)]:hover:bg-danger-600",
+  outline:
+    "[@media(hover:hover)]:hover:scale-101 [@media(hover:hover)]:hover:-translate-y-0.5 rounded-full border-2 border-primary-500 text-primary-500 [@media(hover:hover)]:hover:bg-primary-500 [@media(hover:hover)]:hover:text-white dark:border-primary-400 dark:text-primary-400 dark:[@media(hover:hover)]:hover:bg-primary-600 dark:[@media(hover:hover)]:hover:text-white backdrop-blur-md",
+  ghost:
+    "rounded-full text-primary-500 [@media(hover:hover)]:hover:bg-primary-50 dark:text-primary-400 dark:[@media(hover:hover)]:hover:!bg-primary-900/20",
+  link: "link text-primary-500 [@media(hover:hover)]:hover:underline [@media(hover:hover)]:hover:text-primary-600 dark:text-primary-400 dark:[@media(hover:hover)]:hover:text-primary-300",
+  loading: "bg-primary-500 text-white cursor-not-allowed opacity-75 dark:bg-primary-500",
+  disabled:
+    "rounded-full bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-60 dark:bg-gray-800 dark:text-gray-500 dark:border-gray-700 disabled",
+  selected:
+    "rounded-full bg-primary-500 text-white border-2 border-primary-500 dark:bg-primary-500 dark:border-primary-500",
+  anchor:
+    "text-gray-800 dark:text-gray-200 [@media(hover:hover)]:hover:text-primary dark:[@media(hover:hover)]:hover:text-primary-dark outline-none focus:outline-none border-none focus:ring-0 focus:ring-offset-0 [@media(hover:hover)]:hover:shadow-none opacity-100 transition-all duration-200",
+  tab: "tab-button sliding-tabs-item text-gray-700 dark:text-gray-300 hover:text-gray-1000 dark:hover:text-gray-100 active:text-primary-500 dark:active:text-primary-400 trasition-all transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+};
 
 // Helper function to generate complete button HTML with data attributes
 export function generateButtonHTML(

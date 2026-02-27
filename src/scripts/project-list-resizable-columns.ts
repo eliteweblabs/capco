@@ -92,7 +92,7 @@ function initResizableColumns() {
   headers.forEach((th) => {
     const colId = th.getAttribute("data-col-id");
     if (colId) {
-      const w = savedWidths[colId] ?? parseFloat(th.getAttribute("data-col-default-width") || "0") || DEFAULT_WIDTHS[colId] ?? 10;
+      const w = savedWidths[colId] ?? (parseFloat(th.getAttribute("data-col-default-width") || "0") || (DEFAULT_WIDTHS[colId] ?? 10));
       savedWidths[colId] = applyWidthToTh(th, w);
     }
   });

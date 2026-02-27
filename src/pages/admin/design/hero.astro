@@ -1,0 +1,42 @@
+---
+import { checkAuth } from "../../../lib/auth";
+import LayoutDefault from "../../../components/layouts/LayoutDefault.astro";
+import Hero from "../../../components/common/Hero.astro";
+import { globalClasses } from "../../api/global/global-classes";
+
+const { currentUser, session } = await checkAuth(Astro.cookies);
+if (!currentUser || !session || currentUser?.profile?.role !== "Admin") {
+  return Astro.redirect("/auth/login");
+}
+const { primaryTextClasses, secondaryTextClasses } = globalClasses();
+---
+
+<LayoutDefault title="Hero" description="Hero sections with title, description, and buttons.">
+  <div class="px-4 py-8">
+    <h1 class={`mb-2 text-3xl font-bold ${primaryTextClasses}`}>Hero</h1>
+    <p class={`mb-6 ${secondaryTextClasses} text-gray-600 dark:text-gray-400`}>Hero sections with title, description, and buttons.</p>
+
+    <div class="space-y-8 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-900">
+      <div>
+        <h2 class="mb-4 text-lg font-medium">Basic Hero</h2>
+        <Hero
+          title="Welcome to Our Platform"
+          description="Build amazing fire protection systems with our comprehensive tools and support."
+          leftButton={{ text: "Get Started", href: "/contact", variant: "primary" }}
+          rightButton={{ text: "Learn More", href: "/about", variant: "outline" }}
+        />
+      </div>
+      <div>
+        <h2 class="mb-4 text-lg font-medium">Hero with background image</h2>
+        <Hero
+          title="Fire Protection Experts"
+          description="Serving the Northeast since 2015"
+          backgroundImage="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1200&auto=format"
+          backgroundOverlay={true}
+          overlayOpacity={0.6}
+          leftButton={{ text: "Contact Us", href: "/contact", variant: "primary" }}
+        />
+      </div>
+    </div>
+  </div>
+</LayoutDefault>

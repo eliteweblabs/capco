@@ -1,0 +1,35 @@
+---
+import { checkAuth } from "../../../lib/auth";
+import LayoutDefault from "../../../components/layouts/LayoutDefault.astro";
+import FAQBlock from "../../../components/blocks/FAQBlock.astro";
+import { globalClasses } from "../../api/global/global-classes";
+
+const { currentUser, session } = await checkAuth(Astro.cookies);
+if (!currentUser || !session || currentUser?.profile?.role !== "Admin") {
+  return Astro.redirect("/auth/login");
+}
+const { primaryTextClasses, secondaryTextClasses } = globalClasses();
+---
+
+<LayoutDefault title="FAQ Block" description="FAQ accordion and grid layouts.">
+  <div class="px-4 py-8">
+    <h1 class={`mb-2 text-3xl font-bold ${primaryTextClasses}`}>FAQ Block</h1>
+    <p class={`mb-6 ${secondaryTextClasses} text-gray-600 dark:text-gray-400`}>FAQ accordion and grid layouts.</p>
+
+    <div class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-900">
+      <FAQBlock
+        title="Frequently Asked Questions"
+        description="Find answers to common questions."
+        variant="accordion"
+        faq1Question="What services do you offer?"
+        faq1Answer="We provide comprehensive fire protection services including system design, installation, inspection, and maintenance."
+        faq2Question="How long does installation take?"
+        faq2Answer="Small projects typically take 1-2 weeks; larger commercial installations may take 4-8 weeks."
+        faq3Question="Do you offer emergency services?"
+        faq3Answer="Yes, we offer 24/7 emergency response for clients with active maintenance contracts."
+        faq4Question="What certifications do you have?"
+        faq4Answer="Our team holds NICET certifications, state licenses, and manufacturer certifications."
+      />
+    </div>
+  </div>
+</LayoutDefault>

@@ -1,13 +1,12 @@
 ---
 // Flowbite Sidebar Component
-// Based on Flowbite dashboard design patterns
-// Nav items driven by asideNav in site-config-{company-slug}.json (see aside-nav-config.ts)
+// Nav items from config (asideNav in config.json). Branch on children: has children → dropdown, else → link.
 
 import { isFeatureEnabled } from "../../lib/features";
-import { getResolvedAsideNav } from "../../lib/aside-nav-config";
+import { getAsideNav } from "../../lib/aside-nav-config";
 import SimpleIcon from "../common/SimpleIcon.astro";
 import Socials from "./Socials.astro";
-import { globalCompanyData } from "../../pages/api/global/global-company-data";
+import { globalClasses } from "../../pages/api/global/global-classes";
 
 interface Props {
   currentUser: any;
@@ -22,8 +21,7 @@ const currentRole = currentUser?.profile?.role;
 // Check feature flags
 const chatEnabled = await isFeatureEnabled("chat");
 
-// Get aside nav from company-specific config (site-config-{slug}.json). Show for everyone; role filters which items are visible.
-const asideNavItems = await getResolvedAsideNav(currentRole);
+const asideNavItems = await getAsideNav(currentRole);
 
 // Get current page URL for active state
 const currentPath = Astro.url.pathname;
@@ -34,10 +32,7 @@ const isActive = (href: string) => {
   return currentPath === href || (href !== "/" && currentPath.startsWith(href));
 };
 
-const anchorClasses =
-  "lowercase hover:bg-gray-300 dark:hover:bg-gray-700 flex w-full align-center rounded-lg px-3 py-2 whitespace-nowrap";
-const activeClasses = "bg-gray-300 dark:bg-gray-700 font-bold";
-const svgClasses = "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400";
+const { navAnchorClasses, navActiveClasses, navSvgClasses } = globalClasses();
 
 function slugifyId(s: string) {
   return s
@@ -61,37 +56,16 @@ function slugifyId(s: string) {
   <div
     class="sticky top-0 min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-3 py-4 scrollbar-hide"
   >
-    <div data-sidebar-collapse-hide="">
-      <ul
-        class={`mb-2 block md:hidden space-y-2 text-xs font-medium uppercase tracking-wider`}
-        id="sidebar-menu-1"
-      >
-        <!-- front end navigation (mobile only) -->
-        <Fragment set:html={mobileNavigationHTML} />
-      </ul>
-    </div>
-    <ul class={`space-y-2 text-xs font-medium uppercase tracking-wider`} id="sidebar-menu">
+    <!-- <div data-sidebar-collapse-hide=""> -->
+    <ul
+      class="mb-2 block space-y-2 text-xs font-medium uppercase tracking-wider"
+      id="sidebar-menu"
+    >
+      <!-- Front-end nav (from layout) and aside nav from config -->
+      <Fragment set:html={mobileNavigationHTML} />
       {
         asideNavItems.map((item) => {
-          if (item.type === "link") {
-            return (
-              <li>
-                <a
-                  href={item.href}
-                  class={`${anchorClasses} ${isActive(item.href) ? activeClasses : ""}`}
-                >
-                  {item.icon && <SimpleIcon name={item.icon} class={svgClasses} />}
-                  <span
-                    data-sidebar-collapse-hide=""
-                    class="ml-3 flex-1 whitespace-nowrap text-left"
-                  >
-                    {item.label}
-                  </span>
-                </a>
-              </li>
-            );
-          }
-          if (item.type === "dropdown") {
+          if (item.children?.length) {
             const ddId = `dropdown-${slugifyId(item.label)}`;
             const childHrefs = item.children.map((c) => c.href);
             const isDropdownActive = childHrefs.some((h) => isActive(h));
@@ -99,13 +73,13 @@ function slugifyId(s: string) {
               <li>
                 <button
                   type="button"
-                  class={`${anchorClasses} w-full ${isDropdownActive ? activeClasses : ""}`}
+                  class={`${navAnchorClasses} w-full ${isDropdownActive ? navActiveClasses : ""}`}
                   aria-controls={ddId}
                   data-collapse-toggle={ddId}
                   data-sidebar-collapse-item=""
                   aria-expanded="false"
                 >
-                  {item.icon && <SimpleIcon name={item.icon} class={svgClasses} />}
+                  {item.icon && <SimpleIcon name={item.icon} class={navSvgClasses} />}
                   <span
                     class="ml-3 flex-1 whitespace-nowrap text-left"
                     data-sidebar-collapse-hide=""
@@ -120,7 +94,7 @@ function slugifyId(s: string) {
                       <li>
                         <a
                           href={child.href}
-                          class={`${anchorClasses} ${currentPath === child.href ? activeClasses : ""}`}
+                          class={`${navAnchorClasses} ${currentPath === child.href ? navActiveClasses : ""}`}
                           data-sidebar-collapse-subitem=""
                           data-sidebar-collapse-hide=""
                         >
@@ -133,102 +107,29 @@ function slugifyId(s: string) {
               </li>
             );
           }
-          if ((item as any).type === "feature-admin") {
-            return (item as any).items.map((nav: any) => (
+          if (item.href) {
+            return (
               <li>
                 <a
-                  href={nav.href}
-                  class={`${anchorClasses} ${isActive(nav.href) ? activeClasses : ""}`}
-                  data-sidebar-collapse-item=""
+                  href={item.href}
+                  class={`${navAnchorClasses} ${isActive(item.href) ? navActiveClasses : ""}`}
                 >
-                  {nav.icon && <SimpleIcon name={nav.icon} class={svgClasses} />}
+                  {item.icon && <SimpleIcon name={item.icon} class={navSvgClasses} />}
                   <span
                     data-sidebar-collapse-hide=""
                     class="ml-3 flex-1 whitespace-nowrap text-left"
                   >
-                    {nav.label}
+                    {item.label}
                   </span>
                 </a>
               </li>
-            ));
-          }
-          if ((item as any).type === "feature-tools") {
-            return (
-              <>
-                {((item as any).items as any[]).length > 0 &&
-                  ((item as any).sectionLabel as string | undefined) && (
-                    <li class="pb-2 pt-4">
-                      <span class="text-xs uppercase text-gray-500 dark:text-gray-400">
-                        {(item as any).sectionLabel}
-                      </span>
-                    </li>
-                  )}
-                {((item as any).items as any[]).map((nav: any) =>
-                  nav.children?.length ? (
-                    <li>
-                      <button
-                        type="button"
-                        class={`${anchorClasses} ${nav.children.some((c) => isActive(c.href)) ? activeClasses : ""}`}
-                        aria-controls={`dropdown-${slugifyId(nav.label)}`}
-                        data-collapse-toggle={`dropdown-${slugifyId(nav.label)}`}
-                        data-sidebar-collapse-item=""
-                      >
-                        {nav.icon && <SimpleIcon name={nav.icon} class={svgClasses} />}
-                        <span
-                          class="ml-3 flex-1 whitespace-nowrap text-left"
-                          data-sidebar-collapse-hide=""
-                        >
-                          {nav.label}
-                        </span>
-                        <SimpleIcon
-                          name="chevron-right"
-                          class="h-4 w-4"
-                          data-sidebar-collapse-hide=""
-                        />
-                      </button>
-                      <ul
-                        id={`dropdown-${slugifyId(nav.label)}`}
-                        class="hidden space-y-2 py-2 pl-8"
-                      >
-                        {nav.children.map((child) => (
-                          <li>
-                            <a
-                              href={child.href}
-                              class={`${anchorClasses} ${isActive(child.href) ? activeClasses : ""}`}
-                              data-sidebar-collapse-subitem=""
-                              data-sidebar-collapse-hide=""
-                            >
-                              {child.label}
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
-                    </li>
-                  ) : (
-                    <li>
-                      <a
-                        href={nav.href}
-                        class={`${anchorClasses} ${isActive(nav.href) ? activeClasses : ""}`}
-                        data-sidebar-collapse-item=""
-                      >
-                        {nav.icon && <SimpleIcon name={nav.icon} class={svgClasses} />}
-                        <span
-                          data-sidebar-collapse-hide=""
-                          class="ml-3 flex-1 whitespace-nowrap text-left"
-                        >
-                          {nav.label}
-                        </span>
-                      </a>
-                    </li>
-                  )
-                )}
-              </>
             );
           }
-          return null;
+          return <li class="hidden" aria-hidden="true" />;
         })
       }
     </ul>
+    <!-- </div> -->
   </div>
 
   <!-- Fixed footer with social icons -->

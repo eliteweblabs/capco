@@ -7,6 +7,7 @@ import { getColumnClasses } from "../../pages/api/global/global-classes";
 import { checkAuth } from "../../lib/auth";
 
 import ToggleButton from "../form/ToggleButton.astro";
+import ToggleButtonGroup from "../form/ToggleButtonGroup.astro";
 import UnitSlider from "../form/UnitSlider.astro";
 import SlotMachineModal from "../form/SlotMachineModal.astro";
 import IsNewOrExistingClient from "./IsNewOrExistingClient.astro";
@@ -264,13 +265,12 @@ const formElements = await getFilteredUnifiedFormElements(currentRole, isNewProj
               }
             }
 
-            // Handle button groups
+            // Handle button groups (use ToggleButtonGroup; config uses options or buttons)
             if (element.type === "button-group") {
               const columnClass = getColumnClasses(element.columns);
 
               // Parse selected values from project data
-              let selectedValues = [] as any;
-              // console.log(`🔍 [PROJECT-FORM] Processing group: ${element.name}, Project data:`, project?.[element.name]);
+              let selectedValues: string[] = [];
               if (project?.[element.name]) {
                 if (Array.isArray(project[element.name])) {
                   selectedValues = project[element.name];
@@ -281,43 +281,35 @@ const formElements = await getFilteredUnifiedFormElements(currentRole, isNewProj
                   } catch {
                     selectedValues = project[element.name]
                       .split(",")
-                      .map((s: any) => s.trim())
-                      .filter((s: any) => s);
+                      .map((s: string) => s.trim())
+                      .filter(Boolean);
                   }
                 } else {
-                  selectedValues = [project[element.name]];
+                  selectedValues = [String(project[element.name])];
                 }
               }
+
+              const rawOptions = element.options ?? element.buttons ?? [];
+              const groupButtons = rawOptions.map((opt: any) => {
+                if (typeof opt === "string") return { label: opt, value: opt };
+                const value = opt.dataValue ?? opt.value ?? opt.label;
+                const label = opt.label ?? value;
+                return { label, value, selected: opt.selected };
+              });
 
               return (
                 <div class={`mt-5 space-y-3 ${columnClass}`}>
                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     {element.label}
                   </label>
-                  <div
-                    class={`mb-4 flex flex-wrap gap-2 ${isReadOnly ? "cursor-not-allowed opacity-75" : ""}`}
-                  >
-                    {element.options?.map((option) => {
-                      const optionValue = typeof option === "string" ? option : option.value;
-                      const optionLabel = typeof option === "string" ? option : option.label;
-                      const isSelected =
-                        selectedValues.includes(optionValue) ||
-                        (typeof option === "object" && option.selected === true);
-                      return (
-                        <ToggleButton
-                          value={optionValue}
-                          group={element.name}
-                          type={element.groupType}
-                          disabled={isReadOnly}
-                          class={`${element.cssClass || ""} ${isSelected ? "toggle-button selected" : "toggle-button"} ${
-                            isReadOnly ? "pointer-events-none" : ""
-                          }`}
-                        >
-                          {optionLabel}
-                        </ToggleButton>
-                      );
-                    })}
-                  </div>
+                  <ToggleButtonGroup
+                    name={element.name}
+                    buttons={groupButtons}
+                    toggleType={element.groupType ?? "radio"}
+                    initialValues={selectedValues}
+                    disabled={isReadOnly}
+                    class={`mb-4 flex flex-wrap gap-2 ${isReadOnly ? "cursor-not-allowed opacity-75" : ""} ${element.cssClass ?? ""}`.trim()}
+                  />
                 </div>
               );
             }
