@@ -111,7 +111,13 @@ const mapboxToken =
     lng: number;
     accuracy: number | null;
     projectId: number | null;
+    projectTitle: string | null;
+    projectAddress: string | null;
     lastPingAt: string;
+    address: string | null;
+    startedAt: string | null;
+    durationMinutes: number | null;
+    onSite: boolean;
   };
 
   function initMap() {
@@ -133,6 +139,19 @@ const mapboxToken =
     map.addControl(new mapboxgl.NavigationControl(), "top-right");
   }
 
+  function formatDuration(mins: number): string {
+    if (mins < 60) return mins + "m";
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return m ? h + "h " + m + "m" : h + "h";
+  }
+
+  function getLiveDuration(startedAt: string | null): string {
+    if (!startedAt) return "—";
+    const ms = Date.now() - new Date(startedAt).getTime();
+    return formatDuration(Math.floor(ms / 60000));
+  }
+
   function updateMapMarkers(users: UserLocation[]) {
     const mapboxgl = (window as any).mapboxgl;
     if (!map || !mapboxgl || !users.length) {
@@ -144,14 +163,21 @@ const mapboxToken =
     markers = [];
     const bounds = new mapboxgl.LngLatBounds();
     for (const u of users) {
+      const duration = u.startedAt ? getLiveDuration(u.startedAt) : "—";
+      const projectLine = u.projectTitle ? `<p style="margin: 2px 0 0; font-size: 11px;">${escapeHtml(u.projectTitle)}</p>` : "";
+      const addressLine = u.address ? `<p style="margin: 4px 0 0; font-size: 11px; max-width: 220px;">📍 ${escapeHtml(u.address)}</p>` : "";
+      const onSiteBadge = u.onSite ? '<span style="display: inline-block; margin-top: 4px; padding: 2px 6px; font-size: 10px; background: #22c55e; color: white; border-radius: 4px;">On site</span>' : "";
       const popupHtml = `
-        <div style="padding: 8px; min-width: 160px;" class="text-gray-900">
+        <div style="padding: 8px; min-width: 200px;" class="text-gray-900">
           <p style="font-weight: 600; margin: 0 0 4px;">${escapeHtml(u.name)}</p>
           <p style="margin: 0; font-size: 12px;">${escapeHtml(u.role ?? "—")}</p>
-          <p style="margin: 4px 0 0; font-size: 11px;">Last ping: ${formatTime(u.lastPingAt)}</p>
-          ${u.projectId != null ? `<p style="margin: 2px 0 0; font-size: 11px;">Project #${u.projectId}</p>` : ""}
+          <p style="margin: 4px 0 0; font-size: 11px;"><strong>${duration}</strong> checked in</p>
+          ${projectLine}
+          ${addressLine}
+          ${onSiteBadge}
+          <p style="margin: 4px 0 0; font-size: 10px; color: #6b7280;">Last ping: ${formatTime(u.lastPingAt)}</p>
         </div>`;
-      const marker = new mapboxgl.Marker({ color: "#2563eb" })
+      const marker = new mapboxgl.Marker({ color: u.onSite ? "#22c55e" : "#2563eb" })
         .setLngLat([u.lng, u.lat])
         .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(popupHtml))
         .addTo(map);
@@ -166,10 +192,17 @@ const mapboxToken =
     }
   }
 
+  let liveDurationInterval: ReturnType<typeof setInterval> | null = null;
+
   function renderList(users: UserLocation[]) {
     if (!listEl || !placeholderEl) return;
 
     listEl.querySelectorAll("[data-team-location-row]").forEach((el) => el.remove());
+
+    if (liveDurationInterval) {
+      clearInterval(liveDurationInterval);
+      liveDurationInterval = null;
+    }
 
     if (users.length === 0) {
       placeholderEl.textContent = "No team members checked in with recent location data.";
@@ -182,16 +215,21 @@ const mapboxToken =
     users.forEach((u) => {
       const row = document.createElement("div");
       row.setAttribute("data-team-location-row", u.userId);
+      row.setAttribute("data-started-at", u.startedAt || "");
       const mapsUrl = `https://www.google.com/maps?q=${u.lat},${u.lng}`;
+      const durationEl = u.startedAt ? getLiveDuration(u.startedAt) : "—";
+      const onSiteBadge = u.onSite ? '<span class="ml-2 inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400">On site</span>' : "";
       row.className =
         "flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 px-4 py-3 last:border-b-0 dark:border-gray-700";
       row.innerHTML = `
         <div class="min-w-0 flex-1">
-          <p class="font-medium text-gray-900 dark:text-white">${escapeHtml(u.name)}</p>
+          <p class="font-medium text-gray-900 dark:text-white">${escapeHtml(u.name)}${onSiteBadge}</p>
           <p class="text-sm text-gray-500 dark:text-gray-400">
-            ${escapeHtml(u.role ?? "—")} · Last ping: ${formatTime(u.lastPingAt)}
-            ${u.projectId != null ? ` · Project #${u.projectId}` : ""}
+            <span class="font-mono font-medium">${durationEl}</span> checked in
+            ${u.projectTitle ? ` · ${escapeHtml(u.projectTitle)}` : ""}
           </p>
+          ${u.address ? `<p class="mt-1 text-xs text-gray-600 dark:text-gray-400 truncate max-w-md" title="${escapeHtml(u.address)}">📍 ${escapeHtml(u.address)}</p>` : ""}
+          <p class="mt-0.5 text-xs text-gray-400 dark:text-gray-500">Last ping: ${formatTime(u.lastPingAt)}</p>
         </div>
         <a
           href="${escapeHtml(mapsUrl)}"
@@ -204,6 +242,18 @@ const mapboxToken =
       `;
       listEl.appendChild(row);
     });
+
+    const hasStartedAt = users.some((u) => u.startedAt);
+    if (hasStartedAt) {
+      liveDurationInterval = setInterval(() => {
+        listEl.querySelectorAll("[data-team-location-row][data-started-at]").forEach((el) => {
+          const startedAt = el.getAttribute("data-started-at");
+          if (!startedAt) return;
+          const durationSpan = el.querySelector(".font-mono.font-medium");
+          if (durationSpan) durationSpan.textContent = getLiveDuration(startedAt);
+        });
+      }, 1000);
+    }
   }
 
   async function fetchLocations() {
@@ -237,5 +287,8 @@ const mapboxToken =
   run();
 
   const interval = setInterval(fetchLocations, 30 * 1000);
-  document.addEventListener("astro:before-swap", () => clearInterval(interval));
+  document.addEventListener("astro:before-swap", () => {
+    clearInterval(interval);
+    if (liveDurationInterval) clearInterval(liveDurationInterval);
+  });
 </script>

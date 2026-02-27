@@ -226,11 +226,13 @@ const iconSize = tile ? "xl" : "md";
       updateButton(newState);
 
       if (isCheckIn && data.timeEntryId != null) {
+        window.dispatchEvent(new CustomEvent("checkInStarted"));
         setTimeEntryId(data.timeEntryId);
         startPingInterval(data.timeEntryId, validProjectId);
       } else {
         setTimeEntryId(null);
         stopPingInterval();
+        window.dispatchEvent(new CustomEvent("checkInStopped"));
       }
 
       if (typeof (window as any).showNotice === "function") {
@@ -272,8 +274,13 @@ const iconSize = tile ? "xl" : "md";
     }
 
     btn.addEventListener("click", handleClick);
-
     window.addEventListener("beforeunload", stopPingInterval);
+    window.addEventListener("checkInStopped", () => {
+      setState("checked_out");
+      setTimeEntryId(null);
+      stopPingInterval();
+      updateButton("checked_out");
+    });
   }
 
   if (document.readyState === "loading") {

@@ -8,6 +8,9 @@ import { checkAuth } from "../../lib/auth";
 import { isAdminOrSuperAdmin } from "../../lib/user-utils";
 import LayoutDefault from "../../components/layouts/LayoutDefault.astro";
 import Button from "../../components/common/Button.astro";
+import { globalClasses } from "../api/global/global-classes";
+
+const { globalFormClasses, globalInputClasses } = globalClasses();
 
 const { currentUser, session, currentRole } = await checkAuth(Astro.cookies);
 
@@ -59,14 +62,14 @@ const isSuperAdmin = currentRole === "SuperAdmin";
         <p class="mb-3 text-sm text-gray-600 dark:text-gray-400">
           Enter the SuperAdmin passphrase (SUPERADMIN_SECRET) to activate for this browser.
         </p>
-        <form id="superadmin-activate" class="flex flex-wrap items-end gap-3">
+        <form id="superadmin-activate" class={`${globalFormClasses} flex flex-wrap items-end gap-3`}>
           <label for="superadmin-passphrase" class="sr-only">Passphrase</label>
           <input
             id="superadmin-passphrase"
             type="password"
             name="passphrase"
             autocomplete="off"
-            class="rounded border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            class={globalInputClasses}
             placeholder="Passphrase"
           />
           <Button type="submit" variant="primary" size="sm">
@@ -105,13 +108,13 @@ const isSuperAdmin = currentRole === "SuperAdmin";
         <p class="mb-3 text-sm text-gray-600 dark:text-gray-400">
           Paste a previously exported token to activate SuperAdmin in this browser.
         </p>
-        <form id="superadmin-import" class="flex flex-col gap-3">
+        <form id="superadmin-import" class={`${globalFormClasses} flex flex-col gap-3`}>
           <label for="superadmin-import-token" class="sr-only">Token (JSON)</label>
           <textarea
             id="superadmin-import-token"
             name="token"
             rows="4"
-            class="rounded border border-gray-300 px-3 py-2 font-mono text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            class={`${globalInputClasses} font-mono`}
             placeholder='Paste exported token (e.g. {"userId":"...","exp":...,"sig":"..."})'
           ></textarea>
           <Button type="submit" variant="primary" size="sm">

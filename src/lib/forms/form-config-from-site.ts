@@ -134,6 +134,7 @@ export async function getProjectFormConfig(
   const merged = mergeFormButtonDefaults(config, pf);
   const step = pf.steps[0];
   const fields = (step?.fields ?? []).filter((f: any) => {
+    if (!f || typeof f !== "object") return false;
     if (f.allow?.length && userRole) {
       const r = userRole.toLowerCase();
       if (!f.allow.some((a: string) => a.toLowerCase() === r)) return false;
@@ -143,6 +144,7 @@ export async function getProjectFormConfig(
     return true;
   });
   const buttons = (step?.buttons ?? []).filter((b: any) => {
+    if (!b || typeof b !== "object") return false;
     if (b.allow?.length && userRole) {
       const r = userRole.toLowerCase();
       if (!b.allow.some((a: string) => a.toLowerCase() === r)) return false;

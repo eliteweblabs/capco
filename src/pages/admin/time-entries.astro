@@ -19,8 +19,13 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
   return Astro.redirect("/dashboard");
 }
 
-const { globalAdminContainerClasses, globalInputClasses, primaryTextClasses, secondaryTextClasses } =
-  globalClasses();
+const {
+  globalAdminContainerClasses,
+  globalFormClasses,
+  globalInputClasses,
+  primaryTextClasses,
+  secondaryTextClasses,
+} = globalClasses();
 
 function defaultFrom(): string {
   const d = new Date();
@@ -100,7 +105,7 @@ function defaultTo(): string {
   </div>
 </LayoutDefault>
 
-<script define:vars={{ globalInputClasses }}>
+<script define:vars={{ globalFormClasses, globalInputClasses }}>
   const placeholderEl = document.getElementById("time-entries-placeholder");
   const tableWrapEl = document.getElementById("time-entries-table");
   const tbodyEl = document.getElementById("time-entries-tbody");
@@ -188,7 +193,7 @@ function defaultTo(): string {
     tr.dataset.editRow = "true";
     tr.innerHTML = `
       <td colspan="7" class="px-4 py-4">
-        <form class="time-entry-edit-form space-y-3" data-id="${entry.id}">
+        <form class="time-entry-edit-form ${globalFormClasses}" data-id="${entry.id}">
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
             <textarea name="notes" rows="2" class="${globalInputClasses} w-full" placeholder="Optional notes">${escapeHtml(entry.notes || "")}</textarea>

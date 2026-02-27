@@ -91,7 +91,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     let timeEntryIdOut: number | null = null;
 
     if (isCheckIn) {
-      // End any existing active time entry for this user
+      // End any existing active time entry for this user (one project at a time)
       await supabaseAdmin
         .from("timeEntries")
         .update({ endedAt: new Date().toISOString(), updatedAt: new Date().toISOString() })

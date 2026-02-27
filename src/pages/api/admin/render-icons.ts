@@ -10,6 +10,7 @@ import fs from "fs";
 import path from "path";
 
 const SIZE_PNG = 512;
+const APPLE_TOUCH_SIZE = 180;
 
 export const POST: APIRoute = async ({ cookies }) => {
   try {
@@ -54,6 +55,7 @@ export const POST: APIRoute = async ({ cookies }) => {
     const publicDir = path.join(root, "public");
     const faviconSvgPath = path.join(publicDir, "favicon.svg");
     const faviconPngPath = path.join(publicDir, "favicon.png");
+    const appleTouchPath = path.join(publicDir, "apple-touch-icon.png");
 
     const transformedSvg = transformSvgForFavicon(iconSvg, primaryColor);
     fs.writeFileSync(faviconSvgPath, transformedSvg, "utf-8");
@@ -71,6 +73,13 @@ export const POST: APIRoute = async ({ cookies }) => {
         size: `${SIZE_PNG}x${SIZE_PNG}`,
         type: "image/png",
         url: "/favicon.png",
+      });
+      await sharp(svgBuffer).resize(APPLE_TOUCH_SIZE, APPLE_TOUCH_SIZE).png().toFile(appleTouchPath);
+      files.push({
+        path: "/apple-touch-icon.png",
+        size: `${APPLE_TOUCH_SIZE}x${APPLE_TOUCH_SIZE}`,
+        type: "image/png",
+        url: "/apple-touch-icon.png",
       });
     } catch (err: unknown) {
       console.warn("[render-icons] sharp PNG generation failed:", err);

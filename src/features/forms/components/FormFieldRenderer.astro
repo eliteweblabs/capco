@@ -46,6 +46,11 @@ const {
 
 const effectiveShowLabel = showLabel ?? context === "standard";
 
+if (!field || typeof field !== "object") {
+  // Skip null/undefined or malformed fields to avoid "Cannot read properties of null"
+  return null;
+}
+
 const hasWrapper = Boolean(wrapperClass);
 const wrapperAttrs = hasWrapper
   ? {
@@ -66,7 +71,7 @@ const contentProps = {
   field,
   context,
   inputClasses,
-  initialData,
+  initialData: initialData ?? {},
   fid,
   buttonDefaults,
   mobileCarrierOptions,

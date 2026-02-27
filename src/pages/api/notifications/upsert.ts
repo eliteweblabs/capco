@@ -69,8 +69,9 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
 
     const body: NotificationRequest = await request.json();
 
-    // Handle marking notifications as viewed
+    // Handle marking notifications as viewed (archive = mark as viewed)
     if (body.notificationIds && Array.isArray(body.notificationIds)) {
+      console.log("🔔 [NOTIFICATIONS-UPSERT] Mark as viewed: notificationIds =", body.notificationIds, "viewed =", body.viewed ?? true);
       const { data, error } = await supabaseAdmin
         .from("notifications")
         .update({ viewed: body.viewed ?? true })
@@ -79,7 +80,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
         .select();
 
       if (error) {
-        console.error("❌ [NOTIFICATIONS] Error marking notifications as viewed:", error);
+        console.error("❌ [NOTIFICATIONS-UPSERT] Error marking notifications as viewed:", error);
         return new Response(JSON.stringify({ error: "Failed to mark notifications as viewed" }), {
           status: 500,
           headers: { "Content-Type": "application/json" },
@@ -87,7 +88,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       }
 
       console.log(
-        `✅ [NOTIFICATIONS] Marked ${data?.length || 0} notifications as ${body.viewed ? "viewed" : "unviewed"} for user ${currentUser.id}`
+        "🔔 [NOTIFICATIONS-UPSERT] Marked", data?.length || 0, "notifications as", body.viewed ? "viewed" : "unviewed"
       );
 
       return new Response(

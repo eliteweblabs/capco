@@ -1,12 +1,13 @@
 ---
+import { getProjectFormConfig } from "../../lib/forms/form-config-from-site";
 import {
   getFilteredUnifiedFormElements,
   isFormElementReadOnly,
 } from "../../lib/project-form-config";
-import { getColumnClasses } from "../../pages/api/global/global-classes";
+import { getColumnClasses, globalClasses } from "../../pages/api/global/global-classes";
 import { checkAuth } from "../../lib/auth";
+import FormFieldRenderer from "../../features/forms/components/FormFieldRenderer.astro";
 
-import ToggleButton from "../form/ToggleButton.astro";
 import ToggleButtonGroup from "../form/ToggleButtonGroup.astro";
 import UnitSlider from "../form/UnitSlider.astro";
 import SlotMachineModal from "../form/SlotMachineModal.astro";
@@ -35,65 +36,180 @@ const {
 
 const currentRole = currentUser?.profile?.role;
 const projectId = project?.id;
+const globalClassesResult = globalClasses();
+const globalFormClasses = globalClassesResult.globalFormClasses;
+const themeInputClasses = globalClassesResult.globalInputClasses;
 // Generate a temporary ID for new projects
 const formId = isNewProject ? `${Date.now()}` : projectId || "";
-// Get unified form elements based on user role and project status
-const formElements = await getFilteredUnifiedFormElements(currentRole, isNewProject, projectStatus);
+
+// Prefer FormConfig from form-config-from-site (same pattern as ProfileTabForm, ContactForm, etc.)
+const projectFormConfig = await getProjectFormConfig(currentRole, isNewProject, projectStatus);
+const useFormConfig = projectFormConfig != null && projectFormConfig.steps?.length > 0;
+
+// Legacy path: when no projectForm in site config, use unified form elements from project-form-config
+const formElements = useFormConfig
+  ? []
+  : await getFilteredUnifiedFormElements(currentRole, isNewProject, projectStatus);
+
+const formFields = useFormConfig ? projectFormConfig!.steps[0].fields ?? [] : [];
+const formButtons = useFormConfig ? projectFormConfig!.steps[0].buttons ?? [] : [];
+
+/** Enrich field for FormFieldRenderer: readOnly from readOnlyAtStatus, projectId + value for UnitSlider, options→buttons for button-group */
+function fieldForRenderer(
+  field: any,
+  projectStatusVal: number | null,
+  formIdVal: string,
+  projectData: Record<string, any>
+) {
+  const readOnly =
+    field.readOnlyAtStatus?.length && projectStatusVal != null
+      ? field.readOnlyAtStatus.includes(projectStatusVal)
+      : false;
+  let componentProps = { ...(field.componentProps || {}), readOnly };
+  if (field.component === "UnitSlider") {
+    componentProps = { ...componentProps, projectId: formIdVal };
+  }
+  let out = { ...field, componentProps };
+  if (field.component === "UnitSlider" && projectData?.[field.name] !== undefined && projectData[field.name] !== "") {
+    out = { ...out, value: projectData[field.name] };
+  }
+  if (field.type === "button-group" && (field.options?.length ?? 0) > 0 && !(field.buttons?.length)) {
+    out = {
+      ...out,
+      buttons: field.options.map((o: { value: string; label: string }) => ({
+        type: "choice" as const,
+        label: o.label,
+        dataValue: o.value,
+      })),
+    };
+  }
+  return out;
+}
 
 ---
 
 <div id="project-form-wrapper">
   <div id="project-form-wrapper">
     <form
-      class="w-full space-y-4"
+      class={`${globalFormClasses} w-full`}
       data-project-id={formId}
       data-is-new-project={isNewProject}
       data-current-role={currentRole}
       data-project-data={JSON.stringify(project || {})}
       autocomplete="off"
     >
-      <!-- Unified Form Elements Loop -->
+      <!-- Form: FormConfig-driven (form-config-from-site) or legacy unified elements -->
       <div id="project-form-elements-grid" class="grid grid-cols-6 md:grid-cols-12 gap-4">
-        {
+        {useFormConfig ? (
+          <>
+            {formFields.map((field: any) => {
+              const isAddress =
+                field.id === "address-input" || field.component === "GoogleAddressAutocomplete";
+              if (isAddress) {
+                const columnClass = getColumnClasses(field.columns);
+                return (
+                  <div class={`relative ${columnClass}`}>
+                    {isNewProject ? (
+                      <div class="col-span-12 md:col-span-6 ">
+                        <SlotMachineModal
+                          id="address"
+                          icon="map-pin"
+                          title="Select Address"
+                          options={[]}
+                          selectedValue={project?.address || ""}
+                          placeholder="Search for an address..."
+                          showCloseButton={true}
+                          showCancelButton={true}
+                          buttonText="Select Address *"
+                          buttonClass="w-full mb-4"
+                          buttonVariant="primary"
+                          searchText="Search Address"
+                          searchPlaceholder="Type to search addresses..."
+                          fetchApiEndpoint="/api/google/places-autocomplete"
+                          apiParams={{
+                            types: "address",
+                            components: "country:us",
+                            locationBias: "circle:100@42.3601,-71.0589",
+                          }}
+                          valueField="description"
+                          noResultsText="Type to search addresses..."
+                          currentUser={currentUser}
+                          project={project}
+                          globalInputClasses={globalInputClasses ?? themeInputClasses}
+                          currentLocation={true}
+                        />
+                      </div>
+                    ) : (
+                      <input
+                        type="text"
+                        id="address"
+                        name="address"
+                        value={project?.address || ""}
+                        readonly={true}
+                        data-scrap="true"
+                      />
+                    )}
+                    {isNewProject && (currentRole === "Admin" || currentRole === "Staff") && (
+                      <IsNewOrExistingClient
+                        globalInputClasses={globalInputClasses ?? themeInputClasses}
+                        secondaryTextClasses={secondaryTextClasses}
+                        primaryTextClasses={primaryTextClasses}
+                      />
+                    )}
+                  </div>
+                );
+              }
+              const enrichedField = fieldForRenderer(field, projectStatus, formId, project);
+              return (
+                <FormFieldRenderer
+                  field={enrichedField}
+                  context="standard"
+                  inputClasses={globalInputClasses ?? themeInputClasses}
+                  initialData={project}
+                  wrapperClass={`relative ${getColumnClasses(field.columns)}`}
+                  buttonDefaults={projectFormConfig!.buttonDefaults ?? {}}
+                />
+              );
+            })}
+          </>
+        ) : (
           formElements.map((element) => {
             const isReadOnly = isFormElementReadOnly(element, projectStatus);
 
-            // Handle special cases first
             if (element.id === "address-input") {
-              // Determine column class for address field
               const columnClass = getColumnClasses(element.columns);
 
               return (
                 <div class={`relative ${columnClass}`}>
                   {isNewProject ? (
                     <div class="col-span-12 md:col-span-6 ">
-                    <SlotMachineModal
-                      id="address"
-                      icon="map-pin"
-                      title="Select Address"
-                      options={[]}
-                      selectedValue={project?.address || ""}
-                      placeholder="Search for an address..."
-                      showCloseButton={true}
-                      showCancelButton={true}
-                      buttonText="Select Address *"
-                      buttonClass="w-full mb-4"
-                      buttonVariant="primary"
-                      searchText="Search Address"
-                      searchPlaceholder="Type to search addresses..."
-                      fetchApiEndpoint="/api/google/places-autocomplete"
-                      apiParams={{
-                        types: "address",
-                        components: "country:us",
-                        locationBias: "circle:100@42.3601,-71.0589",
-                      }}
-                      valueField="description"
-                      noResultsText="Type to search addresses..."
-                      currentUser={currentUser}
-                      project={project}
-                      globalInputClasses={globalInputClasses}
-                      currentLocation={true}
-                    />
+                      <SlotMachineModal
+                        id="address"
+                        icon="map-pin"
+                        title="Select Address"
+                        options={[]}
+                        selectedValue={project?.address || ""}
+                        placeholder="Search for an address..."
+                        showCloseButton={true}
+                        showCancelButton={true}
+                        buttonText="Select Address *"
+                        buttonClass="w-full mb-4"
+                        buttonVariant="primary"
+                        searchText="Search Address"
+                        searchPlaceholder="Type to search addresses..."
+                        fetchApiEndpoint="/api/google/places-autocomplete"
+                        apiParams={{
+                          types: "address",
+                          components: "country:us",
+                          locationBias: "circle:100@42.3601,-71.0589",
+                        }}
+                        valueField="description"
+                        noResultsText="Type to search addresses..."
+                        currentUser={currentUser}
+                        project={project}
+                        globalInputClasses={globalInputClasses}
+                        currentLocation={true}
+                      />
                     </div>
                   ) : (
                     <input
@@ -105,7 +221,6 @@ const formElements = await getFilteredUnifiedFormElements(currentRole, isNewProj
                       data-scrap="true"
                     />
                   )}
-
                   {isNewProject && (currentRole === "Admin" || currentRole === "Staff") && (
                     <IsNewOrExistingClient
                       globalInputClasses={globalInputClasses}
@@ -117,7 +232,6 @@ const formElements = await getFilteredUnifiedFormElements(currentRole, isNewProj
               );
             }
 
-            // Handle form fields
             if (element.type === "field") {
               if (element.elementType === "text" || element.elementType === "number") {
                 const columnClass = getColumnClasses(element.columns);
@@ -321,45 +435,65 @@ const formElements = await getFilteredUnifiedFormElements(currentRole, isNewProj
 
             return null;
           })
-        }
+        )}
       </div>
 
-      {/* <!-- Form Actions Container --> */}
-        {
-          (() => {
-            const actionElements = formElements.filter((element) => element.type === "action");
-            const buttonCount = actionElements.length;
-
-            if (buttonCount === 0) return null;
-
-            return (
-              <StickyActions columns={buttonCount.toString()}>
-                {actionElements.map((element) => {
-                  const isReadOnly = isFormElementReadOnly(element, projectStatus);
-                  return (
-                    <Button
-                      type={element.elementType === "submit" ? "submit" : "button"}
-                      variant={
-                        element.variant === "info" ? "secondary" : element.variant || "secondary"
-                      }
-                      size="lg"
-                      icon={element.icon}
-                      iconPosition="left"
-                      class={element.cssClass || ""}
-                      id={element.id}
-                      dataAttributes={{
-                        "data-action": element.action || "",
-                        "data-tab": element.tab || "",
-                      }}
-                    >
-                      <span set:html={element.label} />
-                    </Button>
-                  );
-                })}
-              </StickyActions>
-            );
-          })()
-        }
+      {/* <!-- Form Actions Container: FormConfig buttons or legacy action elements --> */}
+      {useFormConfig ? (
+        formButtons.length > 0 ? (
+          <StickyActions columns={formButtons.length.toString()}>
+            {formButtons.map((btn: any) => (
+              <Button
+                type={btn.type === "submit" ? "submit" : "button"}
+                variant={btn.variant === "info" ? "secondary" : btn.variant || "secondary"}
+                size="lg"
+                icon={btn.icon}
+                iconPosition="left"
+                class={btn.classes || ""}
+                id={btn.id}
+                dataAttributes={{
+                  "data-action": btn.action || "",
+                  "data-tab": btn.tab || "",
+                }}
+              >
+                <span set:html={btn.label ?? ""} />
+              </Button>
+            ))}
+          </StickyActions>
+        ) : null
+      ) : (
+        (() => {
+          const actionElements = formElements.filter((element) => element.type === "action");
+          const buttonCount = actionElements.length;
+          if (buttonCount === 0) return null;
+          return (
+            <StickyActions columns={buttonCount.toString()}>
+              {actionElements.map((element) => {
+                const isReadOnly = isFormElementReadOnly(element, projectStatus);
+                return (
+                  <Button
+                    type={element.elementType === "submit" ? "submit" : "button"}
+                    variant={
+                      element.variant === "info" ? "secondary" : element.variant || "secondary"
+                    }
+                    size="lg"
+                    icon={element.icon}
+                    iconPosition="left"
+                    class={element.cssClass || ""}
+                    id={element.id}
+                    dataAttributes={{
+                      "data-action": element.action || "",
+                      "data-tab": element.tab || "",
+                    }}
+                  >
+                    <span set:html={element.label} />
+                  </Button>
+                );
+              })}
+            </StickyActions>
+          );
+        })()
+      )}
     </form>
   </div>
 </div>

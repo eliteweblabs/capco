@@ -42,6 +42,7 @@ export const GET: APIRoute = async ({ request }) => {
       scope: "/",
       icons: [
         { src: iconSvg, sizes: "any", type: "image/svg+xml", purpose: "any maskable" },
+        { src: `${base}/apple-touch-icon.png`, sizes: "180x180", type: "image/png", purpose: "any" },
         { src: iconPng, sizes: "192x192", type: "image/png", purpose: "any" },
         { src: iconPng, sizes: "512x512", type: "image/png", purpose: "any" },
       ],

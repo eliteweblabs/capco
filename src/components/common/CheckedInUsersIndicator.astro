@@ -1,0 +1,82 @@
+---
+/**
+ * Checked-In Users Indicator (Admin only)
+ * Shows icons in navbar for each user who is checked in (active time entry).
+ * Tooltip: name, duration, location. Polls every 30s.
+ */
+interface Props {
+  currentUser?: any;
+  globalIconButtonClasses?: string;
+}
+
+const { currentUser, globalIconButtonClasses = "w-10 h-10 inline-flex items-center rounded-full justify-center p-2 text-black dark:text-white md:hover:bg-gray-100 dark:hover:bg-gray-700 dark:focus:ring-gray-700 focus:outline-none" } = Astro.props;
+
+const currentRole = currentUser?.profile?.role;
+if (currentRole !== "Admin") {
+  return null;
+}
+---
+
+<div
+  id="checked-in-users-indicator"
+  class="flex items-center gap-1"
+  aria-label="Team members currently checked in"
+>
+  <div id="checked-in-users-list" class="flex items-center gap-0.5">
+    {/_ Placeholder: script populates this _/}
+  </div>
+</div>
+
+<script>
+  (function () {
+    function init() {
+      const container = document.getElementById("checked-in-users-list");
+      if (!container) return;
+
+    async function fetchCheckedIn() {
+      try {
+        const res = await fetch("/api/time-entries/checked-in", { credentials: "include" });
+        const data = await res.json();
+        return data.users || [];
+      } catch {
+        return [];
+      }
+    }
+
+    function render(users: Array<{ userId: string; name: string; durationFormatted: string; address: string | null; location: string | null }>) {
+      container.innerHTML = "";
+      if (users.length === 0) return;
+
+      users.forEach((u) => {
+        const tooltipParts = [u.name, u.durationFormatted];
+        if (u.address) tooltipParts.push(u.address);
+        else if (u.location) tooltipParts.push(u.location);
+        const tooltipText = tooltipParts.join(" • ");
+
+        const wrapper = document.createElement("span");
+        wrapper.className = "checked-in-user-icon-wrapper";
+        wrapper.dataset.tooltipText = tooltipText;
+        wrapper.setAttribute("title", tooltipText);
+
+        const btn = document.createElement("span");
+        btn.className = "flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400";
+        btn.setAttribute("aria-label", `${u.name} checked in ${u.durationFormatted}`);
+        btn.innerHTML = `<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>`;
+
+        wrapper.appendChild(btn);
+        container.appendChild(wrapper);
+      });
+    }
+
+    async function load() {
+      const users = await fetchCheckedIn();
+      render(users);
+    }
+
+    load();
+    setInterval(load, 30000);
+    }
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+    else init();
+  })();
+</script>

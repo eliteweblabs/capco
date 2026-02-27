@@ -4,6 +4,7 @@
 // Messages now sent directly to email addresses
 import Button from "../../../components/common/Button.astro";
 import { globalCompanyData } from "../../../pages/api/global/global-company-data";
+import { globalClasses } from "../../../pages/api/global/global-classes";
 
 export interface Props {
   compact?: boolean;
@@ -11,6 +12,7 @@ export interface Props {
 
 const { compact = false } = Astro.props;
 const companyData = await globalCompanyData();
+const { globalFormClasses } = globalClasses();
 ---
 
 <div class={compact ? "w-full" : "mx-auto w-full max-w-lg"}>
@@ -28,7 +30,7 @@ const companyData = await globalCompanyData();
     )
   }
 
-  <form action="/api/send-email-sms" method="post" class="space-y-4">
+  <form action="/api/send-email-sms" method="post" class={globalFormClasses}>
     <!-- SMS functionality disabled - email recipients are hardcoded in the API -->
     <!-- 
     Hidden fields removed - SMS gateway functionality disabled due to bounces

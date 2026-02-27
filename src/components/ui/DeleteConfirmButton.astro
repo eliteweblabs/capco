@@ -219,6 +219,14 @@ const mergedDataAttributes = {
     const callbackName = button.dataset.callback;
     const itemType = button.dataset.itemType;
 
+    console.log("🔔 [DeleteConfirmButton] click:", {
+      buttonId,
+      currentState,
+      apiEndpoint,
+      callbackName,
+      itemType,
+    });
+
     if (currentState === "trash") {
       // First click: Show timer ring
       e.stopPropagation();
@@ -276,6 +284,15 @@ const mergedDataAttributes = {
       const extractedId = extractItemId(buttonId, itemType);
       const itemId = button.dataset.itemId ?? (extractedId != null ? String(extractedId) : null);
 
+      console.log("🔔 [DeleteConfirmButton] confirm delete:", {
+        buttonId,
+        extractedId,
+        itemId,
+        deleteMethod,
+        apiEndpoint,
+        callbackName,
+      });
+
       const needsItemId = !(deleteMethod === "DELETE" && deleteQueryParam);
       if (needsItemId && !itemId) {
         console.error("[DeleteConfirmButton] Could not extract item ID from:", buttonId);
@@ -311,9 +328,10 @@ const mergedDataAttributes = {
             fetchOpts.body = JSON.stringify({ itemId: itemId!, id: itemId });
           }
 
+          console.log("🔔 [DeleteConfirmButton] fetch:", url, fetchOpts.method, fetchOpts.body);
           const response = await fetch(url, fetchOpts);
-
           const data = await response.json();
+          console.log("🔔 [DeleteConfirmButton] response:", response.status, data);
 
           const callbackArg =
             deleteMethod === "DELETE" && deleteQueryParam
@@ -322,6 +340,7 @@ const mergedDataAttributes = {
 
           if (data.success || response.ok) {
             if (callbackName && typeof window[callbackName] === "function") {
+              console.log("🔔 [DeleteConfirmButton] calling callback:", callbackName, "with arg:", callbackArg);
               await window[callbackName](callbackArg);
             } else {
               // Show default success message

@@ -1,0 +1,263 @@
+---
+/**
+ * Admin Time Metrics
+ * Charts: hours per project, hours per user per project, total hours, monthly trend.
+ * Uses dummy data when DB has little/no data.
+ */
+import { checkAuth } from "../../lib/auth";
+import LayoutDefault from "../../components/layouts/LayoutDefault.astro";
+import Hero from "../../components/common/Hero.astro";
+import { globalClasses } from "../api/global/global-classes";
+
+const { currentUser, currentRole } = await checkAuth(Astro.cookies);
+
+if (!currentUser) {
+  return Astro.redirect("/auth/login");
+}
+
+if (currentRole !== "Admin") {
+  return Astro.redirect("/dashboard");
+}
+
+const { globalAdminContainerClasses, dataTableCardClasses, dataTableDescriptionClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
+
+let metrics: {
+  totalHours: number;
+  totalEntries: number;
+  hoursPerProject: Array<{ projectId: number; project: string; totalHours: number; entryCount: number }>;
+  hoursPerUserPerProject: Array<{ userId: string; userName: string; projectId: number; project: string; totalHours: number }>;
+  monthlyTrend: Array<{ month: string; label: string; totalHours: number; entryCount: number }>;
+  source: string;
+} = {
+  totalHours: 0,
+  totalEntries: 0,
+  hoursPerProject: [],
+  hoursPerUserPerProject: [],
+  monthlyTrend: [],
+  source: "database",
+};
+
+try {
+  const baseUrl = Astro.url.origin;
+  const res = await fetch(`${baseUrl}/api/time-entries/metrics`, {
+    headers: { Cookie: Astro.request.headers.get("cookie") || "" },
+  });
+  if (res.ok) {
+    metrics = await res.json();
+  }
+} catch (e) {
+  console.error("[TIME-METRICS] Fetch error:", e);
+}
+---
+
+<LayoutDefault
+  title="Time Metrics"
+  description="Hours per project, per user, total hours, and trend. Uses dummy data when DB has little data."
+>
+  <Hero
+    title="Time Metrics"
+    description="Hours per project, hours per user per project, total hours, and monthly trend."
+    {primaryTextClasses}
+    {secondaryTextClasses}
+  />
+
+  <div class={globalAdminContainerClasses}>
+    <div class="p-6 sm:p-8">
+      {metrics.source === "dummy" && (
+        <div class="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+          Showing demo data. Add real time entries to see live metrics.
+        </div>
+      )}
+
+      <!-- Stats row -->
+      <div class="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div class={dataTableCardClasses}>
+          <div class="flex items-center p-6">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-100 dark:bg-primary-900">
+              <svg class="h-5 w-5 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class={`text-sm font-medium ${dataTableDescriptionClasses}`}>Total Hours</p>
+              <p class={`text-2xl font-semibold ${primaryTextClasses}`}>{metrics.totalHours.toFixed(1)}</p>
+            </div>
+          </div>
+        </div>
+        <div class={dataTableCardClasses}>
+          <div class="flex items-center p-6">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900">
+              <svg class="h-5 w-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class={`text-sm font-medium ${dataTableDescriptionClasses}`}>Total Entries</p>
+              <p class={`text-2xl font-semibold ${primaryTextClasses}`}>{metrics.totalEntries}</p>
+            </div>
+          </div>
+        </div>
+        <div class={dataTableCardClasses}>
+          <div class="flex items-center p-6">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-900">
+              <svg class="h-5 w-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012 2v6M5 11v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2" />
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class={`text-sm font-medium ${dataTableDescriptionClasses}`}>Projects</p>
+              <p class={`text-2xl font-semibold ${primaryTextClasses}`}>{metrics.hoursPerProject.length}</p>
+            </div>
+          </div>
+        </div>
+        <div class={dataTableCardClasses}>
+          <div class="flex items-center p-6">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-100 dark:bg-violet-900">
+              <svg class="h-5 w-5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class={`text-sm font-medium ${dataTableDescriptionClasses}`}>Avg Hours/Entry</p>
+              <p class={`text-2xl font-semibold ${primaryTextClasses}`}>
+                {metrics.totalEntries > 0 ? (metrics.totalHours / metrics.totalEntries).toFixed(1) : "0"}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div class={dataTableCardClasses}>
+          <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Hours per Project</h3>
+            <p class={`text-sm ${dataTableDescriptionClasses}`}>Total billable hours by project</p>
+          </div>
+          <div class="p-4">
+            <div class="h-64">
+              <canvas id="hoursPerProjectChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class={dataTableCardClasses}>
+          <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Monthly Trend</h3>
+            <p class={`text-sm ${dataTableDescriptionClasses}`}>Total hours logged by month</p>
+          </div>
+          <div class="p-4">
+            <div class="h-64">
+              <canvas id="monthlyTrendChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hours per User per Project (table) -->
+      <div class={dataTableCardClasses + " mt-6"}>
+        <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Hours per User per Project</h3>
+          <p class={`text-sm ${dataTableDescriptionClasses}`}>Breakdown by team member and project</p>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-800">
+              <tr>
+                <th class="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">User</th>
+                <th class="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">Project</th>
+                <th class="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white">Hours</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+              {metrics.hoursPerUserPerProject
+                .filter((r) => r.totalHours > 0)
+                .sort((a, b) => b.totalHours - a.totalHours)
+                .slice(0, 20)
+                .map((r) => (
+                  <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                    <td class="px-4 py-2 text-gray-900 dark:text-white">{r.userName}</td>
+                    <td class="px-4 py-2 text-gray-700 dark:text-gray-300 max-w-xs truncate">{r.project}</td>
+                    <td class="px-4 py-2 text-right font-medium text-gray-900 dark:text-white">{r.totalHours.toFixed(1)}h</td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+          {metrics.hoursPerUserPerProject.filter((r) => r.totalHours > 0).length === 0 && (
+            <div class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">No data</div>
+          )}
+        </div>
+      </div>
+    </div>
+  </div>
+</LayoutDefault>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script define:vars={{ metrics }}>
+  document.addEventListener("DOMContentLoaded", function () {
+    const hp = metrics.hoursPerProject || [];
+    const mt = metrics.monthlyTrend || [];
+
+    const hoursPerProjectCtx = document.getElementById("hoursPerProjectChart");
+    if (hoursPerProjectCtx && typeof Chart !== "undefined" && hp.length > 0) {
+      new Chart(hoursPerProjectCtx, {
+        type: "bar",
+        data: {
+          labels: hp.map((p) => (p.project.length > 25 ? p.project.slice(0, 22) + "…" : p.project)),
+          datasets: [
+            {
+              label: "Hours",
+              data: hp.map((p) => p.totalHours),
+              backgroundColor: [
+                "rgba(59, 130, 246, 0.7)",
+                "rgba(34, 197, 94, 0.7)",
+                "rgba(168, 85, 247, 0.7)",
+                "rgba(249, 115, 22, 0.7)",
+                "rgba(236, 72, 153, 0.7)",
+              ],
+              borderColor: ["rgb(59, 130, 246)", "rgb(34, 197, 94)", "rgb(168, 85, 247)", "rgb(249, 115, 22)", "rgb(236, 72, 153)"],
+              borderWidth: 1,
+            },
+          ],
+        },
+        options: {
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { beginAtZero: true, ticks: { callback: (v) => v + "h" } },
+          },
+        },
+      });
+    }
+
+    const monthlyTrendCtx = document.getElementById("monthlyTrendChart");
+    if (monthlyTrendCtx && typeof Chart !== "undefined" && mt.length > 0) {
+      new Chart(monthlyTrendCtx, {
+        type: "line",
+        data: {
+          labels: mt.map((m) => m.label),
+          datasets: [
+            {
+              label: "Hours",
+              data: mt.map((m) => m.totalHours),
+              borderColor: "rgb(59, 130, 246)",
+              backgroundColor: "rgba(59, 130, 246, 0.1)",
+              tension: 0.4,
+              fill: true,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, ticks: { callback: (v) => v + "h" } },
+          },
+        },
+      });
+    }
+  });
+</script>

@@ -828,7 +828,8 @@ export class RefreshManager {
   }
 
   /**
-   * Fetch and update global counts (like total project count)
+   * Fetch and update global counts (project count, notification unread count).
+   * Keeps the notification bell bubble in sync when refresh manager runs (e.g. dashboard polling).
    */
   public async refreshGlobalCounts(): Promise<void> {
     try {
@@ -853,6 +854,14 @@ export class RefreshManager {
 
       // Update global state
       this.setGlobalState("projectCount", projectCount);
+
+      // Refresh notification bell count so trigger button always shows correct unread count
+      const refreshNotificationCount = (window as any).refreshNotificationCount;
+      if (typeof refreshNotificationCount === "function") {
+        refreshNotificationCount().catch((err: unknown) => {
+          console.warn("🌐 [REFRESH-MANAGER] Notification count refresh failed:", err);
+        });
+      }
 
       // Dispatch custom event for other listeners
       window.dispatchEvent(

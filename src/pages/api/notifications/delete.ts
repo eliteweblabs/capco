@@ -14,9 +14,11 @@ import { supabaseAdmin } from "../../../lib/supabase-admin";
  */
 
 async function handleDelete(request: Request, cookies: any): Promise<Response> {
+  console.log("🔔 [NOTIFICATIONS-DELETE] API called, method =", request.method);
   try {
     // Check authentication
     const { isAuth, currentUser } = await checkAuth(cookies);
+    console.log("🔔 [NOTIFICATIONS-DELETE] Auth: isAuth =", isAuth, "hasUser =", !!currentUser);
     if (!isAuth || !currentUser) {
       return new Response(JSON.stringify({ error: "Authentication required" }), {
         status: 401,
@@ -27,6 +29,7 @@ async function handleDelete(request: Request, cookies: any): Promise<Response> {
     const body = await request.json();
     const { id, itemId, notificationId } = body;
     const notifId = id || itemId || notificationId;
+    console.log("🔔 [NOTIFICATIONS-DELETE] Body:", body, "-> notifId =", notifId);
 
     if (!notifId) {
       return new Response(JSON.stringify({ error: "Notification ID is required" }), {

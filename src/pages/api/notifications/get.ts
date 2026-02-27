@@ -19,9 +19,14 @@ import { supabase } from "../../../lib/supabase";
  * - GET /api/notifications/get?userId=123 (Admin only) - Get user's notifications
  */
 export const GET: APIRoute = async ({ cookies, url }) => {
+  const limit = parseInt(url.searchParams.get("limit") || "20");
+  const offset = parseInt(url.searchParams.get("offset") || "0");
+  console.log("🔔 [NOTIFICATIONS-GET] Request: limit =", limit, "offset =", offset);
+
   try {
     // Check authentication
     const { isAuth, currentUser } = await checkAuth(cookies);
+    console.log("🔔 [NOTIFICATIONS-GET] Auth: isAuth =", isAuth, "hasUser =", !!currentUser);
     if (!isAuth || !currentUser) {
       return new Response(JSON.stringify({ error: "Authentication required" }), {
         status: 401,
@@ -30,6 +35,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     }
 
     if (!supabase) {
+      console.error("🔔 [NOTIFICATIONS-GET] Supabase not configured");
       return new Response(JSON.stringify({ error: "Database not configured" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
@@ -37,8 +43,6 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     }
 
     // Parse query parameters
-    const limit = parseInt(url.searchParams.get("limit") || "20");
-    const offset = parseInt(url.searchParams.get("offset") || "0");
     const unreadOnly = url.searchParams.get("unread_only") === "true";
     const requestedUserId = url.searchParams.get("userId");
 
@@ -105,6 +109,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     }
 
     const { data: notifications, error } = result as { data: any; error: any };
+    console.log("🔔 [NOTIFICATIONS-GET] Query result: count =", (notifications || []).length, "error =", error?.message ?? null);
 
     if (error) {
       console.error("❌ [NOTIFICATIONS] Error fetching notifications:", error);
@@ -194,6 +199,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       unreadCount = 0;
     }
 
+    console.log("🔔 [NOTIFICATIONS-GET] Success: returning", (notifications || []).length, "notifications, unreadCount =", unreadCount);
     return new Response(
       JSON.stringify({
         success: true,

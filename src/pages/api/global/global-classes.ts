@@ -4,6 +4,8 @@ export const globalClasses = () => {
       "mx-auto max-w-7xl px-4 sm:px-6 md:px-8 lg:px-10 mb-4 sm:mb-8 md:mb-12 lg:mb-16",
     globalInputClasses:
       "w-full rounded-md border border-gray-300 px-3 py-2 text-base text-gray-900 transition-colors duration-200 placeholder:text-gray-600 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500 shadow-secondary-inner-md scrollbar-hide dark:border-gray-600 bg-gray-100 dark:bg-gray-900 dark:text-white dark:placeholder:text-gray-300",
+    /** Applied to form elements (excl. MultiStepForm). Use for consistent form spacing. */
+    globalFormClasses: "color-background p-4 space-y-6 rounded-sm",
     /** Applied to the input wrapper so it affects animated placeholder and input icons. Height and text size here; input uses multiStepInputCoreClasses to fill and inherit. */
     multiStepInputClasses:
       "h-14 sm:h-16 md:h-18 lg:h-20 text-xl sm:text-2xl md:text-3xl lg:text-4xl text-gray-900 transition-colors duration-200 dark:text-white text-left",
@@ -29,7 +31,8 @@ export const globalClasses = () => {
     dataTableDescriptionClasses: "mt-1 text-sm text-gray-500 dark:text-gray-400",
     dataTableClearButtonClasses:
       "shrink-0 rounded border border-gray-300 bg-white px-2 py-1.5 text-xs text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700",
-    dataTableTableWrapperClasses: "w-full overflow-x-auto overflow-y-auto max-h-[70vh] text-center no-scrollbar",
+    dataTableTableWrapperClasses:
+      "w-full overflow-x-auto overflow-y-auto max-h-[70vh] text-center no-scrollbar",
     dataTableTableClasses:
       "w-full max-w-full table-fixed divide-gray-200 text-center text-sm dark:divide-gray-700",
     dataTableTheadClasses:
