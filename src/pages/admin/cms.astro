@@ -1,7 +1,7 @@
 ---
 /**
  * CMS Admin Page
- * Two systems: (1) Template pages (cmsPages) – markdown/content + layout. (2) Block pages (cmsBlockPages) – sections JSON.
+ * Template pages (cmsPages) – markdown/content + layout (default, fullwidth, fullform, etc.).
  */
 import { checkAuth } from "../../lib/auth";
 import LayoutDefault from "../../components/layouts/LayoutDefault.astro";
@@ -12,13 +12,10 @@ import StickyActions from "../../components/project/StickyActions.astro";
 import { globalClasses } from "../api/global/global-classes";
 import SimpleIcon from "../../components/common/SimpleIcon.astro";
 import AccordionDataTable from "../../components/common/AccordionDataTable.astro";
-import CmsPageRowActions from "../../components/admin/CmsPageRowActions.astro";
 import CmsTemplatePageRowActions from "../../components/admin/CmsTemplatePageRowActions.astro";
-import { blockRegistry } from "../../components/blocks/BlockRegistry";
 
 const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
 
-const blockTypeNames = Object.keys(blockRegistry).sort();
 const currentRole = currentUser?.profile?.role;
 
 // Redirect to login if not authenticated
@@ -33,7 +30,10 @@ if (currentRole !== "Admin") {
 
 const { globalInputClasses } = globalClasses();
 
-// Fetch template pages (cmsPages) – old system
+const navRolesOptions = ["any", "Admin", "Staff", "Client"];
+const navButtonStyleOptions = ["", "primary", "secondary", "ghost", "outline"];
+
+// Fetch template pages (cmsPages)
 let templatePages: any[] = [];
 try {
   const baseUrl = Astro.url.origin;
@@ -47,35 +47,19 @@ try {
 } catch (error) {
   console.error("Error fetching template pages:", error);
 }
-
-// Fetch block pages from database
-let blockPages: any[] = [];
-try {
-  const baseUrl = Astro.url.origin;
-  const response = await fetch(`${baseUrl}/api/cms/block-pages`);
-  if (response.ok) {
-    const data = await response.json();
-    blockPages = (data.pages || []).sort((a: any, b: any) =>
-      (a.slug || "").localeCompare(b.slug || "")
-    );
-  }
-} catch (error) {
-  console.error("Error fetching block pages:", error);
-}
 ---
 
 <LayoutDefault
   title="CMS Management"
-  description="Template pages (content + layout) and block pages (sections)."
+  description="Template pages (content + layout)."
 >
   <div class="mb-6">
     <h1 class="text-3xl font-bold text-gray-900 dark:text-white">CMS</h1>
     <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-      Template pages use markdown/content and a layout (default, fullwidth, fullform, etc.). Block pages are built from sections (see Block pages below).
+      Pages use markdown/content and a layout (default, fullwidth, fullform, etc.).
     </p>
   </div>
 
-  <!-- 1. Template Pages (cmsPages) – main overview -->
   <section class="mb-10">
     <h2 class="mb-4 text-xl font-semibold text-gray-900 dark:text-white">Pages</h2>
     <AccordionDataTable
@@ -128,75 +112,6 @@ try {
       actionsComponent={CmsTemplatePageRowActions}
       actionsGetProps={(p) => ({ page: p })}
     />
-  </section>
-
-  <!-- 2. Block Pages (cmsBlockPages) -->
-  <section class="mb-10">
-    <h2 class="mb-4 text-xl font-semibold text-gray-900 dark:text-white">Block Pages</h2>
-    <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
-      Pages built from sections (fullwidth/contained, 12-col layout). See markdowns/CMS_BLOCK_PAGES.md.
-    </p>
-  <AccordionDataTable
-    id="cms-pages"
-    data={blockPages}
-    getItemId={(p) => p.slug}
-    getReorderId={(p) => String(p.id)}
-    slotIdPrefix="editor-slot"
-    draggable={false}
-    showCreateRow={true}
-    createRowLabel="+ Create new page"
-    getCreateSlotId={() => "create"}
-    triggerClass="cms-accordion-trigger"
-    detailClass="cms-accordion-detail"
-    slotClass="editor-slot"
-    chevronClass="cms-chevron"
-    detailRowIdPrefix="cms"
-    emptyMessage='Use "Create new page" above to add your first block page.'
-    getTriggerDataAttrs={(p) => ({
-      editorSlot: p.slug,
-      pageId: String(p.id),
-    })}
-    getDetailRowDataAttrs={(p) => ({ editorSlot: p.slug })}
-    createRowDataAttrs={{ editorSlot: "create" }}
-    createButtonId="create-page-btn"
-    columns={[
-      {
-        key: "slug",
-        label: "Slug",
-        getValue: (p) => p.slug,
-        cellClass: "whitespace-nowrap font-medium",
-        width: 24,
-      },
-      {
-        key: "title",
-        label: "Title",
-        getValue: (p) => p.title || "—",
-        allowHtml: true,
-        cellClass: "max-w-64 truncate whitespace-nowrap text-gray-500 dark:text-gray-400",
-        width: 56,
-      },
-      {
-        key: "sections",
-        label: "Sections",
-        getValue: (p) => (Array.isArray(p.sections) ? p.sections.length : 0).toString(),
-        cellClass: "whitespace-nowrap text-gray-500 dark:text-gray-400",
-        width: 20,
-      },
-      // {
-      //   key: "status",
-      //   label: "Status",
-      //   headerClass: "hidden",
-      //   cellClass: "hidden",
-      //   allowHtml: true,
-      //   getValue: (p) =>
-      //     p.isActive
-      //       ? '<span class="inline-flex rounded-full bg-green-100 px-2 text-xs font-semibold leading-5 text-green-800 dark:bg-green-900 dark:text-green-200">Active</span>'
-      //       : '<span class="inline-flex rounded-full bg-gray-100 px-2 text-xs font-semibold leading-5 text-gray-800 dark:bg-gray-700 dark:text-gray-300">Inactive</span>',
-      // },
-    ]}
-    actionsComponent={CmsPageRowActions}
-    actionsGetProps={(p) => ({ page: p })}
-  />
   </section>
 </LayoutDefault>
 
@@ -253,6 +168,40 @@ try {
             <option value="fullscreen">Fullscreen</option>
           </select>
         </div>
+        <div class="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="template-page-include-in-nav"
+            name="includeInNavigation"
+            class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700"
+          />
+          <label for="template-page-include-in-nav" class="text-sm font-medium text-gray-700 dark:text-gray-300"> Include in navigation </label>
+        </div>
+        <div>
+          <label class="mb-2 block text-sm font-medium"> Visible to (nav roles) </label>
+          <div class="flex flex-wrap gap-3">
+            {navRolesOptions.map((role) => (
+              <label class="inline-flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  name="nav_roles"
+                  value={role}
+                  class="template-page-nav-role h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700"
+                />
+                <span class="text-sm text-gray-700 dark:text-gray-300">{role}</span>
+              </label>
+            ))}
+          </div>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Roles that can see this page in the nav (any = all)</p>
+        </div>
+        <div>
+          <label for="template-page-nav-button-style" class="mb-2 block text-sm font-medium"> Button type (nav style) </label>
+          <select id="template-page-nav-button-style" name="nav_button_style" class={globalInputClasses}>
+            {navButtonStyleOptions.map((opt) => (
+              <option value={opt}>{opt || "— default —"}</option>
+            ))}
+          </select>
+        </div>
         <div>
           <label for="template-page-content" class="mb-2 block text-sm font-medium"> Content (markdown or shortcodes) </label>
           <textarea
@@ -274,122 +223,7 @@ try {
   </div>
 </div>
 
-<div id="page-editor-form-pool" class="hidden">
-  <div id="page-editor-form-container">
-    <div class="p-5">
-      <div class="mb-4 flex items-center justify-between">
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white" id="page-editor-title">
-          Create New Page
-        </h3>
-        <CloseButton id="close-editor-btn" tooltipText="Close editor" position="top" />
-      </div>
-      <form id="page-form" class="space-y-4">
-        <div>
-          <label for="page-title" class="mb-2 block text-sm font-medium"> Title </label>
-          <input
-            type="text"
-            id="page-title"
-            name="title"
-            class={globalInputClasses}
-            placeholder="About Us"
-          />
-        </div>
-        <div>
-          <label for="page-slug" class="mb-2 block text-sm font-medium"> Slug (URL path) </label>
-          <input
-            type="text"
-            id="page-slug"
-            name="slug"
-            required
-            class={globalInputClasses}
-            placeholder="about (or use / for home page)"
-          />
-          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            URL path without slashes (e.g., "about" for /about, "privacy" for /privacy)
-          </p>
-          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            Use "/" for the home page, or slug without slashes (e.g., "about" becomes "/about")
-          </p>
-        </div>
-
-        <div>
-          <label for="page-description" class="mb-2 block text-sm font-medium"> Description </label>
-          <input
-            type="text"
-            id="page-description"
-            name="description"
-            class={globalInputClasses}
-            placeholder="Page meta description"
-          />
-        </div>
-
-        <div>
-          <label class="mb-2 block text-sm font-medium"> Sections & blocks </label>
-          <p class="mb-3 text-xs text-gray-500 dark:text-gray-400">
-            Add sections; each section can have multiple blocks. Use the toggle on each block for <strong>Full width</strong> (edge-to-edge) or <strong>Contained</strong> (max-width).
-          </p>
-          <div id="block-builder-sections" class="flex flex-col gap-6 rounded-lg border border-gray-200 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-900/50"></div>
-          <div class="mt-3 flex flex-wrap gap-2">
-            <Button type="button" id="block-builder-add-section" variant="secondary" class="text-sm">+ Add section</Button>
-          </div>
-          <input type="hidden" id="page-sections" name="sections" value="[]" />
-        </div>
-
-        <template id="block-row-tpl">
-          <div class="block-builder-block flex flex-col gap-2 rounded border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800" data-block-index="">
-            <div class="flex flex-wrap items-center gap-3">
-              <label class="flex items-center gap-2 text-sm">
-                <span class="text-gray-500 dark:text-gray-400">Width:</span>
-                <select class="block-width rounded border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white">
-                  <option value="fullwidth">Full width</option>
-                  <option value="contained">Contained</option>
-                </select>
-              </label>
-              <label class="flex items-center gap-2 text-sm">
-                <span class="text-gray-500 dark:text-gray-400">Block:</span>
-                <select class="block-type rounded border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white">
-                  {blockTypeNames.map((name) => (
-                    <option value={name}>{name}</option>
-                  ))}
-                </select>
-              </label>
-              <button type="button" class="block-builder-remove-block rounded px-2 py-1 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30" title="Remove block">Remove</button>
-            </div>
-            <div class="block-props-wrap">
-              <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Props (JSON)</label>
-              <textarea class="block-props min-h-[80px] w-full rounded border border-gray-300 bg-white px-2 py-1 font-mono text-xs dark:border-gray-600 dark:bg-gray-800 dark:text-white" rows={3} placeholder='{ "title": "Hello", "content": "<p>...</p>" }'></textarea>
-            </div>
-          </div>
-        </template>
-
-        <template id="section-tpl">
-          <div class="block-builder-section flex flex-col gap-3 rounded-lg border border-gray-300 bg-white p-4 dark:border-gray-600 dark:bg-gray-800" data-section-index="">
-            <div class="flex items-center justify-between">
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Section</span>
-              <div class="flex gap-2">
-                <Button type="button" class="section-add-block text-sm" variant="ghost" size="sm">+ Add block</Button>
-                <button type="button" class="section-remove rounded px-2 py-1 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30" title="Remove section">Remove section</button>
-              </div>
-            </div>
-            <div class="section-blocks flex flex-col gap-2"></div>
-          </div>
-        </template>
-
-        <div id="form-error" class="hidden text-sm text-red-600 dark:text-red-400"></div>
-        <div id="form-success" class="hidden text-sm text-green-600 dark:text-green-400"></div>
-
-        <div class="flex justify-end gap-3">
-          <Button type="button" id="cancel-btn" variant="primary"> Cancel </Button>
-          <Button type="submit" variant="secondary"> Save Page </Button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<script define:vars={{ blockPages, templatePages }} lang="js">
-  let editingSlug = null;
-
+<script define:vars={{ templatePages }} lang="js">
   // ---- Template pages (cmsPages) editor ----
   window.handleTemplatePageDeleted = async function (slug) {
     if (window.showSuccess) window.showSuccess("Page Deleted", "Page deleted successfully", 2000);
@@ -419,6 +253,16 @@ try {
     function getTemplateTriggerRow(slotId) {
       return document.querySelector(`tr.cms-template-trigger[data-editor-slot="${slotId}"]`);
     }
+    function getTemplateNavRoles() {
+      const checkboxes = document.querySelectorAll(".template-page-nav-role:checked");
+      return Array.from(checkboxes).map((el) => el.value);
+    }
+    function setTemplateNavRoles(roles) {
+      const arr = Array.isArray(roles) ? roles : roles && roles.length ? [roles] : ["any"];
+      document.querySelectorAll(".template-page-nav-role").forEach((cb) => {
+        cb.checked = arr.includes(cb.value);
+      });
+    }
     function closeTemplateEditor() {
       if (!openTemplateSlotId) return;
       const slugEl = document.getElementById("template-page-slug");
@@ -426,8 +270,21 @@ try {
       const descEl = document.getElementById("template-page-description");
       const templateEl = document.getElementById("template-page-template");
       const contentEl = document.getElementById("template-page-content");
-      if (slugEl && "value" in slugEl && titleEl2 && "value" in titleEl2 && descEl && "value" in descEl && templateEl && "value" in templateEl && contentEl && "value" in contentEl)
-        templateFormCache[openTemplateSlotId] = { slug: slugEl.value, title: titleEl2.value, description: descEl.value, template: templateEl.value, content: contentEl.value };
+      const includeNavEl = document.getElementById("template-page-include-in-nav");
+      const navStyleEl = document.getElementById("template-page-nav-button-style");
+      if (slugEl && "value" in slugEl && titleEl2 && "value" in titleEl2 && descEl && "value" in descEl && templateEl && "value" in templateEl && contentEl && "value" in contentEl) {
+        const navRoles = getTemplateNavRoles();
+        templateFormCache[openTemplateSlotId] = {
+          slug: slugEl.value,
+          title: titleEl2.value,
+          description: descEl.value,
+          template: templateEl.value,
+          content: contentEl.value,
+          includeInNavigation: includeNavEl?.checked ?? false,
+          nav_roles: navRoles.length ? navRoles : ["any"],
+          nav_button_style: navStyleEl && "value" in navStyleEl ? navStyleEl.value : "",
+        };
+      }
       const detailRow = getTemplateDetailRow(openTemplateSlotId);
       const triggerRow = getTemplateTriggerRow(openTemplateSlotId);
       if (detailRow) { detailRow.classList.add("hidden"); detailRow.setAttribute("aria-hidden", "true"); }
@@ -453,11 +310,16 @@ try {
       const descEl = document.getElementById("template-page-description");
       const templateEl = document.getElementById("template-page-template");
       const contentEl = document.getElementById("template-page-content");
+      const includeNavEl = document.getElementById("template-page-include-in-nav");
+      const navStyleEl = document.getElementById("template-page-nav-button-style");
       if (slugEl && "value" in slugEl) slugEl.value = page.slug || "";
       if (titleEl2 && "value" in titleEl2) titleEl2.value = page.title || "";
       if (descEl && "value" in descEl) descEl.value = page.description || "";
       if (templateEl && "value" in templateEl) templateEl.value = page.template || "default";
       if (contentEl && "value" in contentEl) contentEl.value = page.content || "";
+      if (includeNavEl && "checked" in includeNavEl) includeNavEl.checked = !!page.includeInNavigation;
+      setTemplateNavRoles(page.navRoles || page.nav_roles || ["any"]);
+      if (navStyleEl && "value" in navStyleEl) navStyleEl.value = page.navButtonStyle || page.nav_button_style || "";
     }
 
     if (createBtn) {
@@ -483,11 +345,16 @@ try {
           const descEl = document.getElementById("template-page-description");
           const templateEl = document.getElementById("template-page-template");
           const contentEl = document.getElementById("template-page-content");
+          const includeNavEl = document.getElementById("template-page-include-in-nav");
+          const navStyleEl = document.getElementById("template-page-nav-button-style");
           if (slugEl && "value" in slugEl) slugEl.value = cached.slug;
           if (titleEl2 && "value" in titleEl2) titleEl2.value = cached.title;
           if (descEl && "value" in descEl) descEl.value = cached.description;
           if (templateEl && "value" in templateEl) templateEl.value = cached.template;
           if (contentEl && "value" in contentEl) contentEl.value = cached.content;
+          if (includeNavEl && "checked" in includeNavEl) includeNavEl.checked = !!cached.includeInNavigation;
+          setTemplateNavRoles(cached.nav_roles || ["any"]);
+          if (navStyleEl && "value" in navStyleEl) navStyleEl.value = cached.nav_button_style || "";
           openTemplateEditor(slug);
           return;
         }
@@ -518,11 +385,16 @@ try {
           const descEl = document.getElementById("template-page-description");
           const templateEl = document.getElementById("template-page-template");
           const contentEl = document.getElementById("template-page-content");
+          const includeNavEl = document.getElementById("template-page-include-in-nav");
+          const navStyleEl = document.getElementById("template-page-nav-button-style");
           if (slugEl && "value" in slugEl) slugEl.value = cached.slug;
           if (titleEl2 && "value" in titleEl2) titleEl2.value = cached.title;
           if (descEl && "value" in descEl) descEl.value = cached.description;
           if (templateEl && "value" in templateEl) templateEl.value = cached.template;
           if (contentEl && "value" in contentEl) contentEl.value = cached.content;
+          if (includeNavEl && "checked" in includeNavEl) includeNavEl.checked = !!cached.includeInNavigation;
+          setTemplateNavRoles(cached.nav_roles || ["any"]);
+          if (navStyleEl && "value" in navStyleEl) navStyleEl.value = cached.nav_button_style || "";
           openTemplateEditor(slotId);
           return;
         }
@@ -546,12 +418,18 @@ try {
         const description = (descEl && "value" in descEl ? descEl.value : "").trim() || null;
         const template = (templateSel && "value" in templateSel ? templateSel.value : "default") || "default";
         const content = (contentEl && "value" in contentEl ? contentEl.value : "") ?? "";
+        const includeNavEl = document.getElementById("template-page-include-in-nav");
+        const navStyleEl = document.getElementById("template-page-nav-button-style");
+        const includeInNavigation = includeNavEl && "checked" in includeNavEl ? includeNavEl.checked : false;
+        const nav_rolesRaw = getTemplateNavRoles();
+        const nav_roles = nav_rolesRaw.length > 0 ? nav_rolesRaw : ["any"];
+        const nav_button_style = (navStyleEl && "value" in navStyleEl ? navStyleEl.value : "") || null;
         if (!slug) { if (window.showError) window.showError("Validation Error", "Slug is required", 0); return; }
         try {
           const response = await fetch("/api/cms/pages", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ slug, title, description, template, content }),
+            body: JSON.stringify({ slug, title, description, template, content, includeInNavigation, nav_roles, nav_button_style }),
           });
           const result = await response.json();
           if (!response.ok) throw new Error(result.error || "Failed to save page");
@@ -573,594 +451,11 @@ try {
       return;
     }
     initTemplateCMS();
-    const formContainer = document.getElementById("page-editor-form-container");
-    const formPool = document.getElementById("page-editor-form-pool");
-    const form = document.getElementById("page-form");
-    const createBtn = document.getElementById("create-page-btn");
-    const cancelBtn = document.getElementById("cancel-btn");
-    const closeBtn = document.getElementById("close-editor-btn");
-    const pageEditorTitle = document.getElementById("page-editor-title");
-    const slugInput = document.getElementById("page-slug");
-
-    if (!formContainer || !form || !formPool) {
-      if (!retry) {
-        requestAnimationFrame(() => setTimeout(() => initCMS(true), 50));
-      }
-      return;
-    }
-
-    let openSlotId = null;
-    /** Cache form state per slot so edits are preserved when switching accordions */
-    const formStateCache = Object.create(null);
-    /** Ignore stale fetch results when user opened a different accordion before fetch completed */
-    let pendingSlotId = null;
-
-    function getFormState() {
-      syncSectionsInput();
-      const s = document.getElementById("page-slug");
-      const t = document.getElementById("page-title");
-      const d = document.getElementById("page-description");
-      const sectionsEl = document.getElementById("page-sections");
-      return {
-        slug: s && "value" in s ? s.value : "",
-        title: t && "value" in t ? t.value : "",
-        description: d && "value" in d ? d.value : "",
-        sections: sectionsEl && "value" in sectionsEl ? sectionsEl.value : "[]",
-      };
-    }
-
-    function setFormState(state) {
-      const s = document.getElementById("page-slug");
-      const t = document.getElementById("page-title");
-      const d = document.getElementById("page-description");
-      const sectionsEl = document.getElementById("page-sections");
-      if (s && "value" in s) s.value = state.slug ?? "";
-      if (t && "value" in t) t.value = state.title ?? "";
-      if (d && "value" in d) d.value = state.description ?? "";
-      const sectionsStr = state.sections ?? "[]";
-      if (sectionsEl && "value" in sectionsEl) sectionsEl.value = sectionsStr;
-      try {
-        const parsed = typeof sectionsStr === "string" ? JSON.parse(sectionsStr || "[]") : sectionsStr;
-        renderBlockBuilder(Array.isArray(parsed) ? parsed : []);
-      } catch (_) {}
-    }
-
-    function normalizeSectionToItems(section) {
-      if (section.items && Array.isArray(section.items) && section.items.length > 0)
-        return section.items;
-      if (section.block)
-        return [{ width: section.width || "fullwidth", block: section.block }];
-      if (section.blocks && Array.isArray(section.blocks)) {
-        const w = section.width || "fullwidth";
-        return section.blocks.map(function (b) { return { width: w, block: b }; });
-      }
-      return [];
-    }
-
-    function buildSectionsFromBuilder() {
-      const container = document.getElementById("block-builder-sections");
-      if (!container) return [];
-      const sectionEls = container.querySelectorAll(".block-builder-section");
-      const sections = [];
-      sectionEls.forEach(function (sectionEl) {
-        const blockEls = sectionEl.querySelectorAll(".block-builder-block");
-        const items = [];
-        blockEls.forEach(function (blockEl) {
-          const widthSel = blockEl.querySelector(".block-width");
-          const typeSel = blockEl.querySelector(".block-type");
-          const propsEl = blockEl.querySelector(".block-props");
-          const width = widthSel && "value" in widthSel ? widthSel.value : "fullwidth";
-          const type = typeSel && "value" in typeSel ? typeSel.value : "ContentBlock";
-          let props = {};
-          if (propsEl && "value" in propsEl && propsEl.value.trim()) {
-            try { props = JSON.parse(propsEl.value); } catch (_) { props = {}; }
-          }
-          items.push({ width: width, block: { type: type, props: props } });
-        });
-        if (items.length > 0) sections.push({ items: items });
-      });
-      return sections;
-    }
-
-    function syncSectionsInput() {
-      const sections = buildSectionsFromBuilder();
-      const el = document.getElementById("page-sections");
-      if (el && "value" in el) el.value = JSON.stringify(sections);
-    }
-
-    function renderBlockBuilder(sectionsArray) {
-      const container = document.getElementById("block-builder-sections");
-      const sectionTpl = document.getElementById("section-tpl");
-      const blockRowTpl = document.getElementById("block-row-tpl");
-      if (!container || !sectionTpl || !blockRowTpl) return;
-      container.innerHTML = "";
-      const sections = Array.isArray(sectionsArray) ? sectionsArray : [];
-      if (sections.length === 0) return;
-      sections.forEach(function (section) {
-        const items = normalizeSectionToItems(section);
-        const sectionClone = sectionTpl.content.cloneNode(true);
-        const sectionDiv = sectionClone.querySelector(".block-builder-section");
-        const blocksContainer = sectionClone.querySelector(".section-blocks");
-        items.forEach(function (item) {
-          const rowClone = blockRowTpl.content.cloneNode(true);
-          const row = rowClone.querySelector(".block-builder-block");
-          const wSel = row.querySelector(".block-width");
-          const tSel = row.querySelector(".block-type");
-          const pEl = row.querySelector(".block-props");
-          if (wSel && "value" in wSel) wSel.value = item.width || "fullwidth";
-          if (tSel && "value" in tSel) tSel.value = item.block?.type || "ContentBlock";
-          if (pEl && "value" in pEl) pEl.value = item.block?.props ? JSON.stringify(item.block.props, null, 2) : "";
-          blocksContainer.appendChild(rowClone);
-        });
-        container.appendChild(sectionClone);
-      });
-      bindBlockBuilderEvents();
-      syncSectionsInput();
-    }
-
-    function addBlockToSection(sectionEl) {
-      const blockRowTpl = document.getElementById("block-row-tpl");
-      const blocksContainer = sectionEl.querySelector(".section-blocks");
-      if (!blockRowTpl || !blocksContainer) return;
-      const clone = blockRowTpl.content.cloneNode(true);
-      blocksContainer.appendChild(clone);
-      syncSectionsInput();
-    }
-
-    function bindBlockBuilderEvents() {
-      const container = document.getElementById("block-builder-sections");
-      if (!container) return;
-      container.querySelectorAll(".section-add-block").forEach(function (btn) {
-        btn.replaceWith(btn.cloneNode(true));
-      });
-      container.querySelectorAll(".section-remove").forEach(function (btn) {
-        btn.replaceWith(btn.cloneNode(true));
-      });
-      container.querySelectorAll(".block-builder-remove-block").forEach(function (btn) {
-        btn.replaceWith(btn.cloneNode(true));
-      });
-      container.querySelectorAll(".section-add-block").forEach(function (btn) {
-        btn.addEventListener("click", function () {
-          const section = btn.closest(".block-builder-section");
-          if (section) addBlockToSection(section);
-        });
-      });
-      container.querySelectorAll(".section-remove").forEach(function (btn) {
-        btn.addEventListener("click", function () {
-          const section = btn.closest(".block-builder-section");
-          if (section) { section.remove(); syncSectionsInput(); }
-        });
-      });
-      container.querySelectorAll(".block-builder-remove-block").forEach(function (btn) {
-        btn.addEventListener("click", function () {
-          const row = btn.closest(".block-builder-block");
-          if (row) { row.remove(); syncSectionsInput(); }
-        });
-      });
-      container.querySelectorAll(".block-width, .block-type, .block-props").forEach(function (el) {
-        el.replaceWith(el.cloneNode(true));
-      });
-      container.querySelectorAll(".block-width, .block-type").forEach(function (el) {
-        el.addEventListener("change", syncSectionsInput);
-      });
-      container.querySelectorAll(".block-props").forEach(function (el) {
-        el.addEventListener("input", function () { clearTimeout(window._blockPropsDebounce); window._blockPropsDebounce = setTimeout(syncSectionsInput, 400); });
-      });
-    }
-
-    function addSectionToBuilder() {
-      const container = document.getElementById("block-builder-sections");
-      const sectionTpl = document.getElementById("section-tpl");
-      const blockRowTpl = document.getElementById("block-row-tpl");
-      if (!container || !sectionTpl || !blockRowTpl) return;
-      const sectionClone = sectionTpl.content.cloneNode(true);
-      const sectionDiv = sectionClone.querySelector(".block-builder-section");
-      const blocksContainer = sectionDiv.querySelector(".section-blocks");
-      const rowClone = blockRowTpl.content.cloneNode(true);
-      blocksContainer.appendChild(rowClone);
-      container.appendChild(sectionClone);
-      bindBlockBuilderEvents();
-      syncSectionsInput();
-    }
-
-    function applyPageToForm(page) {
-      const s = document.getElementById("page-slug");
-      const t = document.getElementById("page-title");
-      const d = document.getElementById("page-description");
-      const sectionsEl = document.getElementById("page-sections");
-      if (s && "value" in s) s.value = page.slug || "";
-      if (t && "value" in t) t.value = page.title || "";
-      if (d && "value" in d) d.value = page.description || "";
-      const sectionsArray = Array.isArray(page.sections) ? page.sections : [];
-      const normalized = sectionsArray.map(function (sec) {
-        const items = normalizeSectionToItems(sec);
-        return items.length ? { items } : { items: [{ width: "contained", block: { type: "ContentBlock", props: {} } }] };
-      });
-      if (normalized.length === 0) normalized.push({ items: [{ width: "contained", block: { type: "ContentBlock", props: {} } }] });
-      if (sectionsEl && "value" in sectionsEl) sectionsEl.value = JSON.stringify(normalized);
-      renderBlockBuilder(normalized);
-    }
-
-    function getDetailRow(slotId) {
-      return (
-        document.getElementById(`cms-detail-${slotId}`) ||
-        document.querySelector(`tr.cms-accordion-detail[data-editor-slot="${slotId}"]`)
-      );
-    }
-
-    function getTriggerRow(slotId) {
-      return document.querySelector(`tr.cms-accordion-trigger[data-editor-slot="${slotId}"]`);
-    }
-
-    function closeEditor() {
-      if (!openSlotId) return;
-      formStateCache[openSlotId] = getFormState();
-      const detailRow = getDetailRow(openSlotId);
-      const triggerRow = getTriggerRow(openSlotId);
-      if (detailRow) {
-        detailRow.classList.add("hidden");
-        detailRow.setAttribute("aria-hidden", "true");
-      }
-      if (triggerRow) {
-        triggerRow.setAttribute("aria-expanded", "false");
-        const chevron = triggerRow.querySelector(".cms-chevron");
-        if (chevron) chevron.classList.remove("rotate-180");
-      }
-      if (formContainer && formPool) {
-        formPool.appendChild(formContainer);
-      }
-      openSlotId = null;
-    }
-
-    function openEditor(slotId, slugForEdit) {
-      const slotEl = document.getElementById(`editor-slot-${slotId}`);
-      if (!slotEl) return;
-      closeEditor();
-      if (formContainer) {
-        slotEl.appendChild(formContainer);
-      }
-      const detailRow = getDetailRow(slotId);
-      const triggerRow = getTriggerRow(slotId);
-      if (detailRow) {
-        detailRow.classList.remove("hidden");
-        detailRow.setAttribute("aria-hidden", "false");
-      }
-      if (triggerRow) {
-        triggerRow.setAttribute("aria-expanded", "true");
-        const chevron = triggerRow.querySelector(".cms-chevron");
-        if (chevron) chevron.classList.add("rotate-180");
-      }
-      openSlotId = slotId;
-      detailRow?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }
-
-    // Real-time slug sanitization
-    if (slugInput) {
-      slugInput.addEventListener("input", (e) => {
-        const input = e.target;
-        if (input instanceof HTMLInputElement) {
-          // Remove leading/trailing slashes as user types
-          const sanitized = input.value.replace(/^\/+|\/+$/g, "");
-          if (sanitized !== input.value) {
-            const cursorPos = input.selectionStart || 0;
-            input.value = sanitized;
-            input.setSelectionRange(cursorPos, cursorPos);
-          }
-        }
-      });
-    }
-
-    // Block builder: Add section button
-    const addSectionBtn = document.getElementById("block-builder-add-section");
-    if (addSectionBtn) addSectionBtn.addEventListener("click", addSectionToBuilder);
-
-    // Create button: open create row and reset form (clear any cached draft)
-    if (createBtn) {
-      createBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        editingSlug = null;
-        delete formStateCache["create"];
-        form.reset();
-        renderBlockBuilder([{ items: [{ width: "contained", block: { type: "ContentBlock", props: {} } }] }]);
-        if (pageEditorTitle) pageEditorTitle.textContent = "Create New Page";
-        openEditor("create");
-      });
-    }
-
-    // Edit button: open that row and load page data (or restore from cache)
-    document.querySelectorAll(".edit-page-btn").forEach((btn) => {
-      btn.addEventListener("click", async (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const slug = btn.getAttribute("data-slug");
-        if (!slug) return;
-        pendingSlotId = slug;
-        editingSlug = slug;
-        if (pageEditorTitle) pageEditorTitle.textContent = `Edit Page: ${slug}`;
-        const cached = formStateCache[slug];
-        if (cached) {
-          setFormState(cached);
-          openEditor(slug, slug);
-          return;
-        }
-        try {
-          const response = await fetch(`/api/cms/block-pages?slug=${encodeURIComponent(slug)}`);
-          const data = await response.json();
-          if (pendingSlotId !== slug) return;
-          const page = data.page;
-          if (page) applyPageToForm(page);
-          openEditor(slug, slug);
-        } catch (err) {
-          console.error("Error loading page:", err);
-          if (pendingSlotId === slug && window.showError)
-            window.showError("Load Failed", "Failed to load page data", 0);
-        }
-      });
-    });
-
-    // Accordion trigger rows: click to toggle (except on Edit/Delete)
-    document.querySelectorAll("tr.cms-accordion-trigger").forEach((triggerRow) => {
-      triggerRow.addEventListener("click", (e) => {
-        const tgt = e.target instanceof Element ? e.target : null;
-        if (
-          tgt?.closest(
-            ".edit-page-btn, .delete-confirm-btn, .delete-confirm-wrapper, .accordion-drag-handle"
-          )
-        )
-          return;
-        const slotId = triggerRow.getAttribute("data-editor-slot");
-        if (!slotId) return;
-        if (openSlotId === slotId) {
-          closeEditor();
-          return;
-        }
-        pendingSlotId = slotId;
-        if (slotId === "create") {
-          editingSlug = null;
-          const cached = formStateCache["create"];
-          if (cached) {
-            setFormState(cached);
-          } else {
-            form.reset();
-          }
-          if (pageEditorTitle) pageEditorTitle.textContent = "Create New Page";
-          openEditor("create");
-          return;
-        }
-        editingSlug = slotId;
-        if (pageEditorTitle) pageEditorTitle.textContent = `Edit Page: ${slotId}`;
-        const cached = formStateCache[slotId];
-        if (cached) {
-          setFormState(cached);
-          openEditor(slotId, slotId);
-          return;
-        }
-        const fetchForSlot = slotId;
-        fetch(`/api/cms/block-pages?slug=${encodeURIComponent(fetchForSlot)}`)
-          .then((r) => r.json())
-          .then((data) => {
-            if (pendingSlotId !== fetchForSlot) return;
-            const page = data.page;
-            if (page) applyPageToForm(page);
-            openEditor(fetchForSlot, fetchForSlot);
-          })
-          .catch((err) => {
-            console.error("Error loading page:", err);
-            if (pendingSlotId === fetchForSlot && window.showError)
-              window.showError("Load Failed", "Failed to load page data", 0);
-          });
-      });
-    });
-
-    // Delete page - Custom delete handler for block pages (uses slugs)
-    // Remove the row from DOM instead of refreshing the page
-    window.handleCmsPageDeleted = async function (slug) {
-      console.log("[CMS] Page deleted callback:", slug);
-
-      if (window.showSuccess) {
-        window.showSuccess("Page Deleted", "Page deleted successfully", 2000);
-      }
-
-      // Remove trigger row and its detail row from the DOM
-      const tbody = document.querySelector("#cms-pages-tbody");
-      if (tbody) {
-        const triggerRow = tbody.querySelector(`tr.cms-accordion-trigger[data-editor-slot="${slug}"]`);
-        const detailRow = tbody.querySelector(
-          `tr.cms-accordion-detail[data-editor-slot="${slug}"]`
-        );
-        if (triggerRow) triggerRow.remove();
-        if (detailRow) detailRow.remove();
-      }
-    };
-
-    // Handle delete button clicks
-    document.addEventListener("click", async (e) => {
-      const target = e.target;
-      const button = target.closest(".delete-confirm-btn");
-
-      if (!button || !button.id || !button.id.startsWith("delete-cms-")) return;
-
-      const slug = button.dataset.slug;
-      if (!slug) return;
-
-      const currentState = button.getAttribute("data-state") || "trash";
-      const timeout = parseInt(button.dataset.timeout || "3000", 10);
-
-      if (currentState === "trash") {
-        // First click: Show timer ring
-        e.stopPropagation();
-
-        const wrapper = button.querySelector(".delete-confirm-wrapper");
-        const timerRing = wrapper?.querySelector(".timer-ring-overlay");
-        const timerCircle = timerRing?.querySelector(".timer-icon-test");
-
-        if (timerCircle) {
-          // Reset animation
-          timerCircle.classList.remove("timer-icon-test");
-          void timerCircle.offsetWidth;
-          timerCircle.classList.add("timer-icon-test");
-        }
-
-        button.setAttribute("data-state", "confirm");
-        button.title = "Click again to confirm deletion";
-
-        // Show timer ring
-        if (timerRing) {
-          timerRing.classList.remove("opacity-0");
-          timerRing.classList.add("opacity-100");
-        }
-
-        // Change icon to stopwatch
-        const iconElement = button.querySelector(".delete-confirm-icon");
-        if (iconElement) {
-          iconElement.outerHTML = `<svg class="inline-block stopwatch-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="13" r="8"/>
-              <path d="M12 9v4l2 2"/>
-              <path d="M10 2h4"/>
-            </svg>`;
-        }
-
-        // Auto-revert after timeout
-        setTimeout(() => {
-          if (button.getAttribute("data-state") === "confirm") {
-            resetCmsDeleteButton(button);
-          }
-        }, timeout);
-      } else if (currentState === "confirm") {
-        // Second click: Execute deletion
-        e.stopPropagation();
-
-        resetCmsDeleteButton(button);
-        button.setAttribute("disabled", "true");
-
-        try {
-          const response = await fetch("/api/cms/block-pages", {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ slug }),
-          });
-
-          const data = await response.json();
-
-          if (data.success || response.ok) {
-            if (window.handleCmsPageDeleted) {
-              await window.handleCmsPageDeleted(slug);
-            }
-          } else {
-            if (window.showError) {
-              window.showError("Delete Failed", data.error || "Failed to delete page", 0);
-            }
-          }
-        } catch (error) {
-          console.error("Error deleting CMS page:", error);
-          if (window.showError) {
-            window.showError("Delete Failed", "An error occurred while deleting", 0);
-          }
-        } finally {
-          button.removeAttribute("disabled");
-        }
-      }
-    });
-
-    function resetCmsDeleteButton(button) {
-      button.setAttribute("data-state", "trash");
-      button.title = button.dataset.originalTitle || "Delete";
-
-      const wrapper = button.querySelector(".delete-confirm-wrapper");
-      const timerRing = wrapper?.querySelector(".timer-ring-overlay");
-
-      if (timerRing) {
-        timerRing.classList.add("opacity-0");
-        timerRing.classList.remove("opacity-100");
-      }
-
-      // Restore trash icon
-      const stopwatchIcon = button.querySelector(".stopwatch-icon");
-      if (stopwatchIcon) {
-        stopwatchIcon.outerHTML = `<svg class="inline-block delete-confirm-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 6h18"></path>
-            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-            <path d="M10 11v6"></path>
-            <path d="M14 11v6"></path>
-          </svg>`;
-      }
-    }
-
-    if (cancelBtn) cancelBtn.addEventListener("click", closeEditor);
-    if (closeBtn) closeBtn.addEventListener("click", closeEditor);
-
-    // Handle form submission
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      syncSectionsInput();
-      const slugInput = document.getElementById("page-slug");
-      const titleInput = document.getElementById("page-title");
-      const descInput = document.getElementById("page-description");
-      const sectionsInput = document.getElementById("page-sections");
-
-      let slug = slugInput?.value?.trim() || "";
-      if (slug !== "/") {
-        slug = slug.replace(/^\/+|\/+$/g, "");
-      }
-      const title = titleInput?.value?.trim() || null;
-      const description = descInput?.value?.trim() || null;
-      let sections = [];
-      try {
-        const raw = sectionsInput?.value?.trim() || "[]";
-        sections = raw ? JSON.parse(raw) : [];
-        if (!Array.isArray(sections)) sections = [];
-      } catch (err) {
-        if (window.showError) {
-          window.showError("Validation Error", "Sections must be valid JSON array", 0);
-        }
-        return;
-      }
-
-      if (!slug) {
-        if (window.showError) {
-          window.showError("Validation Error", "Slug is required", 0);
-        }
-        return;
-      }
-
-      try {
-        const response = await fetch("/api/cms/block-pages", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ slug, title, description, sections }),
-        });
-
-        const result = await response.json();
-
-        if (!response.ok) {
-          throw new Error(result.error || result.message || "Failed to save page");
-        }
-
-        if (window.showSuccess) {
-          window.showSuccess("Page Saved", "Page saved successfully.", 4000);
-        }
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error
-            ? error.message
-            : typeof error === "string"
-              ? error
-              : "An error occurred while saving the page";
-        if (window.showError) {
-          window.showError("Save Failed", errorMessage, 0);
-        }
-        console.error("CMS page save error:", error);
-      }
-    });
-
-    // Cmd+S / Ctrl+S to save when page editor is visible
+    // Cmd+S / Ctrl+S to save when template editor is visible
     document.addEventListener("keydown", (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "s") {
-        const formEl = document.getElementById("page-form");
-        const formContainerEl = document.getElementById("page-editor-form-container");
+        const formEl = document.getElementById("template-page-form");
+        const formContainerEl = document.getElementById("template-editor-form-container");
         if (formEl && formContainerEl && formContainerEl.offsetParent !== null) {
           e.preventDefault();
           formEl.requestSubmit();

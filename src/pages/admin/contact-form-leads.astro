@@ -1,18 +1,30 @@
 ---
 /**
  * Admin Contact Form Leads Page
- * List and manage contact form leads from the public contact form
+ * List and manage contact form leads from the public contact form.
+ * Uses AccordionDataTable; expand a row to view full message and details.
  */
 import { checkAuth } from "../../lib/auth";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 import LayoutDefault from "../../components/layouts/LayoutDefault.astro";
-import DeleteConfirmButton from "../../components/ui/DeleteConfirmButton.astro";
+import AccordionDataTable from "../../components/common/AccordionDataTable.astro";
+import ContactLeadRowActions from "../../components/admin/ContactLeadRowActions.astro";
 import SimpleIcon from "../../components/common/SimpleIcon.astro";
 
 const { currentUser } = await checkAuth(Astro.cookies);
 
 if (!currentUser) {
   return Astro.redirect("/auth/login");
+}
+
+/** Escape for safe HTML interpolation. */
+function escapeHtml(str: string): string {
+  if (str == null) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 let submissions: any[] = [];
@@ -30,7 +42,7 @@ if (supabaseAdmin) {
     <div class="mb-8">
       <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Contact Form Leads</h1>
       <p class="mt-1 text-gray-600 dark:text-gray-400">
-        Leads from the public contact form. View details and delete when resolved.
+        Leads from the public contact form. Click a row to expand and view full message; delete when resolved.
       </p>
       <a
         href="/contact"
@@ -43,89 +55,182 @@ if (supabaseAdmin) {
       </a>
     </div>
 
-    <div class="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-900">
-      {submissions.length === 0 ? (
-        <div class="p-12 text-center text-gray-500 dark:text-gray-400">
-          No contact form leads yet. Share the <a href="/contact" class="text-primary-600 hover:underline">contact form</a> with visitors.
-        </div>
-      ) : (
-        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead class="bg-gray-50 dark:bg-gray-800">
-            <tr>
-              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Name
-              </th>
-              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Contact
-              </th>
-              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Company
-              </th>
-              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Message
-              </th>
-              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Date
-              </th>
-              <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-            {submissions.map((s) => (
-              <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                <td class="whitespace-nowrap px-4 py-3">
-                  <div class="font-medium text-gray-900 dark:text-white">
-                    {s.firstName} {s.lastName}
-                  </div>
-                </td>
-                <td class="px-4 py-3">
-                  <div class="text-sm text-gray-900 dark:text-white">
-                    <a href={`mailto:${s.email}`} class="text-primary-600 hover:underline dark:text-primary-400">
-                      {s.email}
-                    </a>
-                  </div>
-                  {s.phone && (
-                    <div class="text-sm text-gray-500 dark:text-gray-400">{s.phone}</div>
-                  )}
-                </td>
-                <td class="px-4 py-3">
-                  <span class="text-gray-700 dark:text-gray-300">{s.company || "—"}</span>
-                </td>
-                <td class="max-w-xs px-4 py-3">
-                  <p class="truncate text-gray-700 dark:text-gray-300" title={s.message}>
-                    {s.message}
-                  </p>
-                </td>
-                <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                  {new Date(s.submittedAt).toLocaleDateString()}
-                </td>
-                <td class="px-4 py-3 text-right">
-                  <div class="flex items-center justify-end gap-1">
-                    <DeleteConfirmButton
-                      id={`delete-contact-${s.id}`}
-                      itemType="contact form lead"
-                      apiEndpoint="/api/contact-form-leads"
-                      deleteMethod="DELETE"
-                      deleteQueryParam="id"
-                      onDeleteCallback="handleContactDeleted"
-                      tooltipText="Delete lead"
-                      size="sm"
-                      variant="icon"
-                      dataAttributes={{ id: s.id }}
-                    />
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+    <div class="overflow-x-auto">
+      <AccordionDataTable
+        id="contact-leads-table"
+        title=""
+        description=""
+        data={submissions}
+        getItemId={(s) => String(s.id)}
+        slotIdPrefix="contact-lead-slot"
+        emptyMessage="No contact form leads yet. Share the contact form with visitors."
+        columns={[
+          {
+            key: "name",
+            label: "Name",
+            getValue: (s) => {
+              const first = (s.firstName as string) ?? "";
+              const last = (s.lastName as string) ?? "";
+              return [first, last].filter(Boolean).join(" ").trim() || "—";
+            },
+            cellClass: "whitespace-nowrap font-medium",
+            width: 16,
+          },
+          {
+            key: "contact",
+            label: "Contact",
+            getValue: (s) => {
+              const email = s.email as string;
+              const phone = s.phone as string;
+              if (!email && !phone) return "—";
+              const parts: string[] = [];
+              if (email) {
+                const e = escapeHtml(email);
+                parts.push(`<a href="mailto:${e}" class="text-primary-600 hover:underline dark:text-primary-400">${e}</a>`);
+              }
+              if (phone) parts.push(`<span class="text-gray-500 dark:text-gray-400">${escapeHtml(phone)}</span>`);
+              return parts.join(" ");
+            },
+            allowHtml: true,
+            cellClass: "text-sm",
+            width: 22,
+          },
+          {
+            key: "company",
+            label: "Company",
+            getValue: (s) => (s.company as string) || "—",
+            cellClass: "text-gray-700 dark:text-gray-300",
+            width: 14,
+          },
+          {
+            key: "message",
+            label: "Message",
+            getValue: (s) => {
+              const msg = (s.message as string) ?? "";
+              return msg.length > 60 ? msg.slice(0, 60) + "…" : msg || "—";
+            },
+            cellClass: "max-w-xs truncate text-gray-700 dark:text-gray-300",
+            width: 28,
+          },
+          {
+            key: "date",
+            label: "Date",
+            getValue: (s) => (s.submittedAt ? new Date(s.submittedAt).toLocaleDateString() : "—"),
+            cellClass: "whitespace-nowrap text-sm text-gray-500 dark:text-gray-400",
+            width: 12,
+          },
+        ]}
+        actionsComponent={ContactLeadRowActions}
+        actionsGetProps={(s) => ({ submission: s })}
+        actionsColumnSticky={true}
+      />
     </div>
   </div>
 </LayoutDefault>
 
 <script define:vars={{ submissions }}>
   window.handleContactDeleted = () => window.location.reload();
+
+  function initContactLeadsAccordion() {
+    if (!window.location.pathname.startsWith("/admin/contact-form-leads")) return;
+
+    const tableId = "contact-leads-table";
+    const tbody = document.getElementById(tableId + "-tbody");
+    if (!tbody) return;
+
+    const triggerClass = "accordion-trigger";
+    const detailClass = "accordion-detail";
+    const chevronSel = ".accordion-chevron";
+
+    function getDetailRow(itemId) {
+      return document.getElementById(`${tableId}-detail-${itemId}`);
+    }
+
+    function getSlot(itemId) {
+      return document.getElementById(`contact-lead-slot-${itemId}`);
+    }
+
+    function closeAll() {
+      tbody.querySelectorAll(`tr.${detailClass}`).forEach((row) => {
+        row.classList.add("hidden");
+        row.setAttribute("aria-hidden", "true");
+      });
+      tbody.querySelectorAll(`tr.${triggerClass}`).forEach((row) => {
+        row.setAttribute("aria-expanded", "false");
+        const ch = row.querySelector(chevronSel);
+        if (ch) ch.classList.remove("rotate-180");
+      });
+    }
+
+    function openRow(itemId) {
+      const detailRow = getDetailRow(itemId);
+      const triggerRow = tbody.querySelector(`tr.${triggerClass}[data-item-id="${itemId}"]`);
+      if (!detailRow || !triggerRow) return;
+      detailRow.classList.remove("hidden");
+      detailRow.setAttribute("aria-hidden", "false");
+      triggerRow.setAttribute("aria-expanded", "true");
+      const ch = triggerRow.querySelector(chevronSel);
+      if (ch) ch.classList.add("rotate-180");
+
+      const slot = getSlot(itemId);
+      if (slot && submissions && submissions.length) {
+        const s = submissions.find((x) => String(x.id) === itemId);
+        if (s) {
+          const msg = (s.message ?? "").toString().trim() || "—";
+          const date = s.submittedAt ? new Date(s.submittedAt).toLocaleString() : "—";
+          slot.innerHTML = `
+            <div class="p-4 text-sm">
+              <p class="mb-2 font-medium text-gray-700 dark:text-gray-300">Full message</p>
+              <p class="whitespace-pre-wrap text-gray-600 dark:text-gray-400">${escapeHtmlScript(msg)}</p>
+              <p class="mt-2 text-gray-500 dark:text-gray-500">Submitted: ${escapeHtmlScript(date)}</p>
+            </div>
+          `;
+        }
+      }
+      detailRow.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    function escapeHtmlScript(str) {
+      if (str == null) return "";
+      const s = String(str);
+      return s
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    tbody.addEventListener("click", (e) => {
+      const triggerRow = e.target?.closest?.(`tr.${triggerClass}[data-item-id]`);
+      if (!triggerRow) return;
+      if (e.target?.closest?.(".delete-confirm-btn, .delete-confirm-wrapper, .accordion-drag-handle")) return;
+
+      const itemId = triggerRow.getAttribute("data-item-id");
+      if (!itemId) return;
+
+      const detailRow = getDetailRow(itemId);
+      const isExpanded = detailRow && !detailRow.classList.contains("hidden");
+      closeAll();
+      if (!isExpanded) openRow(itemId);
+    });
+
+    tbody.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      const triggerRow = e.target?.closest?.(`tr.${triggerClass}[data-item-id]`);
+      if (!triggerRow) return;
+      e.preventDefault();
+      const itemId = triggerRow.getAttribute("data-item-id");
+      if (!itemId) return;
+      const detailRow = getDetailRow(itemId);
+      const isExpanded = detailRow && !detailRow.classList.contains("hidden");
+      closeAll();
+      if (!isExpanded) openRow(itemId);
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initContactLeadsAccordion);
+  } else {
+    initContactLeadsAccordion();
+  }
 </script>

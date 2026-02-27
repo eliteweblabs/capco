@@ -212,18 +212,36 @@ const filteredItems = items.filter((item) => {
       return firstButton;
     }
 
-    // Initialize indicator position - find button from URL or marked as active
+    // Initialize indicator position - find button from URL, server activeItem, or first
     setTimeout(() => {
       let activeButton = getActiveButtonFromURL();
 
-      // If no active button found, force the first button to be active
       if (!activeButton) {
-        const firstButton =
-          nav.querySelector("button, a") ||
-          nav.querySelector("button:first-of-type, a:first-of-type");
-        if (firstButton) {
-          firstButton.setAttribute("data-active", "true");
-          activeButton = firstButton;
+        // Respect server-rendered active: button with data-active="true" or data-active-item index
+        const serverActive = nav.querySelector('button[data-active="true"], a[data-active="true"]');
+        const activeItemIndex = nav.getAttribute("data-active-item");
+        if (serverActive) {
+          activeButton = serverActive;
+        } else if (activeItemIndex !== null && activeItemIndex !== "") {
+          const idx = parseInt(activeItemIndex, 10);
+          if (!Number.isNaN(idx)) {
+            const byIndex = nav.querySelector(
+              `button[data-index="${idx}"], a[data-index="${idx}"]`
+            );
+            if (byIndex) {
+              byIndex.setAttribute("data-active", "true");
+              activeButton = byIndex;
+            }
+          }
+        }
+        if (!activeButton) {
+          const firstButton =
+            nav.querySelector("button, a") ||
+            nav.querySelector("button:first-of-type, a:first-of-type");
+          if (firstButton) {
+            firstButton.setAttribute("data-active", "true");
+            activeButton = firstButton;
+          }
         }
       }
 

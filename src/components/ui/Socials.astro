@@ -70,7 +70,7 @@ const {
 } = Astro.props;
 
 import { checkAuth } from "../../lib/auth";
-const currentUser = await checkAuth(Astro.cookies);
+const { currentUser } = await checkAuth(Astro.cookies);
 // When true, render a hidden placeholder instead of nothing (Astro can't receive null/undefined)
 const hideSocials = hideIfUser && !!currentUser;
 
@@ -195,60 +195,62 @@ function getIconClasses(): string {
 }
 ---
 
-{hideSocials ? (
-  <span class="hidden" aria-hidden="true" />
-) : (
-  <div class="contents">
-    {
-  socialLinks.length > 0 && (
-    <div
-      class:list={[
-        "socials-component flex w-full flex-row flex-nowrap items-center justify-evenly gap-2 sm:gap-3",
-        gapClasses[gap],
-        className,
-      ]}
-      data-socials-links={JSON.stringify(socialLinks)}
-      data-socials-context={dataSocialsContext}
-    >
-      {socialLinks.map((link, index) => {
-        const network = detectSocialNetwork(link.url, link.label);
-        const label = link.label || network.label;
-        const iconClasses =
-          colorScheme === "white"
-            ? `${getIconClasses()} text-white/90 group-hover:text-white group-focus-visible:text-white`
-            : getIconClasses();
+{
+  hideSocials ? (
+    <span class="hidden" aria-hidden="true" />
+  ) : (
+    <div class="contents">
+      {socialLinks.length > 0 && (
+        <div
+          class:list={[
+            "socials-component flex w-full flex-row flex-nowrap items-center justify-evenly gap-2 sm:gap-3",
+            gapClasses[gap],
+            className,
+          ]}
+          data-socials-links={JSON.stringify(socialLinks)}
+          data-socials-context={dataSocialsContext}
+        >
+          {socialLinks.map((link, index) => {
+            const network = detectSocialNetwork(link.url, link.label);
+            const label = link.label || network.label;
+            const iconClasses =
+              colorScheme === "white"
+                ? `${getIconClasses()} text-white/90 group-hover:text-white group-focus-visible:text-white`
+                : getIconClasses();
 
-        const isExternal = link.url.startsWith("http");
+            const isExternal = link.url.startsWith("http");
 
-        return (
-          <div class="socials-item-wrapper flex items-center gap-1" data-social-index={index}>
-            <a
-              href={link.url}
-              target={isExternal ? "_blank" : undefined}
-              rel={isExternal ? "noopener noreferrer" : undefined}
-              class={getLinkClasses()}
-              title={label}
-              aria-label={label}
-            >
-              <SimpleIcon name={network.icon} size={sizeMap[size]} class={iconClasses} />
-              {showLabels && <span class="ml-2 text-sm">{label}</span>}
-            </a>
-            {showRemove && (
-              <DeleteConfirmButton
-                id={`socials-remove-${dataSocialsContext || "default"}-${index}`}
-                class="socials-remove-btn shrink-0"
-                size="xs"
-                variant="icon"
-                tooltipText="Remove link"
-              />
-            )}
-          </div>
-        );
-      })}
+            return (
+              <div class="socials-item-wrapper flex items-center gap-1" data-social-index={index}>
+                <a
+                  href={link.url}
+                  target={isExternal ? "_blank" : undefined}
+                  rel={isExternal ? "noopener noreferrer" : undefined}
+                  class={getLinkClasses()}
+                  title={label}
+                  aria-label={label}
+                >
+                  <SimpleIcon name={network.icon} size={sizeMap[size]} class={iconClasses} />
+                  {showLabels && <span class="ml-2 text-sm">{label}</span>}
+                </a>
+                {showRemove && (
+                  <DeleteConfirmButton
+                    id={`socials-remove-${dataSocialsContext || "default"}-${index}`}
+                    class="socials-remove-btn shrink-0"
+                    size="xs"
+                    variant="icon"
+                    tooltipText="Remove link"
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {showRemove && dataSocialsContext && (
+        <script>import "../../scripts/socials-remove-init";</script>
+      )}
     </div>
   )
 }
-
-{showRemove && dataSocialsContext && <script>import "../../scripts/socials-remove-init";</script>}
-  </div>
-)}

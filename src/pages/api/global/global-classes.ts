@@ -1,5 +1,7 @@
 export const globalClasses = () => {
   return {
+    globalContainerClasses:
+      "mx-auto max-w-7xl px-4 sm:px-6 md:px-8 lg:px-10 mb-4 sm:mb-8 md:mb-12 lg:mb-16",
     globalInputClasses:
       "w-full rounded-md border border-gray-300 px-3 py-2 text-base text-gray-900 transition-colors duration-200 placeholder:text-gray-600 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500 shadow-secondary-inner-md scrollbar-hide dark:border-gray-600 bg-gray-100 dark:bg-gray-900 dark:text-white dark:placeholder:text-gray-300",
     /** Applied to the input wrapper so it affects animated placeholder and input icons. Height and text size here; input uses multiStepInputCoreClasses to fill and inherit. */
@@ -59,8 +61,10 @@ export const globalClasses = () => {
     dataTableSelectTdClasses:
       "border-r border-gray-200 px-2 py-2 text-sm dark:border-gray-700 w-12 min-w-[3rem]",
     /** Sticky positioning for first/last columns (e.g. select, actions) */
-    dataTableThStickyLeftClasses: "sticky left-0 z-[1] bg-white dark:bg-gray-900 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_4px_-2px_rgba(0,0,0,0.3)]",
-    dataTableTdStickyLeftClasses: "sticky left-0 z-[1] bg-white dark:bg-gray-900 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_4px_-2px_rgba(0,0,0,0.3)]",
+    dataTableThStickyLeftClasses:
+      "sticky left-0 z-[1] bg-white dark:bg-gray-900 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_4px_-2px_rgba(0,0,0,0.3)]",
+    dataTableTdStickyLeftClasses:
+      "sticky left-0 z-[1] bg-white dark:bg-gray-900 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_4px_-2px_rgba(0,0,0,0.3)]",
     dataTableThStickyRightClasses:
       "sticky right-0 z-[1] bg-white dark:bg-gray-900 shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.1)] dark:shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.3)]",
     dataTableTdStickyRightClasses:

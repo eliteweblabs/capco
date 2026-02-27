@@ -1,9 +1,7 @@
 ---
 /**
- * Catch-all page router – Block pages first, then template CMS (cmsPages/MarkdownPage).
- * 1. If a block page exists for the slug → render BlockPageView.
- * 2. Else if template page exists (getPageContent) → render MarkdownPage.
- * 3. Else → 404.
+ * Catch-all page router – template CMS (cmsPages/MarkdownPage).
+ * If a template page exists (getPageContent) → render MarkdownPage; else → 404.
  * OAuth callback and path exclusions preserved.
  */
 
@@ -15,9 +13,7 @@ if (oauthCode) {
 }
 
 import { checkAuth } from "../lib/auth";
-import { getBlockPageContent } from "../lib/content-blocks";
 import { getPageContent } from "../lib/content";
-import BlockPageView from "../components/cms/BlockPageView.astro";
 import MarkdownPage from "../components/common/MarkdownPage.astro";
 
 const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
@@ -38,29 +34,17 @@ if (excludedPaths.some((path) => pageSlug.includes(path))) {
   return new Response(null, { status: 404 });
 }
 
-const blockPageContent = await getBlockPageContent(pageSlug);
-const templatePageContent = blockPageContent ? null : await getPageContent(pageSlug);
+const templatePageContent = await getPageContent(pageSlug);
 
-if (!blockPageContent && !templatePageContent) {
+if (!templatePageContent) {
   return Astro.redirect("/404");
 }
 ---
 
-{blockPageContent ? (
-  <BlockPageView
-    pageContent={blockPageContent}
-    currentUser={currentUser}
-    session={session}
-    supabase={supabase}
-  />
-) : templatePageContent ? (
-  <MarkdownPage
-    slug={pageSlug}
-    pageContent={templatePageContent}
-    currentUser={currentUser}
-    session={session}
-    supabase={supabase}
-  />
-) : (
-  <div class="hidden" aria-hidden="true" />
-)}
+<MarkdownPage
+  slug={pageSlug}
+  pageContent={templatePageContent}
+  currentUser={currentUser}
+  session={session}
+  supabase={supabase}
+/>

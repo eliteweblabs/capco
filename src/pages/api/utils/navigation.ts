@@ -83,19 +83,24 @@ export const navigation = async (
       }
 
       if (cmsPages && cmsPages.length > 0) {
-        cmsNavItems = cmsPages.map((page: any) => ({
-          label: page.title || page.slug,
-          href: `/${page.slug}`,
-          roles:
-            page.navRoles && Array.isArray(page.navRoles) && page.navRoles.length > 0
-              ? (page.navRoles as UserRole[])
-              : ["any"],
-          pageType: (page.navPageType === "backend" ? "backend" : "frontend") as NavType,
-          isPrimary: currentUrl === `/${page.slug}` || currentUrl.startsWith(`/${page.slug}/`),
-          buttonStyle: page.navButtonStyle || undefined,
-          desktopOnly: page.navDesktopOnly === true,
-          hideWhenAuth: page.navHideWhenAuth === true,
-        }));
+        cmsNavItems = cmsPages.map((page: any) => {
+          // Support both camelCase (navButtonStyle) and snake_case (nav_button_style) from DB
+          const buttonStyle = page.navButtonStyle ?? page.nav_button_style ?? undefined;
+          const style = buttonStyle && String(buttonStyle).trim() ? (buttonStyle as NavItem["buttonStyle"]) : undefined;
+          return {
+            label: page.title || page.slug,
+            href: `/${page.slug}`,
+            roles:
+              page.navRoles && Array.isArray(page.navRoles) && page.navRoles.length > 0
+                ? (page.navRoles as UserRole[])
+                : ["any"],
+            pageType: (page.navPageType === "backend" ? "backend" : "frontend") as NavType,
+            isPrimary: currentUrl === `/${page.slug}` || currentUrl.startsWith(`/${page.slug}/`),
+            buttonStyle: style,
+            desktopOnly: page.navDesktopOnly === true,
+            hideWhenAuth: page.navHideWhenAuth === true,
+          };
+        });
       }
     }
   } catch (error) {
@@ -194,11 +199,12 @@ export const navigation = async (
           ? buttonVariantClasses.primary
           : buttonVariantClasses[item.buttonStyle] || buttonVariantClasses.primary;
         const baseClasses =
-          "font-secondary relative inline-flex items-center justify-center font-medium transition-all duration-200";
+          "font-secondary relative inline-flex items-center justify-center font-medium transition-all duration-200 leading-none";
 
-        const sizeClasses = "px-4 py-1 text-sm";
+        // Fixed height so outline/ghost/primary align in navbar (outline border-2 can otherwise shift baseline)
+        const sizeClasses = "h-9 min-h-9 px-4 py-1 text-sm box-border";
 
-        return `<li class="${mobileClass}"><a href="${item.href}" class="${baseClasses} ${sizeClasses} ${styleClasses}">${item.label}</a></li>`;
+        return `<li class="flex items-center ${mobileClass}"><a href="${item.href}" class="${baseClasses} ${sizeClasses} ${styleClasses}">${item.label}</a></li>`;
       }
 
       // Handle regular links

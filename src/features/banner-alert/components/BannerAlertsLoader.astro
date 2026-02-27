@@ -154,7 +154,6 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
     const isAuthPath = typeof pathname === "string" && pathname.startsWith("/auth");
     const remPx = () => parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
     const isMobile = () => window.matchMedia(MOBILE_MEDIA_QUERY).matches;
-    const THRESH = 8;
 
     /** Re-apply dismiss styles from localStorage after SPA swap (inline script only runs on first load). */
     function applyDismissStylesFromStorage() {
@@ -279,12 +278,7 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
             }
           });
         scrollEl.style.marginTop = baseHeight + "px";
-        /* Do NOT set minHeight: flex layout constrains #reveal-scroll as the scroll container */
-        // if (isMobile()) {
-        //   if (sidebar) (sidebar as HTMLElement).style.minHeight = "calc(100dvh - " + totalTopHeight + "px)";
-        // } else {
-        //   if (sidebar) (sidebar as HTMLElement).style.minHeight = "";
-        // }
+   
       }
 
       let bottomBannerHeight = 0;
@@ -319,7 +313,6 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
 
       const navbarContent = document.getElementById("navbar-content");
       const footer = document.getElementById("reveal-footer");
-      const sidebar = document.getElementById("sidebar");
       const REM = Math.max(navbarContent?.offsetHeight ?? 4 * 16, footer?.offsetHeight ?? 4 * 16) / 16;
       const maxPx = () => REM * remPx();
 
@@ -336,7 +329,8 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
         const off = window.__revealSidebarOffsets;
         const topPx = off?.topPx ?? 4 * remPx();
         const topBannersOnlyPx = off?.topBannersOnlyPx ?? 0;
-        const topVal = translateYVal <= THRESH ? topPx : topBannersOnlyPx;
+        // Smooth: top moves with scroll so sidebar tracks the reveal (topPx - translateY), clamped to banners-only
+        const topVal = Math.max(topBannersOnlyPx, topPx - translateYVal);
         const topStr = topVal + "px";
         const side = document.getElementById("sidebar");
         if (side) {
@@ -381,7 +375,7 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
         } else {
           const deltaY = scrollTop - prevScrollTop;
           translateY += deltaY;
-          translateY += deltaY;
+          // translateY += deltaY;
           translateY = Math.max(0, Math.min(maxPx(), translateY));
         }
         prevScrollTop = scrollTop;
