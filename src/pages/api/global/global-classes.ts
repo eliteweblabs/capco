@@ -29,11 +29,11 @@ export const globalClasses = () => {
     dataTableDescriptionClasses: "mt-1 text-sm text-gray-500 dark:text-gray-400",
     dataTableClearButtonClasses:
       "shrink-0 rounded border border-gray-300 bg-white px-2 py-1.5 text-xs text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700",
-    dataTableTableWrapperClasses: "w-full overflow-x-auto text-center no-scrollbar",
+    dataTableTableWrapperClasses: "w-full overflow-x-auto overflow-y-auto max-h-[70vh] text-center no-scrollbar",
     dataTableTableClasses:
       "w-full max-w-full table-fixed divide-gray-200 text-center text-sm dark:divide-gray-700",
     dataTableTheadClasses:
-      "text-uppercase color-background select-none text-xs font-semibold uppercase tracking-wide",
+      "sticky top-0 z-10 text-uppercase color-background select-none text-xs font-semibold uppercase tracking-wide",
     dataTableThClasses:
       "color-border-primary border-r border-gray-200 px-4 py-3 font-semibold dark:border-gray-700",
     /** Same as dataTableThClasses + border-l + color-background so Actions column is clearly part of the table */

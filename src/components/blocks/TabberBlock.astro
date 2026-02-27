@@ -89,6 +89,17 @@ const activeItem = Math.max(0, Math.min(activeItemProp, tabs.length - 1));
 const blockId = id || `tabber-${Math.random().toString(36).slice(2, 9)}`;
 const navId = propsNavId || `${blockId}-nav`;
 
+const CHECK_ICON =
+  '<svg data-icon="check" class="inline-block align-middle mt-0.5 h-5 w-5 shrink-0 text-primary-600 dark:text-primary-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>';
+
+function styleListHtml(html: string): string {
+  if (!html) return html;
+  return html
+    .replace(/<ul(\s|>)/gi, '<ul class="mt-6 space-y-3"$1')
+    .replace(/<li(\s|>)/gi, `<li class="flex items-start gap-3 text-gray-600 dark:text-gray-300 is-visible" data-animate="fade-up-subtle"> ${CHECK_ICON} <span>`)
+    .replace(/<\/li>/gi, "</span> </li>");
+}
+
 // SlidingTabs expects NavItem shape
 const navItems = tabs.map((t) => ({
   label: t.label,
@@ -127,7 +138,7 @@ top: -38px;
             "tabber-panel prose max-w-none dark:prose-invert",
             index === activeItem ? "" : "hidden",
           ]}
-          set:html={tab.content || ""}
+          set:html={styleListHtml(tab.content || "")}
         />
       ))
     }
