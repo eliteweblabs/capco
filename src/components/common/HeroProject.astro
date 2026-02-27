@@ -29,19 +29,9 @@ const {
   title,
   description,
   currentUser,
-  statusColor = "blue",
   project,
-  currentStatusInt = "",
   currentStatusName = "",
-  currentStatusTab = "",
-  statusesOptions,
-  staffOptions = [],
-  secondaryTextClasses = "",
-  primaryTextClasses = "",
-  globalInputClasses = "",
   statusData = {},
-  fullWidth = false,
-  globalCompanyName = "",
   tabNavItems,
   activeTabIndex = 0,
 } = Astro.props;
@@ -126,9 +116,16 @@ const featuredImageUrl = project?.featuredImageUrl || project?.featuredImageData
 
 <!-- </div> -->
 
-<div class="relative mx-auto flex">
+<div class="relative mx-auto mb-4 flex">
   <div class="flex-start flex flex-1 flex-col gap-2 space-y-2">
-    <h1 class="text-2xl font-medium" id="page-project-title" data-refresh>
+    <h1
+      class="text-2xl font-medium"
+      id="page-project-title"
+      data-refresh
+      data-project-id={projectId}
+      data-title={title}
+      data-meta-value={title}
+    >
       {title}
     </h1>
     <Breadcrumb
@@ -160,11 +157,6 @@ const featuredImageUrl = project?.featuredImageUrl || project?.featuredImageData
   </div>
 
   <div class="flex-end hidden flex-col gap-2 sm:flex sm:flex-row sm:items-center">
-    {
-      (currentRole === "Admin" || currentRole === "Staff") && projectId && (
-        <CheckInButton tile projectId={projectId} />
-      )
-    }
     {
       currentRole !== "Client" && (
         <Button

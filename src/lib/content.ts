@@ -9,6 +9,7 @@ import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import matter from "gray-matter";
 import { supabaseAdmin } from "./supabase-admin";
+import { filterTitle, filterDescription, filterContent } from "./content-filters";
 
 /** Quote clientId for PostgREST when it contains spaces, commas, or double quotes */
 export function quoteClientIdForPostgrest(clientId: string): string {
@@ -464,13 +465,15 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
         };
         normalizedTemplate = templateMap[normalizedTemplate] ?? normalizedTemplate;
 
-        // Ensure main content is never overwritten by frontmatter spread
+        // Ensure main content is never overwritten by frontmatter spread; filter CMS text so entities like &amp; display correctly
         const pageContent: PageContent = {
-          title: dbPage.title || slug,
-          description: dbPage.description || "",
+          title: filterTitle(dbPage.title || slug),
+          description: filterDescription(dbPage.description || ""),
           template: normalizedTemplate,
           ...(dbPage.frontmatter || {}),
-          content: dbPage.content || (dbPage.frontmatter?.content as string) || "",
+          content: filterContent(
+            dbPage.content || (dbPage.frontmatter?.content as string) || ""
+          ),
         };
         cache.set(cacheKey, pageContent);
         // console.log(`✅ [CONTENT] Loaded ${slug} from database (CMS)`, {
@@ -518,11 +521,11 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
     try {
       const parsed = JSON.parse(envJson);
       const pageContent: PageContent = {
-        title: parsed.title || slug,
-        description: parsed.description || "",
-        template: parsed.template || "default",
-        content: parsed.content || "",
         ...parsed,
+        title: filterTitle(parsed.title || slug),
+        description: filterDescription(parsed.description || ""),
+        template: parsed.template || "default",
+        content: filterContent(parsed.content || ""),
       };
       cache.set(cacheKey, pageContent);
       // console.log(`✅ [CONTENT] Loaded ${slug} from environment variable (JSON)`);
@@ -536,10 +539,12 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
   const envContent = process.env[`PAGE_${slugUpper}_CONTENT`];
   if (envContent) {
     const pageContent: PageContent = {
-      title: process.env[`PAGE_${slugUpper}_TITLE`] || slug,
-      description: process.env[`PAGE_${slugUpper}_DESCRIPTION`] || "",
+      title: filterTitle(process.env[`PAGE_${slugUpper}_TITLE`] || slug),
+      description: filterDescription(
+        process.env[`PAGE_${slugUpper}_DESCRIPTION`] || ""
+      ),
       template: (process.env[`PAGE_${slugUpper}_TEMPLATE`] as any) || "default",
-      content: envContent,
+      content: filterContent(envContent),
     };
     cache.set(cacheKey, pageContent);
     // console.log(`✅ [CONTENT] Loaded ${slug} from environment variables`);
@@ -555,8 +560,9 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
       const { data, content } = matter(fileContent);
       const pageContent: PageContent = {
         ...data,
-        content,
-        title: data.title || "Untitled Page",
+        content: filterContent(content),
+        title: filterTitle(data.title || "Untitled Page"),
+        description: data.description != null ? filterDescription(String(data.description)) : "",
       };
       cache.set(cacheKey, pageContent);
       // console.log(`✅ [CONTENT] Loaded ${slug} from persistent volume`);

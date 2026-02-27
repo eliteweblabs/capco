@@ -48,15 +48,9 @@ const {
   includeDynamicColorsAndFonts = true,
 } = Astro.props;
 
-// Icon: DB SVG (data URI), CMS URL, or fallback
+// Icon: use /api/favicon.svg so we always get transformed icon (primary color + padding for apple-touch)
 let iconSrc: string;
-if (
-  globalCompanyIcon &&
-  (globalCompanyIcon.includes("<svg") || globalCompanyIcon.includes("<?xml"))
-) {
-  const encoded = Buffer.from(globalCompanyIcon).toString("base64");
-  iconSrc = "data:image/svg+xml;base64," + encoded;
-} else if (globalCompanyIcon && typeof globalCompanyIcon === "string") {
+if (globalCompanyIcon && typeof globalCompanyIcon === "string" && !globalCompanyIcon.includes("<svg") && !globalCompanyIcon.includes("<?xml")) {
   iconSrc = globalCompanyIcon;
 } else {
   iconSrc = "/api/favicon.svg";
@@ -68,10 +62,7 @@ const appleTouchIconSrc = iconSrc.startsWith("data:")
     ? iconSrc
     : "/api/favicon.png";
 
-const iconType: "image/svg+xml" | "image/png" =
-  globalCompanyIcon && (globalCompanyIcon.includes("<svg") || globalCompanyIcon.includes("<?xml"))
-    ? "image/svg+xml"
-    : "image/png";
+const iconType: "image/svg+xml" | "image/png" = iconSrc.includes(".png") ? "image/png" : "image/svg+xml";
 
 // OG image: project featured image when on project page, else CMS
 const ogImageSrc = project?.featuredImageData?.publicUrl || ogImage || "";
@@ -172,7 +163,7 @@ const ogImageAlt = globalCompanyName + " - " + safeDescription;
 <link rel="icon" type={iconType} sizes="32x32" href={iconSrc} />
 <link rel="icon" type={iconType} sizes="16x16" href={iconSrc} />
 <link rel="icon" type={iconType} href={iconSrc} />
-<link rel="mask-icon" href={iconSrc} color="#5bbad5" />
+<link rel="mask-icon" href={iconSrc} color={primaryColor || "#825BDD"} />
 
 <!-- Custom CSS from CMS -->
 {customCss?.trim() && (

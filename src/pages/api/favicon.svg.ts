@@ -1,20 +1,23 @@
 /**
  * Dynamic favicon endpoint - serves company icon from globalSettings.
- * Used by manifest and link tags for consistent branding per deployment.
+ * Transforms SVG: primary color fill (replaces black/theme-dependent) and padding for apple-touch.
  * GET /api/favicon.svg
  */
 import type { APIRoute } from "astro";
 import { globalCompanyData } from "./global/global-company-data";
+import { transformSvgForFavicon } from "../../lib/favicon-svg-transform";
 
 export const GET: APIRoute = async ({ request }) => {
   try {
-    const { globalCompanyIcon } = await globalCompanyData();
+    const { globalCompanyIcon, primaryColor } = await globalCompanyData();
+    const primary = primaryColor || "#825BDD";
 
     if (
       globalCompanyIcon &&
       (globalCompanyIcon.includes("<svg") || globalCompanyIcon.includes("<?xml"))
     ) {
-      return new Response(globalCompanyIcon, {
+      const transformed = transformSvgForFavicon(globalCompanyIcon, primary);
+      return new Response(transformed, {
         status: 200,
         headers: {
           "Content-Type": "image/svg+xml",
@@ -23,7 +26,6 @@ export const GET: APIRoute = async ({ request }) => {
       });
     }
 
-    // Fallback: redirect to static favicon
     const base = new URL(request.url).origin;
     return Response.redirect(new URL("/favicon.svg", base), 302);
   } catch (error) {

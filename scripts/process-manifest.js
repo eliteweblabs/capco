@@ -28,6 +28,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { generateFaviconPng } from "./generate-favicon-png.js";
+import { transformSvgForFavicon } from "./favicon-svg-transform.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -173,12 +174,15 @@ async function processManifest() {
   const siteConfig = loadSiteConfig(globalCompanyName);
 
   // Overwrite favicon.svg from DB icon when available (prepare-favicons runs first with content/default)
+  // Transform: primary color fill + padding so icon fits apple-touch and works in light/dark
   const globalCompanyIcon = companyData?.globalCompanyIcon || "";
+  const primaryColor = companyData?.primaryColor || process.env.GLOBAL_COLOR_PRIMARY || "#825BDD";
   if (globalCompanyIcon && (globalCompanyIcon.includes("<svg") || globalCompanyIcon.includes("<?xml"))) {
     const faviconPath = path.join(__dirname, "../public/favicon.svg");
-    fs.writeFileSync(faviconPath, globalCompanyIcon, "utf-8");
+    const transformedSvg = transformSvgForFavicon(globalCompanyIcon, primaryColor);
+    fs.writeFileSync(faviconPath, transformedSvg, "utf-8");
     await generateFaviconPng();
-    console.log("📊 Favicon: written from CMS icon, png regenerated");
+    console.log("📊 Favicon: written from CMS icon (primary color + padding), png regenerated");
   }
 
   // Template file paths

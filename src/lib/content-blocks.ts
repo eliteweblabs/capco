@@ -7,6 +7,7 @@
  */
 
 import { quoteClientIdForPostgrest } from "./content";
+import { filterTitle, filterDescription, filterBlockProps } from "./content-filters";
 import { supabaseAdmin } from "./supabase-admin";
 
 /** Single block config (type + props) */
@@ -59,6 +60,31 @@ function isLikelyBotProbe(slug: string): boolean {
   return false;
 }
 
+/** Apply content filters to each block's props so CMS text (e.g. &amp;) displays correctly. */
+function filterSections(sections: unknown[]): unknown[] {
+  return sections.map((section: any) => {
+    if (!section || typeof section !== "object") return section;
+    const out = { ...section };
+    if (out.items && Array.isArray(out.items)) {
+      out.items = out.items.map((item: any) => {
+        if (item?.block?.props) {
+          return { ...item, block: { ...item.block, props: filterBlockProps(item.block.props) } };
+        }
+        return item;
+      });
+    }
+    if (out.block?.props) {
+      out.block = { ...out.block, props: filterBlockProps(out.block.props) };
+    }
+    if (out.blocks && Array.isArray(out.blocks)) {
+      out.blocks = out.blocks.map((block: any) =>
+        block?.props ? { ...block, props: filterBlockProps(block.props) } : block
+      );
+    }
+    return out;
+  });
+}
+
 /**
  * Fetch block-based page by slug. Returns null if no block page exists (caller falls back to template CMS).
  */
@@ -103,11 +129,12 @@ export async function getBlockPageContent(slug: string): Promise<BlockPageConten
 
     if (!row) return null;
 
-    const sections = Array.isArray(row.sections) ? row.sections : [];
+    const rawSections = Array.isArray(row.sections) ? row.sections : [];
+    const sections = filterSections(rawSections) as BlockSectionConfig[];
     const page: BlockPageContent = {
-      title: row.title ?? slug,
-      description: row.description ?? "",
-      sections: sections as BlockSectionConfig[],
+      title: filterTitle(row.title ?? slug),
+      description: filterDescription(row.description ?? ""),
+      sections,
     };
     cache.set(cacheKey, page);
     cacheTimestamp = now;

@@ -11,8 +11,17 @@ This repo is used for multiple sites (e.g. Capco, Rothco). Favicons and apple-to
 
 | URL | Purpose | Behavior |
 |-----|---------|----------|
-| `GET /api/favicon.svg` | Favicon (SVG) | Serves `globalSettings.icon` (SVG markup) if set; otherwise redirects to `/favicon.svg`. |
+| `GET /api/favicon.svg` | Favicon (SVG) | Serves `globalSettings.icon` (SVG markup) if set, **transformed** (primary color fill + padding for apple-touch); otherwise redirects to `/favicon.svg`. |
 | `GET /api/favicon.png` | Favicon PNG / Apple Touch Icon | Redirects to `globalSettings.faviconPngUrl` if set (full URL or path); otherwise redirects to `/favicon.png`. |
+
+## Favicon transform (primary color + padding)
+
+When the icon comes from the CMS/DB, it is passed through `transformSvgForFavicon` so that:
+
+- **Fill color** – Black, `#000`, `currentColor`, and theme-dependent styles (e.g. `.fill { fill: #000 }`) are replaced with the site **primary color** (`primaryColor` / `GLOBAL_COLOR_PRIMARY`). The icon looks correct in all contexts (browser tab, apple-touch, light/dark).
+- **Padding** – The graphic is scaled to 90% and centered so it is not edge-to-edge on apple-touch icons.
+
+The same transform is applied at build time when `process-manifest` writes `public/favicon.svg` from the DB icon, so the generated `favicon.png` also has primary color and padding.
 
 ## Per-Site Setup
 
