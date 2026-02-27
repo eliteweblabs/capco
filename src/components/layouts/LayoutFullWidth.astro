@@ -14,14 +14,25 @@ interface Props {
   currentUser?: any;
   session?: any;
   supabase?: any;
+  project?: any;
+  classList?: string;
 }
 
-const { title, description = "", lastUpdated, mainClasses = "", projects, statusData } = Astro.props;
+const {
+  title,
+  description = "",
+  lastUpdated,
+  mainClasses = "",
+  projects,
+  statusData,
+  project,
+  classList = "",
+} = Astro.props;
 
 import App from "../ui/App.astro";
 ---
 
-<App {title} {description} layout="fullwidth" {mainClasses} {projects} {statusData}>
+<App {title} {description} layout="fullwidth" {mainClasses} {projects} {statusData} {project}>
   {
     lastUpdated === "auto" && (
       <div class="dark:bg-primary-900/20 container mx-auto mb-8 rounded-lg border border-primary-200 bg-primary-50 p-6 dark:border-primary-800">
@@ -31,10 +42,7 @@ import App from "../ui/App.astro";
       </div>
     )
   }
-  <div
-    class="mx-auto w-full"
-    data-dynamic-height="minHeight"
-  >
+  <div class={`${classList} mx-auto w-full`} data-dynamic-height="minHeight">
     <slot />
   </div>
 </App>

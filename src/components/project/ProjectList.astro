@@ -3,6 +3,7 @@ import SimpleIcon from "../common/SimpleIcon.astro";
 import ProjectItem from "./ProjectItem.astro";
 import Tooltip from "../ui/Tooltip.astro";
 import { getProjectListTableColumns, isColumnAllowed } from "../../lib/project-list-table-config";
+import { globalClasses } from "../../pages/api/global/global-classes";
 
 interface Props {
   projects: any[];
@@ -16,6 +17,17 @@ const currentRole = currentUser?.profile?.role;
 
 const allColumns = await getProjectListTableColumns();
 const visibleColumns = allColumns.filter((c) => isColumnAllowed(c, currentRole));
+
+// Normalize column widths so they sum to 100% (prevents jammed columns with table-layout: fixed)
+const totalWeight = visibleColumns.reduce((sum, c) => sum + (c.width ?? 10), 0);
+const widthPcts: number[] =
+  totalWeight > 0 && visibleColumns.length > 0
+    ? visibleColumns.map((c) => ((c.width ?? 10) / totalWeight) * 100)
+    : visibleColumns.map(() => 100 / Math.max(1, visibleColumns.length));
+if (widthPcts.length > 1) {
+  const sumRest = widthPcts.slice(0, -1).reduce((a, b) => a + b, 0);
+  widthPcts[widthPcts.length - 1] = 100 - sumRest;
+}
 
 // console.log("🔍 [DEBUG] ProjectList statusData:", statusData);
 // console.log("🔍 [DEBUG] ProjectList currentUser:", currentUser);
@@ -140,31 +152,38 @@ const createDueDateOptions = () => {
 };
 
 const dueDateOptions = createDueDateOptions();
+
+const { dataTableHeaderBarClasses, dataTableClearButtonClasses, dataTableTableWrapperClasses } =
+  globalClasses();
 ---
 
-<!-- Project List: JSON-driven columns (config per client). table-layout: fixed so column % widths are respected; min-width prevents squishing in narrow containers. -->
-<table id="project-list" class="w-full min-w-[900px] text-sm" style="table-layout: fixed">
-  <thead class="text-uppercase color-background text-xs">
-    <tr>
-      <th colspan={visibleColumns.length} class="border-b border-gray-200 py-2 pr-2 text-right dark:border-gray-700">
-        <button
-          type="button"
-          id="project-list-clear-column-widths"
-          class="rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
-          title="Reset column widths to defaults"
-        >
-          Reset column widths
-        </button>
-      </th>
-    </tr>
-    <tr>
+<!-- Project List: JSON-driven columns (config per client). Reset button above table so thead has one row and column widths align. -->
+<div class="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-900">
+  <div class={dataTableHeaderBarClasses}>
+    <div class="min-w-0 flex-1" />
+    <button
+      type="button"
+      id="project-list-clear-column-widths"
+      class={`clear-accordion-column-widths ${dataTableClearButtonClasses}`}
+      data-table-id="project-list"
+      title="Reset column widths to defaults"
+    >
+      Reset column widths
+    </button>
+  </div>
+  <div class={dataTableTableWrapperClasses}>
+    <table id="project-list" class="w-full min-w-[900px] text-sm" style="table-layout: fixed">
+      <thead class="text-uppercase color-background text-xs">
+        <tr>
       {
-        visibleColumns.map((col) => (
+        visibleColumns.map((col, i) => {
+          const pct = widthPcts[i] ?? 100 / visibleColumns.length;
+          return (
           <th
             scope="col"
             data-col-id={col.id}
-            data-col-default-width={col.width ?? 10}
-            style={`width: ${col.width ?? 10}%; min-width: ${col.width ?? 10}%`}
+            data-col-default-width={pct}
+            style={`width: ${pct}%; min-width: ${pct}%`}
             class={`color-border-primary snap-start border-r border-gray-200 px-4 py-3 font-semibold dark:border-gray-700 ${col.type === "edit" || col.type === "delete" ? "" : "text-center"}`}
           >
             {col.tooltip ? (
@@ -202,7 +221,8 @@ const dueDateOptions = createDueDateOptions();
               col.label
             )}
           </th>
-        ))
+          );
+        })
       }
     </tr>
   </thead>
@@ -329,9 +349,12 @@ const dueDateOptions = createDueDateOptions();
       </td>
     </tr>
   </tfoot>
+    </table>
+  </div>
+</div>
 
-  {
-    hasMoreProjects && (
+{
+  hasMoreProjects && (
       <div class="mt-4 text-center">
         <button
           id="load-more-projects"
@@ -392,4 +415,3 @@ const dueDateOptions = createDueDateOptions();
       });
     }
   </script>
-</table>

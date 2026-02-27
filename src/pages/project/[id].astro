@@ -15,7 +15,6 @@ const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalC
 import { globalCompanyData } from "../../pages/api/global/global-company-data.ts";
 const { globalCompanyName } = await globalCompanyData();
 
-const currentRole = currentUser?.profile?.role;
 const { id } = Astro.params;
 
 // Handle special routes that shouldn't be treated as project IDs
@@ -27,7 +26,7 @@ if (!id || id === "dashboard") {
 
 // Debug logging (can be enabled for troubleshooting)
 // console.log("🏗️ [PROJECT] Project ID:", id);
-import App from "../../components/ui/App.astro";
+import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
 import HeroProject from "../../components/common/HeroProject.astro";
 import type { NavItem } from "../../components/common/SlidingTabs.astro";
 import TabFiles from "../../components/project/TabFiles.astro";
@@ -63,15 +62,82 @@ const defaultTab = validTabs.includes(statusParam || "")
 const activeTabIndex = validTabs.indexOf(defaultTab);
 
 const projectTabNavItems = [
-  { id: "status-project-form", showLabel: true, label: "Project Form", icon: "edit", variant: "tab", onclick: "window.switchTab('project-form')" },
-  { id: "status-discussion", showLabel: true, label: "Discussion", icon: "message-rounded-dots", variant: "tab", dataAttributes: { "data-count": "0" }, onclick: "window.switchTab('discussion')" },
-  { id: "status-files", showLabel: true, label: "Files", icon: "file", variant: "tab", onclick: "window.switchTab('files')" },
-  { id: "status-proposal", showLabel: true, label: "Proposal", icon: "grid", variant: "tab", onclick: "window.switchTab('proposal')" },
-  { id: "status-contract", showLabel: true, label: "Contract", icon: "pencil", variant: "tab", onclick: "window.switchTab('contract')" },
-  { id: "status-deposit", showLabel: true, label: "Deposit", icon: "credit-card", variant: "tab", onclick: "window.switchTab('deposit')" },
-  { id: "status-activity-log", showLabel: true, label: "Activity Log", icon: "history", variant: "tab", onclick: "window.switchTab('activity-log')", clientHide: true },
-  { id: "status-generate-pdf", showLabel: true, label: "Generate PDF", icon: "adobe", variant: "tab", onclick: "window.switchTab('generate-pdf')", clientHide: true },
-  { id: "status-marketing", showLabel: true, label: "Marketing", icon: "palette", variant: "tab", onclick: "window.switchTab('marketing')", clientHide: true },
+  {
+    id: "status-project-form",
+    showLabel: true,
+    label: "Project Form",
+    icon: "edit",
+    variant: "tab",
+    onclick: "window.switchTab('project-form')",
+  },
+  {
+    id: "status-discussion",
+    showLabel: true,
+    label: "Discussion",
+    icon: "message-rounded-dots",
+    variant: "tab",
+    dataAttributes: { "data-count": "0" },
+    onclick: "window.switchTab('discussion')",
+  },
+  {
+    id: "status-files",
+    showLabel: true,
+    label: "Files",
+    icon: "file",
+    variant: "tab",
+    onclick: "window.switchTab('files')",
+  },
+  {
+    id: "status-proposal",
+    showLabel: true,
+    label: "Proposal",
+    icon: "grid",
+    variant: "tab",
+    onclick: "window.switchTab('proposal')",
+  },
+  {
+    id: "status-contract",
+    showLabel: true,
+    label: "Contract",
+    icon: "pencil",
+    variant: "tab",
+    onclick: "window.switchTab('contract')",
+  },
+  {
+    id: "status-deposit",
+    showLabel: true,
+    label: "Deposit",
+    icon: "credit-card",
+    variant: "tab",
+    onclick: "window.switchTab('deposit')",
+  },
+  {
+    id: "status-activity-log",
+    showLabel: true,
+    label: "Activity Log",
+    icon: "history",
+    variant: "tab",
+    onclick: "window.switchTab('activity-log')",
+    clientHide: true,
+  },
+  {
+    id: "status-generate-pdf",
+    showLabel: true,
+    label: "Generate PDF",
+    icon: "adobe",
+    variant: "tab",
+    onclick: "window.switchTab('generate-pdf')",
+    clientHide: true,
+  },
+  {
+    id: "status-marketing",
+    showLabel: true,
+    label: "Marketing",
+    icon: "palette",
+    variant: "tab",
+    onclick: "window.switchTab('marketing')",
+    clientHide: true,
+  },
 ];
 
 // Track which tab should load content server-side
@@ -219,15 +285,15 @@ if (currentStatusInt && statusData[currentStatusInt]) {
 }
 ---
 
-<App
+<LayoutFullWidth
   {currentUser}
   {project}
   title={project?.title || "Untitled Project"}
   description={project?.authorProfile?.companyName || "Unknown Author"}
   {session}
   {supabase}
-  supabaseUrl={import.meta.env.PUBLIC_SUPABASE_URL}
   isBackend={true}
+  classList="p-4 "
   {id}
   {globalCompanyName}
   {globalInputClasses}
@@ -363,7 +429,7 @@ if (currentStatusInt && statusData[currentStatusInt]) {
     {globalInputClasses}
   />
   <!-- </div> -->
-</App>
+</LayoutFullWidth>
 
 <script
   type="module"

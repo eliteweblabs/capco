@@ -34,7 +34,7 @@ function loadSavedWidths(): Record<string, number> {
   } catch {
     /* ignore parse errors */
   }
-  return { ...DEFAULT_WIDTHS };
+  return {}; // No saved widths: use server-rendered data-col-default-width (normalized %)
 }
 
 function saveWidths(widths: Record<string, number>) {

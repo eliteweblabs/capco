@@ -47,9 +47,6 @@ const {
 } = Astro.props;
 
 const projectId = project?.id;
-
-console.log("dsvdvdvs", statusData, statusesOptions);
-
 const currentRole = currentUser?.profile?.role;
 
 // console.log("🔍 [HERO-PROJECT] Project:", project);
@@ -63,8 +60,6 @@ const currentRole = currentUser?.profile?.role;
 import SimpleIcon from "./SimpleIcon.astro";
 import Button from "./Button.astro";
 import CheckInButton from "./CheckInButton.astro";
-import SlotMachineModal from "@/pages/partials/slot-machine-modal.astro";
-import SlotMachineModalFunction from "../form/SlotMachineModalFunction.astro";
 
 // Create array of 36 datetime options (9 days × 4 times per day)
 const createDueDateOptions = () => {
@@ -105,44 +100,37 @@ const dueDateOptions = createDueDateOptions();
 
 // Use same source as marketing tab (#featured-image-url): featuredImageUrl, else featuredImageData.publicUrl
 const featuredImageUrl = project?.featuredImageUrl || project?.featuredImageData?.publicUrl || null;
-
-// Debug logging for HeroProject component props
-// console.log("🎯 [HERO-PROJECT] HeroProject component props:", {
-//   currentStatusTab,
-//   title,
-//   currentStatusName,
-//   projectId,
-//   currentRole,
-//   hasProject: !!project,
-//   showStatusAndStaff: !!(currentStatusName && projectId),
-//   isAdminOrStaff: currentRole === "Admin" || currentRole === "Staff",
-// });
 ---
 
-<div
-  class={`relative rounded-lg ${fullWidth ? "col-span-full" : "col-span-8"}`}
->
-  {
-    featuredImageUrl && (
-      <div
-        id="featured-image-background"
-        class="absolute inset-0 -z-10 w-full rounded-lg bg-cover bg-center blur-sm transition-transform duration-200 hover:scale-105"
-        style={`background-image: url(${featuredImageUrl});`}
-        data-refresh="featuredImageUrl"
-        data-project-id={projectId}
-        data-featured-image-url={featuredImageUrl}
-        role="img"
-        aria-label={`Featured image for ${project.address}`}
-      >
-        <div class="featured-image-fallback hidden text-center">
-          <SimpleIcon name="image-x" class="mx-auto mb-2 h-8 w-8" />
-          <p class="text-xs">Image failed to load</p>
-        </div>
+{
+  featuredImageUrl && (
+    <div
+      id="featured-image-background"
+      class="absolute inset-0 -z-10 w-full rounded-lg bg-cover bg-center blur-sm transition-transform duration-200 hover:scale-105"
+      style={`background-image: url(${featuredImageUrl});`}
+      data-refresh="featuredImageUrl"
+      data-project-id={projectId}
+      data-featured-image-url={featuredImageUrl}
+      role="img"
+      aria-label={`Featured image for ${project.address}`}
+    >
+      <div class="featured-image-fallback hidden text-center">
+        <SimpleIcon name="image-x" class="mx-auto mb-2 h-8 w-8" />
+        <p class="text-xs">Image failed to load</p>
       </div>
-    )
-  }
+    </div>
+  )
+}
 
-  <div class={`align-center justify-between p-4`}>
+<!-- <div class={`align-center justify-between p-4`}> -->
+
+<!-- </div> -->
+
+<div class="relative mx-auto flex">
+  <div class="flex-start flex flex-1 flex-col gap-2 space-y-2">
+    <h1 class="text-2xl font-medium" id="page-project-title" data-refresh>
+      {title}
+    </h1>
     <Breadcrumb
       items={[
         {
@@ -160,52 +148,25 @@ const featuredImageUrl = project?.featuredImageUrl || project?.featuredImageData
         },
       ]}
     />
+    <div class="inline-flex">
+      <SimpleIcon name="user" class="inline-flex h-4 w-4" /><h2
+        id="page-subtitle"
+        class="inline-flex"
+        set:html={description}
+      />
+
+      {project?.client_email && <p class="inline-block">{project.client_email}</p>}
+    </div>
   </div>
 
-  <div class="relative mx-auto flex p-4">
-    <div class="mx-4 ml-0 flex flex-1 flex-col gap-2">
-    <h1
-      class="text-2xl font-medium text-black dark:text-white"
-      id="page-project-title"
-      data-refresh
-    >
-      {title}
-    </h1>
-    <h2 id="page-subtitle" class="text-black dark:text-white" set:html={description} />
+  <div class="flex-end hidden flex-col gap-2 sm:flex sm:flex-row sm:items-center">
     {
-      project?.client_email && (
-        <p class="text-sm text-gray-500 dark:text-gray-400">{project.client_email}</p>
+      (currentRole === "Admin" || currentRole === "Staff") && projectId && (
+        <CheckInButton tile projectId={projectId} />
       )
     }
-    </div>
-
-    <div class="flex-end hidden flex-col gap-2 sm:flex sm:flex-row sm:items-center">
-    {(currentRole === "Admin" || currentRole === "Staff") && projectId && (
-      <CheckInButton tile projectId={projectId} />
-    )}
     {
       currentRole !== "Client" && (
-        // <SlotMachineModalFunction
-        //   id="update-status"
-        //   title="Update Status"
-        //   options={statusesOptions.statuses}
-        //   selectedValue={currentStatusName}
-        //   placeholder={"Select a status"}
-        //   buttonText={currentStatusName ? currentStatusName : "Select a status"}
-        //   buttonClass="mr-2"
-        //   buttonVariant="primary"
-        //   saveApiEndpoint="api/project/statuses"
-        //   project={project}
-        //   currentUser={currentUser}
-        //   globalInputClasses="mr-2"
-        //   showNotification={true}
-        //   showCloseButton={true}
-        //   showCancelButton={true}
-        //   addNewOption={false}
-        //   name="status"
-        //   noResultsText="No statuses found"
-        //   icon="chevron-down"
-        // />
         <Button
           variant="outline"
           size="sm"
@@ -218,31 +179,20 @@ const featuredImageUrl = project?.featuredImageUrl || project?.featuredImageData
         </Button>
       )
     }
-    <!-- <Button
-      href="/project/new"
-      variant="primary"
-      size="xs"
-      icon="plus"
-      iconPosition="left"
-      iconClasses="mr-0 md:mr-2"
-    >
-      New<span class="hidden sm:inline"> Project</span>
-    </Button> -->
-    </div>
   </div>
-
-  {
-    tabNavItems && tabNavItems.length > 0 && (
-      <SlidingTabs
-        navId="project-tab-nav"
-        activeItem={activeTabIndex}
-        showTooltips={false}
-        {currentUser}
-        items={tabNavItems}
-      />
-    )
-  }
 </div>
+
+{
+  tabNavItems && tabNavItems.length > 0 && (
+    <SlidingTabs
+      navId="project-tab-nav"
+      activeItem={activeTabIndex}
+      showTooltips={false}
+      {currentUser}
+      items={tabNavItems}
+    />
+  )
+}
 
 <script type="module" define:vars={{ project, statusData }} is:inline>
   window.sendStatusEmailToClient = () => {
