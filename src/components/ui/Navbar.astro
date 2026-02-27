@@ -42,10 +42,10 @@ const {
 } = Astro.props;
 ---
 
-<!-- shadow-[0_4px_6px_-1px_rgba(0,0,0,0.07)] dark:shadow-[0_4px_6px_-1px_rgba(255,255,255,0.05)] from below -->
+<!-- shadow when scrolled: light drop shadow, animated via .navbar-scrolled -->
 <nav
   id="main-navbar"
-  class="color-background navbar-at-top fixed left-0 right-0"
+  class="color-background navbar-at-top fixed left-0 right-0 transition-shadow duration-200 ease-out"
   style="top: max(0rem, env(safe-area-inset-top, 0px));"
 >
   <!-- Top Banner Alerts (if any) -->
@@ -109,7 +109,29 @@ const {
 
 <script is:inline>
   (function () {
+    var SCROLL_THRESHOLD = 8;
+
+    function initNavbarScrollShadow() {
+      var scrollEl = document.getElementById("reveal-scroll");
+      var navbar = document.getElementById("main-navbar");
+      if (!scrollEl || !navbar) return;
+      if (navbar.hasAttribute("data-navbar-scroll-shadow-bound")) return;
+      navbar.setAttribute("data-navbar-scroll-shadow-bound", "true");
+
+      function updateShadow() {
+        if (scrollEl.scrollTop > SCROLL_THRESHOLD) {
+          navbar.classList.add("navbar-scrolled");
+        } else {
+          navbar.classList.remove("navbar-scrolled");
+        }
+      }
+      scrollEl.addEventListener("scroll", updateShadow, { passive: true });
+      updateShadow();
+    }
+
     function run() {
+      initNavbarScrollShadow();
+
       var logoutBtn = document.getElementById("logout-btn");
       if (logoutBtn && !logoutBtn.hasAttribute("data-navbar-logout-bound")) {
         logoutBtn.setAttribute("data-navbar-logout-bound", "true");
@@ -182,6 +204,14 @@ const {
   }
   #main-navbar.navbar-at-top {
     z-index: 100;
+  }
+
+  /* Light drop shadow when page has scrolled (animated via transition-shadow on nav) */
+  #main-navbar.navbar-scrolled {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+  }
+  :global(.dark) #main-navbar.navbar-scrolled {
+    box-shadow: 0 4px 6px -1px rgba(255, 255, 255, 0.05);
   }
 
   :global(#navbar-default a svg) {

@@ -69,13 +69,24 @@ export interface ColumnConfig<T = any> {
   getCellDataAttrs?: (item: T) => Record<string, string>;
 }
 
+/** Header config for JSON-driven tables: key, label, width, optional actions (e.g. ["select"] or ["edit","delete"]) */
+export interface TableHeaderConfig {
+  key: string;
+  label: string;
+  width?: number | "sticky-left" | "sticky-right";
+  actions?: string[];
+}
+
 interface Props<T = any> {
   id: string;
   title?: string;
   description?: string;
   data: T[];
-  getItemId: (item: T) => string;
-  columns: ColumnConfig<T>[];
+  getItemId?: (item: T) => string;
+  /** Column config (required if headers is not provided) */
+  columns?: ColumnConfig<T>[];
+  /** Optional: drive table from headers + data; columns/showSelectColumn/actionsColumnSticky/selectHeaderLabel derived from headers */
+  headers?: TableHeaderConfig[];
   slotIdPrefix?: string;
   emptyMessage?: string;
   draggable?: boolean;
@@ -124,8 +135,9 @@ const {
   title,
   description,
   data = [],
-  getItemId,
-  columns,
+  getItemId: getItemIdProp,
+  columns: columnsProp,
+  headers,
   slotIdPrefix = "slot",
   emptyMessage = "No items found",
   draggable = false,
@@ -148,10 +160,34 @@ const {
   createRowDataAttrs,
   createButtonId,
   resizable = true,
-  showSelectColumn = false,
-  selectHeaderLabel = "Select",
-  actionsColumnSticky = false,
+  showSelectColumn: showSelectColumnProp = false,
+  selectHeaderLabel: selectHeaderLabelProp = "Select",
+  actionsColumnSticky: actionsColumnStickyProp = false,
 } = Astro.props;
+
+/** When headers is provided, derive columns and options from it; otherwise use props. */
+const selectHeader = headers?.find((h) => h.key === "select" || h.actions?.includes("select"));
+const actionsHeader = headers?.find((h) => h.key === "actions" || h.actions?.includes("edit") || h.actions?.includes("delete"));
+const dataHeaders = headers?.filter((h) => h.key !== "select" && h.key !== "actions") ?? [];
+
+const columns: ColumnConfig<any>[] =
+  columnsProp ??
+  (headers
+    ? dataHeaders.map((h) => ({
+        key: h.key,
+        label: h.label,
+        width: h.width,
+        getValue: (item: any) => {
+          const v = item[h.key];
+          return v != null ? String(v) : "—";
+        },
+      }))
+    : []);
+
+const getItemId = getItemIdProp ?? ((item: any) => (item?.id != null ? String(item.id) : String(item)));
+const showSelectColumn = headers ? !!selectHeader : showSelectColumnProp;
+const selectHeaderLabel = headers && selectHeader ? selectHeader.label : selectHeaderLabelProp;
+const actionsColumnSticky = headers && actionsHeader ? actionsHeader.width === "sticky-right" : actionsColumnStickyProp;
 
 const toDataAttrs = (obj: Record<string, string>) =>
   Object.fromEntries(
@@ -258,7 +294,7 @@ const isStickyCol = (col: (typeof columns)[0]) =>
                 scope="col"
                 class={`${dataTableActionsThClasses} ${actionsColumnSticky ? dataTableThStickyRightClasses : ""}`}
               >
-                Actions
+                {actionsHeader?.label ?? "Actions"}
               </th>
             )
           }

@@ -132,7 +132,7 @@ import Button from "../common/Button.astro";
 
   <Button
     type="button"
-    variant="secondary"
+    variant="outline"
     icon="plus"
     iconClasses="mr-0 shrink-0"
     size="md"
@@ -160,13 +160,11 @@ import Button from "../common/Button.astro";
     // const speedDialOverlay = document.getElementById("global-backdrop");
 
     let isOpen = false;
-    let isTouchDevice = false;
     let touchHandled = false;
 
-    // Detect if device supports touch
-    if ("ontouchstart" in window || navigator.maxTouchPoints > 0) {
-      isTouchDevice = true;
-    }
+    // Use hover when primary input can hover (mouse); otherwise use click/touch only.
+    // Touch-capability alone is not used, so laptops with touchscreens still get hover.
+    const useHover = window.matchMedia("(hover: hover)").matches;
 
     // Toggle function
     function toggleSpeedDial() {
@@ -285,9 +283,8 @@ import Button from "../common/Button.astro";
         { passive: false }
       );
 
-      // Click event handler for mobile only (fallback if touchstart doesn't work)
-      // Desktop uses hover, so we skip click handler on non-touch devices
-      if (isTouchDevice) {
+      // Click event handler when hover is not used (touch devices, no-pointer)
+      if (!useHover) {
         speedDialButton.addEventListener(
           "click",
           function (e) {
@@ -305,8 +302,8 @@ import Button from "../common/Button.astro";
       }
     }
 
-    // Desktop hover behavior (only on non-touch devices)
-    if (!isTouchDevice) {
+    // Open on mouseenter, close on mouseleave when primary input can hover
+    if (useHover) {
       speedDialButton?.addEventListener("mouseenter", function (e) {
         e.stopPropagation();
         // Only auto-open on hover if not already open (prevents flickering)
@@ -396,7 +393,7 @@ import Button from "../common/Button.astro";
 <style>
   /* Staggered animation for menu items when dial opens */
   .speed-dial-menu .speed-dial-tooltip {
-    transform: scale(0.8) translateY(4px);
+    transform: scale(0.8);
     opacity: 0;
     transition:
       opacity 0.2s ease,
