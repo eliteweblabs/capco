@@ -9,6 +9,7 @@ import DeleteConfirmButton from "../ui/DeleteConfirmButton.astro";
 import GridFilter from "../../features/grid-filter/GridFilter.astro";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 import { formatFileSize, getFileIcon } from "../../lib/global-display-utils";
+import { globalClasses } from "../../pages/api/global/global-classes";
 
 export interface Props {
   currentUser: any;
@@ -18,7 +19,10 @@ export interface Props {
   gridLayout?: "masonry" | "columns";
 }
 
-const { currentUser, supabase, globalInputClasses = "", gridLayout = "masonry" } = Astro.props;
+const gc = globalClasses();
+const { currentUser, supabase, globalInputClasses = gc.globalInputClasses, gridLayout = "masonry" } =
+  Astro.props;
+const { dataTableCardClasses, primaryTextClasses, dataTableDescriptionClasses } = gc;
 
 // Fetch media files from database
 let projectFiles: any[] = [];
@@ -446,33 +450,33 @@ const stats = {
 <div class="admin-media-component">
   <!-- Header -->
   <div class="mb-6">
-    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Media Manager</h1>
-    <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+    <h1 class={`text-3xl font-bold ${primaryTextClasses}`}>Media Manager</h1>
+    <p class={`mt-2 ${dataTableDescriptionClasses}`}>
       Browse, upload, and manage all media files across the system.
     </p>
   </div>
 
   <!-- Stats Cards -->
   <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-    <div class="bg-white dark:bg-gray-900 rounded-lg shadow p-4">
-      <div class="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</div>
-      <div class="text-sm text-gray-500 dark:text-gray-400">Total Files</div>
+    <div class={`${dataTableCardClasses} p-4`}>
+      <div class={`text-2xl font-bold ${primaryTextClasses}`}>{stats.total}</div>
+      <div class={dataTableDescriptionClasses}>Total Files</div>
     </div>
-    <div class="bg-white dark:bg-gray-900 rounded-lg shadow p-4">
+    <div class={`${dataTableCardClasses} p-4`}>
       <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.project}</div>
-      <div class="text-sm text-gray-500 dark:text-gray-400">Project Files</div>
+      <div class={dataTableDescriptionClasses}>Project Files</div>
     </div>
-    <div class="bg-white dark:bg-gray-900 rounded-lg shadow p-4">
+    <div class={`${dataTableCardClasses} p-4`}>
       <div class="text-2xl font-bold text-green-600 dark:text-green-400">{stats.global}</div>
-      <div class="text-sm text-gray-500 dark:text-gray-400">Global Files</div>
+      <div class={dataTableDescriptionClasses}>Global Files</div>
     </div>
-    <div class="bg-white dark:bg-gray-900 rounded-lg shadow p-4">
+    <div class={`${dataTableCardClasses} p-4`}>
       <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">{stats.images}</div>
-      <div class="text-sm text-gray-500 dark:text-gray-400">Images</div>
+      <div class={dataTableDescriptionClasses}>Images</div>
     </div>
-    <div class="bg-white dark:bg-gray-900 rounded-lg shadow p-4">
+    <div class={`${dataTableCardClasses} p-4`}>
       <div class="text-2xl font-bold text-orange-600 dark:text-orange-400">{stats.documents}</div>
-      <div class="text-sm text-gray-500 dark:text-gray-400">Documents</div>
+      <div class={dataTableDescriptionClasses}>Documents</div>
     </div>
   </div>
 
@@ -637,12 +641,12 @@ const stats = {
   </div>
 
   <!-- Upload Progress (top-right near toast area so it doesn’t sit at bottom) -->
-  <div id="upload-progress" class="hidden fixed top-4 right-4 sm:top-20 sm:right-4 z-[999998] bg-white dark:bg-gray-900 rounded-lg shadow-lg p-4 min-w-[300px]">
+  <div id="upload-progress" class={`hidden fixed top-4 right-4 sm:top-20 sm:right-4 z-[999998] ${dataTableCardClasses} shadow-lg p-4 min-w-[300px]`}>
     <div class="flex items-center gap-3 mb-2">
       <div class="animate-spin">
         <SimpleIcon name="loader-2" class="w-5 h-5 text-primary-500" />
       </div>
-      <span class="text-sm font-medium text-gray-900 dark:text-white">Uploading...</span>
+      <span class={`text-sm font-medium ${primaryTextClasses}`}>Uploading...</span>
     </div>
     <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
       <div id="progress-bar" class="bg-primary-500 h-2 rounded-full transition-all" style="width: 0%"></div>

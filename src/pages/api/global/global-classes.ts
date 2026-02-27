@@ -17,6 +17,42 @@ export const globalClasses = () => {
     globalAdminContainerClasses: "color-background rounded-lg shadow-md dark:shadow-gray-700",
     tabContentClasses:
       "color-background relative mb-16 min-h-[calc(100dvh-24rem)] p-6 sm:p-8 md:p-10 lg:p-12 shadow-lg",
+
+    // Data table / accordion table (shared by AccordionDataTable, ProjectList, etc.)
+    dataTableCardClasses: "overflow-hidden rounded-lg bg-white shadow dark:bg-gray-900",
+    dataTableBorderClasses: "border-gray-200 dark:border-gray-700",
+    dataTableHeaderBarClasses:
+      "flex items-center justify-between gap-4 border-b border-gray-200 px-6 py-4 dark:border-gray-700",
+    dataTableTitleClasses: "text-lg font-semibold text-gray-900 dark:text-white",
+    dataTableDescriptionClasses: "mt-1 text-sm text-gray-500 dark:text-gray-400",
+    dataTableClearButtonClasses:
+      "shrink-0 rounded border border-gray-300 bg-white px-2 py-1.5 text-xs text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700",
+    dataTableTableWrapperClasses: "w-full overflow-x-auto text-center no-scrollbar",
+    dataTableTableClasses:
+      "w-full max-w-full table-fixed divide-gray-200 text-center text-sm dark:divide-gray-700",
+    dataTableTheadClasses:
+      "text-uppercase color-background select-none text-xs font-semibold uppercase tracking-wide",
+    dataTableThClasses:
+      "color-border-primary border-r border-gray-200 px-4 py-3 font-semibold dark:border-gray-700",
+    /** Same as dataTableThClasses + border-l + color-background so Actions column is clearly part of the table */
+    dataTableActionsThClasses:
+      "color-background color-border-primary border-l border-r border-gray-200 px-4 py-3 font-semibold dark:border-gray-700",
+    dataTableTbodyClasses:
+      "divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900",
+    dataTableEmptyCellClasses: "px-4 py-8 text-sm text-gray-500 dark:text-gray-400",
+    dataTableTriggerRowBaseClasses:
+      "select-none border-b border-gray-200 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700",
+    dataTableDragHandleTdClasses: "w-10 px-2 py-3 align-middle text-gray-400 dark:text-gray-500",
+    dataTableDataCellClasses: "px-4 py-2 text-sm text-gray-900 dark:text-white",
+    /** Same as dataTableDataCellClasses + whitespace-nowrap + border-l so Actions column matches the rest */
+    dataTableActionsCellClasses:
+      "whitespace-nowrap border-l border-gray-200 px-4 py-2 text-sm text-gray-900 dark:border-gray-700 dark:text-white",
+    dataTableDetailTdClasses: "bg-gray-50 p-0 dark:bg-gray-800/50",
+    dataTableSlotMinHeightClasses: "min-h-[120px]",
+    dataTableCreateFooterClasses: "border-t border-gray-200 px-4 py-3 dark:border-gray-700",
+    dataTableCreateDetailClasses: "rounded-b-lg bg-gray-50 dark:bg-gray-800/50",
+    dataTableCreateSlotClasses: "min-h-[120px] p-4",
+    dataTableDragThClasses: "w-10 px-2 py-3",
   };
 };
 

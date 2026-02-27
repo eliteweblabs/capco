@@ -16,6 +16,8 @@ import SlideToggle from "../../components/form/SlideToggle.astro";
 import Breadcrumb from "../../components/common/Breadcrumb.astro";
 import PricingCard from "../../components/common/PricingCard.astro";
 import SimpleIcon from "../../components/common/SimpleIcon.astro";
+import AccordionDataTable from "../../components/common/AccordionDataTable.astro";
+import DesignDemoTableRowActions from "../../components/admin/DesignDemoTableRowActions.astro";
 
 // Blocks
 import AlertBlock from "../../components/blocks/AlertBlock.astro";
@@ -69,6 +71,20 @@ const breadcrumbItems = [
   { label: "Home", href: "/", icon: "home" },
   { label: "Admin", href: "/admin" },
   { label: "Design System", current: true },
+];
+
+// Dummy data for AccordionDataTable demo (design/styles)
+const demoTableData = [
+  { id: "1", slug: "mep-form", title: "MEP Form", template: "fullform" },
+  {
+    id: "2",
+    slug: "/",
+    title: "General Contracting & Federal Construction Delivered with Discipline",
+    template: "fullwidth",
+  },
+  { id: "3", slug: "about", title: "About", template: "fullwidth" },
+  { id: "4", slug: "capabilities", title: "Capabilities", template: "fullwidth" },
+  { id: "5", slug: "contact", title: "Contact Us", template: "fullwidth" },
 ];
 ---
 
@@ -482,6 +498,74 @@ const breadcrumbItems = [
         <div id="accordion-breadcrumb" class="hidden border-t border-gray-200 dark:border-gray-700">
           <div class="p-6">
             <Breadcrumb items={breadcrumbItems} />
+          </div>
+        </div>
+      </div>
+
+      <!-- AccordionDataTable (demo table for design/layout tweaks) -->
+      <div
+        class="mb-4 rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900"
+        data-accordion-card
+      >
+        <div class="flex items-center justify-between">
+          <div
+            class="flex-1 cursor-pointer rounded-lg p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+            data-accordion-target="#accordion-data-table"
+            aria-expanded="false"
+            role="button"
+            tabindex="0"
+          >
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">AccordionDataTable</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Resizable data table with expandable rows. Demo uses dummy JSON; use for layout/column styling.
+            </p>
+          </div>
+          <button
+            class="p-4 text-gray-400"
+            data-accordion-target="#accordion-data-table"
+            type="button"
+          >
+            <svg
+              class="h-4 w-4 transition-transform duration-200"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+        </div>
+        <div id="accordion-data-table" class="hidden border-t border-gray-200 dark:border-gray-700">
+          <div class="p-6">
+            <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">
+              Same component and column widths as CMS pages table. Drag column edges to resize; use “Reset column widths” to clear cached sizes.
+            </p>
+            <AccordionDataTable
+              id="design-demo-table"
+              title="Demo table"
+              description="Dummy data from JSON for design/style tweaks."
+              data={demoTableData}
+              getItemId={(row) => row.id}
+              slotIdPrefix="demo-slot"
+              emptyMessage="No rows."
+              columns={[
+                { key: "slug", label: "Slug", getValue: (r) => r.slug, width: 24 },
+                {
+                  key: "title",
+                  label: "Title",
+                  getValue: (r) => r.title || "—",
+                  cellClass: "max-w-64 truncate whitespace-nowrap text-gray-500 dark:text-gray-400",
+                  width: 56,
+                },
+                { key: "template", label: "Template", getValue: (r) => r.template, width: 20 },
+              ]}
+              actionsComponent={DesignDemoTableRowActions}
+              actionsGetProps={(r) => ({ item: r })}
+            />
           </div>
         </div>
       </div>

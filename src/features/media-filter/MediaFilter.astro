@@ -1,11 +1,12 @@
 ---
 /**
  * MediaFilter Component
- * Reusable media filter with button-style filters and autosuggest search
- * Can be used standalone or with custom filter terms
- * 
- * @prop {string[]} sourceFilters - Source filter options (default: ["All", "Project", "Global"])
- * @prop {string[]} typeFilters - Type filter options (default: ["All", "Images", "PDFs", "Documents", "Other"])
+ * Reusable media filter with button-group filters (ToggleButton) and autosuggest search.
+ * Filter groups are JSON-driven (e.g. adminMediaFilters in config.json), same pattern as mepForm button-groups.
+ *
+ * @prop {FilterGroup[]} filterGroups - From config (e.g. adminMediaFilters.groups). Each has name, label, toggleType, options.
+ * @prop {string[]} sourceFilters - Legacy: source options when filterGroups not provided
+ * @prop {string[]} typeFilters - Legacy: type options when filterGroups not provided
  * @prop {string} itemSelector - CSS selector for items to filter (default: ".file-card")
  * @prop {boolean} showSearch - Show search with autosuggest (default: true)
  * @prop {number} minSearchChars - Min characters before filtering (default: 2)
@@ -16,11 +17,26 @@
 
 import SimpleIcon from "../../components/common/SimpleIcon.astro";
 import Button from "../../components/common/Button.astro";
+import ToggleButton from "../../components/form/ToggleButton.astro";
 import DeleteConfirmButton from "../../components/ui/DeleteConfirmButton.astro";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 import { formatFileSize, getFileIcon } from "../../lib/global-display-utils";
 
+export interface FilterGroupOption {
+  value: string;
+  label: string;
+}
+
+export interface FilterGroup {
+  name: string;
+  label: string;
+  toggleType: "radio";
+  options: FilterGroupOption[];
+}
+
 export interface Props {
+  /** JSON-driven filter groups (e.g. from config.adminMediaFilters.groups) */
+  filterGroups?: FilterGroup[];
   sourceFilters?: string[];
   typeFilters?: string[];
   itemSelector?: string;
@@ -34,6 +50,7 @@ export interface Props {
 }
 
 const {
+  filterGroups: filterGroupsProp,
   sourceFilters = ["All", "Project", "Global"],
   typeFilters = ["All", "Images", "PDFs", "Documents", "Other"],
   itemSelector = ".file-card",
@@ -45,6 +62,27 @@ const {
   currentUser,
   supabase,
 } = Astro.props;
+
+// Build filter groups: from config (filterGroups) or legacy arrays (sourceFilters / typeFilters)
+const defaultSourceOptions = [
+  { value: "all", label: "All Sources" },
+  { value: "project", label: "Project Files" },
+  { value: "global", label: "Global Files" },
+];
+const defaultTypeOptions = [
+  { value: "all", label: "All Types" },
+  { value: "image", label: "Images" },
+  { value: "pdf", label: "PDFs" },
+  { value: "document", label: "Documents" },
+  { value: "video", label: "Videos" },
+  { value: "other", label: "Other" },
+];
+const filterGroups: FilterGroup[] = Array.isArray(filterGroupsProp) && filterGroupsProp.length > 0
+  ? filterGroupsProp
+  : [
+      { name: "source", label: "Source", toggleType: "radio", options: defaultSourceOptions },
+      { name: "type", label: "Type", toggleType: "radio", options: defaultTypeOptions },
+    ];
 
 const uniqueId = `media-filter-${Math.random().toString(36).substring(7)}`;
 
@@ -309,47 +347,24 @@ const stats = includeGrid ? {
       </div>
     )}
 
-    <!-- Source Filters (Button Style) -->
-    <div class="mb-3">
-      <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Source</label>
-      <div class="flex flex-wrap gap-2">
-        {sourceFilters.map((filter, index) => (
-          <button
-            type="button"
-            data-filter-group="source"
-            data-filter-value={filter.toLowerCase()}
-            class={`media-filter-btn px-4 py-2 text-sm font-medium rounded-lg border-2 transition-all focus:ring-4 focus:outline-none ${
-              index === 0
-                ? "text-fg-brand border-brand bg-gray-primary focus:ring-gray-tertiary"
-                : "text-heading border-buffer hover:border-default bg-gray-primary focus:ring-gray-tertiary"
-            }`}
-          >
-            {filter}
-          </button>
-        ))}
+    <!-- Filter groups (JSON-driven, same as mepForm button-group / ToggleButton) -->
+    {filterGroups.map((group) => (
+      <div class="mb-3">
+        <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">{group.label}</label>
+        <div class="flex flex-wrap gap-2" data-media-filter-group={group.name}>
+          {group.options.map((opt, idx) => (
+            <ToggleButton
+              value={opt.value}
+              group={group.name}
+              type={group.toggleType}
+              class={idx === 0 ? "selected bg-primary dark:bg-primary-dark text-white" : ""}
+            >
+              {opt.label}
+            </ToggleButton>
+          ))}
+        </div>
       </div>
-    </div>
-
-    <!-- Type Filters (Button Style) -->
-    <div class="mb-3">
-      <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Type</label>
-      <div class="flex flex-wrap gap-2">
-        {typeFilters.map((filter, index) => (
-          <button
-            type="button"
-            data-filter-group="type"
-            data-filter-value={filter.toLowerCase()}
-            class={`media-filter-btn px-4 py-2 text-sm font-medium rounded-lg border-2 transition-all focus:ring-4 focus:outline-none ${
-              index === 0
-                ? "text-fg-brand border-brand bg-gray-primary focus:ring-gray-tertiary"
-                : "text-heading border-buffer hover:border-default bg-gray-primary focus:ring-gray-tertiary"
-            }`}
-          >
-            {filter}
-          </button>
-        ))}
-      </div>
-    </div>
+    ))}
 
      {/* <!-- Upload Button --> */}
      <div class="flex mb-6">
@@ -496,15 +511,10 @@ const stats = includeGrid ? {
     const searchIcon = document.getElementById(`${uniqueId}-search-icon`);
     const clearBtn = document.getElementById(`${uniqueId}-clear`);
     const suggestionsDiv = document.getElementById(`${uniqueId}-suggestions`);
-    const filterButtons = container.querySelectorAll(".media-filter-btn");
     const filesGrid = document.getElementById(`${uniqueId}-files-grid`);
     const noResults = document.getElementById(`${uniqueId}-no-results`);
 
-    // State
-    const selectedFilters = {
-      source: "all",
-      type: "all"
-    };
+    const getToggleButtonValues = typeof window !== "undefined" ? window.getToggleButtonValues : null;
     let allSuggestions = [];
 
     // Build suggestions from file names
@@ -577,38 +587,36 @@ const stats = includeGrid ? {
 
     function applyFilters() {
       if (!filesGrid) return;
-      
+
       const searchTerm = searchInput?.value.toLowerCase() || "";
       const cards = filesGrid.querySelectorAll(".file-card");
       let visibleCount = 0;
 
+      const sourceVal = getToggleButtonValues ? (getToggleButtonValues("source") || [])[0] : "all";
+      const typeVal = getToggleButtonValues ? (getToggleButtonValues("type") || [])[0] : "all";
+
       cards.forEach((card) => {
         let show = true;
 
-        // Search filter (after min chars)
         if (searchTerm.length >= minSearchChars) {
           const fileName = card.dataset.fileName?.toLowerCase() || "";
           if (!fileName.includes(searchTerm)) show = false;
         }
 
-        // Source filter
-        if (selectedFilters.source !== "all") {
+        if (sourceVal && sourceVal !== "all") {
           const fileSource = card.dataset.fileSource || "";
-          if (fileSource !== selectedFilters.source) show = false;
+          if (fileSource !== sourceVal) show = false;
         }
 
-        // Type filter
-        if (selectedFilters.type !== "all") {
+        if (typeVal && typeVal !== "all") {
           const fileType = card.dataset.fileType?.toLowerCase() || "";
-          
-          if (selectedFilters.type === "images" && !fileType.startsWith("image/")) show = false;
-          else if (selectedFilters.type === "videos") {
-            const isVideo = fileType.startsWith("video/") || /\.(mp4|webm|mov|ogv|avi|mkv)$/i.test(card.dataset.fileName || "");
-            if (!isVideo) show = false;
-          }
-          else if (selectedFilters.type === "pdfs" && !fileType.includes("pdf")) show = false;
-          else if (selectedFilters.type === "documents" && !fileType.includes("word") && !fileType.includes("document") && !fileType.includes("excel")) show = false;
-          else if (selectedFilters.type === "other" && (fileType.startsWith("image/") || fileType.startsWith("video/") || fileType.includes("pdf") || fileType.includes("document") || /\.(mp4|webm|mov|ogv|avi|mkv)$/i.test(card.dataset.fileName || ""))) show = false;
+          const fileName = (card.dataset.fileName || "").toLowerCase();
+          const isVideo = fileType.startsWith("video/") || /\.(mp4|webm|mov|ogv|avi|mkv)$/i.test(fileName);
+          if (typeVal === "image" && !fileType.startsWith("image/")) show = false;
+          else if (typeVal === "video" && !isVideo) show = false;
+          else if (typeVal === "pdf" && !fileType.includes("pdf")) show = false;
+          else if (typeVal === "document" && !fileType.includes("word") && !fileType.includes("document") && !fileType.includes("excel")) show = false;
+          else if (typeVal === "other" && (fileType.startsWith("image/") || fileType.startsWith("video/") || fileType.includes("pdf") || fileType.includes("document") || isVideo)) show = false;
         }
 
         card.style.display = show ? "" : "none";
@@ -654,28 +662,10 @@ const stats = includeGrid ? {
       });
     }
 
-    // Filter button handlers
-    filterButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        const group = button.dataset.filterGroup;
-        const value = button.dataset.filterValue;
-        
-        if (group && value) {
-          selectedFilters[group] = value;
+    document.addEventListener("toggleButtonChange", () => applyFilters());
 
-          // Update button styles in group
-          const groupButtons = container.querySelectorAll(`[data-filter-group="${group}"]`);
-          groupButtons.forEach((btn) => {
-            btn.classList.remove("text-fg-brand", "border-brand");
-            btn.classList.add("text-heading", "border-buffer");
-          });
-          button.classList.remove("text-heading", "border-buffer");
-          button.classList.add("text-fg-brand", "border-brand");
-
-          applyFilters();
-        }
-      });
-    });
+    // Initial apply so no-results and search are in sync
+    applyFilters();
 
     // Search handlers
     if (searchInput) {

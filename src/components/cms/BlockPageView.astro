@@ -1,0 +1,41 @@
+---
+/**
+ * BlockPageView - Renders a block-based CMS page.
+ * Always uses LayoutFullWidth; no page-level template. Each section is fullwidth or contained + 12-col.
+ * Template-based CMS (cmsPages/MarkdownPage) is no longer used by the catch-all route.
+ */
+
+import type { BlockPageContent } from "../../lib/content-blocks";
+import LayoutFullWidth from "../layouts/LayoutFullWidth.astro";
+import BlockSection from "./BlockSection.astro";
+
+interface Props {
+  pageContent: BlockPageContent;
+  currentUser?: any;
+  session?: any;
+  supabase?: any;
+}
+
+const { pageContent, currentUser, session, supabase } = Astro.props;
+const { title, description, sections } = pageContent;
+const sectionList = Array.isArray(sections) ? sections : [];
+---
+
+<LayoutFullWidth
+  title={title}
+  description={description}
+  {currentUser}
+  {session}
+  {supabase}
+>
+  <div class="block-page flex w-full flex-col gap-0" data-dynamic-height="minHeight">
+    {sectionList.length === 0 && (
+      <div class="mx-auto max-w-7xl px-4 py-12 text-center text-gray-500 dark:text-gray-400">
+        No sections yet. Add sections in the block page editor.
+      </div>
+    )}
+    {sectionList.map((section, i) => (
+      <BlockSection section={section} />
+    ))}
+  </div>
+</LayoutFullWidth>

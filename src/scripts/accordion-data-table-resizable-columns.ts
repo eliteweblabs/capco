@@ -1,17 +1,18 @@
 /**
  * Resizable columns for AccordionDataTable.
  * Uses linked resize: dragging adjusts the current column and its neighbor so total table width stays constant.
- * Prevents crushing columns (min width) and overflow (no net growth).
+ * Widths are stored and applied as percentages (data-col-default-width = %).
  * Persists per table to localStorage (key: accordion-table-column-widths-{tableId}).
  */
 
-const MIN_WIDTH = 48;
-const MAX_WIDTH = 600;
+const MIN_PCT = 5;
+const MAX_PCT = 60;
 
 function getStorageKey(tableId: string): string {
   return `accordion-table-column-widths-${tableId}`;
 }
 
+/** Load saved widths (percentages). */
 function loadSavedWidths(tableId: string): Record<string, number> {
   try {
     const raw = localStorage.getItem(getStorageKey(tableId));
@@ -23,6 +24,13 @@ function loadSavedWidths(tableId: string): Record<string, number> {
     /* ignore parse errors */
   }
   return {};
+}
+
+/** Parse width from th style (e.g. "25%" -> 25). */
+function parseWidthPct(th: HTMLElement): number {
+  const w = th.style.width || "";
+  const num = parseFloat(w);
+  return Number.isFinite(num) ? num : 0;
 }
 
 function saveWidths(tableId: string, widths: Record<string, number>) {
@@ -42,6 +50,9 @@ function initResizableColumns() {
     const thead = table.querySelector("thead tr");
     if (!thead) return;
 
+    // Remove existing resize handles so re-init (e.g. after clear cache) does not duplicate
+    thead.querySelectorAll<HTMLElement>(".project-col-resize-handle").forEach((h) => h.remove());
+
     const headers = Array.from(thead.querySelectorAll<HTMLElement>("th[data-col-id]"));
     if (headers.length === 0) return;
 
@@ -49,26 +60,48 @@ function initResizableColumns() {
 
     function getDefaultWidth(th: HTMLElement): number {
       const def = th.getAttribute("data-col-default-width");
-      return def ? parseInt(def, 10) : 100;
+      return def ? parseFloat(def) : 16;
     }
 
     function getWidth(colId: string, th: HTMLElement): number {
-      return savedWidths[colId] ?? (parseInt(th.style.width || String(getDefaultWidth(th)), 10) || getDefaultWidth(th));
+      const fromSaved = savedWidths[colId];
+      if (fromSaved != null) return fromSaved;
+      const fromStyle = parseWidthPct(th);
+      return fromStyle > 0 ? fromStyle : getDefaultWidth(th);
     }
 
-    function applyWidthToTh(th: HTMLElement, widthPx: number) {
-      const w = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, widthPx));
-      th.style.width = `${w}px`;
-      th.style.minWidth = `${w}px`;
-      th.style.maxWidth = `${w}px`;
+    function applyWidthToTh(th: HTMLElement, widthPct: number): number {
+      const w = Math.max(MIN_PCT, Math.min(MAX_PCT, widthPct));
+      th.style.width = `${w}%`;
+      th.style.minWidth = `${w}%`;
+      th.style.maxWidth = `${w}%`;
       return w;
     }
+
+    const tableWidth = () => table.getBoundingClientRect().width || 1;
 
     headers.forEach((th) => {
       const colId = th.getAttribute("data-col-id");
       if (colId) {
         const w = savedWidths[colId] ?? getDefaultWidth(th);
         savedWidths[colId] = applyWidthToTh(th, w);
+      }
+    });
+
+    // Give any header without data-col-id (e.g. Actions) a share of remaining width so it lays out inside the table
+    const ACTIONS_MIN_PCT = 10;
+    const allTh = Array.from(thead.querySelectorAll<HTMLElement>("th"));
+    const totalDataPct = headers.reduce(
+      (sum, th) => sum + (parseFloat(th.style.width || "0") || 0),
+      0
+    );
+    const remainingPct = Math.max(ACTIONS_MIN_PCT, 100 - totalDataPct);
+    allTh.forEach((th) => {
+      if (!th.getAttribute("data-col-id")) {
+        const w = Math.min(MAX_PCT, remainingPct);
+        th.style.width = `${w}%`;
+        th.style.minWidth = `${w}%`;
+        th.style.maxWidth = `${w}%`;
       }
     });
 
@@ -94,15 +127,20 @@ function initResizableColumns() {
         const startNextW = nextTh && nextColId ? getWidth(nextColId, nextTh) : 0;
 
         const onMove = (moveEvent: MouseEvent) => {
-          let delta = moveEvent.clientX - startX;
+          const deltaPx = moveEvent.clientX - startX;
+          const tw = tableWidth();
+          const deltaPct = (deltaPx / tw) * 100;
 
           if (nextTh && nextColId) {
-            // Linked resize: current grows by delta, neighbor shrinks. Clamp so neither goes out of bounds.
-            const maxGrow = MAX_WIDTH - startW;
-            const maxShrink = startW - MIN_WIDTH;
-            const maxTakeFromNext = startNextW - MIN_WIDTH;
-            const maxGiveToNext = MAX_WIDTH - startNextW;
-            const clampMax = delta >= 0 ? Math.min(delta, maxGrow, maxTakeFromNext) : Math.max(delta, -maxShrink, -maxGiveToNext);
+            let delta = deltaPct;
+            const maxGrow = MAX_PCT - startW;
+            const maxShrink = startW - MIN_PCT;
+            const maxTakeFromNext = startNextW - MIN_PCT;
+            const maxGiveToNext = MAX_PCT - startNextW;
+            const clampMax =
+              delta >= 0
+                ? Math.min(delta, maxGrow, maxTakeFromNext)
+                : Math.max(delta, -maxShrink, -maxGiveToNext);
             delta = clampMax;
 
             const currFinal = startW + delta;
@@ -110,7 +148,7 @@ function initResizableColumns() {
             savedWidths[colId] = applyWidthToTh(th, currFinal);
             savedWidths[nextColId] = applyWidthToTh(nextTh, nextFinal);
           } else {
-            const w = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, startW + delta));
+            const w = Math.max(MIN_PCT, Math.min(MAX_PCT, startW + deltaPct));
             savedWidths[colId] = applyWidthToTh(th, w);
           }
           saveWidths(tableId, { ...savedWidths });
@@ -132,6 +170,24 @@ function initResizableColumns() {
   });
 }
 
+function clearCachedColumnWidths(tableId: string) {
+  try {
+    localStorage.removeItem(getStorageKey(tableId));
+  } catch {
+    /* ignore */
+  }
+  initResizableColumns();
+}
+
+declare global {
+  interface Window {
+    clearAccordionTableColumnWidths?: (tableId: string) => void;
+  }
+}
+if (typeof window !== "undefined") {
+  window.clearAccordionTableColumnWidths = clearCachedColumnWidths;
+}
+
 function run() {
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initResizableColumns);
@@ -141,3 +197,11 @@ function run() {
 }
 run();
 document.addEventListener("astro:after-swap", initResizableColumns);
+
+// Single delegated listener for "Reset column widths" buttons (avoids duplicate handlers on SPA nav)
+document.addEventListener("click", (e) => {
+  const btn = (e.target as HTMLElement).closest?.("button.clear-accordion-column-widths");
+  if (!btn) return;
+  const tableId = btn.getAttribute("data-table-id");
+  if (tableId) clearCachedColumnWidths(tableId);
+});

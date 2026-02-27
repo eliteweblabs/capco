@@ -1,0 +1,86 @@
+---
+/**
+ * BlockSection - Renders one section: either multiple blocks (items) each with own width, or legacy single block / columns+blocks.
+ */
+
+import type { BlockSectionConfig } from "../../lib/content-blocks";
+import BlockRenderer from "../blocks/BlockRenderer.astro";
+
+interface Props {
+  section: BlockSectionConfig;
+}
+
+const { section } = Astro.props;
+
+// Preferred: multiple blocks per section, each with its own width
+const items = section.items ?? [];
+const hasItems = items.length > 0;
+
+const sectionWidth = section.width ?? "fullwidth";
+const singleBlock = section.block;
+const columns = section.columns ?? [];
+const blocks = section.blocks ?? [];
+const hasMultiColumn = columns.length > 0 && blocks.length === columns.length;
+
+const colSpanClasses: Record<number, string> = {
+  1: "lg:col-span-1",
+  2: "lg:col-span-2",
+  3: "lg:col-span-3",
+  4: "lg:col-span-4",
+  5: "lg:col-span-5",
+  6: "lg:col-span-6",
+  7: "lg:col-span-7",
+  8: "lg:col-span-8",
+  9: "lg:col-span-9",
+  10: "lg:col-span-10",
+  11: "lg:col-span-11",
+  12: "lg:col-span-12",
+};
+const getSpanClass = (span: number) => colSpanClasses[span] ?? "lg:col-span-12";
+---
+
+{hasItems ? (
+  <div class="block-section-wrapper flex w-full flex-col gap-0">
+    {items.map((item) => {
+      const w = item.width ?? sectionWidth;
+      const isContained = w === "contained";
+      return (
+        <div
+          class:list={[
+            "block-section w-full",
+            isContained && "mx-auto max-w-7xl px-4 sm:px-6 lg:px-8",
+          ]}
+        >
+          <div class="grid grid-cols-1 lg:grid-cols-12">
+            <div class="col-span-1 lg:col-span-12">
+              <BlockRenderer type={item.block.type as any} props={item.block.props ?? {}} />
+            </div>
+          </div>
+        </div>
+      );
+    })}
+  </div>
+) : (
+  <div
+    class:list={[
+      "block-section w-full",
+      sectionWidth === "contained" && "mx-auto max-w-7xl px-4 sm:px-6 lg:px-8",
+    ]}
+  >
+    {singleBlock ? (
+      <div class="grid grid-cols-1 lg:grid-cols-12">
+        <div class="col-span-1 lg:col-span-12">
+          <BlockRenderer type={singleBlock.type as any} props={singleBlock.props ?? {}} />
+        </div>
+      </div>
+    ) : hasMultiColumn ? (
+      <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-8">
+        {blocks.map((block, i) => (
+          <div class={`col-span-1 ${getSpanClass(columns[i] ?? 12)}`}>
+            <BlockRenderer type={block.type as any} props={block.props ?? {}} />
+          </div>
+        ))}
+      </div>
+    ) : null}
+  </div>
+)}

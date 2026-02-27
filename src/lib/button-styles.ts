@@ -42,11 +42,11 @@ export function getButtonClasses(config: ButtonStyleConfig = {}): string {
   const isIconButton = icon || variant === "icon";
   const sizeClasses = isIconButton
     ? {
-        xs: "h-6 w-6 p-0 text-xs rounded-full",
-        sm: "h-8 w-8 p-0 text-sm rounded-full",
-        md: "h-10 w-10 p-0 text-md rounded-full",
-        lg: "h-12 w-12 p-0 text-lg rounded-full",
-        xl: "h-14 w-14 p-0 text-xl rounded-full",
+        xs: "h-6 w-6 p-0 text-xs rounded-full m-1",
+        sm: "h-8 w-8 p-0 text-sm rounded-full m-1.5",
+        md: "h-10 w-10 p-0 text-md rounded-full m-2",
+        lg: "h-12 w-12 p-0 text-lg rounded-full m-2.5",
+        xl: "h-14 w-14 p-0 text-xl rounded-full m-3",
       }
     : {
         xs: "py-1 px-2 text-[10px]",

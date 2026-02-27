@@ -1,0 +1,86 @@
+---
+interface SocialLink {
+  url: string;
+  label?: string;
+}
+
+interface Props {
+  globalCompanyName?: string;
+  isBackend?: boolean;
+  globalCompanyPhone?: string;
+  primaryTextClasses?: string;
+  secondaryTextClasses?: string;
+  globalInputClasses?: string;
+  isAuthPage?: boolean;
+  globalIconButtonClasses?: string;
+  isAuthPageResult?: boolean;
+  isContactPageResult?: boolean;
+  currentUser?: any;
+  hideFooter?: boolean;
+  customFooterHtml?: string;
+  socialNetworks?: SocialLink[];
+}
+
+const {
+  currentUser,
+  customFooterHtml,
+  socialNetworks,
+  globalCompanyName,
+  globalCompanyPhone,
+  primaryTextClasses,
+  secondaryTextClasses,
+  globalInputClasses,
+  isAuthPage,
+  isAuthPageResult,
+  isContactPageResult,
+  hideFooter,
+} = Astro.props;
+
+import Socials from "./Socials.astro";
+import Tooltip from "./Tooltip.astro";
+---
+
+<div class="grid h-16 w-full grid-cols-1 items-center gap-2 md:grid-cols-3">
+  <div class="flex max-w-xs items-center justify-center md:justify-start">
+    <Socials
+      variant="minimal"
+      size="md"
+      colorScheme="default"
+      gap="sm"
+      className="justify-center"
+    />
+  </div>
+
+  <div class="flex items-center justify-center">
+    <div class="text-xs">
+      <ul class="align-center flex justify-center">
+        <li>
+          <Tooltip
+            text={`${new Date().getFullYear().toString()} ${globalCompanyName}. All rights reserved.`}
+          >
+            <span class="me-6 no-underline hover:underline">©</span>
+          </Tooltip>
+        </li>
+        <li>
+          <a href="/privacy" class="me-6 no-underline hover:underline">
+            {" "}
+            privacy{" "}
+          </a>
+        </li>
+        <li>
+          <a href="/terms" class="me-6 no-underline hover:underline">
+            {" "}
+            terms{" "}
+          </a>
+        </li>
+        <li>
+          <a href="/cookies" class="no-underline hover:underline">
+            {" "}
+            cookie{" "}
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+  <div class="flex items-center justify-end"></div>
+</div>

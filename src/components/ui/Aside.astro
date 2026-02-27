@@ -22,12 +22,8 @@ const currentRole = currentUser?.profile?.role;
 // Check feature flags
 const chatEnabled = await isFeatureEnabled("chat");
 
-// Get social networks from CMS settings
-const companyData = await globalCompanyData();
-const socialNetworks = companyData.socialNetworks || [];
-
-// Get aside nav from company-specific config (site-config-{slug}.json)
-const asideNavItems = currentUser?.id ? await getResolvedAsideNav(currentRole) : [];
+// Get aside nav from company-specific config (site-config-{slug}.json). Show for everyone; role filters which items are visible.
+const asideNavItems = await getResolvedAsideNav(currentRole);
 
 // Get current page URL for active state
 const currentPath = Astro.url.pathname;
@@ -237,27 +233,16 @@ function slugifyId(s: string) {
 
   <!-- Fixed footer with social icons -->
   <div class="color-border mt-auto flex-shrink-0 border-t px-3 py-4">
-    {
-      socialNetworks.length > 0 ? (
-        <div data-sidebar-collapse-hide="">
-          <Socials
-            links={socialNetworks}
-            variant="minimal"
-            size="md"
-            colorScheme="default"
-            gap="md"
-            className="justify-center"
-          />
-        </div>
-      ) : (
-        <div
-          class="flex items-center justify-center text-xs text-gray-400 dark:text-gray-500"
-          data-sidebar-collapse-hide=""
-        >
-          <span>No social links configured</span>
-        </div>
-      )
-    }
+    <div data-sidebar-collapse-hide="">
+      <Socials
+        variant="minimal"
+        size="md"
+        colorScheme="default"
+        gap="md"
+        className="justify-center"
+      />
+    </div>
+
     {/* Collapsed state: show single icon */}
     <div class="hidden items-center justify-center" data-sidebar-collapse-show="">
       <span class="text-gray-500 dark:text-gray-400">

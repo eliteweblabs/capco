@@ -1,9 +1,10 @@
 ---
 /**
- * Catch-all page router – CMS content from database via getPageContent.
- * Renders MarkdownPage with layout, component shortcodes, and 404 on missing content.
+ * Catch-all page router – Block pages first, then template CMS (cmsPages/MarkdownPage).
+ * 1. If a block page exists for the slug → render BlockPageView.
+ * 2. Else if template page exists (getPageContent) → render MarkdownPage.
+ * 3. Else → 404.
  * OAuth callback and path exclusions preserved.
- * Fetch content and redirect here (before any render) to avoid ResponseSentError.
  */
 
 // OAuth callback: if provider redirected to / with ?code=, redirect to API before any rendering
@@ -14,7 +15,9 @@ if (oauthCode) {
 }
 
 import { checkAuth } from "../lib/auth";
+import { getBlockPageContent } from "../lib/content-blocks";
 import { getPageContent } from "../lib/content";
+import BlockPageView from "../components/cms/BlockPageView.astro";
 import MarkdownPage from "../components/common/MarkdownPage.astro";
 
 const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
@@ -35,11 +38,27 @@ if (excludedPaths.some((path) => pageSlug.includes(path))) {
   return new Response(null, { status: 404 });
 }
 
-// Fetch content in the page so redirect happens before any response is sent (avoids ResponseSentError)
-const pageContent = await getPageContent(pageSlug);
-if (!pageContent) {
+const blockPageContent = await getBlockPageContent(pageSlug);
+const templatePageContent = blockPageContent ? null : await getPageContent(pageSlug);
+
+if (!blockPageContent && !templatePageContent) {
   return Astro.redirect("/404");
 }
 ---
 
-<MarkdownPage slug={pageSlug} pageContent={pageContent} {currentUser} {session} {supabase} />
+{blockPageContent ? (
+  <BlockPageView
+    pageContent={blockPageContent}
+    currentUser={currentUser}
+    session={session}
+    supabase={supabase}
+  />
+) : templatePageContent ? (
+  <MarkdownPage
+    slug={pageSlug}
+    pageContent={templatePageContent}
+    currentUser={currentUser}
+    session={session}
+    supabase={supabase}
+  />
+) : null}

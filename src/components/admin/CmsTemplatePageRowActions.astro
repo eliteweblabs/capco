@@ -1,0 +1,35 @@
+---
+import Button from "../common/Button.astro";
+import DeleteConfirmButton from "../ui/DeleteConfirmButton.astro";
+
+interface Props {
+  page: { id: string | number; slug: string };
+}
+
+const { page } = Astro.props;
+---
+
+<div class="flex items-center gap-2">
+  <Button
+    variant="ghost"
+    size="sm"
+    iconOnly
+    icon="edit"
+    class="edit-template-page-btn"
+    dataAttributes={{ "data-slug": page.slug }}
+    title="Edit page"
+    iconClasses="mr-0"
+  />
+  <DeleteConfirmButton
+    id={"delete-template-page-" + page.id}
+    itemType="page"
+    apiEndpoint="/api/cms/pages"
+    deleteMethod="DELETE"
+    deleteQueryParam="slug"
+    onDeleteCallback="handleTemplatePageDeleted"
+    tooltipText={"Delete " + page.slug}
+    size="sm"
+    variant="icon"
+    dataAttributes={{ "data-slug": page.slug }}
+  />
+</div>

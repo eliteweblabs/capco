@@ -1,0 +1,82 @@
+---
+/**
+ * Design demo: AccordionDataTable
+ * Resizable data table with expandable rows. Same component as CMS and Users lists.
+ */
+import { checkAuth } from "../../../lib/auth";
+import LayoutDefault from "../../../components/layouts/LayoutDefault.astro";
+import AccordionDataTable from "../../../components/common/AccordionDataTable.astro";
+import DesignDemoTableRowActions from "../../../components/admin/DesignDemoTableRowActions.astro";
+import { globalClasses } from "../../api/global/global-classes";
+
+const { currentUser, session } = await checkAuth(Astro.cookies);
+const currentRole = currentUser?.profile?.role;
+
+if (!currentUser || !session) {
+  return Astro.redirect("/auth/login");
+}
+if (currentRole !== "Admin") {
+  return Astro.redirect("/dashboard");
+}
+
+const { primaryTextClasses, secondaryTextClasses } = globalClasses();
+
+const demoTableData = [
+  { id: "1", slug: "about", title: "About Us", template: "fullwidth" },
+  { id: "2", slug: "contact", title: "Contact", template: "fullwidth" },
+  { id: "3", slug: "services", title: "Our Services", template: "fullwidth" },
+  { id: "4", slug: "faq", title: "FAQ", template: "fullwidth" },
+];
+---
+
+<LayoutDefault
+  title="Data Table Accordion Demo"
+  description="AccordionDataTable: resizable columns, expandable rows, actions. Used on CMS and Users."
+>
+  <div class="px-4 py-8">
+    <div class="mb-8">
+      <h1 class={`mb-2 text-3xl font-bold ${primaryTextClasses}`}>Data Table Accordion</h1>
+      <p class={`${secondaryTextClasses} text-gray-600 dark:text-gray-400`}>
+        Resizable data table with expandable detail rows. Click a row to expand; drag column edges to resize. Used on <a
+          href="/admin/cms"
+          class="text-primary-500 hover:underline">CMS</a
+        > and <a href="/admin/users" class="text-primary-500 hover:underline">Users</a>.
+      </p>
+    </div>
+
+    <div
+      class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-900"
+    >
+      <AccordionDataTable
+        id="design-demo-accordion-table"
+        title="Demo table"
+        description="Dummy data. Row actions are demo-only (Edit/Delete)."
+        data={demoTableData}
+        getItemId={(row) => row.id}
+        slotIdPrefix="design-demo-slot"
+        emptyMessage="No rows."
+        columns={[
+          { key: "slug", label: "Slug", getValue: (r) => r.slug, width: 24 },
+          {
+            key: "title",
+            label: "Title",
+            getValue: (r) => r.title || "—",
+            cellClass: "max-w-64 truncate whitespace-nowrap text-gray-500 dark:text-gray-400",
+            width: 56,
+          },
+          { key: "template", label: "Template", getValue: (r) => r.template, width: 20 },
+        ]}
+        actionsComponent={DesignDemoTableRowActions}
+        actionsGetProps={(r) => ({ item: r })}
+      />
+      <div class="mt-4 rounded border border-gray-200 p-4 dark:border-gray-700">
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+          Expand a row to see the detail slot. Column widths are resizable (drag the right edge of a header). Use <code
+            class="rounded bg-gray-100 px-1 dark:bg-gray-800"
+            >global-classes.ts</code
+          > dataTable* classes for styling.
+        </p>
+      </div>
+    </div>
+  </div>
+</LayoutDefault>

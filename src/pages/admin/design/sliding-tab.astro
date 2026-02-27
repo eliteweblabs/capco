@@ -1,0 +1,168 @@
+---
+/**
+ * Design demo: Sliding Tab + Content
+ * SlidingTabs nav with tab panels. Same pattern as Banner Alerts, Notifications, Project nav.
+ */
+import { checkAuth } from "../../../lib/auth";
+import LayoutDefault from "../../../components/layouts/LayoutDefault.astro";
+import SlidingTabs from "../../../components/common/SlidingTabs.astro";
+import { globalClasses } from "../../api/global/global-classes";
+
+const { currentUser, session } = await checkAuth(Astro.cookies);
+const currentRole = currentUser?.profile?.role;
+
+if (!currentUser || !session) {
+  return Astro.redirect("/auth/login");
+}
+if (currentRole !== "Admin") {
+  return Astro.redirect("/dashboard");
+}
+
+const { primaryTextClasses, secondaryTextClasses, globalAdminContainerClasses } = globalClasses();
+
+const tabParam = Astro.url.searchParams.get("tab") || "overview";
+const tabIndex = ["overview", "content", "settings"].indexOf(tabParam);
+const activeItem = tabIndex >= 0 ? tabIndex : 0;
+
+const tabItems = [
+  {
+    id: "tab-overview",
+    label: "Overview",
+    variant: "tab" as const,
+    showLabel: true,
+    onclick: "window.switchDesignSlidingTab?.('overview')",
+  },
+  {
+    id: "tab-content",
+    label: "Content",
+    variant: "tab" as const,
+    showLabel: true,
+    onclick: "window.switchDesignSlidingTab?.('content')",
+  },
+  {
+    id: "tab-settings",
+    label: "Settings",
+    variant: "tab" as const,
+    showLabel: true,
+    onclick: "window.switchDesignSlidingTab?.('settings')",
+  },
+];
+---
+
+<LayoutDefault
+  title="Sliding Tab Demo"
+  description="SlidingTabs with content panels. Used on Banner Alerts, Notifications, Project pages."
+>
+  <div class="px-4 py-8">
+    <div class="mb-8">
+      <h1 class={`mb-2 text-3xl font-bold ${primaryTextClasses}`}>Sliding Tab + Content</h1>
+      <p class={`${secondaryTextClasses} text-gray-600 dark:text-gray-400`}>
+        Tab nav with sliding indicator and panels. Sync with URL <code
+          class="rounded bg-gray-100 px-1 dark:bg-gray-800">?tab=</code
+        >. Used on <a
+          href="/admin/banner-alerts"
+          class="text-primary-500 hover:underline">Banner Alerts</a
+        >, <a href="/admin/notifications" class="text-primary-500 hover:underline">Notifications</a>.
+      </p>
+    </div>
+
+    <SlidingTabs
+      navId="design-sliding-tabs-demo"
+      activeItem={activeItem}
+      urlParam="tab"
+      switchHandler="switchDesignSlidingTab"
+      items={tabItems}
+    />
+
+    <div class="rounded-b-lg border border-t-0 border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+      <div
+        id="panel-overview"
+        class:list={[globalAdminContainerClasses, tabParam !== "overview" && "hidden"]}
+        role="tabpanel"
+        aria-labelledby="tab-overview"
+      >
+        <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+          <h2 class={`${primaryTextClasses} text-lg font-semibold`}>Overview</h2>
+        </div>
+        <div class="p-6">
+          <p class="text-gray-600 dark:text-gray-400">
+            First tab content. Use <code class="rounded bg-gray-100 px-1 dark:bg-gray-800"
+              >SlidingTabs.astro</code
+            > with <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">variant: "tab"</code>. Panels show/hide by URL <code
+              class="rounded bg-gray-100 px-1 dark:bg-gray-800"
+              >?tab=overview</code
+            >, <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">?tab=content</code>, <code
+              class="rounded bg-gray-100 px-1 dark:bg-gray-800"
+              >?tab=settings</code>.
+          </p>
+        </div>
+      </div>
+      <div
+        id="panel-content"
+        class:list={[globalAdminContainerClasses, tabParam !== "content" && "hidden"]}
+        role="tabpanel"
+        aria-labelledby="tab-content"
+      >
+        <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+          <h2 class={`${primaryTextClasses} text-lg font-semibold`}>Content</h2>
+        </div>
+        <div class="p-6">
+          <p class="text-gray-600 dark:text-gray-400">
+            Second tab. Content panels use <code class="rounded bg-gray-100 px-1 dark:bg-gray-800"
+              >globalAdminContainerClasses</code
+            > for consistent card styling.
+          </p>
+        </div>
+      </div>
+      <div
+        id="panel-settings"
+        class:list={[globalAdminContainerClasses, tabParam !== "settings" && "hidden"]}
+        role="tabpanel"
+        aria-labelledby="tab-settings"
+      >
+        <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+          <h2 class={`${primaryTextClasses} text-lg font-semibold`}>Settings</h2>
+        </div>
+        <div class="p-6">
+          <p class="text-gray-600 dark:text-gray-400">
+            Third tab. Switch handler updates the URL and toggles panel visibility.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</LayoutDefault>
+
+<script define:vars={{ tabParam }}>
+  (function () {
+    function switchDesignSlidingTab(value) {
+      const panels = ["overview", "content", "settings"];
+      const idx = panels.indexOf(value);
+      if (idx < 0) return;
+      panels.forEach((id) => {
+        const el = document.getElementById("panel-" + id);
+        if (el) el.classList.toggle("hidden", id !== value);
+      });
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", value);
+      window.history.replaceState({}, "", url.toString());
+      const nav = document.getElementById("design-sliding-tabs-demo");
+      if (nav) {
+        const btn = nav.querySelector(`[data-index="${idx}"]`);
+        if (btn) {
+          nav.querySelectorAll("button, a").forEach((b) => b.setAttribute("data-active", "false"));
+          btn.setAttribute("data-active", "true");
+          const indicator = nav.querySelector("[data-sliding-tabs-indicator]");
+          if (indicator && btn) {
+            const navRect = nav.getBoundingClientRect();
+            const btnRect = btn.getBoundingClientRect();
+            const left = btnRect.left - navRect.left + nav.scrollLeft;
+            indicator.style.left = left + "px";
+            indicator.style.width = btnRect.width + "px";
+          }
+        }
+      }
+    }
+    window.switchDesignSlidingTab = switchDesignSlidingTab;
+  })();
+</script>

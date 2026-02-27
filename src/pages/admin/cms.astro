@@ -1,7 +1,7 @@
 ---
 /**
  * CMS Admin Page
- * Manage page content stored in Supabase database
+ * Two systems: (1) Template pages (cmsPages) – markdown/content + layout. (2) Block pages (cmsBlockPages) – sections JSON.
  */
 import { checkAuth } from "../../lib/auth";
 import LayoutDefault from "../../components/layouts/LayoutDefault.astro";
@@ -10,15 +10,15 @@ import CloseButton from "../../components/ui/CloseButton.astro";
 import DeleteConfirmButton from "../../components/ui/DeleteConfirmButton.astro";
 import StickyActions from "../../components/project/StickyActions.astro";
 import { globalClasses } from "../api/global/global-classes";
-import { readFileSync, existsSync } from "fs";
-import { join } from "path";
-import matter from "gray-matter";
 import SimpleIcon from "../../components/common/SimpleIcon.astro";
 import AccordionDataTable from "../../components/common/AccordionDataTable.astro";
 import CmsPageRowActions from "../../components/admin/CmsPageRowActions.astro";
-import { getPageContent } from "../../lib/content";
+import CmsTemplatePageRowActions from "../../components/admin/CmsTemplatePageRowActions.astro";
+import { blockRegistry } from "../../components/blocks/BlockRegistry";
 
 const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
+
+const blockTypeNames = Object.keys(blockRegistry).sort();
 const currentRole = currentUser?.profile?.role;
 
 // Redirect to login if not authenticated
@@ -33,550 +33,81 @@ if (currentRole !== "Admin") {
 
 const { globalInputClasses } = globalClasses();
 
-// Discover available components for the accordion
-function discoverComponents() {
-  // Use import.meta.glob to discover components (similar to MarkdownPage.astro)
-  const commonComponents = import.meta.glob("../../components/common/*.astro", { eager: false });
-  const blockComponents = import.meta.glob("../../components/blocks/*.astro", { eager: false });
-  const featureComponents = import.meta.glob("../../features/**/*.astro", { eager: false });
-
-  const components: Array<{ name: string; category: string; path: string }> = [];
-
-  // Process common components
-  Object.keys(commonComponents).forEach((path) => {
-    const fileName = path.split("/").pop()?.replace(".astro", "");
-    if (fileName && fileName[0] === fileName[0].toUpperCase()) {
-      // Only include PascalCase components (exclude utilities, layouts, etc.)
-      const excluded = ["App", "Layout", "MarkdownPage", "Aside", "Navbar", "Footer", "Header"];
-      if (!excluded.includes(fileName)) {
-        components.push({
-          name: fileName,
-          category: "Common Components",
-          path: path.replace("../../", ""),
-        });
-      }
-    }
-  });
-
-  // Process block components
-  Object.keys(blockComponents).forEach((path) => {
-    const fileName = path.split("/").pop()?.replace(".astro", "");
-    if (fileName && fileName[0] === fileName[0].toUpperCase()) {
-      // Exclude utility components
-      const excluded = ["BlockRenderer"];
-      if (!excluded.includes(fileName)) {
-        components.push({
-          name: fileName,
-          category: "Block Components",
-          path: path.replace("../../", ""),
-        });
-      }
-    }
-  });
-
-  // Process feature components
-  Object.keys(featureComponents).forEach((path) => {
-    const fileName = path.split("/").pop()?.replace(".astro", "");
-    if (fileName && fileName[0] === fileName[0].toUpperCase()) {
-      // Extract feature name from path (handles nested paths like features/calendar/components/CalComBooking.astro)
-      const pathParts = path.split("/");
-      const featureIndex = pathParts.findIndex((p) => p === "features");
-      if (featureIndex !== -1 && pathParts[featureIndex + 1]) {
-        let featureName: string | undefined;
-
-        // Check if next part is "components" (nested structure)
-        if (pathParts[featureIndex + 2] === "components") {
-          // Path: features/calendar/components/CalComBooking.astro
-          featureName = pathParts[featureIndex + 1];
-        } else {
-          // Path: features/ai-chat-agent/AIChatAgent.astro
-          featureName = pathParts[featureIndex + 1];
-        }
-
-        if (featureName && featureName !== "components") {
-          // Format feature name (e.g., "ai-chat-agent" -> "AI Chat Agent")
-          const formattedFeatureName = featureName
-            .split("-")
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(" ");
-
-          components.push({
-            name: fileName,
-            category: `${formattedFeatureName} Features`,
-            path: path.replace("../../", ""),
-          });
-        }
-      }
-    }
-  });
-
-  // Group by category
-  const grouped = components.reduce(
-    (acc, comp) => {
-      if (!acc[comp.category]) {
-        acc[comp.category] = [];
-      }
-      acc[comp.category].push(comp);
-      return acc;
-    },
-    {} as Record<string, Array<{ name: string; category: string; path: string }>>
-  );
-
-  // Sort categories and components
-  const sortedCategories = Object.keys(grouped).sort();
-  const sortedGrouped: Record<string, Array<{ name: string; category: string; path: string }>> = {};
-
-  sortedCategories.forEach((category) => {
-    sortedGrouped[category] = grouped[category].sort((a, b) => a.name.localeCompare(b.name));
-  });
-
-  return sortedGrouped;
-}
-
-const componentGroups = discoverComponents();
-
-// Separate Common Components, Block Components, and Features
-const commonComponents = componentGroups["Common Components"] || [];
-const blockComponents = componentGroups["Block Components"] || [];
-const featureGroups = Object.fromEntries(
-  Object.entries(componentGroups).filter(
-    ([category]) => category !== "Common Components" && category !== "Block Components"
-  )
-);
-
-// Component shortcode templates with default demo values
-const componentShortcodes: Record<string, string> = {
-  // Common Components
-  Hero: `<Hero
-  title="Welcome to Our Platform"
-  description="Build amazing solutions with our comprehensive tools and dedicated support."
-  leftButtonText="Get Started"
-  leftButtonHref="/contact"
-  rightButtonText="Learn More"
-  rightButtonHref="/about"
-/>`,
-  Button: `<Button variant="primary" href="/contact">Click Me</Button>`,
-  PricingCard: `<PricingCard
-  title="Professional"
-  description="Perfect for growing businesses"
-  price="$99/mo"
-  features={["10 active projects", "Priority support", "Advanced analytics", "Team collaboration"]}
-  buttonText="Get Started"
-  buttonHref="/signup"
-/>`,
-  LoadingSpinner: `<LoadingSpinner size="md" color="primary" loadingText="Loading..." />`,
-  Tooltip: `<Tooltip text="Helpful tooltip text" position="top">Hover me</Tooltip>`,
-  SlideToggle: `<SlideToggle id="toggle-1" name="setting" label="Enable feature" checked={true} color="primary" />`,
-  Breadcrumb: `<Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Current Page", current: true }]} />`,
-  SimpleIcon: `<SimpleIcon name="check" class="h-5 w-5 text-green-500" />`,
-  Dropzone: `<Dropzone />`,
-
-  // Block Components
-  AlertBlock: `<AlertBlock
-  variant="info"
-  title="Information"
-  message="This is an example alert message. Customize it with your own content."
-  dismissible="true"
-  buttonText="Learn More"
-  buttonHref="/help"
-/>`,
-  CTABlock: `<CTABlock
-  title="Ready to Get Started?"
-  description="Join thousands of professionals using our platform to streamline their workflow."
-  buttonText="Start Free Trial"
-  buttonHref="/signup"
-  secondaryButtonText="Schedule Demo"
-  secondaryButtonHref="/contact"
-  variant="centered"
-/>`,
-  FAQBlock: `<FAQBlock
-  title="Frequently Asked Questions"
-  description="Find answers to common questions about our services"
-  faq1Question="What services do you offer?"
-  faq1Answer="We provide comprehensive services including design, installation, inspection, and maintenance."
-  faq2Question="How long does the process take?"
-  faq2Answer="Project timelines vary based on scope. Small projects take 1-2 weeks, larger ones 4-8 weeks."
-  faq3Question="Do you offer emergency services?"
-  faq3Answer="Yes, we offer 24/7 emergency response for all clients with active maintenance contracts."
-  variant="accordion"
-/>`,
-  StatsBlock: `<StatsBlock
-  title="By The Numbers"
-  description="Our track record speaks for itself"
-  stat1Value="500+"
-  stat1Label="Projects Completed"
-  stat1Icon="folder"
-  stat2Value="99%"
-  stat2Label="Client Satisfaction"
-  stat2Icon="heart"
-  stat3Value="24/7"
-  stat3Label="Support Available"
-  stat3Icon="phone"
-  stat4Value="15+"
-  stat4Label="Years Experience"
-  stat4Icon="award"
-  variant="simple"
-/>`,
-  CountUpBlock: `<CountUpBlock
-  title="Rothco Built by the Numbers..."
-  stat1Value="2.5M"
-  stat1Label="Sq Ft developed"
-  stat1Color="pink"
-  stat2Value="105"
-  stat2Label="years of management expertise"
-  stat2Color="cyan"
-  stat3Value="12"
-  stat3Label="satisfied clients"
-  stat3Color="orange"
-/>`,
-  TimelineBlock: `<TimelineBlock
-  title="Our Process"
-  description="How we deliver solutions"
-  step1Title="Initial Consultation"
-  step1Description="We assess your needs and review requirements"
-  step1Icon="phone"
-  step1Status="completed"
-  step2Title="Design & Planning"
-  step2Description="Our team creates a custom solution"
-  step2Icon="file"
-  step2Status="completed"
-  step3Title="Implementation"
-  step3Description="Professional execution by certified experts"
-  step3Icon="tool"
-  step3Status="current"
-  step4Title="Review & Delivery"
-  step4Description="Final testing and project handoff"
-  step4Icon="check-circle"
-  step4Status="upcoming"
-  variant="vertical"
-/>`,
-  LogoCloudBlock: `<LogoCloudBlock
-  title="Trusted By Industry Leaders"
-  description="We partner with the best in the business"
-  logo1Src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/customers/spotify-grayscale.svg"
-  logo1Alt="Spotify"
-  logo2Src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/customers/microsoft-grayscale.svg"
-  logo2Alt="Microsoft"
-  logo3Src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/customers/google-grayscale.svg"
-  logo3Alt="Google"
-  logo4Src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/customers/amazon-grayscale.svg"
-  logo4Alt="Amazon"
-  variant="marquee"
-  marqueeDirection="left"
-  grayscale="true"
-/>`,
-  PricingBlock: `<PricingBlock />`,
-  TestimonialBlock: `<TestimonialBlock />`,
-  GalleryBlock: `<GalleryBlock />`,
-  NewsletterBlock: `<NewsletterBlock />`,
-  TeamBlock: `<TeamBlock />`,
-  FeatureGridBlock: `<FeatureGridBlock />`,
-  TabberBlock: `<TabberBlock
-  tab1Label="Overview"
-  tab1Content="<p>Overview content goes here. Use HTML from your CMS editor.</p>"
-  tab2Label="Details"
-  tab2Content="<p>Details and specifications.</p>"
-  tab3Label="Contact"
-  tab3Content="<p>Get in touch with us.</p>"
-/>`,
-  WhatSetsUsApartBlock: `<WhatSetsUsApartBlock
-  title="What Sets Us Apart"
-  item1Title="Preconstruction Excellence"
-  item1Icon="file-check"
-  item2Title="FAR-Compliant Federal Delivery"
-  item2Icon="shield"
-  item3Title="Self-Performing General Contractor"
-  item3Icon="building"
-  item4Title="Proven Healthcare & Occupied Facility Experience"
-  item4Icon="hospital"
-  item5Title="Safety, Quality, and Accountability"
-  item5Icon="award"
-  imageSrc="https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=800&auto=format"
-  imageAlt="Quality control walk or safety briefing"
-  imagePosition="right"
-  variant="icons"
-/>`,
-  TwoColumnBlock: `<TwoColumnBlock
-  leftBackgroundImage="/images/left-bg.jpg"
-  leftBackgroundSize="cover"
-  rightBackgroundImage="/images/right-bg.jpg"
-  rightBackgroundSize="contain"
-  ratio="1:1"
-  gap="medium"
->
-  <div slot="left"><h2>Left Title</h2><p>Left column content here.</p></div>
-  <div slot="right"><h2>Right Title</h2><p>Right column content here.</p></div>
-</TwoColumnBlock>`,
-  TwoColumnFadeShowBlock: `<TwoColumnFadeShowBlock
-  image1="https://fhqglhcjlkusrykqnoel.supabase.co/storage/v1/object/public/project-media/global/1770762498339-worker-mask-02.png"
-  image2="https://fhqglhcjlkusrykqnoel.supabase.co/storage/v1/object/public/project-media/global/1770762487544-tractor-mask-03.png"
-  image3="https://fhqglhcjlkusrykqnoel.supabase.co/storage/v1/object/public/project-media/global/1770762489359-tractor-mask.png"
-  image4="https://fhqglhcjlkusrykqnoel.supabase.co/storage/v1/object/public/project-media/global/1770762464440-logo-mask.png"
-  image5="https://fhqglhcjlkusrykqnoel.supabase.co/storage/v1/object/public/project-media/global/1770762477364-roller-mask.png"
-  interval="5000"
-  fadeDuration="1200"
-  rightContent="<h2>Built With Discipline. Delivered With Accountability.</h2><p>More content here.</p>"
-  ratio="1:1"
-  maxWidth="full"
-/>`,
-
-  // UI Components
-  FullScreenSlideshow: `<FullScreenSlideshow
-  image1="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1920&auto=format"
-  alt1="Slide 1"
-  caption1="Optional caption for slide 1"
-  image2="https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=1920&auto=format"
-  alt2="Slide 2"
-  caption2="Optional caption for slide 2"
-  autoplay="5000"
-  showNav="true"
-  showPagination="true"
-/>`,
-  InsetBgFade: `<InsetBgFade
-  image1="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1920&auto=format"
-  image2="https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=1920&auto=format"
-  image3="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&auto=format"
-  image4="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1920&auto=format"
-  scrollMode="true"
-  fadeDuration="1200"
-/>`,
-  ImageSlider: `<ImageSlider
-  title="Our Projects"
-  description="Quality work across the region"
-  image1="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format"
-  image2="https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=800&auto=format"
-  image3="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format"
-  image4="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format"
-  alt1="Construction site"
-  alt2="Industrial work"
-  alt3="Equipment"
-  alt4="Commercial building"
-  height="500px"
-  overlay="true"
-  overlayOpacity="0.5"
-  leftButtonText="Get a Quote"
-  leftButtonHref="/contact"
-  rightButtonText="Learn More"
-  rightButtonHref="/services"
-/>`,
-
-  // Features
-  ProjectPortfolio: `<ProjectPortfolio />`,
-  ProjectPortfolioSocial: `<ProjectPortfolioSocial />`,
-  Testimonials: `<Testimonials companyName="Our Company" />`,
-  CalComBooking: `<CalComBooking />`,
-  GoogleMap: `<GoogleMap lat="40.7128" lng="-74.0060" zoom="12" />`,
-  DynamicProjectsMap: `<DynamicProjectsMap height="500px" />`,
-  FeedbackWidget: `<FeedbackWidget />`,
-  VapiChatWidget: `<VapiChatWidget />`,
-  AIChatAgent: `<AIChatAgent />`,
-};
-
-// Helper function to get shortcode for a component
-function getComponentShortcode(name: string): string {
-  return componentShortcodes[name] || `<${name} />`;
-}
-
-// Fetch existing CMS pages from database
-let cmsPages: any[] = [];
+// Fetch template pages (cmsPages) – old system
+let templatePages: any[] = [];
 try {
   const baseUrl = Astro.url.origin;
-  const response = await fetch(`${baseUrl}/api/cms/pages`);
+  const res = await fetch(`${baseUrl}/api/cms/pages`);
+  if (res.ok) {
+    const data = await res.json();
+    templatePages = (data.pages || []).sort((a: any, b: any) =>
+      (a.slug || "").localeCompare(b.slug || "")
+    );
+  }
+} catch (error) {
+  console.error("Error fetching template pages:", error);
+}
+
+// Fetch block pages from database
+let blockPages: any[] = [];
+try {
+  const baseUrl = Astro.url.origin;
+  const response = await fetch(`${baseUrl}/api/cms/block-pages`);
   if (response.ok) {
     const data = await response.json();
-    // Sort pages - use displayOrder if available, otherwise sort by created_at
-    cmsPages = (data.pages || []).sort((a: any, b: any) => {
-      // If displayOrder exists and is not null, use it
-      if (a.displayOrder != null && b.displayOrder != null) {
-        return a.displayOrder - b.displayOrder;
-      }
-      // Fallback to created_at
-      return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
-    });
+    blockPages = (data.pages || []).sort((a: any, b: any) =>
+      (a.slug || "").localeCompare(b.slug || "")
+    );
   }
 } catch (error) {
-  console.error("Error fetching CMS pages:", error);
+  console.error("Error fetching block pages:", error);
 }
-
-// Fetch existing markdown files (recursively from content/pages/)
-let markdownPages: Array<{ slug: string; title: string; source: string; path: string }> = [];
-try {
-  const contentDir = join(process.cwd(), "content", "pages");
-  if (existsSync(contentDir)) {
-    const fs = require("fs");
-
-    // Recursive function to find all markdown files
-    function findMarkdownFiles(
-      dir: string,
-      basePath: string = ""
-    ): Array<{ file: string; path: string }> {
-      const results: Array<{ file: string; path: string }> = [];
-      const items = fs.readdirSync(dir, { withFileTypes: true });
-
-      for (const item of items) {
-        const fullPath = join(dir, item.name);
-        const relativePath = basePath ? `${basePath}/${item.name}` : item.name;
-
-        if (item.isDirectory()) {
-          // Recursively search subdirectories
-          results.push(...findMarkdownFiles(fullPath, relativePath));
-        } else if (item.isFile() && item.name.endsWith(".md")) {
-          results.push({ file: item.name, path: relativePath });
-        }
-      }
-
-      return results;
-    }
-
-    const mdFiles = findMarkdownFiles(contentDir);
-
-    markdownPages = mdFiles.map(({ file, path }) => {
-      // Slug is the path without .md extension, using / as separator
-      const slug = path.replace(/\.md$/, "").replace(/\//g, "/");
-      const filePath = join(contentDir, path);
-      try {
-        const fileContent = readFileSync(filePath, "utf-8");
-        const { data } = matter(fileContent);
-        return {
-          slug,
-          title: data.title || slug,
-          source: "markdown",
-          path: path,
-        };
-      } catch (error) {
-        return {
-          slug,
-          title: slug,
-          source: "markdown",
-          path: path,
-        };
-      }
-    });
-  }
-} catch (error) {
-  console.error("Error reading markdown files:", error);
-}
-
-// Mark which markdown pages are already in the database
-const dbSlugs = new Set(cmsPages.map((p) => p.slug));
-const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
 ---
 
 <LayoutDefault
   title="CMS Management"
-  description="Manage page content stored in the database. Database pages override markdown files."
+  description="Template pages (content + layout) and block pages (sections)."
 >
   <div class="mb-6">
-    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">CMS Management</h1>
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">CMS</h1>
     <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-      Manage page content stored in the database. Database pages override markdown files. Changes
-      take effect immediately.
+      Template pages use markdown/content and a layout (default, fullwidth, fullform, etc.). Block pages are built from sections (see Block pages below).
     </p>
   </div>
 
-  <!-- Info Box -->
-  <div class="mb-6 space-y-3">
-    <div
-      class="dark:bg-primary-900/20 hidden rounded-lg border border-primary-200 bg-primary-50 p-4 dark:border-primary-800"
-    >
-      <p class="text-sm text-primary-800 dark:text-primary-200">
-        <strong>How it works:</strong> Content is loaded in this order: <strong>Database</strong> → Markdown
-        Files → Defaults. Pages in the database will override markdown files with the same slug.
-      </p>
-    </div>
-  </div>
-
-  <!-- Action Buttons -->
-  <div class="mb-6">
-    {
-      markdownPages.length > 0 && (
-        <div class="mb-4 ml-2 flex items-center text-sm text-gray-600 dark:text-gray-400">
-          <span class="mr-1">💡</span>
-          <span>
-            {markdownOnlyPages.length > 0
-              ? `${markdownOnlyPages.length} not imported yet`
-              : `All ${markdownPages.length} already imported (will update existing)`}
-          </span>
-        </div>
-      )
-    }
-  </div>
-
-  <!-- Markdown Files Section (if any exist) -->
-  {
-    markdownOnlyPages.length > 0 && (
-      <div class="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-800 dark:bg-yellow-900/20">
-        <h2 class="mb-3 text-lg font-semibold text-yellow-900 dark:text-yellow-200">
-          📄 Markdown Files (Not in Database)
-        </h2>
-        <p class="mb-3 text-sm text-yellow-800 dark:text-yellow-300">
-          These pages exist as markdown files but aren't in the database yet. Import them to enable
-          database editing.
-        </p>
-        <div class="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
-          {markdownOnlyPages.map((page) => (
-            <div class="flex items-center justify-between rounded border border-yellow-200 bg-white p-2 dark:border-yellow-700 dark:bg-gray-900">
-              <div class="min-w-0 flex-1">
-                <div class="truncate text-sm font-medium text-gray-900 dark:text-white">
-                  {page.title}
-                </div>
-                <div class="truncate text-xs text-gray-500 dark:text-gray-400">/{page.slug}</div>
-                {page.path && page.path !== `${page.slug}.md` && (
-                  <div class="truncate text-xs text-gray-400 dark:text-gray-500" title={page.path}>
-                    📁 {page.path}
-                  </div>
-                )}
-              </div>
-              <button
-                class="import-markdown-btn ml-2 flex-shrink-0 rounded bg-yellow-100 px-2 py-1 text-xs text-yellow-800 hover:bg-yellow-200 dark:bg-yellow-900 dark:text-yellow-200 dark:hover:bg-yellow-800"
-                data-slug={page.slug}
-                data-path={page.path}
-              >
-                Import
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-    )
-  }
-
-  <!-- Pages List -->
-  <div class="overflow-x-scroll rounded-lg bg-white shadow dark:bg-gray-900">
+  <!-- 1. Template Pages (cmsPages) – main overview -->
+  <section class="mb-10">
+    <h2 class="mb-4 text-xl font-semibold text-gray-900 dark:text-white">Pages</h2>
     <AccordionDataTable
-      id="cms-pages"
-      data={cmsPages}
+      id="cms-template-pages"
+      data={templatePages}
       getItemId={(p) => p.slug}
       getReorderId={(p) => String(p.id)}
-      slotIdPrefix="editor-slot"
-      draggable={true}
+      slotIdPrefix="template-editor-slot"
+      draggable={false}
       showCreateRow={true}
       createRowLabel="+ Create new page"
-      getCreateSlotId={() => "create"}
-      reorderCallback="handleCmsReorder"
-      triggerClass="cms-accordion-trigger"
-      detailClass="cms-accordion-detail"
-      slotClass="editor-slot"
-      chevronClass="cms-chevron"
-      detailRowIdPrefix="cms"
-      emptyMessage={markdownOnlyPages.length > 0
-        ? "Import markdown files above or create a new page above."
-        : 'Use "Create new page" above to add your first page.'}
+      getCreateSlotId={() => "template-create"}
+      triggerClass="cms-template-trigger"
+      detailClass="cms-template-detail"
+      slotClass="template-editor-slot"
+      chevronClass="cms-template-chevron"
+      detailRowIdPrefix="cms-template"
+      emptyMessage='No pages yet. Use "Create new page" above to add one.'
       getTriggerDataAttrs={(p) => ({
         editorSlot: p.slug,
         pageId: String(p.id),
-        displayOrder: String(p.displayOrder ?? 0),
       })}
       getDetailRowDataAttrs={(p) => ({ editorSlot: p.slug })}
-      createRowDataAttrs={{ editorSlot: "create" }}
-      createButtonId="create-page-btn"
+      createRowDataAttrs={{ editorSlot: "template-create" }}
+      createButtonId="create-template-page-btn"
       columns={[
         {
           key: "slug",
           label: "Slug",
           getValue: (p) => p.slug,
           cellClass: "whitespace-nowrap font-medium",
-          width: 120,
+          width: 24,
         },
         {
           key: "title",
@@ -584,32 +115,164 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
           getValue: (p) => p.title || "—",
           allowHtml: true,
           cellClass: "max-w-64 truncate whitespace-nowrap text-gray-500 dark:text-gray-400",
-          width: 280,
+          width: 56,
         },
         {
           key: "template",
           label: "Template",
           getValue: (p) => p.template || "default",
-          cellClass: "whitespace-nowrap",
-          width: 100,
-        },
-        {
-          key: "status",
-          label: "Status",
-          headerClass: "hidden",
-          cellClass: "hidden",
-          allowHtml: true,
-          getValue: (p) =>
-            p.isActive
-              ? '<span class="inline-flex rounded-full bg-green-100 px-2 text-xs font-semibold leading-5 text-green-800 dark:bg-green-900 dark:text-green-200">Active</span>'
-              : '<span class="inline-flex rounded-full bg-gray-100 px-2 text-xs font-semibold leading-5 text-gray-800 dark:bg-gray-700 dark:text-gray-300">Inactive</span>',
+          cellClass: "whitespace-nowrap text-gray-500 dark:text-gray-400",
+          width: 20,
         },
       ]}
-      actionsComponent={CmsPageRowActions}
+      actionsComponent={CmsTemplatePageRowActions}
       actionsGetProps={(p) => ({ page: p })}
     />
-  </div>
+  </section>
+
+  <!-- 2. Block Pages (cmsBlockPages) -->
+  <section class="mb-10">
+    <h2 class="mb-4 text-xl font-semibold text-gray-900 dark:text-white">Block Pages</h2>
+    <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+      Pages built from sections (fullwidth/contained, 12-col layout). See markdowns/CMS_BLOCK_PAGES.md.
+    </p>
+  <AccordionDataTable
+    id="cms-pages"
+    data={blockPages}
+    getItemId={(p) => p.slug}
+    getReorderId={(p) => String(p.id)}
+    slotIdPrefix="editor-slot"
+    draggable={false}
+    showCreateRow={true}
+    createRowLabel="+ Create new page"
+    getCreateSlotId={() => "create"}
+    triggerClass="cms-accordion-trigger"
+    detailClass="cms-accordion-detail"
+    slotClass="editor-slot"
+    chevronClass="cms-chevron"
+    detailRowIdPrefix="cms"
+    emptyMessage='Use "Create new page" above to add your first block page.'
+    getTriggerDataAttrs={(p) => ({
+      editorSlot: p.slug,
+      pageId: String(p.id),
+    })}
+    getDetailRowDataAttrs={(p) => ({ editorSlot: p.slug })}
+    createRowDataAttrs={{ editorSlot: "create" }}
+    createButtonId="create-page-btn"
+    columns={[
+      {
+        key: "slug",
+        label: "Slug",
+        getValue: (p) => p.slug,
+        cellClass: "whitespace-nowrap font-medium",
+        width: 24,
+      },
+      {
+        key: "title",
+        label: "Title",
+        getValue: (p) => p.title || "—",
+        allowHtml: true,
+        cellClass: "max-w-64 truncate whitespace-nowrap text-gray-500 dark:text-gray-400",
+        width: 56,
+      },
+      {
+        key: "sections",
+        label: "Sections",
+        getValue: (p) => (Array.isArray(p.sections) ? p.sections.length : 0).toString(),
+        cellClass: "whitespace-nowrap text-gray-500 dark:text-gray-400",
+        width: 20,
+      },
+      // {
+      //   key: "status",
+      //   label: "Status",
+      //   headerClass: "hidden",
+      //   cellClass: "hidden",
+      //   allowHtml: true,
+      //   getValue: (p) =>
+      //     p.isActive
+      //       ? '<span class="inline-flex rounded-full bg-green-100 px-2 text-xs font-semibold leading-5 text-green-800 dark:bg-green-900 dark:text-green-200">Active</span>'
+      //       : '<span class="inline-flex rounded-full bg-gray-100 px-2 text-xs font-semibold leading-5 text-gray-800 dark:bg-gray-700 dark:text-gray-300">Inactive</span>',
+      // },
+    ]}
+    actionsComponent={CmsPageRowActions}
+    actionsGetProps={(p) => ({ page: p })}
+  />
+  </section>
 </LayoutDefault>
+
+<!-- Template page editor (slug, title, description, content, template) -->
+<div id="template-editor-form-pool" class="hidden">
+  <div id="template-editor-form-container">
+    <div class="p-5">
+      <div class="mb-4 flex items-center justify-between">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white" id="template-editor-title">
+          Create New Page
+        </h3>
+        <CloseButton id="close-template-editor-btn" tooltipText="Close editor" position="top" />
+      </div>
+      <form id="template-page-form" class="space-y-4">
+        <div>
+          <label for="template-page-slug" class="mb-2 block text-sm font-medium"> Slug (URL path) </label>
+          <input
+            type="text"
+            id="template-page-slug"
+            name="slug"
+            required
+            class={globalInputClasses}
+            placeholder="about (or / for home)"
+          />
+        </div>
+        <div>
+          <label for="template-page-title" class="mb-2 block text-sm font-medium"> Title </label>
+          <input
+            type="text"
+            id="template-page-title"
+            name="title"
+            class={globalInputClasses}
+            placeholder="About Us"
+          />
+        </div>
+        <div>
+          <label for="template-page-description" class="mb-2 block text-sm font-medium"> Description </label>
+          <input
+            type="text"
+            id="template-page-description"
+            name="description"
+            class={globalInputClasses}
+            placeholder="Meta description"
+          />
+        </div>
+        <div>
+          <label for="template-page-template" class="mb-2 block text-sm font-medium"> Template </label>
+          <select id="template-page-template" name="template" class={globalInputClasses}>
+            <option value="default">Default</option>
+            <option value="fullwidth">Full width</option>
+            <option value="fullform">Full form</option>
+            <option value="minimal">Minimal</option>
+            <option value="centered">Centered</option>
+            <option value="fullscreen">Fullscreen</option>
+          </select>
+        </div>
+        <div>
+          <label for="template-page-content" class="mb-2 block text-sm font-medium"> Content (markdown or shortcodes) </label>
+          <textarea
+            id="template-page-content"
+            name="content"
+            rows={14}
+            class={globalInputClasses}
+            placeholder="# Heading\n\nMarkdown or <ContactForm /> etc."
+          ></textarea>
+        </div>
+        <div id="template-form-error" class="hidden text-sm text-red-600 dark:text-red-400"></div>
+        <div id="template-form-success" class="hidden text-sm text-green-600 dark:text-green-400"></div>
+        <div class="flex justify-end gap-3">
+          <Button type="button" id="cancel-template-btn" variant="primary"> Cancel </Button>
+          <Button type="submit" variant="secondary"> Save Page </Button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 
 <div id="page-editor-form-pool" class="hidden">
   <div id="page-editor-form-container">
@@ -661,428 +324,56 @@ const markdownOnlyPages = markdownPages.filter((p) => !dbSlugs.has(p.slug));
         </div>
 
         <div>
-          <label for="page-template" class="mb-2 block text-sm font-medium"> Template </label>
-          <select id="page-template" name="template" class={globalInputClasses}>
-            <option value="default">Default</option>
-            <option value="fullwidth">Full Width</option>
-            <option value="minimal">Minimal</option>
-            <option value="centered">Centered Content</option>
-            <option value="fullform">Full Form (no reveal-text)</option>
-          </select>
+          <label class="mb-2 block text-sm font-medium"> Sections & blocks </label>
+          <p class="mb-3 text-xs text-gray-500 dark:text-gray-400">
+            Add sections; each section can have multiple blocks. Use the toggle on each block for <strong>Full width</strong> (edge-to-edge) or <strong>Contained</strong> (max-width).
+          </p>
+          <div id="block-builder-sections" class="flex flex-col gap-6 rounded-lg border border-gray-200 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-900/50"></div>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <Button type="button" id="block-builder-add-section" variant="secondary" class="text-sm">+ Add section</Button>
+          </div>
+          <input type="hidden" id="page-sections" name="sections" value="[]" />
         </div>
 
-        <div class="flex items-center">
-          <input
-            type="checkbox"
-            id="page-include-in-navigation"
-            name="includeInNavigation"
-            class="h-4 w-4 rounded border-gray-300 bg-gray-100 text-primary-600 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-primary-600"
-          />
-          <label
-            for="page-include-in-navigation"
-            class="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-          >
-            Include in primary navigation
-          </label>
-        </div>
-        <p class="-mt-2 mb-2 text-xs text-gray-500 dark:text-gray-400">
-          If checked, this page will appear in the main navigation menu
-        </p>
-
-        <!-- Navigation Properties (shown when includeInNavigation is checked) -->
-        <div id="navigation-properties" class="mt-4 hidden space-y-4 border-t pt-4">
-          <h4 class="mb-2 text-sm font-semibold text-gray-900 dark:text-white">
-            Navigation Settings
-          </h4>
-
-          <div>
-            <label for="page-nav-roles" class="mb-2 block text-sm font-medium">
-              Visible to Roles
-            </label>
-            <div class="flex flex-wrap gap-2">
-              <label class="flex items-center">
-                <input
-                  type="checkbox"
-                  name="nav_roles"
-                  value="any"
-                  checked
-                  class="h-4 w-4 rounded text-primary-600"
-                />
-                <span class="ml-2 text-sm">Any</span>
+        <template id="block-row-tpl">
+          <div class="block-builder-block flex flex-col gap-2 rounded border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800" data-block-index="">
+            <div class="flex flex-wrap items-center gap-3">
+              <label class="flex items-center gap-2 text-sm">
+                <span class="text-gray-500 dark:text-gray-400">Width:</span>
+                <select class="block-width rounded border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+                  <option value="fullwidth">Full width</option>
+                  <option value="contained">Contained</option>
+                </select>
               </label>
-              <label class="flex items-center">
-                <input
-                  type="checkbox"
-                  name="nav_roles"
-                  value="Client"
-                  class="h-4 w-4 rounded text-primary-600"
-                />
-                <span class="ml-2 text-sm">Client</span>
+              <label class="flex items-center gap-2 text-sm">
+                <span class="text-gray-500 dark:text-gray-400">Block:</span>
+                <select class="block-type rounded border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+                  {blockTypeNames.map((name) => (
+                    <option value={name}>{name}</option>
+                  ))}
+                </select>
               </label>
-              <label class="flex items-center">
-                <input
-                  type="checkbox"
-                  name="nav_roles"
-                  value="Admin"
-                  class="h-4 w-4 rounded text-primary-600"
-                />
-                <span class="ml-2 text-sm">Admin</span>
-              </label>
-              <label class="flex items-center">
-                <input
-                  type="checkbox"
-                  name="nav_roles"
-                  value="Staff"
-                  class="h-4 w-4 rounded text-primary-600"
-                />
-                <span class="ml-2 text-sm">Staff</span>
-              </label>
+              <button type="button" class="block-builder-remove-block rounded px-2 py-1 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30" title="Remove block">Remove</button>
+            </div>
+            <div class="block-props-wrap">
+              <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Props (JSON)</label>
+              <textarea class="block-props min-h-[80px] w-full rounded border border-gray-300 bg-white px-2 py-1 font-mono text-xs dark:border-gray-600 dark:bg-gray-800 dark:text-white" rows={3} placeholder='{ "title": "Hello", "content": "<p>...</p>" }'></textarea>
             </div>
           </div>
+        </template>
 
-          <div>
-            <label for="page-nav-page-type" class="mb-2 block text-sm font-medium">
-              Page Type
-            </label>
-            <select id="page-nav-page-type" name="nav_page_type" class={globalInputClasses}>
-              <option value="frontend">Frontend</option>
-              <option value="backend">Backend</option>
-            </select>
+        <template id="section-tpl">
+          <div class="block-builder-section flex flex-col gap-3 rounded-lg border border-gray-300 bg-white p-4 dark:border-gray-600 dark:bg-gray-800" data-section-index="">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Section</span>
+              <div class="flex gap-2">
+                <Button type="button" class="section-add-block text-sm" variant="ghost" size="sm">+ Add block</Button>
+                <button type="button" class="section-remove rounded px-2 py-1 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30" title="Remove section">Remove section</button>
+              </div>
+            </div>
+            <div class="section-blocks flex flex-col gap-2"></div>
           </div>
-
-          <div>
-            <label for="page-nav-button-style" class="mb-2 block text-sm font-medium">
-              Button Style (Optional)
-            </label>
-            <select id="page-nav-button-style" name="nav_button_style" class={globalInputClasses}>
-              <option value="">None (Regular Link)</option>
-              <option value="primary">Primary</option>
-              <option value="secondary">Secondary</option>
-              <option value="ghost">Ghost</option>
-              <option value="outline">Outline</option>
-            </select>
-          </div>
-
-          <div class="flex items-center">
-            <input
-              type="checkbox"
-              id="page-nav-desktop-only"
-              name="nav_desktop_only"
-              class="h-4 w-4 rounded border-gray-300 bg-gray-100 text-primary-600 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-primary-600"
-            />
-            <label
-              for="page-nav-desktop-only"
-              class="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-            >
-              Desktop Only
-            </label>
-          </div>
-
-          <div class="flex items-center">
-            <input
-              type="checkbox"
-              id="page-nav-hide-when-auth"
-              name="nav_hide_when_auth"
-              class="h-4 w-4 rounded border-gray-300 bg-gray-100 text-primary-600 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-primary-600"
-            />
-            <label
-              for="page-nav-hide-when-auth"
-              class="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-            >
-              Hide When Authenticated
-            </label>
-          </div>
-        </div>
-
-        <div>
-          <label for="page-content" class="mb-2 block text-sm font-medium">
-            Content (Markdown)
-          </label>
-          <!-- Component Shortcodes Section -->
-          <div class="mb-2 space-y-2">
-            <p class="mb-2 text-xs text-gray-600 dark:text-gray-400">
-              💡 Embed components in markdown: <code class="rounded bg-white px-1 dark:bg-gray-900"
-                >&lt;ComponentName prop="value" /&gt;</code
-              >
-            </p>
-
-            <!-- Common Components Accordion -->
-            {
-              commonComponents.length > 0 && (
-                <div id="modal-common-components-accordion" data-accordion="collapse" class="mb-2">
-                  <h2>
-                    <button
-                      type="button"
-                      class="flex w-full items-center justify-between rounded-lg border border-gray-200 p-3 text-sm font-medium text-primary hover:bg-gray-50 focus:ring-4 focus:ring-gray-200 dark:border-gray-700 dark:hover:bg-gray-800 dark:focus:ring-gray-800"
-                      data-accordion-target="#modal-common-components-body"
-                      aria-expanded="false"
-                      aria-controls="modal-common-components-body"
-                    >
-                      <span class="flex items-center gap-2">
-                        <span>📦</span>
-                        <span>Common Components ({commonComponents.length})</span>
-                      </span>
-                      <svg
-                        data-accordion-icon
-                        class="h-3 w-3 shrink-0 rotate-180"
-                        aria-hidden="true"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 10 6"
-                      >
-                        <path
-                          stroke="currentColor"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M9 5 5 1 1 5"
-                        />
-                      </svg>
-                    </button>
-                  </h2>
-                  <div
-                    id="modal-common-components-body"
-                    class="hidden"
-                    aria-labelledby="modal-common-components-heading"
-                  >
-                    <div class="dark:bg-primary-900/20 max-h-96 overflow-y-auto rounded-b-lg border border-t-0 border-gray-200 bg-primary-50 p-4 dark:border-gray-700">
-                      <div class="space-y-3 font-mono text-xs">
-                        {commonComponents.map((comp) => (
-                          <div class="rounded border border-gray-200 bg-white p-2 dark:border-gray-600 dark:bg-gray-900">
-                            <div class="mb-1 flex items-center justify-between">
-                              <span class="font-semibold text-primary-600 dark:text-primary-400">
-                                {comp.name}
-                              </span>
-                              <button
-                                type="button"
-                                class="copy-shortcode-btn rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-                                data-shortcode={getComponentShortcode(comp.name)}
-                              >
-                                Copy
-                              </button>
-                            </div>
-                            <pre class="whitespace-pre-wrap break-all text-[10px] leading-tight text-gray-600 dark:text-gray-400">
-                              {getComponentShortcode(comp.name)}
-                            </pre>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )
-            }
-
-            <!-- Block Components Accordion -->
-            {
-              blockComponents.length > 0 && (
-                <div id="modal-block-components-accordion" data-accordion="collapse" class="mb-2">
-                  <h2>
-                    <button
-                      type="button"
-                      class="flex w-full items-center justify-between rounded-lg border border-gray-200 p-3 text-sm font-medium text-primary hover:bg-gray-50 focus:ring-4 focus:ring-gray-200 dark:border-gray-700 dark:hover:bg-gray-800 dark:focus:ring-gray-800"
-                      data-accordion-target="#modal-block-components-body"
-                      aria-expanded="false"
-                      aria-controls="modal-block-components-body"
-                    >
-                      <span class="flex items-center gap-2">
-                        <span>🧱</span>
-                        <span>Block Components ({blockComponents.length})</span>
-                      </span>
-                      <svg
-                        data-accordion-icon
-                        class="h-3 w-3 shrink-0 rotate-180"
-                        aria-hidden="true"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 10 6"
-                      >
-                        <path
-                          stroke="currentColor"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M9 5 5 1 1 5"
-                        />
-                      </svg>
-                    </button>
-                  </h2>
-                  <div
-                    id="modal-block-components-body"
-                    class="hidden"
-                    aria-labelledby="modal-block-components-heading"
-                  >
-                    <div class="dark:bg-primary-900/20 max-h-96 overflow-y-auto rounded-b-lg border border-t-0 border-gray-200 bg-primary-50 p-4 dark:border-gray-700">
-                      <div class="space-y-3 font-mono text-xs">
-                        {blockComponents.map((comp) => (
-                          <div class="rounded border border-gray-200 bg-white p-2 dark:border-gray-600 dark:bg-gray-900">
-                            <div class="mb-1 flex items-center justify-between">
-                              <span class="font-semibold text-primary-600 dark:text-primary-400">
-                                {comp.name}
-                              </span>
-                              <button
-                                type="button"
-                                class="copy-shortcode-btn rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-                                data-shortcode={getComponentShortcode(comp.name)}
-                              >
-                                Copy
-                              </button>
-                            </div>
-                            <pre class="whitespace-pre-wrap break-all text-[10px] leading-tight text-gray-600 dark:text-gray-400">
-                              {getComponentShortcode(comp.name)}
-                            </pre>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )
-            }
-
-            <!-- Features Accordion -->
-            {
-              Object.keys(featureGroups).length > 0 && (
-                <div id="modal-feature-components-accordion" data-accordion="collapse" class="mb-2">
-                  <h2>
-                    <button
-                      type="button"
-                      class="flex w-full items-center justify-between rounded-lg border border-gray-200 p-3 text-sm font-medium text-primary hover:bg-gray-50 focus:ring-4 focus:ring-gray-200 dark:border-gray-700 dark:hover:bg-gray-800 dark:focus:ring-gray-800"
-                      data-accordion-target="#modal-feature-components-body"
-                      aria-expanded="false"
-                      aria-controls="modal-feature-components-body"
-                    >
-                      <span class="flex items-center gap-2">
-                        <span>⚡</span>
-                        <span>
-                          Feature Components ({Object.values(featureGroups).flat().length})
-                        </span>
-                      </span>
-                      <svg
-                        data-accordion-icon
-                        class="h-3 w-3 shrink-0 rotate-180"
-                        aria-hidden="true"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 10 6"
-                      >
-                        <path
-                          stroke="currentColor"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M9 5 5 1 1 5"
-                        />
-                      </svg>
-                    </button>
-                  </h2>
-                  <div
-                    id="modal-feature-components-body"
-                    class="hidden"
-                    aria-labelledby="modal-feature-components-heading"
-                  >
-                    <div class="dark:bg-primary-900/20 rounded-b-lg border border-t-0 border-gray-200 bg-primary-50 p-4 dark:border-gray-700">
-                      {/* Nested Accordion for Feature Categories */}
-                      <div
-                        id="modal-feature-categories-accordion"
-                        data-accordion="collapse"
-                        class="space-y-2"
-                      >
-                        {Object.entries(featureGroups).map(
-                          ([category, components], categoryIndex) => (
-                            <div>
-                              <h3>
-                                <button
-                                  type="button"
-                                  class="flex w-full items-center justify-between rounded border border-gray-300 p-2 text-xs font-semibold text-gray-700 hover:bg-gray-100 focus:ring-2 focus:ring-gray-200 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 dark:focus:ring-gray-600"
-                                  data-accordion-target={`#modal-feature-category-${categoryIndex}-body`}
-                                  aria-expanded="false"
-                                  aria-controls={`modal-feature-category-${categoryIndex}-body`}
-                                >
-                                  <span>
-                                    {category} ({components.length})
-                                  </span>
-                                  <svg
-                                    data-accordion-icon
-                                    class="h-3 w-3 shrink-0 rotate-180"
-                                    aria-hidden="true"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    fill="none"
-                                    viewBox="0 0 10 6"
-                                  >
-                                    <path
-                                      stroke="currentColor"
-                                      stroke-linecap="round"
-                                      stroke-linejoin="round"
-                                      stroke-width="2"
-                                      d="M9 5 5 1 1 5"
-                                    />
-                                  </svg>
-                                </button>
-                              </h3>
-                              <div
-                                id={`modal-feature-category-${categoryIndex}-body`}
-                                class="hidden"
-                                aria-labelledby={`modal-feature-category-${categoryIndex}-heading`}
-                              >
-                                <div class="max-h-64 overflow-y-auto rounded-b border border-t-0 border-gray-300 bg-white p-3 dark:border-gray-600 dark:bg-gray-900">
-                                  <div class="space-y-2 font-mono text-xs">
-                                    {components.map((comp) => (
-                                      <div class="rounded border border-gray-200 bg-gray-50 p-2 dark:border-gray-600 dark:bg-gray-700">
-                                        <div class="mb-1 flex items-center justify-between">
-                                          <span class="font-semibold text-primary-600 dark:text-primary-400">
-                                            {comp.name}
-                                          </span>
-                                          <button
-                                            type="button"
-                                            class="copy-shortcode-btn rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-200 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500"
-                                            data-shortcode={getComponentShortcode(comp.name)}
-                                          >
-                                            Copy
-                                          </button>
-                                        </div>
-                                        <pre class="whitespace-pre-wrap break-all text-[10px] leading-tight text-gray-600 dark:text-gray-400">
-                                          {getComponentShortcode(comp.name)}
-                                        </pre>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )
-            }
-
-            <p class="mt-2 text-xs text-gray-600 dark:text-gray-400">
-              Components discovered from <code class="rounded bg-white px-1 dark:bg-gray-900"
-                >src/components/common/</code
-              > and <code class="rounded bg-white px-1 dark:bg-gray-900">src/features/*/</code>.
-            </p>
-          </div>
-          <textarea
-            id="page-content"
-            name="content"
-            required
-            rows={15}
-            class={globalInputClasses}
-            placeholder={`# Page Title
-
-Your markdown content here...
-
-You can embed components:
-<Hero title="Welcome" />
-<MultiStepForm />`}></textarea>
-          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            Markdown content for this page. Supports standard Markdown syntax and component
-            shortcodes.
-          </p>
-        </div>
+        </template>
 
         <div id="form-error" class="hidden text-sm text-red-600 dark:text-red-400"></div>
         <div id="form-success" class="hidden text-sm text-green-600 dark:text-green-400"></div>
@@ -1096,16 +387,192 @@ You can embed components:
   </div>
 </div>
 
-<script define:vars={{ markdownOnlyPages, markdownPages, cmsPages }}>
+<script define:vars={{ blockPages, templatePages }} lang="js">
   let editingSlug = null;
-  const markdownPagesList = markdownPages || [];
-  const markdownOnlyPagesList = markdownOnlyPages || [];
+
+  // ---- Template pages (cmsPages) editor ----
+  window.handleTemplatePageDeleted = async function (slug) {
+    if (window.showSuccess) window.showSuccess("Page Deleted", "Page deleted successfully", 2000);
+    const tbody = document.querySelector("#cms-template-pages-tbody");
+    if (tbody) {
+      const triggerRow = tbody.querySelector(`tr.cms-template-trigger[data-editor-slot="${slug}"]`);
+      const detailRow = tbody.querySelector(`tr.cms-template-detail[data-editor-slot="${slug}"]`);
+      if (triggerRow) triggerRow.remove();
+      if (detailRow) detailRow.remove();
+    }
+  };
+
+  function initTemplateCMS() {
+    const formContainer = document.getElementById("template-editor-form-container");
+    const formPool = document.getElementById("template-editor-form-pool");
+    const form = document.getElementById("template-page-form");
+    const createBtn = document.getElementById("create-template-page-btn");
+    const cancelBtn = document.getElementById("cancel-template-btn");
+    const closeBtn = document.getElementById("close-template-editor-btn");
+    const titleEl = document.getElementById("template-editor-title");
+    let openTemplateSlotId = null;
+    const templateFormCache = {};
+
+    function getTemplateDetailRow(slotId) {
+      return document.getElementById(`cms-template-detail-${slotId}`) || document.querySelector(`tr.cms-template-detail[data-editor-slot="${slotId}"]`);
+    }
+    function getTemplateTriggerRow(slotId) {
+      return document.querySelector(`tr.cms-template-trigger[data-editor-slot="${slotId}"]`);
+    }
+    function closeTemplateEditor() {
+      if (!openTemplateSlotId) return;
+      const slugEl = document.getElementById("template-page-slug");
+      const titleEl2 = document.getElementById("template-page-title");
+      const descEl = document.getElementById("template-page-description");
+      const templateEl = document.getElementById("template-page-template");
+      const contentEl = document.getElementById("template-page-content");
+      if (slugEl && "value" in slugEl && titleEl2 && "value" in titleEl2 && descEl && "value" in descEl && templateEl && "value" in templateEl && contentEl && "value" in contentEl)
+        templateFormCache[openTemplateSlotId] = { slug: slugEl.value, title: titleEl2.value, description: descEl.value, template: templateEl.value, content: contentEl.value };
+      const detailRow = getTemplateDetailRow(openTemplateSlotId);
+      const triggerRow = getTemplateTriggerRow(openTemplateSlotId);
+      if (detailRow) { detailRow.classList.add("hidden"); detailRow.setAttribute("aria-hidden", "true"); }
+      if (triggerRow) { triggerRow.setAttribute("aria-expanded", "false"); const ch = triggerRow.querySelector(".cms-template-chevron"); if (ch) ch.classList.remove("rotate-180"); }
+      if (formContainer && formPool) formPool.appendChild(formContainer);
+      openTemplateSlotId = null;
+    }
+    function openTemplateEditor(slotId) {
+      const slotEl = document.getElementById(`template-editor-slot-${slotId}`);
+      if (!slotEl) return;
+      closeTemplateEditor();
+      if (formContainer) slotEl.appendChild(formContainer);
+      const detailRow = getTemplateDetailRow(slotId);
+      const triggerRow = getTemplateTriggerRow(slotId);
+      if (detailRow) { detailRow.classList.remove("hidden"); detailRow.setAttribute("aria-hidden", "false"); }
+      if (triggerRow) { triggerRow.setAttribute("aria-expanded", "true"); const ch = triggerRow.querySelector(".cms-template-chevron"); if (ch) ch.classList.add("rotate-180"); }
+      openTemplateSlotId = slotId;
+      detailRow?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+    function applyTemplatePageToForm(page) {
+      const slugEl = document.getElementById("template-page-slug");
+      const titleEl2 = document.getElementById("template-page-title");
+      const descEl = document.getElementById("template-page-description");
+      const templateEl = document.getElementById("template-page-template");
+      const contentEl = document.getElementById("template-page-content");
+      if (slugEl && "value" in slugEl) slugEl.value = page.slug || "";
+      if (titleEl2 && "value" in titleEl2) titleEl2.value = page.title || "";
+      if (descEl && "value" in descEl) descEl.value = page.description || "";
+      if (templateEl && "value" in templateEl) templateEl.value = page.template || "default";
+      if (contentEl && "value" in contentEl) contentEl.value = page.content || "";
+    }
+
+    if (createBtn) {
+      createBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (titleEl) titleEl.textContent = "Create New Page";
+        form?.reset();
+        openTemplateEditor("template-create");
+      });
+    }
+    document.querySelectorAll(".edit-template-page-btn").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const slug = btn.getAttribute("data-slug");
+        if (!slug) return;
+        if (titleEl) titleEl.textContent = `Edit Page: ${slug}`;
+        const cached = templateFormCache[slug];
+        if (cached) {
+          const slugEl = document.getElementById("template-page-slug");
+          const titleEl2 = document.getElementById("template-page-title");
+          const descEl = document.getElementById("template-page-description");
+          const templateEl = document.getElementById("template-page-template");
+          const contentEl = document.getElementById("template-page-content");
+          if (slugEl && "value" in slugEl) slugEl.value = cached.slug;
+          if (titleEl2 && "value" in titleEl2) titleEl2.value = cached.title;
+          if (descEl && "value" in descEl) descEl.value = cached.description;
+          if (templateEl && "value" in templateEl) templateEl.value = cached.template;
+          if (contentEl && "value" in contentEl) contentEl.value = cached.content;
+          openTemplateEditor(slug);
+          return;
+        }
+        try {
+          const response = await fetch(`/api/cms/pages?slug=${encodeURIComponent(slug)}`);
+          const data = await response.json();
+          if (data.page) applyTemplatePageToForm(data.page);
+          openTemplateEditor(slug);
+        } catch (err) {
+          console.error("Error loading template page:", err);
+          if (window.showError) window.showError("Load Failed", "Failed to load page data", 0);
+        }
+      });
+    });
+    document.querySelectorAll("tr.cms-template-trigger").forEach((triggerRow) => {
+      triggerRow.addEventListener("click", (e) => {
+        const tgt = e.target;
+        if (tgt && typeof tgt.closest === "function" && tgt.closest(".edit-template-page-btn, .delete-confirm-btn, .delete-confirm-wrapper")) return;
+        const slotId = triggerRow.getAttribute("data-editor-slot");
+        if (!slotId) return;
+        if (openTemplateSlotId === slotId) { closeTemplateEditor(); return; }
+        if (titleEl) titleEl.textContent = slotId === "template-create" ? "Create New Page" : `Edit Page: ${slotId}`;
+        if (slotId === "template-create") { form?.reset(); openTemplateEditor("template-create"); return; }
+        const cached = templateFormCache[slotId];
+        if (cached) {
+          const slugEl = document.getElementById("template-page-slug");
+          const titleEl2 = document.getElementById("template-page-title");
+          const descEl = document.getElementById("template-page-description");
+          const templateEl = document.getElementById("template-page-template");
+          const contentEl = document.getElementById("template-page-content");
+          if (slugEl && "value" in slugEl) slugEl.value = cached.slug;
+          if (titleEl2 && "value" in titleEl2) titleEl2.value = cached.title;
+          if (descEl && "value" in descEl) descEl.value = cached.description;
+          if (templateEl && "value" in templateEl) templateEl.value = cached.template;
+          if (contentEl && "value" in contentEl) contentEl.value = cached.content;
+          openTemplateEditor(slotId);
+          return;
+        }
+        fetch(`/api/cms/pages?slug=${encodeURIComponent(slotId)}`)
+          .then((r) => r.json())
+          .then((data) => { if (data.page) applyTemplatePageToForm(data.page); openTemplateEditor(slotId); })
+          .catch((err) => { console.error(err); if (window.showError) window.showError("Load Failed", "Failed to load page data", 0); });
+      });
+    });
+    if (form) {
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const slugEl = document.getElementById("template-page-slug");
+        const titleEl = document.getElementById("template-page-title");
+        const descEl = document.getElementById("template-page-description");
+        const templateSel = document.getElementById("template-page-template");
+        const contentEl = document.getElementById("template-page-content");
+        const slugRaw = (slugEl && "value" in slugEl ? slugEl.value : "").trim() || "";
+        const slug = slugRaw === "/" ? "/" : slugRaw.replace(/^\/+|\/+$/g, "");
+        const title = (titleEl && "value" in titleEl ? titleEl.value : "").trim() || null;
+        const description = (descEl && "value" in descEl ? descEl.value : "").trim() || null;
+        const template = (templateSel && "value" in templateSel ? templateSel.value : "default") || "default";
+        const content = (contentEl && "value" in contentEl ? contentEl.value : "") ?? "";
+        if (!slug) { if (window.showError) window.showError("Validation Error", "Slug is required", 0); return; }
+        try {
+          const response = await fetch("/api/cms/pages", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ slug, title, description, template, content }),
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error || "Failed to save page");
+          if (window.showSuccess) window.showSuccess("Page Saved", "Page saved successfully.", 4000);
+          if (openTemplateSlotId && openTemplateSlotId !== "template-create") delete templateFormCache[openTemplateSlotId];
+          window.location.reload();
+        } catch (error) {
+          if (window.showError) window.showError("Save Failed", error instanceof Error ? error.message : "Failed to save", 0);
+        }
+      });
+    }
+    if (cancelBtn) cancelBtn.addEventListener("click", closeTemplateEditor);
+    if (closeBtn) closeBtn.addEventListener("click", closeTemplateEditor);
+  }
 
   function initCMS(retry = false) {
     // Only run on the CMS page (avoids errors when script runs in unexpected contexts)
     if (typeof window !== "undefined" && !window.location.pathname.startsWith("/admin/cms")) {
       return;
     }
+    initTemplateCMS();
     const formContainer = document.getElementById("page-editor-form-container");
     const formPool = document.getElementById("page-editor-form-pool");
     const form = document.getElementById("page-form");
@@ -1113,8 +580,6 @@ You can embed components:
     const cancelBtn = document.getElementById("cancel-btn");
     const closeBtn = document.getElementById("close-editor-btn");
     const pageEditorTitle = document.getElementById("page-editor-title");
-    const includeInNavCheckbox = document.getElementById("page-include-in-navigation");
-    const navPropertiesSection = document.getElementById("navigation-properties");
     const slugInput = document.getElementById("page-slug");
 
     if (!formContainer || !form || !formPool) {
@@ -1131,36 +596,16 @@ You can embed components:
     let pendingSlotId = null;
 
     function getFormState() {
+      syncSectionsInput();
       const s = document.getElementById("page-slug");
       const t = document.getElementById("page-title");
       const d = document.getElementById("page-description");
-      const tmpl = document.getElementById("page-template");
-      const content = document.getElementById("page-content");
-      const incNav = document.getElementById("page-include-in-navigation");
-      const navType = document.getElementById("page-nav-page-type");
-      const navStyle = document.getElementById("page-nav-button-style");
-      const navDesktop = document.getElementById("page-nav-desktop-only");
-      const navHideAuth = document.getElementById("page-nav-hide-when-auth");
-      const navRoles = Array.from(document.querySelectorAll('input[name="nav_roles"]:checked'))
-        .map((cb) => (cb instanceof HTMLInputElement ? cb.value : ""))
-        .filter(Boolean);
+      const sectionsEl = document.getElementById("page-sections");
       return {
-        slug: s && s instanceof HTMLInputElement ? s.value : "",
-        title: t && t instanceof HTMLInputElement ? t.value : "",
-        description: d && d instanceof HTMLInputElement ? d.value : "",
-        template: tmpl && tmpl instanceof HTMLSelectElement ? tmpl.value : "default",
-        content: content && content instanceof HTMLTextAreaElement ? content.value : "",
-        includeInNavigation:
-          incNav && incNav instanceof HTMLInputElement ? incNav.checked : false,
-        navPageType:
-          navType && navType instanceof HTMLSelectElement ? navType.value : "frontend",
-        navButtonStyle:
-          navStyle && navStyle instanceof HTMLSelectElement ? navStyle.value : "",
-        navDesktopOnly:
-          navDesktop && navDesktop instanceof HTMLInputElement ? navDesktop.checked : false,
-        navHideWhenAuth:
-          navHideAuth && navHideAuth instanceof HTMLInputElement ? navHideAuth.checked : false,
-        navRoles: navRoles.length > 0 ? navRoles : ["any"],
+        slug: s && "value" in s ? s.value : "",
+        title: t && "value" in t ? t.value : "",
+        description: d && "value" in d ? d.value : "",
+        sections: sectionsEl && "value" in sectionsEl ? sectionsEl.value : "[]",
       };
     }
 
@@ -1168,72 +613,172 @@ You can embed components:
       const s = document.getElementById("page-slug");
       const t = document.getElementById("page-title");
       const d = document.getElementById("page-description");
-      const tmpl = document.getElementById("page-template");
-      const content = document.getElementById("page-content");
-      const incNav = document.getElementById("page-include-in-navigation");
-      const navType = document.getElementById("page-nav-page-type");
-      const navStyle = document.getElementById("page-nav-button-style");
-      const navDesktop = document.getElementById("page-nav-desktop-only");
-      const navHideAuth = document.getElementById("page-nav-hide-when-auth");
-      if (s && s instanceof HTMLInputElement) s.value = state.slug ?? "";
-      if (t && t instanceof HTMLInputElement) t.value = state.title ?? "";
-      if (d && d instanceof HTMLInputElement) d.value = state.description ?? "";
-      if (tmpl && tmpl instanceof HTMLSelectElement)
-        tmpl.value = state.template ?? "default";
-      if (content && content instanceof HTMLTextAreaElement)
-        content.value = state.content ?? "";
-      if (incNav && incNav instanceof HTMLInputElement) {
-        incNav.checked = state.includeInNavigation ?? false;
-        incNav.dispatchEvent(new Event("change"));
+      const sectionsEl = document.getElementById("page-sections");
+      if (s && "value" in s) s.value = state.slug ?? "";
+      if (t && "value" in t) t.value = state.title ?? "";
+      if (d && "value" in d) d.value = state.description ?? "";
+      const sectionsStr = state.sections ?? "[]";
+      if (sectionsEl && "value" in sectionsEl) sectionsEl.value = sectionsStr;
+      try {
+        const parsed = typeof sectionsStr === "string" ? JSON.parse(sectionsStr || "[]") : sectionsStr;
+        renderBlockBuilder(Array.isArray(parsed) ? parsed : []);
+      } catch (_) {}
+    }
+
+    function normalizeSectionToItems(section) {
+      if (section.items && Array.isArray(section.items) && section.items.length > 0)
+        return section.items;
+      if (section.block)
+        return [{ width: section.width || "fullwidth", block: section.block }];
+      if (section.blocks && Array.isArray(section.blocks)) {
+        const w = section.width || "fullwidth";
+        return section.blocks.map(function (b) { return { width: w, block: b }; });
       }
-      if (navType && navType instanceof HTMLSelectElement)
-        navType.value = state.navPageType ?? "frontend";
-      if (navStyle && navStyle instanceof HTMLSelectElement)
-        navStyle.value = state.navButtonStyle ?? "";
-      if (navDesktop && navDesktop instanceof HTMLInputElement)
-        navDesktop.checked = state.navDesktopOnly ?? false;
-      if (navHideAuth && navHideAuth instanceof HTMLInputElement)
-        navHideAuth.checked = state.navHideWhenAuth ?? false;
-      const roles = state.navRoles ?? ["any"];
-      document.querySelectorAll('input[name="nav_roles"]').forEach((cb) => {
-        if (cb instanceof HTMLInputElement) cb.checked = roles.includes(cb.value);
+      return [];
+    }
+
+    function buildSectionsFromBuilder() {
+      const container = document.getElementById("block-builder-sections");
+      if (!container) return [];
+      const sectionEls = container.querySelectorAll(".block-builder-section");
+      const sections = [];
+      sectionEls.forEach(function (sectionEl) {
+        const blockEls = sectionEl.querySelectorAll(".block-builder-block");
+        const items = [];
+        blockEls.forEach(function (blockEl) {
+          const widthSel = blockEl.querySelector(".block-width");
+          const typeSel = blockEl.querySelector(".block-type");
+          const propsEl = blockEl.querySelector(".block-props");
+          const width = widthSel && "value" in widthSel ? widthSel.value : "fullwidth";
+          const type = typeSel && "value" in typeSel ? typeSel.value : "ContentBlock";
+          let props = {};
+          if (propsEl && "value" in propsEl && propsEl.value.trim()) {
+            try { props = JSON.parse(propsEl.value); } catch (_) { props = {}; }
+          }
+          items.push({ width: width, block: { type: type, props: props } });
+        });
+        if (items.length > 0) sections.push({ items: items });
       });
+      return sections;
+    }
+
+    function syncSectionsInput() {
+      const sections = buildSectionsFromBuilder();
+      const el = document.getElementById("page-sections");
+      if (el && "value" in el) el.value = JSON.stringify(sections);
+    }
+
+    function renderBlockBuilder(sectionsArray) {
+      const container = document.getElementById("block-builder-sections");
+      const sectionTpl = document.getElementById("section-tpl");
+      const blockRowTpl = document.getElementById("block-row-tpl");
+      if (!container || !sectionTpl || !blockRowTpl) return;
+      container.innerHTML = "";
+      const sections = Array.isArray(sectionsArray) ? sectionsArray : [];
+      if (sections.length === 0) return;
+      sections.forEach(function (section) {
+        const items = normalizeSectionToItems(section);
+        const sectionClone = sectionTpl.content.cloneNode(true);
+        const sectionDiv = sectionClone.querySelector(".block-builder-section");
+        const blocksContainer = sectionClone.querySelector(".section-blocks");
+        items.forEach(function (item) {
+          const rowClone = blockRowTpl.content.cloneNode(true);
+          const row = rowClone.querySelector(".block-builder-block");
+          const wSel = row.querySelector(".block-width");
+          const tSel = row.querySelector(".block-type");
+          const pEl = row.querySelector(".block-props");
+          if (wSel && "value" in wSel) wSel.value = item.width || "fullwidth";
+          if (tSel && "value" in tSel) tSel.value = item.block?.type || "ContentBlock";
+          if (pEl && "value" in pEl) pEl.value = item.block?.props ? JSON.stringify(item.block.props, null, 2) : "";
+          blocksContainer.appendChild(rowClone);
+        });
+        container.appendChild(sectionClone);
+      });
+      bindBlockBuilderEvents();
+      syncSectionsInput();
+    }
+
+    function addBlockToSection(sectionEl) {
+      const blockRowTpl = document.getElementById("block-row-tpl");
+      const blocksContainer = sectionEl.querySelector(".section-blocks");
+      if (!blockRowTpl || !blocksContainer) return;
+      const clone = blockRowTpl.content.cloneNode(true);
+      blocksContainer.appendChild(clone);
+      syncSectionsInput();
+    }
+
+    function bindBlockBuilderEvents() {
+      const container = document.getElementById("block-builder-sections");
+      if (!container) return;
+      container.querySelectorAll(".section-add-block").forEach(function (btn) {
+        btn.replaceWith(btn.cloneNode(true));
+      });
+      container.querySelectorAll(".section-remove").forEach(function (btn) {
+        btn.replaceWith(btn.cloneNode(true));
+      });
+      container.querySelectorAll(".block-builder-remove-block").forEach(function (btn) {
+        btn.replaceWith(btn.cloneNode(true));
+      });
+      container.querySelectorAll(".section-add-block").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          const section = btn.closest(".block-builder-section");
+          if (section) addBlockToSection(section);
+        });
+      });
+      container.querySelectorAll(".section-remove").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          const section = btn.closest(".block-builder-section");
+          if (section) { section.remove(); syncSectionsInput(); }
+        });
+      });
+      container.querySelectorAll(".block-builder-remove-block").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          const row = btn.closest(".block-builder-block");
+          if (row) { row.remove(); syncSectionsInput(); }
+        });
+      });
+      container.querySelectorAll(".block-width, .block-type, .block-props").forEach(function (el) {
+        el.replaceWith(el.cloneNode(true));
+      });
+      container.querySelectorAll(".block-width, .block-type").forEach(function (el) {
+        el.addEventListener("change", syncSectionsInput);
+      });
+      container.querySelectorAll(".block-props").forEach(function (el) {
+        el.addEventListener("input", function () { clearTimeout(window._blockPropsDebounce); window._blockPropsDebounce = setTimeout(syncSectionsInput, 400); });
+      });
+    }
+
+    function addSectionToBuilder() {
+      const container = document.getElementById("block-builder-sections");
+      const sectionTpl = document.getElementById("section-tpl");
+      const blockRowTpl = document.getElementById("block-row-tpl");
+      if (!container || !sectionTpl || !blockRowTpl) return;
+      const sectionClone = sectionTpl.content.cloneNode(true);
+      const sectionDiv = sectionClone.querySelector(".block-builder-section");
+      const blocksContainer = sectionDiv.querySelector(".section-blocks");
+      const rowClone = blockRowTpl.content.cloneNode(true);
+      blocksContainer.appendChild(rowClone);
+      container.appendChild(sectionClone);
+      bindBlockBuilderEvents();
+      syncSectionsInput();
     }
 
     function applyPageToForm(page) {
       const s = document.getElementById("page-slug");
       const t = document.getElementById("page-title");
       const d = document.getElementById("page-description");
-      const tmpl = document.getElementById("page-template");
-      const content = document.getElementById("page-content");
-      const incNav = document.getElementById("page-include-in-navigation");
-      const navType = document.getElementById("page-nav-page-type");
-      const navStyle = document.getElementById("page-nav-button-style");
-      const navDesktop = document.getElementById("page-nav-desktop-only");
-      const navHideAuth = document.getElementById("page-nav-hide-when-auth");
-      if (s && s instanceof HTMLInputElement) s.value = page.slug || "";
-      if (t && t instanceof HTMLInputElement) t.value = page.title || "";
-      if (d && d instanceof HTMLInputElement) d.value = page.description || "";
-      if (tmpl && tmpl instanceof HTMLSelectElement)
-        tmpl.value = page.template || "default";
-      if (content && content instanceof HTMLTextAreaElement)
-        content.value = page.content || "";
-      if (incNav && incNav instanceof HTMLInputElement) {
-        incNav.checked = page.includeInNavigation || false;
-        incNav.dispatchEvent(new Event("change"));
-      }
-      if (navType && navType instanceof HTMLSelectElement)
-        navType.value = page.navPageType || page.nav_page_type || "frontend";
-      if (navStyle && navStyle instanceof HTMLSelectElement)
-        navStyle.value = page.navButtonStyle || page.nav_button_style || "";
-      if (navDesktop && navDesktop instanceof HTMLInputElement)
-        navDesktop.checked = page.navDesktopOnly ?? page.nav_desktop_only ?? false;
-      if (navHideAuth && navHideAuth instanceof HTMLInputElement)
-        navHideAuth.checked = page.navHideWhenAuth ?? page.nav_hide_when_auth ?? false;
-      const navRoles = page.navRoles || page.nav_roles || ["any"];
-      document.querySelectorAll('input[name="nav_roles"]').forEach((cb) => {
-        if (cb instanceof HTMLInputElement) cb.checked = navRoles.includes(cb.value);
+      const sectionsEl = document.getElementById("page-sections");
+      if (s && "value" in s) s.value = page.slug || "";
+      if (t && "value" in t) t.value = page.title || "";
+      if (d && "value" in d) d.value = page.description || "";
+      const sectionsArray = Array.isArray(page.sections) ? page.sections : [];
+      const normalized = sectionsArray.map(function (sec) {
+        const items = normalizeSectionToItems(sec);
+        return items.length ? { items } : { items: [{ width: "contained", block: { type: "ContentBlock", props: {} } }] };
       });
+      if (normalized.length === 0) normalized.push({ items: [{ width: "contained", block: { type: "ContentBlock", props: {} } }] });
+      if (sectionsEl && "value" in sectionsEl) sectionsEl.value = JSON.stringify(normalized);
+      renderBlockBuilder(normalized);
     }
 
     function getDetailRow(slotId) {
@@ -1305,16 +850,9 @@ You can embed components:
       });
     }
 
-    // Toggle navigation properties section based on checkbox
-    if (includeInNavCheckbox && navPropertiesSection) {
-      const toggleNavProperties = () => {
-        if (includeInNavCheckbox instanceof HTMLInputElement) {
-          navPropertiesSection.classList.toggle("hidden", !includeInNavCheckbox.checked);
-        }
-      };
-      includeInNavCheckbox.addEventListener("change", toggleNavProperties);
-      toggleNavProperties(); // Initial state
-    }
+    // Block builder: Add section button
+    const addSectionBtn = document.getElementById("block-builder-add-section");
+    if (addSectionBtn) addSectionBtn.addEventListener("click", addSectionToBuilder);
 
     // Create button: open create row and reset form (clear any cached draft)
     if (createBtn) {
@@ -1324,8 +862,7 @@ You can embed components:
         editingSlug = null;
         delete formStateCache["create"];
         form.reset();
-        const incNav = document.getElementById("page-include-in-navigation");
-        if (incNav && incNav instanceof HTMLInputElement) incNav.checked = false;
+        renderBlockBuilder([{ items: [{ width: "contained", block: { type: "ContentBlock", props: {} } }] }]);
         if (pageEditorTitle) pageEditorTitle.textContent = "Create New Page";
         openEditor("create");
       });
@@ -1348,7 +885,7 @@ You can embed components:
           return;
         }
         try {
-          const response = await fetch(`/api/cms/pages?slug=${encodeURIComponent(slug)}`);
+          const response = await fetch(`/api/cms/block-pages?slug=${encodeURIComponent(slug)}`);
           const data = await response.json();
           if (pendingSlotId !== slug) return;
           const page = data.page;
@@ -1386,8 +923,6 @@ You can embed components:
             setFormState(cached);
           } else {
             form.reset();
-            const incNav = document.getElementById("page-include-in-navigation");
-            if (incNav && incNav instanceof HTMLInputElement) incNav.checked = false;
           }
           if (pageEditorTitle) pageEditorTitle.textContent = "Create New Page";
           openEditor("create");
@@ -1402,7 +937,7 @@ You can embed components:
           return;
         }
         const fetchForSlot = slotId;
-        fetch(`/api/cms/pages?slug=${encodeURIComponent(fetchForSlot)}`)
+        fetch(`/api/cms/block-pages?slug=${encodeURIComponent(fetchForSlot)}`)
           .then((r) => r.json())
           .then((data) => {
             if (pendingSlotId !== fetchForSlot) return;
@@ -1418,32 +953,7 @@ You can embed components:
       });
     });
 
-    // Reorder pages - called by AccordionDataTable drag-drop (order: [{id, displayOrder}])
-    window.handleCmsReorder = async function (order) {
-      try {
-        console.log("[CMS] Reorder request:", order);
-        const response = await fetch("/api/cms/pages", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ orders: order }),
-        });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          console.error("[CMS] Reorder API error:", response.status, data);
-          throw new Error(data.error || "Failed to update order");
-        }
-        console.log("[CMS] Reorder saved successfully");
-        if (window.showSuccess) window.showSuccess("Order Updated", "Page order saved", 2000);
-      } catch (error) {
-        console.error("[CMS] Reorder failed:", error);
-        if (window.showError)
-          window.showError("Save Failed", "Failed to save order. Reloading...", 3000);
-        setTimeout(() => location.reload(), 1000);
-      }
-    };
-
-    // Delete page - Custom delete handler for CMS pages (uses slugs)
+    // Delete page - Custom delete handler for block pages (uses slugs)
     // Remove the row from DOM instead of refreshing the page
     window.handleCmsPageDeleted = async function (slug) {
       console.log("[CMS] Page deleted callback:", slug);
@@ -1455,8 +965,10 @@ You can embed components:
       // Remove trigger row and its detail row from the DOM
       const tbody = document.querySelector("#cms-pages-tbody");
       if (tbody) {
-        const triggerRow = tbody.querySelector(`tr.cms-accordion-trigger[data-slot="${slug}"]`);
-        const detailRow = tbody.querySelector(`tr.cms-accordion-detail[data-editor-slot="${slug}"]`);
+        const triggerRow = tbody.querySelector(`tr.cms-accordion-trigger[data-editor-slot="${slug}"]`);
+        const detailRow = tbody.querySelector(
+          `tr.cms-accordion-detail[data-editor-slot="${slug}"]`
+        );
         if (triggerRow) triggerRow.remove();
         if (detailRow) detailRow.remove();
       }
@@ -1523,7 +1035,7 @@ You can embed components:
         button.setAttribute("disabled", "true");
 
         try {
-          const response = await fetch("/api/cms/pages", {
+          const response = await fetch("/api/cms/block-pages", {
             method: "DELETE",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
@@ -1580,160 +1092,33 @@ You can embed components:
     if (cancelBtn) cancelBtn.addEventListener("click", closeEditor);
     if (closeBtn) closeBtn.addEventListener("click", closeEditor);
 
-    // Import markdown file
-    async function importMarkdownFile(slug, filePath) {
-      try {
-        const url = filePath
-          ? `/api/cms/import-markdown?slug=${slug}&path=${encodeURIComponent(filePath)}`
-          : `/api/cms/import-markdown?slug=${slug}`;
-        const response = await fetch(url);
-        const result = await response.json();
-
-        if (!response.ok) {
-          throw new Error(result.error || "Failed to import markdown file");
-        }
-
-        if (window.showSuccess) {
-          window.showSuccess(
-            "Import Successful",
-            `Successfully imported "${slug}" from markdown!`,
-            3000
-          );
-        }
-        setTimeout(() => location.reload(), 500);
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        if (window.showError) {
-          window.showError("Import Failed", `Error importing: ${errorMsg}`, 0);
-        }
-      }
-    }
-
-    // Import all markdown files (bulk import)
-    const importAllBtn = document.getElementById("import-all-markdown-btn");
-    if (importAllBtn) {
-      importAllBtn.addEventListener("click", async () => {
-        const alreadyImported = markdownPagesList.length - markdownOnlyPagesList.length;
-        const message =
-          alreadyImported > 0
-            ? `Import all ${markdownPagesList.length} markdown files into the database?\n\n${alreadyImported} are already imported and will be updated. This will add them to the CMS so you can edit them through this interface.`
-            : `Import all ${markdownPagesList.length} markdown files into the database?\n\nThis will add them to the CMS so you can edit them through this interface.`;
-
-        if (!confirm(message)) {
-          return;
-        }
-
-        try {
-          importAllBtn.textContent = "Importing...";
-          importAllBtn.disabled = true;
-
-          const response = await fetch("/api/cms/import-all-markdown", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-          });
-
-          const result = await response.json();
-
-          if (!response.ok) {
-            throw new Error(result.error || "Failed to import markdown files");
-          }
-
-          if (result.errors && result.errors.length > 0) {
-            const errorList = result.errors.map((e) => `- ${e.slug}: ${e.error}`).join("\n");
-            if (window.showWarning) {
-              window.showWarning(
-                "Partial Import",
-                `Imported ${result.imported} files, but ${result.errors.length} failed:\n\n${errorList}`,
-                0
-              );
-            }
-          } else {
-            if (window.showSuccess) {
-              window.showSuccess(
-                "Import Successful",
-                `Successfully imported ${result.imported} markdown files!`,
-                4000
-              );
-            }
-          }
-
-          // Reload page to show imported pages
-          setTimeout(() => location.reload(), 500);
-        } catch (error) {
-          const errorMsg = error instanceof Error ? error.message : String(error);
-          if (window.showError) {
-            window.showError("Import Failed", `Error importing files: ${errorMsg}`, 0);
-          }
-          importAllBtn.textContent = "Import All Markdown";
-          importAllBtn.disabled = false;
-        }
-      });
-    }
-
-    // Import individual markdown file
-    document.querySelectorAll(".import-markdown-btn").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const slug = btn.getAttribute("data-slug");
-        const filePath = btn.getAttribute("data-path");
-        if (!slug) return;
-        await importMarkdownFile(slug, filePath || undefined);
-      });
-    });
-
     // Handle form submission
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      // Clear any previous notifications
-
-      // Get form values directly from inputs (more reliable than FormData)
+      syncSectionsInput();
       const slugInput = document.getElementById("page-slug");
       const titleInput = document.getElementById("page-title");
       const descInput = document.getElementById("page-description");
-      const templateSelect = document.getElementById("page-template");
-      const contentTextarea = document.getElementById("page-content");
-      const includeInNavCheckbox = document.getElementById("page-include-in-navigation");
+      const sectionsInput = document.getElementById("page-sections");
 
-      // Sanitize slug: remove leading/trailing slashes and whitespace
-      // EXCEPT for '/' which is allowed for the home page
       let slug = slugInput?.value?.trim() || "";
       if (slug !== "/") {
         slug = slug.replace(/^\/+|\/+$/g, "");
       }
       const title = titleInput?.value?.trim() || null;
       const description = descInput?.value?.trim() || null;
-      const content = contentTextarea?.value?.trim() || "";
-      const template = templateSelect?.value?.trim() || "default";
-      const includeInNavigation =
-        (includeInNavCheckbox &&
-          includeInNavCheckbox instanceof HTMLInputElement &&
-          includeInNavCheckbox.checked) ||
-        false;
+      let sections = [];
+      try {
+        const raw = sectionsInput?.value?.trim() || "[]";
+        sections = raw ? JSON.parse(raw) : [];
+        if (!Array.isArray(sections)) sections = [];
+      } catch (err) {
+        if (window.showError) {
+          window.showError("Validation Error", "Sections must be valid JSON array", 0);
+        }
+        return;
+      }
 
-      // Get navigation properties
-      const navRolesCheckboxes = document.querySelectorAll('input[name="nav_roles"]:checked');
-      const navRoles = Array.from(navRolesCheckboxes)
-        .map((cb) => {
-          if (cb instanceof HTMLInputElement) return cb.value;
-          return "";
-        })
-        .filter((v) => v);
-      const navPageTypeSelect = document.getElementById("page-nav-page-type");
-      const navButtonStyleSelect = document.getElementById("page-nav-button-style");
-      const navDesktopOnlyCheckbox = document.getElementById("page-nav-desktop-only");
-      const navHideWhenAuthCheckbox = document.getElementById("page-nav-hide-when-auth");
-
-      const navPageType =
-        navPageTypeSelect instanceof HTMLSelectElement ? navPageTypeSelect.value : "frontend";
-      const navButtonStyle =
-        navButtonStyleSelect instanceof HTMLSelectElement && navButtonStyleSelect.value
-          ? navButtonStyleSelect.value
-          : null;
-      const navDesktopOnly =
-        navDesktopOnlyCheckbox instanceof HTMLInputElement && navDesktopOnlyCheckbox.checked;
-      const navHideWhenAuth =
-        navHideWhenAuthCheckbox instanceof HTMLInputElement && navHideWhenAuthCheckbox.checked;
-
-      // Validate required fields
       if (!slug) {
         if (window.showError) {
           window.showError("Validation Error", "Slug is required", 0);
@@ -1741,43 +1126,11 @@ You can embed components:
         return;
       }
 
-      if (!content) {
-        if (window.showError) {
-          window.showError("Validation Error", "Content is required", 0);
-        }
-        return;
-      }
-
-      const data = {
-        slug,
-        title,
-        description,
-        content,
-        template,
-        includeInNavigation: includeInNavigation,
-        nav_roles: navRoles.length > 0 ? navRoles : ["any"],
-        nav_page_type: navPageType,
-        nav_button_style: navButtonStyle,
-        nav_desktop_only: navDesktopOnly,
-        nav_hide_when_auth: navHideWhenAuth,
-      };
-
-      // Debug logging
-      console.log("[CMS] Form data being sent:", data);
-      console.log("[CMS] Input values:", {
-        slug: slugInput?.value,
-        title: titleInput?.value,
-        description: descInput?.value,
-        content: contentTextarea?.value?.substring(0, 50) + "...",
-        template: templateSelect?.value,
-        includeInNavigation: includeInNavCheckbox?.checked,
-      });
-
       try {
-        const response = await fetch("/api/cms/pages", {
+        const response = await fetch("/api/cms/block-pages", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
+          body: JSON.stringify({ slug, title, description, sections }),
         });
 
         const result = await response.json();
@@ -1824,38 +1177,4 @@ You can embed components:
   }
 
   // Copy shortcode to clipboard functionality
-  document.addEventListener("click", async (e) => {
-    const target = e.target;
-    if (target && target.classList && target.classList.contains("copy-shortcode-btn")) {
-      const shortcode = target.getAttribute("data-shortcode");
-      if (shortcode) {
-        try {
-          await navigator.clipboard.writeText(shortcode);
-          const originalText = target.textContent;
-          target.textContent = "Copied!";
-          target.classList.add(
-            "bg-green-100",
-            "dark:bg-green-800",
-            "text-green-700",
-            "dark:text-green-200"
-          );
-          setTimeout(() => {
-            target.textContent = originalText;
-            target.classList.remove(
-              "bg-green-100",
-              "dark:bg-green-800",
-              "text-green-700",
-              "dark:text-green-200"
-            );
-          }, 1500);
-        } catch (err) {
-          console.error("Failed to copy:", err);
-          target.textContent = "Error";
-          setTimeout(() => {
-            target.textContent = "Copy";
-          }, 1500);
-        }
-      }
-    }
-  });
 </script>

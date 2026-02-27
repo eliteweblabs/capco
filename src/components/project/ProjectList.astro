@@ -146,12 +146,25 @@ const dueDateOptions = createDueDateOptions();
 <table id="project-list" class="w-full min-w-max text-sm">
   <thead class="text-uppercase color-background text-xs">
     <tr>
+      <th colspan={visibleColumns.length} class="border-b border-gray-200 py-2 pr-2 text-right dark:border-gray-700">
+        <button
+          type="button"
+          id="project-list-clear-column-widths"
+          class="rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+          title="Reset column widths to defaults"
+        >
+          Reset column widths
+        </button>
+      </th>
+    </tr>
+    <tr>
       {
         visibleColumns.map((col) => (
           <th
             scope="col"
             data-col-id={col.id}
-            style={`width: ${col.width ?? 100}px; min-width: ${col.width ?? 100}px`}
+            data-col-default-width={col.width ?? 10}
+            style={`width: ${col.width ?? 10}%; min-width: ${col.width ?? 10}%`}
             class={`color-border-primary snap-start border-r border-gray-200 px-4 py-3 font-semibold dark:border-gray-700 ${col.type === "edit" || col.type === "delete" ? "" : "text-center"}`}
           >
             {col.tooltip ? (
@@ -334,6 +347,13 @@ const dueDateOptions = createDueDateOptions();
 
   <script>
     import "../../scripts/project-list-resizable-columns";
+  </script>
+  <script>
+    document.getElementById("project-list-clear-column-widths")?.addEventListener("click", () => {
+      if (typeof (window as any).clearProjectListColumnWidths === "function") {
+        (window as any).clearProjectListColumnWidths();
+      }
+    });
   </script>
   <script>
     // Client-side progressive reveal of hidden rows

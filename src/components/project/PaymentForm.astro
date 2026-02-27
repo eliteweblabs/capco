@@ -1,8 +1,8 @@
 ---
 import Button from "../common/Button.astro";
+import { checkAuth } from "../../lib/auth";
 
 interface Props {
-  currentUser?: any;
   project: any;
   invoiceId: number | null;
   amount: number;
@@ -14,12 +14,12 @@ interface Props {
   statusData?: any;
 }
 
+const { currentUser } = await checkAuth(Astro.cookies);
 const {
   invoiceId,
   amount,
   currency = "usd",
   paymentType = "deposit",
-  currentUser,
   project,
   globalInputClasses,
   secondaryTextClasses,

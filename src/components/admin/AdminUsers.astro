@@ -9,6 +9,7 @@ import ProfileTabForm from "../profile/ProfileTabForm.astro";
 import AdminUserRowActions from "./AdminUserRowActions.astro";
 import AccordionDataTable from "../common/AccordionDataTable.astro";
 import SearchInput from "../form/SearchInput.astro";
+import { globalClasses } from "../../pages/api/global/global-classes";
 
 export interface Props {
   currentUser: any;
@@ -18,13 +19,15 @@ export interface Props {
   secondaryTextClasses?: string;
 }
 
+const gc = globalClasses();
 const {
   currentUser,
   supabase,
-  globalInputClasses = "",
-  primaryTextClasses = "",
-  secondaryTextClasses = "",
+  globalInputClasses = gc.globalInputClasses,
+  primaryTextClasses = gc.primaryTextClasses,
+  secondaryTextClasses = gc.secondaryTextClasses,
 } = Astro.props;
+const { globalAdminContainerClasses } = gc;
 
 // Fetch all users for the admin panel
 let users: any[] = [];
@@ -69,14 +72,12 @@ const userCounts = {
     }
   </style>
   <div class="mb-8">
-    <h1 class="mb-2 text-3xl font-bold">User Management</h1>
-    <p class="text-gray-800 dark:text-gray-200">Create, view, and manage all system users</p>
+    <h1 class={`mb-2 text-3xl font-bold ${primaryTextClasses}`}>User Management</h1>
+    <p class={secondaryTextClasses}>Create, view, and manage all system users</p>
   </div>
 
   <div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-    <div
-      class="color-background rounded-lg bg-gray-100 p-4 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700"
-    >
+    <div class={`${globalAdminContainerClasses} p-4`}>
       <div class="flex items-center">
         <div class="flex-shrink-0">
           <SimpleIcon name="users" class="h-8 w-8 text-primary-600" />
@@ -88,9 +89,7 @@ const userCounts = {
         </div>
       </div>
     </div>
-    <div
-      class="color-background rounded-lg bg-gray-100 p-4 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700"
-    >
+    <div class={`${globalAdminContainerClasses} p-4`}>
       <div class="flex items-center">
         <div class="flex-shrink-0">
           <SimpleIcon name="shield-check" class="h-8 w-8 text-red-600" />
@@ -100,9 +99,7 @@ const userCounts = {
         </div>
       </div>
     </div>
-    <div
-      class="color-background rounded-lg bg-gray-100 p-4 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700"
-    >
+    <div class={`${globalAdminContainerClasses} p-4`}>
       <div class="flex items-center">
         <div class="flex-shrink-0">
           <SimpleIcon name="user-check" class="h-8 w-8 text-green-600" />
@@ -112,9 +109,7 @@ const userCounts = {
         </div>
       </div>
     </div>
-    <div
-      class="color-background rounded-lg bg-gray-100 p-4 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700"
-    >
+    <div class={`${globalAdminContainerClasses} p-4`}>
       <div class="flex items-center">
         <div class="flex-shrink-0">
           <SimpleIcon name="user" class="h-8 w-8 text-purple-600" />
@@ -130,9 +125,7 @@ const userCounts = {
 
   <div class="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-3">
     <div id="admin-users-list" class="sm:col-span-2 md:col-span-2 lg:col-span-2">
-      <div
-        class="color-background rounded-lg bg-gray-100 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700"
-      >
+      <div class={globalAdminContainerClasses}>
         <div class="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
           <div class="flex-1">
             <SearchInput
@@ -141,10 +134,7 @@ const userCounts = {
               globalInputClasses={globalInputClasses}
             />
           </div>
-          <select
-            id="role-filter"
-            class="border-border-light dark:border-border-dark color-background rounded-lg border px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:text-white dark:focus:border-primary-400"
-          >
+          <select id="role-filter" class={`${globalInputClasses} w-auto min-w-[140px]`}>
             <option value="">All Roles</option>
             <option value="Admin">Admin</option>
             <option value="Staff">Staff</option>
@@ -185,7 +175,7 @@ const userCounts = {
                   return fn || u.companyName || "Unknown User";
                 },
                 cellClass: "whitespace-nowrap",
-                width: 120,
+                width: 20,
                 getCellDataAttrs: (u) => ({
                   refresh: "displayName",
                   userId: u.id,
@@ -198,7 +188,7 @@ const userCounts = {
                 label: "Email",
                 getValue: (u) => u.email || "",
                 cellClass: "whitespace-nowrap",
-                width: 180,
+                width: 31,
                 getCellDataAttrs: (u) => ({
                   refresh: "email",
                   userId: u.id,
@@ -210,7 +200,7 @@ const userCounts = {
                 label: "Role",
                 getValue: (u) => u.role || "",
                 cellClass: "whitespace-nowrap",
-                width: 80,
+                width: 14,
                 getCellDataAttrs: (u) => ({
                   refresh: "role",
                   userId: u.id,
@@ -222,7 +212,7 @@ const userCounts = {
                 label: "Company",
                 getValue: (u) => u.companyName || "—",
                 cellClass: "whitespace-nowrap",
-                width: 120,
+                width: 20,
                 getCellDataAttrs: (u) => ({
                   refresh: "companyName",
                   userId: u.id,
@@ -234,7 +224,7 @@ const userCounts = {
                 label: "Created",
                 getValue: (u) => (u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"),
                 cellClass: "whitespace-nowrap text-gray-500 dark:text-gray-400",
-                width: 90,
+                width: 15,
               },
             ]}
             actionsComponent={AdminUserRowActions}
@@ -252,7 +242,7 @@ const userCounts = {
         description="<ol class='list-inside list-decimal space-y-1 text-xs'><li>An invitation email will be sent</li><li>User can set up authentication</li><li>User will appear in the list immediately</li></ol>"
       />
       <div class="mb-3 flex items-center justify-between">
-        <h3 id="user-form-title" class="text-lg font-semibold text-gray-900 dark:text-white">
+        <h3 id="user-form-title" class={`text-lg font-semibold ${primaryTextClasses}`}>
           Create User
         </h3>
         <button
@@ -263,10 +253,9 @@ const userCounts = {
           + New User
         </button>
       </div>
-      <div class="color-background rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+      <div class={`${globalAdminContainerClasses} p-4`}>
         <ProfileTabForm
           userProfile={null}
-          currentUser={currentUser}
           globalInputClasses={globalInputClasses}
           formIdPrefix="admin-"
           isAdminEdit={true}

@@ -21,6 +21,32 @@
  */
 import Button from "./Button.astro";
 import SimpleIcon from "./SimpleIcon.astro";
+import { globalClasses } from "../../pages/api/global/global-classes";
+
+const {
+  dataTableCardClasses,
+  dataTableHeaderBarClasses,
+  dataTableTitleClasses,
+  dataTableDescriptionClasses,
+  dataTableClearButtonClasses,
+  dataTableTableWrapperClasses,
+  dataTableTableClasses,
+  dataTableTheadClasses,
+  dataTableThClasses,
+  dataTableActionsThClasses,
+  dataTableTbodyClasses,
+  dataTableEmptyCellClasses,
+  dataTableTriggerRowBaseClasses,
+  dataTableDragHandleTdClasses,
+  dataTableDataCellClasses,
+  dataTableActionsCellClasses,
+  dataTableDetailTdClasses,
+  dataTableSlotMinHeightClasses,
+  dataTableCreateFooterClasses,
+  dataTableCreateDetailClasses,
+  dataTableCreateSlotClasses,
+  dataTableDragThClasses,
+} = globalClasses();
 
 export interface ColumnConfig<T = any> {
   key: string;
@@ -31,7 +57,7 @@ export interface ColumnConfig<T = any> {
   colSpan?: number;
   /** When true, render cell value as HTML (use for rich content) */
   allowHtml?: boolean;
-  /** Default width in px for resizable columns */
+  /** Default width in % for resizable columns (e.g. 20 = 20%) */
   width?: number;
   /** Data attributes for the cell (e.g. data-refresh, data-user-id for refresh-manager) */
   getCellDataAttrs?: (item: T) => Record<string, string>;
@@ -130,27 +156,39 @@ const createSlotId = getCreateSlotId();
 const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1; // +1 for chevron
 ---
 
-<div class="accordion-data-table overflow-hidden rounded-lg bg-white shadow dark:bg-gray-900">
+<div class={`accordion-data-table ${dataTableCardClasses}`}>
   {
-    (title || description) && (
-      <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-        {title && <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{title}</h2>}
-        {description && <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{description}</p>}
+    (title || description || resizable) && (
+      <div class={dataTableHeaderBarClasses}>
+        <div class="min-w-0 flex-1">
+          {title && <h2 class={dataTableTitleClasses}>{title}</h2>}
+          {description && <p class={dataTableDescriptionClasses}>{description}</p>}
+        </div>
+        {resizable && (
+          <button
+            type="button"
+            class={`clear-accordion-column-widths ${dataTableClearButtonClasses}`}
+            data-table-id={id}
+            title="Reset column widths to defaults"
+          >
+            Reset column widths
+          </button>
+        )}
       </div>
     )
   }
-  <div class="w-fit max-w-full overflow-x-auto">
+  <div class={dataTableTableWrapperClasses}>
     <table
       id={`${id}-table`}
-      class="table-fixed divide-gray-200 text-center text-sm dark:divide-gray-700"
+      class={dataTableTableClasses}
       {...resizable && { "data-accordion-resizable": "true", "data-table-id": id }}
     >
-      <thead class="text-uppercase color-background select-none text-xs">
+      <thead class={dataTableTheadClasses}>
         <tr>
           {
             draggable && (
-              <th class="w-10 px-2 py-3" aria-label="Drag to reorder">
-                &nbsp;
+              <th class={dataTableDragThClasses} aria-label="Drag to reorder">
+                <SimpleIcon name="grip-dots" class="h-5 w-5" />
               </th>
             )
           }
@@ -159,13 +197,13 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
               <th
                 scope="col"
                 data-col-id={col.key}
-                data-col-default-width={col.width ?? 100}
+                data-col-default-width={col.width ?? 16}
                 style={
                   resizable
-                    ? `width: ${col.width ?? 100}px; min-width: ${col.width ?? 100}px`
+                    ? `width: ${col.width ?? 16}%; min-width: ${col.width ?? 16}%`
                     : undefined
                 }
-                class={`color-border-primary border-r border-gray-200 px-4 py-3 font-semibold dark:border-gray-700 ${col.headerClass || ""}`}
+                class={`${dataTableThClasses} ${col.headerClass || ""}`}
               >
                 {col.label}
               </th>
@@ -173,25 +211,18 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
           }
           {
             hasActions && (
-              <th
-                scope="col"
-                class="color-border-primary border-r border-gray-200 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-700 dark:border-gray-700 dark:text-gray-300"
-              >
+              <th scope="col" class={dataTableActionsThClasses}>
                 Actions
               </th>
             )
           }
-          <th class="hidden w-12 px-2 py-3" aria-label="Expand">&nbsp;</th>
         </tr>
       </thead>
-      <tbody
-        id={`${id}-tbody`}
-        class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900"
-      >
+      <tbody id={`${id}-tbody`} class={dataTableTbodyClasses}>
         {
           data.length === 0 ? (
             <tr>
-              <td colspan={colspan} class="px-4 py-8 text-sm text-gray-500 dark:text-gray-400">
+              <td colspan={colspan} class={dataTableEmptyCellClasses}>
                 {emptyMessage}
               </td>
             </tr>
@@ -202,9 +233,10 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
               const slotId = `${slotIdPrefix}-${itemId}`;
               const dataAttrs = getTriggerDataAttrs?.(item) || {};
               const detailDataAttrs = getDetailRowDataAttrs?.(item) || {};
+              const triggerRowClasses = `${triggerClass} ${dataTableTriggerRowBaseClasses} ${draggable ? "cursor-grab" : ""}`;
               return [
                 <tr
-                  class={`${triggerClass} select-none border-b border-gray-200 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700 ${draggable ? "cursor-grab" : ""}`}
+                  class={triggerRowClasses}
                   data-slot={itemId}
                   data-item-id={itemId}
                   data-reorder-id={draggable && reorderId ? reorderId : undefined}
@@ -223,7 +255,7 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
                 >
                   {draggable && (
                     <td
-                      class="accordion-drag-handle w-10 px-2 py-3 align-middle text-gray-400 dark:text-gray-500"
+                      class={`accordion-drag-handle ${dataTableDragHandleTdClasses}`}
                       aria-hidden="true"
                     >
                       <SimpleIcon name="grip-dots" class="h-5 w-5" />
@@ -241,23 +273,17 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
                           ])
                         )
                       : {};
+                    const cellClasses = `${dataTableDataCellClasses} ${col.cellClass || ""}`;
                     return col.allowHtml && typeof display === "string" ? (
-                      <td
-                        class={`px-4 py-2 text-sm text-gray-900 dark:text-white ${col.cellClass || ""}`}
-                        set:html={display}
-                        {...attrs}
-                      />
+                      <td class={cellClasses} set:html={display} {...attrs} />
                     ) : (
-                      <td
-                        class={`px-4 py-2 text-sm text-gray-900 dark:text-white ${col.cellClass || ""}`}
-                        {...attrs}
-                      >
+                      <td class={cellClasses} {...attrs}>
                         {display}
                       </td>
                     );
                   })}
                   {hasActions && (
-                    <td class="whitespace-nowrap px-4 py-2 text-right">
+                    <td class={dataTableActionsCellClasses}>
                       {actionsRenderer
                         ? actionsRenderer(item)
                         : actionsComponent &&
@@ -268,20 +294,6 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
                           })()}
                     </td>
                   )}
-                  <td class="hidden w-12 px-2 py-3 align-middle">
-                    <svg
-                      class={`${chevronClass} h-5 w-5 rotate-0 text-gray-500 transition-transform`}
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                      aria-hidden="true"
-                    >
-                      <path
-                        fill-rule="evenodd"
-                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                        clip-rule="evenodd"
-                      />
-                    </svg>
-                  </td>
                 </tr>,
                 <tr
                   id={detailRowId(itemId)}
@@ -290,8 +302,8 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
                   aria-hidden="true"
                   {...(detailDataAttrs && toDataAttrs(detailDataAttrs))}
                 >
-                  <td colspan={colspan} class="bg-gray-50 p-0 dark:bg-gray-800/50">
-                    <div id={slotId} class={`${slotClass} min-h-[120px]`} />
+                  <td colspan={colspan} class={dataTableDetailTdClasses}>
+                    <div id={slotId} class={`${slotClass} ${dataTableSlotMinHeightClasses}`} />
                   </td>
                 </tr>,
               ];
@@ -303,7 +315,7 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
   </div>
   {
     showCreateRow && (
-      <div class="border-t border-gray-200 px-4 py-3 dark:border-gray-700">
+      <div class={dataTableCreateFooterClasses}>
         <Button
           type="button"
           variant="outline"
@@ -315,12 +327,15 @@ const colspan = columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + 1;
         </Button>
         <div
           id={detailRowId(createSlotId)}
-          class={`${detailClass} hidden rounded-b-lg bg-gray-50 dark:bg-gray-800/50`}
+          class={`${detailClass} hidden ${dataTableCreateDetailClasses}`}
           data-slot={createSlotId}
           aria-hidden="true"
           {...(createRowDataAttrs && toDataAttrs(createRowDataAttrs))}
         >
-          <div id={`${slotIdPrefix}-${createSlotId}`} class={`${slotClass} min-h-[120px] p-4`} />
+          <div
+            id={`${slotIdPrefix}-${createSlotId}`}
+            class={`${slotClass} ${dataTableCreateSlotClasses}`}
+          />
         </div>
       </div>
     )

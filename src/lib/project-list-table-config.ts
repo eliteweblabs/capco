@@ -39,7 +39,7 @@ export interface ProjectListColumnConfig {
   };
   /** Roles that can see this column (Admin, Staff, Client). Omit = all roles */
   allow?: string[];
-  /** Default width in px for resizable columns */
+  /** Default width in % for resizable columns (e.g. 15 = 15%) */
   width?: number;
   /** Icon name for header (SimpleIcon) */
   icon?: string;
@@ -56,21 +56,21 @@ export function isColumnAllowed(col: ProjectListColumnConfig, role?: string | nu
   return col.allow.some((r) => r.toLowerCase() === role?.toLowerCase());
 }
 
-/** Fallback when config has no projectListColumns (e.g. missing config file) */
+/** Fallback when config has no projectListColumns (e.g. missing config file). Widths are percentages. */
 const DEFAULT_PROJECT_LIST_COLUMNS: ProjectListColumnConfig[] = [
-  { id: "delete", label: "", type: "delete", allow: ["Admin", "Staff"], width: 48, icon: "trash", tooltip: "Delete" },
-  { id: "edit", label: "", type: "edit", width: 48, icon: "edit" },
-  { id: "address", label: "Address", type: "text", field: "address", linkToProject: true, width: 180 },
-  { id: "company", label: "Company", type: "company", field: "authorProfile.companyName", allow: ["Admin", "Staff"], width: 120 },
-  { id: "status", label: "Status", type: "status", field: "status", width: 100 },
-  { id: "featured", label: "", type: "featured", allow: ["Admin", "Staff"], width: 80, icon: "star", tooltip: "Featured" },
-  { id: "files", label: "Files", type: "files", displayProjectFiles: { field: "projectFiles", size: "sm", tooltips: true, emptyText: "No files" }, width: 200 },
-  { id: "assigned", label: "", type: "assigned", field: "assignedToId", allow: ["Admin", "Staff"], width: 100, icon: "user", tooltip: "Assigned To" },
-  { id: "progress", label: "", type: "progress", field: "status", width: 100, icon: "percent", tooltip: "Progress Thru Statuses" },
-  { id: "checklist", label: "", type: "checklist", width: 80, icon: "checklist", tooltip: "Checklist" },
-  { id: "elapsed", label: "", type: "elapsed", field: "createdAt", width: 90, icon: "calendar", tooltip: "Elapsed Time" },
-  { id: "timeSince", label: "", type: "timeSince", field: "updatedAt", width: 110, icon: "stopwatch", tooltip: "Time since last status change" },
-  { id: "dueDate", label: "Due Date", type: "dueDate", field: "dueDate", width: 140 },
+  { id: "delete", label: "", type: "delete", allow: ["Admin", "Staff"], width: 3, icon: "trash", tooltip: "Delete" },
+  { id: "edit", label: "", type: "edit", width: 3, icon: "edit" },
+  { id: "address", label: "Address", type: "text", field: "address", linkToProject: true, width: 16 },
+  { id: "company", label: "Company", type: "company", field: "authorProfile.companyName", allow: ["Admin", "Staff"], width: 9 },
+  { id: "status", label: "Status", type: "status", field: "status", width: 7 },
+  { id: "featured", label: "", type: "featured", allow: ["Admin", "Staff"], width: 5, icon: "star", tooltip: "Featured" },
+  { id: "files", label: "Files", type: "files", displayProjectFiles: { field: "projectFiles", size: "sm", tooltips: true, emptyText: "No files" }, width: 14 },
+  { id: "assigned", label: "", type: "assigned", field: "assignedToId", allow: ["Admin", "Staff"], width: 7, icon: "user", tooltip: "Assigned To" },
+  { id: "progress", label: "", type: "progress", field: "status", width: 7, icon: "percent", tooltip: "Progress Thru Statuses" },
+  { id: "checklist", label: "", type: "checklist", width: 5, icon: "checklist", tooltip: "Checklist" },
+  { id: "elapsed", label: "", type: "elapsed", field: "createdAt", width: 5, icon: "calendar", tooltip: "Elapsed Time" },
+  { id: "timeSince", label: "", type: "timeSince", field: "updatedAt", width: 7, icon: "stopwatch", tooltip: "Time since last status change" },
+  { id: "dueDate", label: "Due Date", type: "dueDate", field: "dueDate", width: 11 },
 ];
 
 /**

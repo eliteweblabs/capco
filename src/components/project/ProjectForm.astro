@@ -4,6 +4,7 @@ import {
   isFormElementReadOnly,
 } from "../../lib/project-form-config";
 import { getColumnClasses } from "../../pages/api/global/global-classes";
+import { checkAuth } from "../../lib/auth";
 
 import ToggleButton from "../form/ToggleButton.astro";
 import UnitSlider from "../form/UnitSlider.astro";
@@ -14,7 +15,6 @@ import StickyActions from "./StickyActions.astro";
 
 interface Props {
   project?: any;
-  currentUser?: any;
   isNewProject?: boolean;
   projectStatus?: number | null;
   globalInputClasses?: string;
@@ -22,9 +22,9 @@ interface Props {
   primaryTextClasses?: string;
 }
 
+const { currentUser } = await checkAuth(Astro.cookies);
 const {
   project = {},
-  currentUser = {},
   isNewProject = true,
   projectStatus = null,
   globalInputClasses,

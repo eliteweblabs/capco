@@ -93,6 +93,8 @@ const {
   customFooterHtml,
 } = await globalCompanyData();
 
+
+
 const safeTitle = stripHtml(title) || Astro.url.pathname.replace(/\//g, " ").trim() || "Home";
 const safeDescription = stripHtml(description || globalCompanySlogan || "");
 
@@ -153,8 +155,8 @@ import Navbar from "./Navbar.astro";
 import Aside from "./Aside.astro";
 import TutorialOverlay from "../common/TutorialOverlay.astro";
 import FeedbackPanel from "../common/FeedbackPanel.astro";
-import Tooltip from "./Tooltip.astro";
 import SpeedDial from "../ui/SpeedDial.astro";
+import SubFooter from "./SubFooter.astro";
 import AdminVoiceAssistantWidget from "../admin/AdminVoiceAssistantWidget.astro";
 import CacheIndicator from "./CacheIndicator.astro";
 import CMSPreloader from "./CMSPreloader.astro";
@@ -172,53 +174,8 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
     {!ONLY_FLOWBITE_AND_THEME && (
       <>
         {/* 1. DOMContentLoaded patch - re-enable first if testing */}
-        <script is:inline>
-          (function () {
-            function runIfAlreadyLoaded(type, listener) {
-              if (document.readyState !== "loading") {
-                setTimeout(function () {
-                  if (typeof listener === "function") listener();
-                  else if (listener && typeof listener.handleEvent === "function") listener.handleEvent({ type: type });
-                }, 0);
-                return true;
-              }
-              return false;
-            }
-            var docNative = document.addEventListener.bind(document);
-            document.addEventListener = function (type, listener, options) {
-              if ((type === "DOMContentLoaded" || type === "load") && runIfAlreadyLoaded(type, listener)) return;
-              docNative(type, listener, options);
-            };
-            var winNative = window.addEventListener.bind(window);
-            window.addEventListener = function (type, listener, options) {
-              if ((type === "DOMContentLoaded" || type === "load") && runIfAlreadyLoaded(type, listener)) return;
-              winNative(type, listener, options);
-            };
-          })();
-        </script>
-        <script is:inline>
-          (function(){var v=document.documentElement.getAttribute("data-suppress-console-noise")==="1";if(v){
-            (function () {
-              const ow = console.warn, oe = console.error, ol = console.log;
-              const skip = function (s) {
-                return !s || s.includes("_cf_bm") || s.includes("__cf_bm") || (s.includes("Cookie") && s.includes("rejected")) || s.includes("invalid domain") || s.includes("NS_BINDING_ABORTED") || s.includes("Avatar failed to load") || s.includes("rate limit");
-              };
-              console.warn = function () {
-                if (skip([].join.call(arguments, " "))) return;
-                ow.apply(console, arguments);
-              };
-              console.error = function () {
-                if (skip([].join.call(arguments, " "))) return;
-                oe.apply(console, arguments);
-              };
-              console.log = function () {
-                var s = [].join.call(arguments, " ");
-                if (s && (s.includes("NS_BINDING_ABORTED") || s.includes("net::ERR_") || s.includes("_cf_bm") || s.includes("__cf_bm"))) return;
-                ol.apply(console, arguments);
-              };
-            })();}
-        })();
-        </script>
+        <script is:inline src="/scripts/dom-content-loaded-patch.js"></script>
+        <script is:inline src="/scripts/console-suppress.js"></script>
       </>
     )}
 
@@ -247,50 +204,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
     {!ONLY_FLOWBITE_AND_THEME && (
       <>
         {/* 6. Global typewriter (runSimpleTypewriter - vanilla JS, no TypeScript so it runs in prod) */}
-        <script is:inline>
-          (function () {
-            var DONE_ATTR = "data-typewriter-done";
-
-            function runSimpleTypewriter(el, options) {
-              var text = el.getAttribute("data-text");
-              if (!text || el.hasAttribute(DONE_ATTR)) return;
-              el.setAttribute(DONE_ATTR, "true");
-              el.textContent = "";
-              var opts = options || {};
-              var speed = opts.speed != null ? opts.speed : 60;
-              var doneClass = opts.doneClass || "typewriter-complete";
-              var dispatchEvent = opts.dispatchEvent === true;
-
-              function type(i) {
-                if (i < text.length) {
-                  el.textContent += text[i];
-                  setTimeout(function () { type(i + 1); }, speed);
-                } else {
-                  el.classList.add(doneClass);
-                  if (dispatchEvent) {
-                    el.dispatchEvent(new CustomEvent("typewriter-complete", { bubbles: true }));
-                  }
-                }
-              }
-              type(0);
-            }
-
-            function runSimpleTypewriterOnSelector(selector) {
-              document.querySelectorAll(selector).forEach(function (el) { runSimpleTypewriter(el); });
-            }
-
-            window.runSimpleTypewriter = runSimpleTypewriter;
-            window.runSimpleTypewriterOnSelector = runSimpleTypewriterOnSelector;
-
-            function initLoadingTypewriters() {
-              runSimpleTypewriterOnSelector("[data-loading-typewriter]");
-            }
-            document.addEventListener("DOMContentLoaded", initLoadingTypewriters);
-            if (document.readyState === "complete" || document.readyState === "interactive") {
-              initLoadingTypewriters();
-            }
-          })();
-        </script>
+        <script is:inline src="/scripts/typewriter-inline.js"></script>
       </>
     )}
 
@@ -330,7 +244,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
 
           <TutorialOverlay {currentUser} tutorialId="demo-tour" autoStart={false} {isAuth} />
 
-          <!-- <DebugPanel {debugData} {currentRole} /> -->
+          {/* <!-- <DebugPanel {debugData} {currentRole} /> --> */}
 
           <FeedbackPanel {currentUser} />
 
@@ -354,7 +268,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
 
       <Aside {currentUser} {primaryTextClasses} {mobileNavigationHTML} />
 
-      <!-- Scrolling pane: flex-1 min-h-0 constrains height so this is the scroll container (not body). translateY on mobile for reveal effect. fullform: overscroll-none to prevent pullable rubber-band. -->
+      {/* <!-- Scrolling pane: flex-1 min-h-0 constrains height so this is the scroll container (not body). translateY on mobile for reveal effect. fullform: overscroll-none to prevent pullable rubber-band. --> */}
       <div
         id="reveal-scroll"
         class:list={[
@@ -384,39 +298,15 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
 
           {
             !isAuthPageResult && layout !== "fullform" && (
-              <div class="my-6 text-xs">
-                <ul class="align-center flex justify-center">
-                  <li>
-                    <Tooltip
-                      text={`${new Date().getFullYear().toString()} ${globalCompanyName}. All rights reserved.`}
-                    >
-                      <span class="me-6 no-underline hover:underline">©</span>
-                    </Tooltip>
-                  </li>
-                  <li>
-                    <a href="/privacy" class="me-6 no-underline hover:underline">
-                      {" "}
-                      privacy{" "}
-                    </a>
-                  </li>
-                  <li>
-                    <a href="/terms" class="me-6 no-underline hover:underline">
-                      {" "}
-                      terms{" "}
-                    </a>
-                  </li>
-                  <li>
-                    <a href="/cookies" class="no-underline hover:underline">
-                      {" "}
-                      cookie{" "}
-                    </a>
-                  </li>
-                </ul>
-              </div>
+
+             <SubFooter 
+      />
+              
             )
           }
         </div>
       </div>
+     
       <Footer
         {isAuthPageResult}
         {isContactPageResult}
@@ -471,136 +361,11 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
       if (window.__jsOrderLog) window.__jsOrderLog("Flowbite script tag (inline after CDN)");
     </script>
     {/* Multi-step form fallback: load form init first (critical), then typewriter (animation) so Next button works immediately */}
-    <script is:inline>
-      (function () {
-        function loadFormFallback() {
-          if (!document.querySelector("form[data-form-config]") || window.__multistepFormFallbackLoaded) return;
-          window.__multistepFormFallbackLoaded = true;
-          if (window.__jsOrderLog) window.__jsOrderLog("MultiStepForm fallback loader (inline)");
-          function injectFormScript() {
-            var s = document.createElement("script");
-            s.src = "/scripts/init-multistep-form.js";
-            s.async = false;
-            document.body.appendChild(s);
-          }
-          function injectTypewriter() {
-            var tw = document.createElement("script");
-            tw.src = "/scripts/typewriter.js";
-            tw.async = true;
-            document.body.appendChild(tw);
-          }
-          injectFormScript();
-          injectTypewriter();
-          if (!window.__PUBLIC_SUPABASE_URL__ || !window.__PUBLIC_SUPABASE_PUBLISHABLE__) {
-            fetch("/api/env/supabase-public")
-              .then(function (r) { return r.ok ? r.json() : {}; })
-              .then(function (d) {
-                if (d && typeof d.url === "string") window.__PUBLIC_SUPABASE_URL__ = d.url;
-                if (d && typeof d.key === "string") window.__PUBLIC_SUPABASE_PUBLISHABLE__ = d.key;
-              })
-              .catch(function () {});
-          }
-        }
-        if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", loadFormFallback);
-        } else {
-          loadFormFallback();
-        }
-      })();
-    </script>
+    <script is:inline src="/scripts/multistep-form-fallback.js"></script>
     {/* Alert and banner dismiss: inline so close works when module scripts don't load */}
-    <script is:inline>
-      (function () {
-        function initAlertDismiss() {
-          document.querySelectorAll("[data-dismiss-alert]").forEach(function (btn) {
-            if (btn.getAttribute("data-alert-dismiss-inited") === "1") return;
-            btn.setAttribute("data-alert-dismiss-inited", "1");
-            btn.addEventListener("click", function () {
-              var alertId = btn.getAttribute("data-dismiss-alert");
-              var alert = alertId ? document.getElementById(alertId) : null;
-              if (alert) {
-                alert.style.transition = "opacity 0.3s ease";
-                alert.style.opacity = "0";
-                setTimeout(function () { alert.remove(); }, 300);
-              }
-            });
-          });
-          document.querySelectorAll(".banner-alert").forEach(function (banner) {
-            var el = banner;
-            var bannerId = el.getAttribute("data-banner-id");
-            var dismissBtn = el.querySelector(".banner-dismiss");
-            if (!dismissBtn || dismissBtn.getAttribute("data-banner-dismiss-inited") === "1") return;
-            dismissBtn.setAttribute("data-banner-dismiss-inited", "1");
-            try {
-              var stored = localStorage.getItem("dismissedBanners");
-              var dismissed = stored ? JSON.parse(stored) : [];
-              if (bannerId && dismissed.indexOf(bannerId) !== -1) { el.style.display = "none"; return; }
-            } catch (e) {_logger.error("Error dismissing banner:", e);}
-            dismissBtn.addEventListener("click", function () {
-              el.style.transition = "max-height 0.3s ease-out, opacity 0.3s ease-out, margin 0.3s ease-out";
-              el.style.opacity = "0";
-              el.style.maxHeight = "0";
-              el.style.overflow = "hidden";
-              el.style.marginTop = "0";
-              el.style.marginBottom = "0";
-              setTimeout(function () { el.style.display = "none"; }, 300);
-              if (bannerId) {
-                try {
-                  var s = localStorage.getItem("dismissedBanners");
-                  var arr = s ? JSON.parse(s) : [];
-                  if (arr.indexOf(bannerId) === -1) arr.push(bannerId);
-                  localStorage.setItem("dismissedBanners", JSON.stringify(arr));
-                } catch (e) {_logger.error("Error dismissing banner:", e);}
-              }
-            });
-          });
-        }
-        if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", initAlertDismiss);
-        } else {
-          initAlertDismiss();
-        }
-        setTimeout(initAlertDismiss, 400);
-      })();
-    </script>
+    <script is:inline src="/scripts/alert-banner-dismiss.js"></script>
     {/* Theme toggle: inline so it works when app-globals chunk fails to load (e.g. production SSR) */}
-    <script is:inline>
-      (function () {
-        function initThemeToggle() {
-          var themeToggle = document.getElementById("theme-toggle");
-          var darkIcon = document.getElementById("theme-toggle-dark-icon");
-          var lightIcon = document.getElementById("theme-toggle-light-icon");
-          if (!themeToggle || !darkIcon || !lightIcon || themeToggle.getAttribute("data-theme-toggle-inited") === "1") return;
-          themeToggle.setAttribute("data-theme-toggle-inited", "1");
-          function syncIcons(isDark) {
-            if (isDark) { darkIcon.classList.add("hidden"); lightIcon.classList.remove("hidden"); }
-            else { darkIcon.classList.remove("hidden"); lightIcon.classList.add("hidden"); }
-          }
-          syncIcons(document.documentElement.classList.contains("dark"));
-          themeToggle.addEventListener("click", function () {
-            var isDark = document.documentElement.classList.contains("dark");
-            var newTheme = isDark ? "light" : "dark";
-            if (isDark) {
-              document.documentElement.classList.remove("dark");
-              try { localStorage.setItem("color-theme", "light"); } catch { /* ignore */ }
-            } else {
-              document.documentElement.classList.add("dark");
-              try { localStorage.setItem("color-theme", "dark"); } catch { /* ignore */ }
-            }
-            syncIcons(!isDark);
-            document.cookie = "theme=" + newTheme + "; path=/; max-age=31536000; SameSite=Lax";
-            if (typeof window.currentTheme !== "undefined") window.currentTheme = newTheme;
-            if (typeof window.updateThemeSync === "function") window.updateThemeSync();
-          });
-        }
-        if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", initThemeToggle);
-        } else {
-          initThemeToggle();
-        }
-        setTimeout(initThemeToggle, 200);
-      })();
-    </script>
+    <script is:inline src="/scripts/theme-toggle-inline.js"></script>
 
     {!ONLY_FLOWBITE_AND_THEME && (
       <script is:inline src="/scripts/app-page-scripts.js" data-script="hold-progress-init" />
@@ -609,28 +374,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
     {/* Theme toggle: inline fallback above; app-globals.ts also binds (uses data-theme-toggle-inited to avoid double-init). Overscroll scale: app-globals.ts DOMContentLoaded */}
 
     {!ONLY_FLOWBITE_AND_THEME && (
-      <script is:inline>
-        (function () {
-          if (typeof window !== "undefined" && window.__jsOrderLog) window.__jsOrderLog("App DOMContentLoaded-init (inline)");
-          document.addEventListener("DOMContentLoaded", async function () {
-            try {
-              if (typeof window.hideOnFormFocus === "function") window.hideOnFormFocus();
-              var bell = document.getElementById("notification-bell");
-              if (bell && typeof window.initializeNotificationCount === "function") {
-                await window.initializeNotificationCount();
-              }
-              var ensureSidebar = window.__ensureSidebarInit;
-              if (typeof ensureSidebar === "function") {
-                ensureSidebar();
-                setTimeout(ensureSidebar, 400);
-                setTimeout(ensureSidebar, 1200);
-              }
-            } catch (e) {
-              console.error("🔔 [APP] Error in DOMContentLoaded init:", e);
-            }
-          });
-        })();
-      </script>
+      <script is:inline src="/scripts/app-domcontentloaded-init.js"></script>
     )}
 
     <!-- {!ONLY_FLOWBITE_AND_THEME && (
@@ -686,26 +430,10 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
 
     {!ONLY_FLOWBITE_AND_THEME && (
       <>
-    {/* 14. AOS (Animate On Scroll) */}
-    <!-- AOS (Animate On Scroll) - Global initialization -->
+    {/* 14. AOS (Animate On Scroll) - Global initialization */}
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js" defer></script>
-    <script is:inline>
-      if (window.__jsOrderLog) window.__jsOrderLog("AOS init (inline)");
-      window.addEventListener("DOMContentLoaded", function () {
-        var path = window.location.pathname;
-        if (path.startsWith("/admin") || path.startsWith("/project")) return;
-        if (typeof AOS !== "undefined") {
-          AOS.init({
-            duration: 800,
-            easing: "ease-in-out",
-            once: true,
-            offset: 120,
-            delay: 50,
-          });
-        }
-      });
-    </script>
+    <script is:inline src="/scripts/aos-init.js"></script>
       </>
     )}
 

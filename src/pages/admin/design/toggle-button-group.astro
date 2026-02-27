@@ -1,0 +1,103 @@
+---
+/**
+ * Design demo: Toggle / Button Group
+ * ToggleButton (radio and multi-select) and button-group patterns.
+ */
+import { checkAuth } from "../../../lib/auth";
+import LayoutDefault from "../../../components/layouts/LayoutDefault.astro";
+import Button from "../../../components/common/Button.astro";
+import ToggleButton from "../../../components/form/ToggleButton.astro";
+import { globalClasses } from "../../api/global/global-classes";
+
+const { currentUser, session } = await checkAuth(Astro.cookies);
+const currentRole = currentUser?.profile?.role;
+
+if (!currentUser || !session) {
+  return Astro.redirect("/auth/login");
+}
+if (currentRole !== "Admin") {
+  return Astro.redirect("/dashboard");
+}
+
+const { primaryTextClasses, secondaryTextClasses } = globalClasses();
+---
+
+<LayoutDefault
+  title="Toggle / Button Group Demo"
+  description="ToggleButton (radio, multi-select) and button-group patterns used in forms and filters."
+>
+  <div class="px-4 py-8">
+    <div class="mb-8">
+      <h1 class={`mb-2 text-3xl font-bold ${primaryTextClasses}`}>Toggle / Button Group</h1>
+      <p class={`${secondaryTextClasses} text-gray-600 dark:text-gray-400`}>
+        Single-select (radio) and multi-select toggle buttons. Same components as <a
+          href="/admin/media"
+          class="text-primary-500 hover:underline">Media</a
+        > filters and project/MEP forms.
+      </p>
+    </div>
+
+    <div
+      class="mb-6 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-900"
+    >
+      <h2 class={`${primaryTextClasses} mb-4 text-xl font-semibold`}>ToggleButton (radio)</h2>
+      <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+        Single choice per group. Use <code class="rounded bg-gray-100 px-1 dark:bg-gray-800"
+          >type="radio"</code
+        > and same <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">group</code>.
+      </p>
+      <div class="multi-step-button-group flex flex-wrap gap-3">
+        <ToggleButton value="yes" group="design-demo-radio" type="radio">Yes</ToggleButton>
+        <ToggleButton value="no" group="design-demo-radio" type="radio">No</ToggleButton>
+        <ToggleButton value="na" group="design-demo-radio" type="radio">N/A</ToggleButton>
+      </div>
+    </div>
+
+    <div
+      class="mb-6 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-900"
+    >
+      <h2 class={`${primaryTextClasses} mb-4 text-xl font-semibold`}>ToggleButton (multi-select)</h2>
+      <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+        Multiple choices. Use <code class="rounded bg-gray-100 px-1 dark:bg-gray-800"
+          >type="multi-select"</code
+        >.
+      </p>
+      <div class="multi-step-button-group flex flex-wrap gap-3">
+        <ToggleButton value="daily" group="design-demo-multi" type="multi-select">
+          Daily
+        </ToggleButton>
+        <ToggleButton value="weekly" group="design-demo-multi" type="multi-select">
+          Weekly
+        </ToggleButton>
+        <ToggleButton value="monthly" group="design-demo-multi" type="multi-select">
+          Monthly
+        </ToggleButton>
+        <ToggleButton value="quarterly" group="design-demo-multi" type="multi-select">
+          Quarterly
+        </ToggleButton>
+      </div>
+    </div>
+
+    <div
+      class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-900"
+    >
+      <h2 class={`${primaryTextClasses} mb-4 text-xl font-semibold`}>Button group (choice buttons)</h2>
+      <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+        Outline buttons with <code class="rounded bg-gray-100 px-1 dark:bg-gray-800"
+          >data-value</code
+        > for form-driven flows (e.g. Yes/No in inspections).
+      </p>
+      <div class="multi-step-button-group flex flex-wrap gap-3">
+        <Button type="button" variant="outline" size="sm" data-value="yes">
+          Yes
+        </Button>
+        <Button type="button" variant="outline" size="sm" data-value="no">
+          No
+        </Button>
+        <Button type="button" variant="outline" size="sm" data-value="na">
+          N/A
+        </Button>
+      </div>
+    </div>
+  </div>
+</LayoutDefault>

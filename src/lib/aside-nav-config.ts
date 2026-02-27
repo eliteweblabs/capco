@@ -126,6 +126,11 @@ const LEGACY_BUILTIN: Record<string, Omit<AsideNavItem, "id">> = {
       { label: "Style reference", href: "/admin/components" },
       { label: "Components", href: "/admin/design" },
       { label: "Placeholders", href: "/admin/design/placeholders" },
+      { label: "Form", href: "/admin/design/form" },
+      { label: "MultiStepForm", href: "/admin/design/multistepform" },
+      { label: "Toggle / Button Group", href: "/admin/design/toggle-button-group" },
+      { label: "Data Table Accordion", href: "/admin/design/data-table-accordion" },
+      { label: "Sliding Tab", href: "/admin/design/sliding-tab" },
     ],
   },
   content: {

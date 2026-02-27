@@ -2,35 +2,26 @@
 /**
  * ProfileTabForm - Tabbed profile edit form (Profile, Settings, Social, Team)
  * Extracted from profile.astro for reuse on profile page and admin user editing.
+ * Gets currentUser from checkAuth so it works in CMS and when used as shortcode.
  *
  * @example Self-edit (profile page)
- * <ProfileTabForm
- *   userProfile={currentUser?.profile}
- *   currentUser={currentUser}
- *   {globalInputClasses}
- *   globalCompanyPhone={globalCompanyPhone}
- * />
+ * <ProfileTabForm userProfile={userProfile} {globalInputClasses} globalCompanyPhone={globalCompanyPhone} />
  *
  * @example Admin edit (pool form for accordion)
- * <ProfileTabForm
- *   userProfile={null}
- *   currentUser={currentUser}
- *   formIdPrefix="admin-"
- *   isAdminEdit={true}
- *   {globalInputClasses}
- * />
+ * <ProfileTabForm userProfile={null} formIdPrefix="admin-" isAdminEdit={true} {globalInputClasses} />
  */
 import ConfigForm from "../../features/forms/components/ConfigForm.astro";
 import { getProfileFormConfig } from "../../lib/forms/form-config-from-site";
+import { checkAuth } from "../../lib/auth";
 import SimpleIcon from "../common/SimpleIcon.astro";
 import Button from "../common/Button.astro";
 import SlidingTabs from "../common/SlidingTabs.astro";
 import SocialMediaRepeater from "../form/SocialMediaRepeater.astro";
 import ProfileTeamSection from "./ProfileTeamSection.astro";
 import PageSizeToggle from "../ui/PageSizeToggle.astro";
+
 interface Props {
   userProfile: any;
-  currentUser: any;
   globalInputClasses: string;
   globalCompanyPhone?: string;
   formIdPrefix?: string;
@@ -48,9 +39,9 @@ interface Props {
   includeAllModes?: boolean;
 }
 
+const { currentUser } = await checkAuth(Astro.cookies);
 const {
   userProfile = null,
-  currentUser,
   globalInputClasses,
   globalCompanyPhone = "",
   formIdPrefix = "",

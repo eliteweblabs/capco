@@ -1,0 +1,93 @@
+---
+/**
+ * Design demo: Form
+ * Basic form fields and patterns (globalInputClasses, InputLabelWrap, Button).
+ */
+import { checkAuth } from "../../../lib/auth";
+import LayoutDefault from "../../../components/layouts/LayoutDefault.astro";
+import Button from "../../../components/common/Button.astro";
+import InputLabelWrap from "../../../components/common/__InputLabelWrap.astro";
+import SlideToggle from "../../../components/form/SlideToggle.astro";
+import { globalClasses } from "../../api/global/global-classes";
+
+const { currentUser, session } = await checkAuth(Astro.cookies);
+const currentRole = currentUser?.profile?.role;
+
+if (!currentUser || !session) {
+  return Astro.redirect("/auth/login");
+}
+if (currentRole !== "Admin") {
+  return Astro.redirect("/dashboard");
+}
+
+const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
+---
+
+<LayoutDefault
+  title="Form Demo"
+  description="Basic form components and patterns. Use globalInputClasses and InputLabelWrap for admin forms."
+>
+  <div class="px-4 py-8">
+    <div class="mb-8">
+      <h1 class={`mb-2 text-3xl font-bold ${primaryTextClasses}`}>Form</h1>
+      <p class={`${secondaryTextClasses} text-gray-600 dark:text-gray-400`}>
+        Standard form fields and patterns. See <a
+          href="/admin/components"
+          class="text-primary-500 hover:underline">Components &amp; Style Reference</a
+        > for globalInputClasses and <a
+          href="/admin/design"
+          class="text-primary-500 hover:underline">Design</a
+        > for full gallery.
+      </p>
+    </div>
+
+    <div
+      class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-900"
+    >
+      <h2 class={`${primaryTextClasses} mb-4 text-xl font-semibold`}>Basic form</h2>
+      <form
+        id="design-form-demo"
+        action="#"
+        method="post"
+        class="max-w-md space-y-4"
+      >
+        <InputLabelWrap id="demo-name" label="Name" show={true} required>
+          <input
+            type="text"
+            id="demo-name"
+            name="name"
+            class={globalInputClasses}
+            placeholder="Your name"
+          />
+        </InputLabelWrap>
+        <InputLabelWrap id="demo-email" label="Email" show={true} required>
+          <input
+            type="email"
+            id="demo-email"
+            name="email"
+            class={globalInputClasses}
+            placeholder="you@example.com"
+          />
+        </InputLabelWrap>
+        <InputLabelWrap id="demo-message" label="Message" show={true}>
+          <textarea
+            id="demo-message"
+            name="message"
+            rows={4}
+            class={`${globalInputClasses} resize-y`}
+            placeholder="Your message..."
+          />
+        </InputLabelWrap>
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Notify me
+          </label>
+          <SlideToggle id="design-demo-notify" name="notify" />
+        </div>
+        <div class="pt-2">
+          <Button type="submit" variant="primary">Submit</Button>
+        </div>
+      </form>
+    </div>
+  </div>
+</LayoutDefault>

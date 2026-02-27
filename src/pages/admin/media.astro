@@ -1,25 +1,31 @@
 ---
 /**
  * Media Manager Admin Page
- * Uses MediaFilter component for the main content
+ * Filter groups are JSON-driven from config (adminMediaFilters), same pattern as mepForm button-groups.
  */
 const requireAuthRedirect = "/auth/login";
 import { checkAuth } from "../../lib/auth";
+import { getSiteConfig } from "../../lib/content";
 
 const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
 const currentRole = currentUser?.profile?.role;
 
-// Handle auth redirect - Admin only
 if (requireAuthRedirect && (!session || !currentUser || currentRole !== "Admin")) {
   return Astro.redirect(requireAuthRedirect);
 }
 
 import { globalClasses } from "../api/global/global-classes";
-const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
+const { globalInputClasses } = globalClasses();
 
 import MediaFilter from "../../features/media-filter/MediaFilter.astro";
 import Hero from "@/components/common/Hero.astro";
 import LayoutDefault from "@/components/layouts/LayoutDefault.astro";
+
+const siteConfig = await getSiteConfig();
+const adminMediaFilters = (siteConfig as any).adminMediaFilters;
+const filterGroups = Array.isArray(adminMediaFilters?.groups) && adminMediaFilters.groups.length > 0
+  ? adminMediaFilters.groups
+  : undefined;
 ---
 
 <LayoutDefault
@@ -31,12 +37,10 @@ import LayoutDefault from "@/components/layouts/LayoutDefault.astro";
     description="Browse, upload, and manage all media files across the project"
   />
 
-  <!-- <AdminMedia {currentUser} {supabase} /> -->
   <MediaFilter
     {currentUser}
     {supabase}
-    sourceFilters={["All", "Project", "Global"]}
-    typeFilters={["All", "Images", "Videos", "PDFs", "Documents", "Other"]}
+    filterGroups={filterGroups}
     showSearch={true}
     minSearchChars={2}
     searchPlaceholder="Search media files..."

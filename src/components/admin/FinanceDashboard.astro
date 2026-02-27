@@ -1,14 +1,22 @@
 ---
 import { formatCurrency } from "../../lib/global-display-utils";
+import { globalClasses } from "../../pages/api/global/global-classes";
 
 export interface Props {
   currentUser: any;
-  globalInputClasses: string;
-  primaryTextClasses: string;
-  secondaryTextClasses: string;
+  globalInputClasses?: string;
+  primaryTextClasses?: string;
+  secondaryTextClasses?: string;
 }
 
-const { currentUser, globalInputClasses, primaryTextClasses, secondaryTextClasses } = Astro.props;
+const gc = globalClasses();
+const {
+  currentUser,
+  globalInputClasses = gc.globalInputClasses,
+  primaryTextClasses = gc.primaryTextClasses,
+  secondaryTextClasses = gc.secondaryTextClasses,
+} = Astro.props;
+const { dataTableCardClasses, dataTableDescriptionClasses } = gc;
 
 // Fetch financial data
 let financialData = {
@@ -86,9 +94,7 @@ const formatNumber = (num: number) => {
   <!-- Key Metrics Cards -->
   <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
     <!-- Total Revenue -->
-    <div
-      class="rounded-lg border border-gray-200 bg-white p-6 shadow dark:border-gray-700 dark:bg-gray-900"
-    >
+    <div class={`${dataTableCardClasses} p-6`}>
       <div class="flex items-center">
         <div class="flex-shrink-0">
           <div
@@ -110,8 +116,8 @@ const formatNumber = (num: number) => {
           </div>
         </div>
         <div class="ml-4">
-          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Revenue</p>
-          <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+          <p class={`text-sm font-medium ${dataTableDescriptionClasses}`}>Total Revenue</p>
+          <p class={`text-2xl font-semibold ${primaryTextClasses}`}>
             {formatCurrency(financialData.totalRevenue)}
           </p>
         </div>
@@ -119,9 +125,7 @@ const formatNumber = (num: number) => {
     </div>
 
     <!-- Total Invoices -->
-    <div
-      class="rounded-lg border border-gray-200 bg-white p-6 shadow dark:border-gray-700 dark:bg-gray-900"
-    >
+    <div class={`${dataTableCardClasses} p-6`}>
       <div class="flex items-center">
         <div class="flex-shrink-0">
           <div
@@ -143,8 +147,8 @@ const formatNumber = (num: number) => {
           </div>
         </div>
         <div class="ml-4">
-          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Invoices</p>
-          <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+          <p class={`text-sm font-medium ${dataTableDescriptionClasses}`}>Total Invoices</p>
+          <p class={`text-2xl font-semibold ${primaryTextClasses}`}>
             {formatNumber(financialData.totalInvoices)}
           </p>
         </div>
@@ -152,9 +156,7 @@ const formatNumber = (num: number) => {
     </div>
 
     <!-- Paid Invoices -->
-    <div
-      class="rounded-lg border border-gray-200 bg-white p-6 shadow dark:border-gray-700 dark:bg-gray-900"
-    >
+    <div class={`${dataTableCardClasses} p-6`}>
       <div class="flex items-center">
         <div class="flex-shrink-0">
           <div
@@ -175,8 +177,8 @@ const formatNumber = (num: number) => {
           </div>
         </div>
         <div class="ml-4">
-          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Paid Invoices</p>
-          <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+          <p class={`text-sm font-medium ${dataTableDescriptionClasses}`}>Paid Invoices</p>
+          <p class={`text-2xl font-semibold ${primaryTextClasses}`}>
             {formatNumber(financialData.paidInvoices)}
           </p>
         </div>
@@ -184,9 +186,7 @@ const formatNumber = (num: number) => {
     </div>
 
     <!-- Active Projects -->
-    <div
-      class="rounded-lg border border-gray-200 bg-white p-6 shadow dark:border-gray-700 dark:bg-gray-900"
-    >
+    <div class={`${dataTableCardClasses} p-6`}>
       <div class="flex items-center">
         <div class="flex-shrink-0">
           <div
@@ -208,8 +208,8 @@ const formatNumber = (num: number) => {
           </div>
         </div>
         <div class="ml-4">
-          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Projects</p>
-          <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+          <p class={`text-sm font-medium ${dataTableDescriptionClasses}`}>Active Projects</p>
+          <p class={`text-2xl font-semibold ${primaryTextClasses}`}>
             {formatNumber(financialData.activeProjects)}
           </p>
         </div>
@@ -258,7 +258,7 @@ const formatNumber = (num: number) => {
   <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
     <!-- Recent Invoices -->
     <div
-      class="rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-900"
+      class={dataTableCardClasses}
     >
       <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Recent Invoices</h3>
@@ -282,7 +282,7 @@ const formatNumber = (num: number) => {
                   />
                 </div>
                 <div class="ml-3">
-                  <p class="text-sm font-medium text-gray-900 dark:text-white">
+                  <p class={`text-sm font-medium ${primaryTextClasses}`}>
                     {invoice.subject || "Untitled Invoice"}
                   </p>
                   <p class="text-sm text-gray-500 dark:text-gray-400">
@@ -291,7 +291,7 @@ const formatNumber = (num: number) => {
                 </div>
               </div>
               <div class="text-right">
-                <p class="text-sm font-medium text-gray-900 dark:text-white">
+                <p class={`text-sm font-medium ${primaryTextClasses}`}>
                   {formatCurrency(invoice.totalAmount || 0)}
                 </p>
                 <p class="text-xs text-gray-500 dark:text-gray-400">
@@ -306,7 +306,7 @@ const formatNumber = (num: number) => {
 
     <!-- Project Revenue -->
     <div
-      class="rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-900"
+      class={dataTableCardClasses}
     >
       <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Project Revenue</h3>
@@ -334,14 +334,14 @@ const formatNumber = (num: number) => {
                   </div>
                 </div>
                 <div class="ml-3">
-                  <p class="text-sm font-medium text-gray-900 dark:text-white">{project.title}</p>
+                  <p class={`text-sm font-medium ${primaryTextClasses}`}>{project.title}</p>
                   <p class="text-sm text-gray-500 dark:text-gray-400">
                     {formatNumber(project.sqFt)} sq ft
                   </p>
                 </div>
               </div>
               <div class="text-right">
-                <p class="text-sm font-medium text-gray-900 dark:text-white">
+                <p class={`text-sm font-medium ${primaryTextClasses}`}>
                   {formatCurrency(project.totalRevenue || 0)}
                 </p>
                 <p class="text-xs text-gray-500 dark:text-gray-400">
@@ -382,7 +382,7 @@ const formatNumber = (num: number) => {
         </div>
         <div class="ml-4">
           <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Outstanding</p>
-          <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+          <p class={`text-2xl font-semibold ${primaryTextClasses}`}>
             {formatNumber(financialData.totalInvoices - financialData.paidInvoices)}
           </p>
         </div>
@@ -415,7 +415,7 @@ const formatNumber = (num: number) => {
         </div>
         <div class="ml-4">
           <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Invoice</p>
-          <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+          <p class={`text-2xl font-semibold ${primaryTextClasses}`}>
             {
               formatCurrency(
                 financialData.totalInvoices > 0
@@ -454,7 +454,7 @@ const formatNumber = (num: number) => {
         </div>
         <div class="ml-4">
           <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Sq Ft</p>
-          <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+          <p class={`text-2xl font-semibold ${primaryTextClasses}`}>
             {formatNumber(financialData.totalSqFt)}
           </p>
         </div>
