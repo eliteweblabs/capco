@@ -179,41 +179,24 @@ const gridClass = columnClasses[columns] || columnClasses[2];
     
     {variant === 'accordion' ? (
       <div class="mx-auto max-w-3xl">
-        <div 
-          id={accordionId} 
-          data-accordion="collapse" 
-          data-active-classes="bg-primary-50 dark:bg-gray-800" 
-          data-inactive-classes="text-gray-500 dark:text-gray-400"
-          data-animate-stagger={animateStagger || undefined}
-        >
+        <div id={accordionId} class="faq-details-accordion">
           {faqItems.map((faq, index) => (
-            <div class="border-b border-gray-200 dark:border-gray-700">
-              <h3 id={`${accordionId}-heading-${index}`}>
-                <button 
-                  type="button" 
-                  class="flex items-center justify-between w-full py-5 px-1 font-medium text-left text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                  data-accordion-target={`#${accordionId}-body-${index}`}
-                  aria-expanded={index === 0 && defaultOpen ? 'true' : 'false'}
-                  aria-controls={`${accordionId}-body-${index}`}
-                >
-                  <span class="text-lg">{faq.question}</span>
-                  <SimpleIcon 
-                    name="chevron-down" 
-                    class="w-5 h-5 shrink-0 transition-transform"
-                    dataAttributes={{ 'data-accordion-icon': '' }}
-                  />
-                </button>
-              </h3>
-              <div 
-                id={`${accordionId}-body-${index}`} 
-                class={index === 0 && defaultOpen ? '' : 'hidden'}
-                aria-labelledby={`${accordionId}-heading-${index}`}
-              >
-                <div class="py-5 px-1">
-                  <p class="text-gray-600 dark:text-gray-300 leading-relaxed" set:html={faq.answer} />
-                </div>
+            <details
+              name={accordionId}
+              class="border-b border-gray-200 dark:border-gray-700 group"
+              open={index === 0 && defaultOpen}
+            >
+              <summary class="flex cursor-pointer list-none items-center justify-between gap-3 py-5 px-1 font-medium text-left text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors [&::-webkit-details-marker]:hidden">
+                <span class="text-lg">{faq.question}</span>
+                <SimpleIcon
+                  name="chevron-down"
+                  class="faq-chevron h-5 w-5 shrink-0 transition-transform duration-200 group-open:rotate-180"
+                />
+              </summary>
+              <div class="py-5 px-1">
+                <p class="text-gray-600 dark:text-gray-300 leading-relaxed" set:html={faq.answer} />
               </div>
-            </div>
+            </details>
           ))}
         </div>
       </div>
@@ -256,27 +239,3 @@ const gridClass = columnClasses[columns] || columnClasses[2];
   </div>
 </section>
 
-{variant === 'accordion' && (
-  <script>
-    // Initialize Flowbite accordion functionality
-    document.addEventListener('DOMContentLoaded', () => {
-      const accordions = document.querySelectorAll('[data-accordion]');
-      accordions.forEach(accordion => {
-        const buttons = accordion.querySelectorAll('button[data-accordion-target]');
-        buttons.forEach(button => {
-          button.addEventListener('click', () => {
-            const targetId = button.getAttribute('data-accordion-target');
-            const target = document.querySelector(targetId!);
-            const icon = button.querySelector('[data-accordion-icon]');
-            const isExpanded = button.getAttribute('aria-expanded') === 'true';
-            
-            // Toggle current item
-            button.setAttribute('aria-expanded', String(!isExpanded));
-            target?.classList.toggle('hidden');
-            icon?.classList.toggle('rotate-180');
-          });
-        });
-      });
-    });
-  </script>
-)}

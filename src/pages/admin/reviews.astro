@@ -6,6 +6,7 @@
 import { checkAuth } from "../../lib/auth";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 import LayoutDefault from "../../components/layouts/LayoutDefault.astro";
+import TanStackDataTable from "../../components/common/TanStackDataTable.astro";
 import DeleteConfirmButton from "../../components/ui/DeleteConfirmButton.astro";
 import Button from "../../components/common/Button.astro";
 import SimpleIcon from "../../components/common/SimpleIcon.astro";
@@ -27,6 +28,16 @@ if (supabaseAdmin) {
     .order("submittedAt", { ascending: false });
   if (!error) reviews = data || [];
 }
+
+// Preprocess for TanStack table
+const tanstackReviews = reviews.map((r: any) => ({
+  id: r.id,
+  author: r.authorName || "—",
+  rating: r.rating != null ? String(r.rating) : "—",
+  reviewPreview: (r.reviewText ?? "").length > 50 ? `${String(r.reviewText).slice(0, 50)}…` : (r.reviewText || "—"),
+  status: r.status || "pending",
+  date: r.submittedAt ? new Date(r.submittedAt).toLocaleDateString() : "—",
+}));
 ---
 
 <LayoutDefault title="Review Submissions" description="Manage customer reviews from the public form">
@@ -45,6 +56,26 @@ if (supabaseAdmin) {
         <SimpleIcon name="external-link" class="h-4 w-4" />
         View public review form
       </a>
+    </div>
+
+    {/* TanStack table at top — runs in tandem with table below */}
+    <div class="mb-8 overflow-x-auto">
+      <TanStackDataTable
+        id="reviews-tanstack"
+        title="Review Submissions (TanStack)"
+        description="Sortable view. Use table below for approve/reject/delete."
+        data={tanstackReviews}
+        columns={[
+          { id: "author", accessorKey: "author", header: "Author", meta: { width: 20 } },
+          { id: "rating", accessorKey: "rating", header: "Rating", meta: { width: 10 } },
+          { id: "reviewPreview", accessorKey: "reviewPreview", header: "Review", meta: { width: 35 } },
+          { id: "status", accessorKey: "status", header: "Status", meta: { width: 12 } },
+          { id: "date", accessorKey: "date", header: "Date", meta: { width: 12 } },
+        ]}
+        getRowIdKey="id"
+        emptyMessage="No review submissions yet."
+        expandable={true}
+      />
     </div>
 
     <div class={`overflow-x-auto ${globalCardStyle} shadow`}>

@@ -7,6 +7,7 @@ import { checkAuth } from "../../lib/auth";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 import LayoutDefault from "../../components/layouts/LayoutDefault.astro";
 import AccordionDataTable from "../../components/common/AccordionDataTable.astro";
+import TanStackDataTable from "../../components/common/TanStackDataTable.astro";
 import TestimonialRowActions from "../../components/admin/TestimonialRowActions.astro";
 import CloseButton from "../../components/ui/CloseButton.astro";
 import { globalClasses } from "../api/global/global-classes";
@@ -38,6 +39,14 @@ if (supabaseAdmin) {
     .order("displayOrder", { ascending: true, nullsFirst: false });
   if (!error) testimonials = data || [];
 }
+
+const tanstackTestimonials = testimonials.map((t: any) => ({
+  id: t.id,
+  title: t.title || "—",
+  testimonialPreview: (t.testimonial ?? "").length > 60 ? `${String(t.testimonial).slice(0, 60)}…` : (t.testimonial || "—"),
+  nameCompany: [t.name, t.company].filter(Boolean).join(", ") || "—",
+  hasImage: t.image ? "✓" : "—",
+}));
 ---
 
 <LayoutDefault
@@ -50,6 +59,26 @@ if (supabaseAdmin) {
       <p class="mt-1 text-gray-600 dark:text-gray-400">
         Manage customer testimonials. Drag rows to reorder. Click a row to expand and edit.
       </p>
+    </div>
+
+    {/* TanStack table at top — runs in tandem with AccordionDataTable below */}
+    <div class="mb-8 overflow-x-auto">
+      <TanStackDataTable
+        id="testimonials-tanstack"
+        title="Testimonials (TanStack)"
+        description="Sortable view. Use table below for edit/reorder."
+        data={tanstackTestimonials}
+        columns={[
+          { id: "title", accessorKey: "title", header: "Title", meta: { width: 20 } },
+          { id: "testimonialPreview", accessorKey: "testimonialPreview", header: "Testimonial", meta: { width: 40 } },
+          { id: "nameCompany", accessorKey: "nameCompany", header: "Name / Company", meta: { width: 25 } },
+          { id: "hasImage", accessorKey: "hasImage", header: "Image", meta: { width: 10 } },
+        ]}
+        getRowIdKey="id"
+        emptyMessage="No testimonials yet."
+        expandable={true}
+        showDragHandle={true}
+      />
     </div>
 
     <div class="overflow-x-scroll rounded-lg bg-white shadow dark:bg-gray-900">

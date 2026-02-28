@@ -138,11 +138,11 @@ function runAnimatedPlaceholderInit(): void {
       const staggerDelay = stepIndex * 200;
 
       setTimeout(() => {
-        span.style.animation = "slideOutDown 400ms ease-out forwards";
+        span.style.animation = "slideOutDownPlaceholder 400ms ease-out forwards";
         setTimeout(() => {
           data.index = (data.index + 1) % data.values.length;
           span.textContent = data.values[data.index];
-          span.style.animation = "slideInDownPlaceholder 400ms ease-out forwards";
+          span.style.animation = "slideInUpPlaceholder 400ms ease-out forwards";
         }, 400);
       }, staggerDelay);
     });

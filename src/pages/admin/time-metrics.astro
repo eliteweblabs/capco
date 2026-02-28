@@ -7,6 +7,7 @@
 import { checkAuth } from "../../lib/auth";
 import LayoutDefault from "../../components/layouts/LayoutDefault.astro";
 import Hero from "../../components/common/Hero.astro";
+import TanStackDataTable from "../../components/common/TanStackDataTable.astro";
 import { globalClasses } from "../api/global/global-classes";
 
 const { currentUser, currentRole } = await checkAuth(Astro.cookies);
@@ -48,6 +49,17 @@ try {
 } catch (e) {
   console.error("[TIME-METRICS] Fetch error:", e);
 }
+
+const tanstackHoursData = (metrics.hoursPerUserPerProject || [])
+  .filter((r) => r.totalHours > 0)
+  .sort((a, b) => b.totalHours - a.totalHours)
+  .slice(0, 20)
+  .map((r) => ({
+    id: `${r.userId}-${r.projectId}`,
+    userName: r.userName,
+    project: r.project,
+    hours: `${r.totalHours.toFixed(1)}h`,
+  }));
 ---
 
 <LayoutDefault
@@ -154,11 +166,27 @@ try {
         </div>
       </div>
 
-      <!-- Hours per User per Project (table) -->
+      <!-- Hours per User per Project (TanStack + legacy table) -->
       <div class={dataTableCardClasses + " mt-6"}>
         <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
           <h3 class={globalTextH3}>Hours per User per Project</h3>
           <p class={`text-sm ${dataTableDescriptionClasses}`}>Breakdown by team member and project</p>
+        </div>
+        <div class="overflow-x-auto p-4">
+          <TanStackDataTable
+            id="time-metrics-tanstack"
+            title=""
+            description="Sortable view (TanStack). Legacy table below."
+            data={tanstackHoursData}
+            columns={[
+              { id: "userName", accessorKey: "userName", header: "User", meta: { width: 30 } },
+              { id: "project", accessorKey: "project", header: "Project", meta: { width: 50 } },
+              { id: "hours", accessorKey: "hours", header: "Hours", meta: { width: 20 } },
+            ]}
+            getRowIdKey="id"
+            emptyMessage="No data"
+            expandable={false}
+          />
         </div>
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-700">

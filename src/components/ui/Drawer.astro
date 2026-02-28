@@ -1,9 +1,9 @@
 ---
 /**
- * Flowbite Drawer - Reusable off-canvas panel.
- * Uses data-drawer-target, data-drawer-show, data-drawer-hide - Flowbite handles open/close.
- * Trigger: data-drawer-target="{id}" data-drawer-show="{id}" data-drawer-placement="{placement}"
- * Drawer must be a direct child of body (outside overflow-hidden) - e.g. in App.astro.
+ * Drawer - Reusable off-canvas panel using native Popover API.
+ * Trigger: popovertarget="{id}" popovertargetaction="toggle" (or "show")
+ * Close: CloseButton with popoverCloseTarget="{id}" or button with popovertarget="{id}" popovertargetaction="hide"
+ * Drawer should be outside overflow-hidden containers for proper display.
  */
 interface Props {
   id: string;
@@ -23,10 +23,10 @@ const sizeClasses: Record<string, string> = {
 };
 
 const placementClasses: Record<string, string> = {
-  left: "left-0 top-0 -translate-x-full",
-  right: "right-0 top-0 translate-x-full",
-  top: "left-0 right-0 top-0 -translate-y-full",
-  bottom: "left-0 right-0 bottom-0 translate-y-full",
+  left: "left-0 top-0",
+  right: "right-0 top-0",
+  top: "left-0 right-0 top-0",
+  bottom: "left-0 right-0 bottom-0",
 };
 
 const zIndex = 1500;
@@ -35,7 +35,9 @@ import CloseButton from "../ui/CloseButton.astro";
 
 <div
   id={id}
-  class={`color-background absolute flex min-h-0 min-w-0 flex-col overflow-x-hidden overflow-y-hidden p-4 transition-transform ${sizeClasses[size]} ${placementClasses[placement]}`}
+  popover="auto"
+  data-placement={placement}
+  class={`drawer-popover color-background fixed flex min-h-0 min-w-0 flex-col overflow-x-hidden overflow-y-hidden p-4 ${sizeClasses[size]} ${placementClasses[placement]}`}
   tabindex="-1"
   aria-labelledby={`${id}-label`}
   style={`z-index: ${zIndex}; min-height: calc(100dvh - 64px); height: calc(100dvh - 64px);`}
@@ -46,9 +48,47 @@ import CloseButton from "../ui/CloseButton.astro";
     <h5 id={`${id}-label`} class="inline-flex items-center truncate text-body text-lg font-medium">
       {title}
     </h5>
-    <CloseButton data-drawer-hide={id} tooltipText="Close drawer" tooltip={false} />
+    <CloseButton popoverCloseTarget={id} tooltipText="Close drawer" />
   </div>
   <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
     <slot />
   </div>
 </div>
+
+<style>
+  .drawer-popover[popover]:popover-open {
+    animation: drawer-open 0.3s ease-out;
+  }
+  .drawer-popover[data-placement="right"][popover]:popover-open {
+    animation: drawer-slide-right 0.3s ease-out;
+  }
+  .drawer-popover[data-placement="left"][popover]:popover-open {
+    animation: drawer-slide-left 0.3s ease-out;
+  }
+  .drawer-popover[data-placement="top"][popover]:popover-open {
+    animation: drawer-slide-top 0.3s ease-out;
+  }
+  .drawer-popover[data-placement="bottom"][popover]:popover-open {
+    animation: drawer-slide-bottom 0.3s ease-out;
+  }
+  @keyframes drawer-slide-right {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+  }
+  @keyframes drawer-slide-left {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+  }
+  @keyframes drawer-slide-top {
+    from { transform: translateY(-100%); }
+    to { transform: translateY(0); }
+  }
+  @keyframes drawer-slide-bottom {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  @keyframes drawer-open {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+</style>

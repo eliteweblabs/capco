@@ -857,6 +857,26 @@ export function createMultiStepFormHandler(
       });
     });
 
+    // SMS checkbox change listener - update next button data-next from config (dataNext when checked, dataSkip when unchecked)
+    const smsCheckbox = form.querySelector('input[name="smsAlerts"]') as HTMLInputElement;
+    if (smsCheckbox) {
+      const smsStep = smsCheckbox.closest(".step-content");
+      const smsNextBtn = smsStep?.querySelector("[data-skip]") as HTMLElement;
+      const updateSmsButtonDest = () => {
+        if (!smsNextBtn) return;
+        const validDest = smsNextBtn.getAttribute("data-valid-dest");
+        const skipDest = smsNextBtn.getAttribute("data-skip");
+        if (validDest != null && skipDest != null) {
+          smsNextBtn.setAttribute(
+            "data-next",
+            smsCheckbox.checked ? validDest : skipDest
+          );
+        }
+      };
+      smsCheckbox.addEventListener("change", updateSmsButtonDest);
+      updateSmsButtonDest(); // Set initial state
+    }
+
     // Address input change listener - update button text and icon with validLabel
     window.addEventListener("inline-address-select", (e: any) => {
       // Find the address input
@@ -1280,18 +1300,7 @@ export function createMultiStepFormHandler(
           return;
         }
 
-        // Special handling for SMS consent step
-        if (nextBtn.classList.contains("sms-next-btn")) {
-          const smsToggle = form.querySelector('input[name="smsAlerts"]') as HTMLInputElement;
-          if (smsToggle && smsToggle.checked) {
-            // SMS is enabled, go to carrier selection (step 5)
-            nextStep = 5;
-          } else {
-            // SMS is disabled, skip to step 6
-            nextStep = 6;
-          }
-        }
-
+        // NOTE: SMS consent step routing (dataNext/dataSkip) is handled by smsAlerts change listener above
         // NOTE: Phone step skip logic is now handled by skipCondition in form config
         // The initializeMultiStepForm function will automatically skip SMS steps
         // if phone is invalid or empty based on the "noValidPhone" condition

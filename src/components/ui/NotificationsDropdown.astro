@@ -146,7 +146,7 @@ import LoadingSpinner from "./LoadingSpinner.astro";
       triggers.forEach((el) => {
         el.addEventListener("click", () => {
           setTimeout(() => {
-            if (panel && !panel.classList.contains("hidden")) {
+            if (panel && panel.matches(":popover-open")) {
               this.isOpen = true;
               console.log(
                 "🔔 [NOTIFICATIONS-DROPDOWN] Trigger click: dropdown OPENED, loading notifications"
@@ -175,9 +175,9 @@ import LoadingSpinner from "./LoadingSpinner.astro";
         });
       });
 
-      // ESC key: close dropdown and sync state
+      // ESC key: close dropdown and sync state (Popover API handles ESC natively, this syncs state)
       document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape" && panel && !panel.classList.contains("hidden")) {
+        if (e.key === "Escape" && panel && panel.matches(":popover-open")) {
           console.log("🔔 [NOTIFICATIONS-DROPDOWN] ESC pressed: closing dropdown");
           this.closeDropdown();
         }
@@ -235,16 +235,12 @@ import LoadingSpinner from "./LoadingSpinner.astro";
     }
 
     closeDropdown() {
-      const panel = document.getElementById(this.panelId);
+      const panel = document.getElementById(this.panelId) as HTMLElement & { hidePopover?: () => void };
       if (!panel) return;
       this.isOpen = false;
       this.markViewedNotificationsAsRead();
-      const inst = (window as any).FlowbiteInstances?.getInstance("Popover", this.panelId);
-      if (inst?.hide) {
-        inst.hide();
-      } else {
-        panel.classList.add("opacity-0", "invisible");
-        setTimeout(() => panel.classList.add("hidden"), 300);
+      if (panel.hidePopover) {
+        panel.hidePopover();
       }
     }
 

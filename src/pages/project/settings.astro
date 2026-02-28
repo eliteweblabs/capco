@@ -10,6 +10,7 @@ import Button from "../../components/common/Button.astro";
 import SlidingTabs from "../../components/common/SlidingTabs.astro";
 import UnitSlider from "../../components/form/UnitSlider.astro";
 import AccordionDataTable from "../../components/common/AccordionDataTable.astro";
+import TanStackDataTable from "../../components/common/TanStackDataTable.astro";
 import TemplateRowActions from "../../components/project/TemplateRowActions.astro";
 import CloseButton from "../../components/ui/CloseButton.astro";
 import { globalCompanyData } from "../api/global/global-company-data";
@@ -166,6 +167,30 @@ if (supabaseAdmin) {
       id="section-punchlist"
       class={`template-section ${settingsActiveTab !== "punchlist" ? "hidden" : ""}`}
     >
+      <div class="mb-6 overflow-x-auto">
+        <TanStackDataTable
+          id="punchlist-templates-tanstack"
+          title="Punchlist Templates (TanStack)"
+          description="Sortable view. Use table below for edit."
+          data={punchlistTemplates.map((t: any) => ({
+            id: t.id,
+            title: t.title || "—",
+            messagePreview: t.message ? String(t.message).slice(0, 60) + "…" : "—",
+            meta: [t.enabled === false && "Disabled", t.internal && "Internal", t.markCompleted && "Auto-complete"].filter(Boolean).join(", ") || "—",
+            order: String(t.orderIndex ?? 0),
+          }))}
+          columns={[
+            { id: "title", accessorKey: "title", header: "Title", meta: { width: 25 } },
+            { id: "messagePreview", accessorKey: "messagePreview", header: "Message", meta: { width: 45 } },
+            { id: "meta", accessorKey: "meta", header: "Meta", meta: { width: 15 } },
+            { id: "order", accessorKey: "order", header: "Order", meta: { width: 10 } },
+          ]}
+          getRowIdKey="id"
+          emptyMessage="No punchlist templates."
+          expandable={true}
+          showDragHandle={true}
+        />
+      </div>
       <div class="overflow-x-auto rounded-lg bg-white shadow dark:bg-gray-900">
         <AccordionDataTable
           id="punchlist-templates"
@@ -220,6 +245,30 @@ if (supabaseAdmin) {
       id="section-discussion"
       class={`template-section ${settingsActiveTab !== "discussion" ? "hidden" : ""}`}
     >
+      <div class="mb-6 overflow-x-auto">
+        <TanStackDataTable
+          id="discussion-templates-tanstack"
+          title="Discussion Templates (TanStack)"
+          description="Sortable view. Use table below for edit."
+          data={discussionTemplates.map((t: any) => ({
+            id: t.id,
+            title: t.title || "—",
+            messagePreview: t.message ? String(t.message).slice(0, 60) + "…" : "—",
+            meta: [t.enabled === false && "Disabled", t.internal && "Internal", t.markCompleted && "Auto-complete"].filter(Boolean).join(", ") || "—",
+            order: String(t.orderIndex ?? 0),
+          }))}
+          columns={[
+            { id: "title", accessorKey: "title", header: "Title", meta: { width: 25 } },
+            { id: "messagePreview", accessorKey: "messagePreview", header: "Message", meta: { width: 45 } },
+            { id: "meta", accessorKey: "meta", header: "Meta", meta: { width: 15 } },
+            { id: "order", accessorKey: "order", header: "Order", meta: { width: 10 } },
+          ]}
+          getRowIdKey="id"
+          emptyMessage="No discussion templates."
+          expandable={true}
+          showDragHandle={true}
+        />
+      </div>
       <div class="overflow-x-auto rounded-lg bg-white shadow dark:bg-gray-900">
         <AccordionDataTable
           id="discussion-templates"

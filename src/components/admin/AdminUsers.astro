@@ -8,6 +8,7 @@ import SimpleIcon from "../common/SimpleIcon.astro";
 import ProfileTabForm from "../profile/ProfileTabForm.astro";
 import AdminUserRowActions from "./AdminUserRowActions.astro";
 import AccordionDataTable from "../common/AccordionDataTable.astro";
+import TanStackDataTable from "../common/TanStackDataTable.astro";
 import SearchInput from "../form/SearchInput.astro";
 import { globalClasses } from "../../pages/api/global/global-classes";
 
@@ -63,6 +64,16 @@ const userCounts = {
   Client: users.filter((u) => u.role === "Client").length,
   Total: users.length,
 };
+
+const tanstackUsers = users.map((u) => {
+  const fn = `${u.firstName || ""} ${u.lastName || ""}`.trim();
+  return {
+    id: u.id,
+    displayName: fn || u.companyName || "Unknown User",
+    email: u.email || "—",
+    role: u.role || "—",
+  };
+});
 ---
 
 <div class="admin-users-component px-4 pt-4">
@@ -140,6 +151,25 @@ const userCounts = {
             <option value="Staff">Staff</option>
             <option value="Client">Client</option>
           </select>
+        </div>
+
+        {/* TanStack table at top — runs in tandem with AccordionDataTable below */}
+        <div class="mb-6 overflow-x-auto">
+          <TanStackDataTable
+            id="admin-users-tanstack"
+            title="Users (TanStack)"
+            description="Sortable view. Use table below for edit/reorder."
+            data={tanstackUsers}
+            columns={[
+              { id: "displayName", accessorKey: "displayName", header: "Name", meta: { width: 25 } },
+              { id: "email", accessorKey: "email", header: "Email", meta: { width: 45 } },
+              { id: "role", accessorKey: "role", header: "Role", meta: { width: 15 } },
+            ]}
+            getRowIdKey="id"
+            emptyMessage={error ? `Error: ${error}` : "No users found."}
+            expandable={true}
+            showDragHandle={true}
+          />
         </div>
 
         <div class="overflow-hidden overflow-x-auto">

@@ -32,7 +32,7 @@ const isActive = (href: string) => {
   return currentPath === href || (href !== "/" && currentPath.startsWith(href));
 };
 
-const { navAnchorClasses, navActiveClasses, navSvgClasses } = globalClasses();
+const { globalSidebarClasses, navAnchorClasses, navActiveClasses, navSvgClasses } = globalClasses();
 
 function slugifyId(s: string) {
   return s
@@ -44,7 +44,7 @@ function slugifyId(s: string) {
 
 <aside
   id="sidebar"
-  class={`bg-gray-50/90 dark:bg-gray-950/90 backdrop-blur-sm transition-duration-[350ms] translate-z-0 fixed left-0 z-100 flex min-h-0 w-64 -translate-x-full flex-col font-secondary transition-all ease-in-out ${primaryTextClasses}`}
+  class={`${globalSidebarClasses} translate-z-0 fixed left-0 z-100 flex min-h-0 w-64 -translate-x-full flex-col font-secondary transition-all ease-in-out ${primaryTextClasses}`}
   aria-label="Sidebar"
   style={currentUser ? "transition-duration: 350ms;" : undefined}
   data-dynamic-height="height"
@@ -63,44 +63,39 @@ function slugifyId(s: string) {
       {
         asideNavItems.map((item) => {
           if (item.children?.length) {
-            const ddId = `dropdown-${slugifyId(item.label)}`;
             const childHrefs = item.children.map((c) => c.href);
             const isDropdownActive = childHrefs.some((h) => isActive(h));
             return (
               <li>
-                <button
-                  type="button"
-                  class={`${navAnchorClasses} w-full ${isDropdownActive ? navActiveClasses : ""}`}
-                  aria-controls={ddId}
-                  data-collapse-toggle={ddId}
-                  data-sidebar-collapse-item=""
-                  aria-expanded="false"
-                >
-                  {item.icon && <SimpleIcon name={item.icon} class={navSvgClasses} />}
-                  <span
-                    class="ml-3 flex-1 whitespace-nowrap text-left"
-                    data-sidebar-collapse-hide=""
+                <details class="group" open={isDropdownActive}>
+                  <summary
+                    class={`${navAnchorClasses} w-full cursor-pointer list-none ${isDropdownActive ? navActiveClasses : ""} [&::-webkit-details-marker]:hidden`}
+                    data-sidebar-collapse-item=""
                   >
-                    {item.label}
-                  </span>
-                  <SimpleIcon name="chevron-right" class="h-4 w-4" data-sidebar-collapse-hide="" />
-                </button>
-                <div data-sidebar-collapse-hide="">
-                  <ul id={ddId} class="hidden space-y-2 py-2 pl-8">
+                    {item.icon && <SimpleIcon name={item.icon} class={navSvgClasses} />}
+                    <span class="ml-3 flex-1 whitespace-nowrap text-left" data-sidebar-collapse-hide="">
+                      {item.label}
+                    </span>
+                    <SimpleIcon
+                      name="chevron-right"
+                      class="aside-chevron h-4 w-4 transition-transform duration-200 group-open:rotate-90"
+                      data-sidebar-collapse-hide=""
+                    />
+                  </summary>
+                  <ul class="space-y-2 py-2 pl-8" data-sidebar-collapse-hide="">
                     {item.children.map((child) => (
                       <li>
                         <a
                           href={child.href}
                           class={`${navAnchorClasses} ${currentPath === child.href ? navActiveClasses : ""}`}
                           data-sidebar-collapse-subitem=""
-                          data-sidebar-collapse-hide=""
                         >
                           {child.label}
                         </a>
                       </li>
                     ))}
                   </ul>
-                </div>
+                </details>
               </li>
             );
           }

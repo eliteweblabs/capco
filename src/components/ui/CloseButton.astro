@@ -1,5 +1,4 @@
 ---
-import Tooltip from "./Tooltip.astro";
 import SimpleIcon from "../common/SimpleIcon.astro";
 
 export interface Props {
@@ -10,19 +9,21 @@ export interface Props {
   onclick?: string;
   id?: string;
   type?: "button" | "submit" | "reset";
+  /** @deprecated Use title (native) via tooltipText. Kept for backwards compat, ignored. */
   tooltip?: boolean;
+  /** When set, button natively closes a popover (adds popovertarget + popovertargetaction="hide"). */
+  popoverCloseTarget?: string;
   [key: string]: any; // Allow any data attributes
 }
 
 const {
   tooltipText = "Close",
-  position = "top",
   class: className = "",
   ariaLabel,
   onclick,
   id,
   type = "button",
-  tooltip = true,
+  popoverCloseTarget,
   ...restProps
 } = Astro.props;
 
@@ -34,39 +35,23 @@ const dataAttributes = Object.keys(restProps)
   .reduce((acc, key) => ({ ...acc, [key]: restProps[key] }), {});
 ---
 
-{
-  tooltip ? (
-    <Tooltip text={tooltipText} {position} hideOnMobile>
-      <button
-        {type}
-        class={`close-button group inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors ${className}`}
-        aria-label={finalAriaLabel}
-        {onclick}
-        {id}
-        {...dataAttributes}
-      >
-        <SimpleIcon
-          name="plus"
-          class="close-button-icon h-5 w-5 rotate-45 transition-colors group-hover:text-red-600 dark:group-hover:text-red-500"
-        />
-      </button>
-    </Tooltip>
-  ) : (
-    <button
-      {type}
-      class={`close-button group inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors ${className}`}
-      aria-label={finalAriaLabel}
-      {onclick}
-      {id}
-      {...dataAttributes}
-    >
-      <SimpleIcon
-        name="plus"
-        class="close-button-icon h-5 w-5 rotate-45 transition-colors group-hover:text-red-600 dark:group-hover:text-red-500"
-      />
-    </button>
-  )
-}
+<button
+  {type}
+  class={`close-button group inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors ${className}`}
+  aria-label={finalAriaLabel}
+  title={tooltipText}
+  {...(popoverCloseTarget
+    ? { popovertarget: popoverCloseTarget, popovertargetaction: "hide" }
+    : {})}
+  {onclick}
+  {id}
+  {...dataAttributes}
+>
+  <SimpleIcon
+    name="plus"
+    class="close-button-icon h-5 w-5 rotate-45 transition-colors group-hover:text-red-600 dark:group-hover:text-red-500"
+  />
+</button>
 
 <style>
   .close-button:focus-visible {

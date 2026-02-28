@@ -1,0 +1,23 @@
+---
+/**
+ * Layout: Legal (Privacy / Terms)
+ * Used by PolicyGen-generated pages. Derives title from URL path since
+ * PolicyGen passes the same layout props to both privacy and terms.
+ */
+const path = Astro.url.pathname;
+const isTerms = path.includes("terms");
+const title = isTerms ? "Terms of Service" : "Privacy Policy";
+const description = isTerms
+  ? "Terms and conditions for using our services"
+  : "Our privacy policy and data protection practices";
+
+import App from "../ui/App.astro";
+import { globalClasses } from "../../pages/api/global/global-classes";
+const { globalContainerClasses } = globalClasses();
+---
+
+<App {title} {description} layout="default">
+  <div data-dynamic-height="minHeight" class={globalContainerClasses}>
+    <slot />
+  </div>
+</App>

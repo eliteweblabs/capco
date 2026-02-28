@@ -54,8 +54,7 @@ export const globalClasses = () => {
     dataTableDescriptionClasses: "mt-1 text-sm text-gray-500 dark:text-gray-400",
     dataTableClearButtonClasses:
       "shrink-0 rounded border border-gray-300 bg-white px-2 py-1.5 text-xs text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700",
-    dataTableTableWrapperClasses:
-      "w-full overflow-x-auto overflow-y-auto max-h-[70vh] text-center no-scrollbar",
+    dataTableTableWrapperClasses: "w-full text-center no-scrollbar",
     dataTableTableClasses:
       "w-full max-w-full table-fixed divide-gray-200 text-center text-sm dark:divide-gray-700",
     dataTableTheadClasses:
@@ -97,6 +96,8 @@ export const globalClasses = () => {
       "sticky right-0 z-[1] bg-white dark:bg-gray-900 shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.1)] dark:shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.3)]",
 
     // Aside / sidebar nav (Aside.astro)
+    globalSidebarClasses:
+      "bg-gray-50/90 dark:bg-gray-950/90 backdrop-blur-sm transition-duration-[350ms]",
     navAnchorClasses:
       "lowercase hover:bg-gray-300 dark:hover:bg-gray-700 flex w-full align-center rounded-lg px-3 py-2 whitespace-nowrap",
     navActiveClasses: "bg-gray-300 dark:bg-gray-700 font-bold",

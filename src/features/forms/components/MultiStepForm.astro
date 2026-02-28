@@ -27,7 +27,8 @@ const {
 
 const config = normalizeFormConfig(rawConfig);
 
-const { globalInputClasses, multiStepInputClasses, multiStepInputCoreClasses, globalCardStyle } = globalClasses();
+const { globalInputClasses, multiStepInputClasses, multiStepInputCoreClasses, globalCardStyle } =
+  globalClasses();
 const appendedGlobalInputClasses = `${globalInputClasses} text-center`;
 /** On wrapper so animated placeholder and icons get size/color; input uses core to fill and inherit */
 const appendedMultiStepInputClasses = multiStepInputClasses;
@@ -147,10 +148,7 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
             {/* Step Fields */}
             {step.isReview ? (
               // Review step - show summary
-              <div
-                class={`color-background space-y-4 ${globalCardStyle} p-8`}
-                tabindex="-1"
-              >
+              <div class={`color-background space-y-4 ${globalCardStyle} p-8`} tabindex="-1">
                 {step.reviewFields?.map((fieldName) => (
                   <div
                     class="flex items-start justify-between border-b border-gray-200 pb-2 last:border-b-0 dark:border-gray-700"
@@ -290,6 +288,9 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
                       dataAttributes={{
                         ...(button.dataNext !== undefined && {
                           "data-next": button.dataNext.toString(),
+                          ...(button.dataSkip !== undefined && {
+                            "data-valid-dest": button.dataNext.toString(),
+                          }),
                         }),
                         ...(button.dataSkip !== undefined && {
                           "data-skip": button.dataSkip.toString(),
@@ -576,7 +577,7 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
     /* padding-top: 40vh; */
   }
 
-  .step-content.completed .step-form-buttons-wrapper {
+  .step-content:not(.active).completed .step-form-buttons-wrapper {
     /* margin-top: 0 !important; */
     /* height: 0;
     transition: height 0.3s ease-in-out; */
@@ -924,23 +925,44 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
         // typewriter-complete fires async (transitionend/setTimeout); focus would not open iOS keypad.
         // User taps the input wrapper → tap-to-focus runs in click handler (same gesture) → keypad opens.
         const isTouch = typeof window !== "undefined" && "ontouchstart" in window;
-        const FOCUS_DELAY_AFTER_ANIMATIONS_MS = 150;
+        const FOCUS_DELAY_AFTER_ANIMATIONS_MS = 250;
         let focusDone = false;
+        let fallbackId: ReturnType<typeof setTimeout> | null = null;
         const runFocus = () => {
           if (focusDone || isTouch) return;
           focusDone = true;
+          if (fallbackId != null) {
+            clearTimeout(fallbackId);
+            fallbackId = null;
+          }
           const focusFirstIn = (window as any).focusFirstInputIn;
           const ok = typeof focusFirstIn === "function" && focusFirstIn(stepContent);
           console.log("[FOCUS] Step", stepNum, "focusFirstInputIn:", ok ? "ok" : "no-focus");
         };
 
-        // Prefer fields-wrapper transition (250ms) so we focus as soon as input is visible
+        // Fallback: run focus after cascade completes (handles missing wrapper or transitionend not firing)
+        const CASCADE_END_MS = 750; /* 500ms buttons delay + ~250ms opacity/expand */
+        const fallbackMs = CASCADE_END_MS + FOCUS_DELAY_AFTER_ANIMATIONS_MS + 200;
+        fallbackId = setTimeout(() => {
+          fallbackId = null;
+          console.log("[FOCUS] Step", stepNum, "fallback setTimeout fired at", fallbackMs, "ms");
+          runFocus();
+        }, fallbackMs);
+
+        // Prefer fields-wrapper transition (250ms): when it fires, cancel fallback and schedule focus
         const fieldsWrapper = stepContent.querySelector(".step-form-fields-wrapper");
         const buttonsWrapper = stepContent.querySelector(".step-form-buttons-wrapper");
+        const wrapperToUse = fieldsWrapper ?? buttonsWrapper;
         const onTransitionEnd = (e: Event) => {
           const te = e as TransitionEvent;
           if (te.propertyName !== "opacity") return;
-          (te.target as HTMLElement).removeEventListener("transitionend", onTransitionEnd);
+          // Only handle events from the wrapper itself; ignore bubbling from children (avoids race from multiple opacity transitions)
+          if (te.target !== wrapperToUse) return;
+          wrapperToUse!.removeEventListener("transitionend", onTransitionEnd);
+          if (fallbackId != null) {
+            clearTimeout(fallbackId);
+            fallbackId = null;
+          }
           console.log(
             "[FOCUS] Step",
             stepNum,
@@ -950,26 +972,18 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
           );
           setTimeout(runFocus, FOCUS_DELAY_AFTER_ANIMATIONS_MS);
         };
-        if (fieldsWrapper) {
-          fieldsWrapper.addEventListener("transitionend", onTransitionEnd);
-          console.log("[FOCUS] Step", stepNum, "listening for fields-wrapper transitionend");
-        } else if (buttonsWrapper) {
-          buttonsWrapper.addEventListener("transitionend", onTransitionEnd);
+        if (wrapperToUse) {
+          wrapperToUse.addEventListener("transitionend", onTransitionEnd);
           console.log(
             "[FOCUS] Step",
             stepNum,
-            "listening for buttons-wrapper transitionend (no fields-wrapper)"
+            "listening for",
+            fieldsWrapper ? "fields-wrapper" : "buttons-wrapper",
+            "transitionend"
           );
         } else {
           console.log("[FOCUS] Step", stepNum, "no wrapper found, relying on fallback setTimeout");
         }
-        // Fallback: always run focus after cascade completes (handles missing wrapper or transitionend not firing)
-        const CASCADE_END_MS = 750; /* 500ms buttons delay + ~250ms opacity/expand */
-        const fallbackMs = CASCADE_END_MS + FOCUS_DELAY_AFTER_ANIMATIONS_MS + 200;
-        setTimeout(() => {
-          console.log("[FOCUS] Step", stepNum, "fallback setTimeout fired at", fallbackMs, "ms");
-          runFocus();
-        }, fallbackMs);
       }
     });
 
@@ -1170,12 +1184,12 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
 
           setTimeout(() => {
             // Only rotate if visible
-            span.style.animation = "slideOutDown 400ms ease-out forwards";
+            span.style.animation = "slideOutDownPlaceholder 400ms ease-out forwards";
 
             setTimeout(() => {
               data.index = (data.index + 1) % data.values.length;
               span.textContent = data.values[data.index];
-              span.style.animation = "slideInDownPlaceholder 400ms ease-out forwards";
+              span.style.animation = "slideInUpPlaceholder 400ms ease-out forwards";
             }, 400);
           }, staggerDelay);
         }

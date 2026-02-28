@@ -8,6 +8,7 @@ import { checkAuth } from "../../lib/auth";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 import LayoutDefault from "../../components/layouts/LayoutDefault.astro";
 import AccordionDataTable from "../../components/common/AccordionDataTable.astro";
+import TanStackDataTable from "../../components/common/TanStackDataTable.astro";
 import ContactLeadRowActions from "../../components/admin/ContactLeadRowActions.astro";
 import SimpleIcon from "../../components/common/SimpleIcon.astro";
 
@@ -35,14 +36,28 @@ if (supabaseAdmin) {
     .order("submittedAt", { ascending: false });
   if (!error) submissions = data || [];
 }
+
+// Preprocess for TanStack table (needs flat display fields for accessorKey)
+const tanstackLeads = submissions.map((s: any) => ({
+  id: s.id,
+  name: [s.firstName, s.lastName].filter(Boolean).join(" ").trim() || "—",
+  contact: s.email || s.phone || "—",
+  company: s.company || "—",
+  messagePreview: (s.message ?? "").length > 60 ? `${String(s.message).slice(0, 60)}…` : (s.message || "—"),
+  date: s.submittedAt ? new Date(s.submittedAt).toLocaleDateString() : "—",
+}));
 ---
 
-<LayoutDefault title="Contact Form Leads" description="Manage contact form leads from the public form">
+<LayoutDefault
+  title="Contact Form Leads"
+  description="Manage contact form leads from the public form"
+>
   <div class="mx-auto max-w-6xl px-4 py-8">
     <div class="mb-8">
       <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Contact Form Leads</h1>
       <p class="mt-1 text-gray-600 dark:text-gray-400">
-        Leads from the public contact form. Click a row to expand and view full message; delete when resolved.
+        Leads from the public contact form. Click a row to expand and view full message; delete when
+        resolved.
       </p>
       <a
         href="/contact"
@@ -53,6 +68,26 @@ if (supabaseAdmin) {
         <SimpleIcon name="external-link" class="h-4 w-4" />
         View public contact form
       </a>
+    </div>
+
+    {/* TanStack table at top — runs in tandem with AccordionDataTable below */}
+    <div class="mb-8 overflow-x-auto">
+      <TanStackDataTable
+        id="contact-leads-tanstack"
+        title="Contact Leads (TanStack)"
+        description="Sortable view. Expand row below for full message and actions."
+        data={tanstackLeads}
+        columns={[
+          { id: "name", accessorKey: "name", header: "Name", meta: { width: 16 } },
+          { id: "contact", accessorKey: "contact", header: "Contact", meta: { width: 22 } },
+          { id: "company", accessorKey: "company", header: "Company", meta: { width: 14 } },
+          { id: "messagePreview", accessorKey: "messagePreview", header: "Message", meta: { width: 28 } },
+          { id: "date", accessorKey: "date", header: "Date", meta: { width: 12 } },
+        ]}
+        getRowIdKey="id"
+        emptyMessage="No contact form leads yet."
+        expandable={true}
+      />
     </div>
 
     <div class="overflow-x-auto">
@@ -86,9 +121,14 @@ if (supabaseAdmin) {
               const parts: string[] = [];
               if (email) {
                 const e = escapeHtml(email);
-                parts.push(`<a href="mailto:${e}" class="text-primary-600 hover:underline dark:text-primary-400">${e}</a>`);
+                parts.push(
+                  `<a href="mailto:${e}" class="text-primary-600 hover:underline dark:text-primary-400">${e}</a>`
+                );
               }
-              if (phone) parts.push(`<span class="text-gray-500 dark:text-gray-400">${escapeHtml(phone)}</span>`);
+              if (phone)
+                parts.push(
+                  `<br><span class="text-gray-500 dark:text-gray-400">${escapeHtml(phone)}</span>`
+                );
               return parts.join(" ");
             },
             allowHtml: true,
@@ -203,7 +243,10 @@ if (supabaseAdmin) {
     tbody.addEventListener("click", (e) => {
       const triggerRow = e.target?.closest?.(`tr.${triggerClass}[data-item-id]`);
       if (!triggerRow) return;
-      if (e.target?.closest?.(".delete-confirm-btn, .delete-confirm-wrapper, .accordion-drag-handle")) return;
+      if (
+        e.target?.closest?.(".delete-confirm-btn, .delete-confirm-wrapper, .accordion-drag-handle")
+      )
+        return;
 
       const itemId = triggerRow.getAttribute("data-item-id");
       if (!itemId) return;

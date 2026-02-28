@@ -6,7 +6,11 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner.astro";
 import App from "../../components/ui/App.astro";
 ---
 
-<App layout="authCallback" title="Signing you in" description="Please wait while we complete authentication">
+<App
+  layout="authCallback"
+  title="signing you in"
+  description="Please wait while we complete authentication"
+>
   <div
     id="loading-container"
     class="flex w-full flex-col items-center justify-center gap-6"
@@ -146,7 +150,13 @@ import App from "../../components/ui/App.astro";
   const capturedRedirect =
     initialUrlParams.get("redirect") ||
     initialHashParams.get("redirect") ||
-    (() => { try { return localStorage.getItem("post-auth-redirect"); } catch { return null; } })() ||
+    (() => {
+      try {
+        return localStorage.getItem("post-auth-redirect");
+      } catch {
+        return null;
+      }
+    })() ||
     "/project/dashboard";
 
   console.log("[AUTH-CALLBACK] IMMEDIATE CAPTURE on page load:");
@@ -275,7 +285,11 @@ import App from "../../components/ui/App.astro";
         console.log("[AUTH-CALLBACK] Authentication successful, redirecting...");
         await new Promise((resolve) => setTimeout(resolve, 300));
         const redirectUrl = capturedRedirect || "/project/dashboard";
-        try { localStorage.removeItem("post-auth-redirect"); } catch { /* ignore */ }
+        try {
+          localStorage.removeItem("post-auth-redirect");
+        } catch {
+          /* ignore */
+        }
         console.log("[AUTH-CALLBACK] Redirecting to:", redirectUrl);
         window.location.replace(redirectUrl);
         return;
@@ -619,7 +633,11 @@ import App from "../../components/ui/App.astro";
       // Use replace instead of href to ensure proper navigation with cookies
       // This ensures the browser includes cookies in the redirect
       const redirectUrl = capturedRedirect || "/project/dashboard";
-      try { localStorage.removeItem("post-auth-redirect"); } catch { /* ignore */ }
+      try {
+        localStorage.removeItem("post-auth-redirect");
+      } catch {
+        /* ignore */
+      }
       console.log("[AUTH-CALLBACK] Final redirect to:", redirectUrl);
       window.location.replace(redirectUrl);
     } catch (err) {

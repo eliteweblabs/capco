@@ -382,6 +382,7 @@ if (!String.prototype.startsWith) {
  * Focus first focusable input in a container.
  * iOS keypad only opens when focus() is called within a direct user interaction (click/touch).
  * Use from a button/link click handler, e.g. "Open keypad" button or dropdown trigger.
+ * For async/transitionend: scrolls into view and uses RAF so element is painted before focus.
  */
 (window as any).focusFirstInputIn = function (container: HTMLElement): boolean {
   if (!container?.querySelector) return false;
@@ -389,7 +390,13 @@ if (!String.prototype.startsWith) {
     "input:not([type=hidden]):not([readonly]), textarea, select"
   ) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null;
   if (!first?.focus) return false;
-  first.focus({ preventScroll: false });
+  const el = first as HTMLElement;
+  el.scrollIntoView({ block: "nearest", behavior: "auto" });
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      el.focus({ preventScroll: false });
+    });
+  });
   return true;
 };
 
