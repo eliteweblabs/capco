@@ -1,5 +1,8 @@
 ---
 import SimpleIcon from "../common/SimpleIcon.astro";
+import { globalClasses } from "../../pages/api/global/global-classes";
+
+const { globalCardStyle } = globalClasses();
 
 export interface Props {
   projectId: string;
@@ -11,7 +14,7 @@ export interface Props {
 const { projectId, globalInputClasses, secondaryTextClasses, primaryTextClasses } = Astro.props;
 ---
 
-<div class="color-background rounded-lg border bg-gray-100 shadow-sm dark:border-gray-700">
+<div class={`${globalCardStyle} shadow-sm`} data-global-card-style={globalCardStyle}>
   <!-- Header -->
   <div class="border-b border-gray-200 p-6 dark:border-gray-700">
     <div class="flex items-center justify-between">
@@ -137,8 +140,9 @@ const { projectId, globalInputClasses, secondaryTextClasses, primaryTextClasses 
 
     createLogItem(entry) {
       const item = document.createElement("div");
+      const cardStyle = (document.querySelector("[data-global-card-style]") as HTMLElement)?.dataset.globalCardStyle ?? "rounded-lg border color-background";
       item.className =
-        "flex items-start space-x-3 rounded-lg border border-gray-200 p-4 dark:border-gray-700";
+        `flex items-start space-x-3 ${cardStyle} p-4`;
 
       const icon = this.getActionIcon(entry.action);
       const color = this.getActionColor(entry.action);

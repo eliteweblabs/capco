@@ -4,6 +4,9 @@ export const partial = true;
 
 import SimpleIcon from "../common/SimpleIcon.astro";
 import LoadingSpinner from "../ui/LoadingSpinner.astro";
+import { globalClasses } from "../../pages/api/global/global-classes";
+
+const { globalCardStyle } = globalClasses();
 
 interface Props {
   project?: any; // Optional project object - if null, it's a global discussion
@@ -104,7 +107,7 @@ const isGlobalDiscussion = !project;
 </div>
 
 {/* Discussion List */}
-<div id="discussions-list" class="space-y-4">
+<div id="discussions-list" class="space-y-4" data-global-card-style={globalCardStyle}>
   <!-- Discussions will be loaded here -->
 </div>
 
@@ -113,7 +116,7 @@ const isGlobalDiscussion = !project;
   color="primary"
   size="md"
   id="discussions-loading"
-  loadingText="loading discussions..."
+  loadingText="loading discussions"
   className="absolute inset-0 flex h-full w-full items-center justify-center"
 />
 <!-- <div id="discussions-loading" class="hidden py-8 text-center">
@@ -570,8 +573,10 @@ const isGlobalDiscussion = !project;
       if (mentionDropdown) return mentionDropdown;
 
       mentionDropdown = document.createElement("div");
-      mentionDropdown.className =
-        "mention-dropdown fixed z-50 max-h-48 w-64 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 color-background";
+      const cardStyle =
+        document.querySelector("[data-global-card-style]")?.dataset?.globalCardStyle ??
+        "rounded-lg border color-background";
+      mentionDropdown.className = `mention-dropdown fixed z-50 max-h-48 w-64 overflow-y-auto ${cardStyle} shadow-lg`;
       mentionDropdown.style.display = "none";
       document.body.appendChild(mentionDropdown);
       return mentionDropdown;
@@ -885,8 +890,10 @@ const isGlobalDiscussion = !project;
 
     // Create reply form
     const replyForm = document.createElement("div");
-    replyForm.className =
-      "reply-form mt-4 p-4 bg-gray-50 color-background rounded-lg border border-gray-200 dark:border-gray-700";
+    const cardStyle =
+      document.querySelector("[data-global-card-style]")?.dataset?.globalCardStyle ??
+      "rounded-lg border color-background";
+    replyForm.className = `reply-form mt-4 p-4 ${cardStyle}`;
     replyForm.innerHTML = `
       <div class="mb-4">
         <label for="reply-message-${parentId}" class="sr-only">Your reply</label>

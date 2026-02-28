@@ -1,0 +1,46 @@
+---
+/**
+ * AlertBlock - Alert/notification banner for CMS/BlockRenderer
+ *
+ * @example:
+ * <AlertBlock title="Notice" message="Please complete your profile." variant="info" />
+ */
+import Alert from "../partials/Alert.astro";
+
+interface Props {
+  title?: string;
+  message: string;
+  variant?: "info" | "success" | "warning" | "danger";
+  dismissible?: boolean;
+  icon?: string;
+  buttonText?: string;
+  buttonHref?: string;
+  className?: string;
+}
+
+const {
+  title,
+  message,
+  variant = "info",
+  dismissible = false,
+  buttonText,
+  buttonHref,
+  className = "",
+} = Astro.props;
+
+const type = variant === "danger" ? "error" : variant;
+---
+
+<div class={`alert-block ${dismissible ? "alert-dismissible" : ""} ${className}`}>
+  <Alert type={type} title={title ?? undefined} description={message} class="w-full" variant="default" />
+  {(buttonText || buttonHref) && (
+    <div class="mt-3">
+      <a
+        href={buttonHref || "#"}
+        class="inline-flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 bg-primary-600 text-white hover:bg-primary-700"
+      >
+        {buttonText || "Learn more"}
+      </a>
+    </div>
+  )}
+</div>

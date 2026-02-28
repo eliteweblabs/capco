@@ -4,6 +4,7 @@ import Button from "./Button.astro";
 import { globalClasses } from "../../pages/api/global/global-classes";
 
 const gc = globalClasses();
+const { globalCardStyle } = gc;
 const defaultInputClasses = gc.globalInputClasses;
 
 export interface Props {
@@ -24,8 +25,9 @@ const {
 ---
 
 <div
-  class={`rounded-lg border bg-gray-100 shadow-sm dark:border-gray-700 color-background ${className}`}
+  class={`${globalCardStyle} shadow-sm ${className}`}
   data-limit={limit}
+  data-global-card-style={globalCardStyle}
 >
   <!-- Header -->
   <div class="border-b border-gray-200 p-6 dark:border-gray-700">
@@ -412,8 +414,9 @@ const {
             ? "text-primary-600 dark:text-primary-400"
             : "text-green-600 dark:text-green-400";
 
+      const cardStyle = (document.querySelector("[data-global-card-style]") as HTMLElement)?.dataset.globalCardStyle ?? "rounded-lg border color-background";
       return `
-        <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/50">
+        <div class="${cardStyle} p-4">
           <div class="mb-3 flex items-start justify-between">
             <div class="flex-1">
               <div class="flex items-center gap-2 mb-2">

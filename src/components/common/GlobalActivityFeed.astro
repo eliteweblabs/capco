@@ -3,7 +3,7 @@ import SimpleIcon from "./SimpleIcon.astro";
 import Button from "./Button.astro";
 import { globalClasses } from "../../pages/api/global/global-classes";
 
-const { globalInputClasses } = globalClasses();
+const { globalInputClasses, globalCardStyle } = globalClasses();
 
 export interface Props {
   title?: string;
@@ -21,7 +21,8 @@ const {
 ---
 
 <div
-  class={`rounded-lg border bg-gray-100 shadow-sm dark:border-gray-700 color-background ${className}`}
+  class={`${globalCardStyle} shadow-sm ${className}`}
+  data-global-card-style={globalCardStyle}
 >
   <!-- Header -->
   <div class="border-b border-gray-200 p-6 dark:border-gray-700">
@@ -419,8 +420,9 @@ const {
 
     private createActivityElement(activity: GlobalActivity): HTMLElement {
       const div = document.createElement("div");
+      const cardStyle = (document.querySelector("[data-global-card-style]") as HTMLElement)?.dataset.globalCardStyle ?? "rounded-lg border color-background";
       div.className =
-        "flex items-start space-x-3 rounded-lg border border-gray-200 p-4 dark:border-gray-700";
+        `flex items-start space-x-3 ${cardStyle} p-4`;
 
       const icon = this.getActivityIcon(activity.action || "unknown");
       const timestamp = this.formatTimestamp(activity.timestamp);

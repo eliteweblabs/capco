@@ -9,6 +9,9 @@ import LayoutDefault from "../../components/layouts/LayoutDefault.astro";
 import Button from "../../components/common/Button.astro";
 import SlidingTabs from "../../components/common/SlidingTabs.astro";
 import UnitSlider from "../../components/form/UnitSlider.astro";
+import AccordionDataTable from "../../components/common/AccordionDataTable.astro";
+import TemplateRowActions from "../../components/project/TemplateRowActions.astro";
+import CloseButton from "../../components/ui/CloseButton.astro";
 import { globalCompanyData } from "../api/global/global-company-data";
 import { globalClasses } from "../api/global/global-classes";
 import { supabaseAdmin } from "../../lib/supabase-admin";
@@ -54,6 +57,23 @@ if (supabaseAdmin) {
     }
   } catch {
     // use fallback 72
+  }
+}
+
+// Fetch templates server-side
+let punchlistTemplates: any[] = [];
+let discussionTemplates: any[] = [];
+if (supabaseAdmin) {
+  try {
+    const { data } = await supabaseAdmin
+      .from("projectItemTemplates")
+      .select("*")
+      .order("orderIndex", { ascending: true });
+    const all = data || [];
+    punchlistTemplates = all.filter((t: any) => t.type === "punchlist");
+    discussionTemplates = all.filter((t: any) => t.type === "discussion");
+  } catch {
+    // use empty arrays
   }
 }
 ---
@@ -146,21 +166,52 @@ if (supabaseAdmin) {
       id="section-punchlist"
       class={`template-section ${settingsActiveTab !== "punchlist" ? "hidden" : ""}`}
     >
-      <div class="mb-4 flex items-center justify-between">
-        <h2 class="text-xl font-semibold">Punchlist Templates</h2>
-        <Button id="add-punchlist-btn" type="button" variant="primary">
-          <i class="bx bx-plus mr-2"></i>
-          Add Punchlist Item
-        </Button>
-      </div>
-
-      <div class="rounded-lg bg-white shadow dark:bg-gray-900">
-        <div
-          id="punchlist-templates-container"
-          class="divide-y divide-gray-200 dark:divide-gray-700"
-        >
-          <!-- Templates will be loaded here -->
-        </div>
+      <div class="overflow-x-auto rounded-lg bg-white shadow dark:bg-gray-900">
+        <AccordionDataTable
+          id="punchlist-templates"
+          data={punchlistTemplates}
+          getItemId={(t) => String(t.id)}
+          slotIdPrefix="punchlist-slot"
+          showCreateRow={true}
+          createRowLabel="+ Add Punchlist Item"
+          getCreateSlotId={() => "create"}
+          triggerClass="template-accordion-trigger"
+          detailClass="template-accordion-detail"
+          slotClass="template-slot"
+          chevronClass="template-chevron"
+          detailRowIdPrefix="punchlist"
+          emptyMessage='Use "Add Punchlist Item" above to create your first template.'
+          getTriggerDataAttrs={(t) => ({ templateSlot: String(t.id), templateType: "punchlist" })}
+          getDetailRowDataAttrs={(t) => ({ templateSlot: String(t.id), templateType: "punchlist" })}
+          createRowDataAttrs={{ templateSlot: "create", templateType: "punchlist" }}
+          createButtonId="add-punchlist-btn"
+          columns={[
+            { key: "title", label: "Title", getValue: (t) => t.title || "—", width: 25 },
+            {
+              key: "message",
+              label: "Message",
+              getValue: (t) => (t.message ? String(t.message).slice(0, 60) + "…" : "—"),
+              cellClass: "max-w-64 truncate text-gray-500 dark:text-gray-400",
+              width: 45,
+            },
+            {
+              key: "meta",
+              label: "Meta",
+              getValue: (t) => {
+                const badges = [];
+                if (!t.enabled) badges.push("Disabled");
+                if (t.internal) badges.push("Internal");
+                if (t.markCompleted) badges.push("Auto-complete");
+                return badges.length ? badges.join(", ") : "—";
+              },
+              cellClass: "whitespace-nowrap text-xs text-gray-500 dark:text-gray-400",
+              width: 15,
+            },
+            { key: "order", label: "Order", getValue: (t) => String(t.orderIndex ?? 0), width: 10 },
+          ]}
+          actionsComponent={TemplateRowActions}
+          actionsGetProps={(t) => ({ template: t })}
+        />
       </div>
     </div>
 
@@ -169,44 +220,66 @@ if (supabaseAdmin) {
       id="section-discussion"
       class={`template-section ${settingsActiveTab !== "discussion" ? "hidden" : ""}`}
     >
-      <div class="mb-4 flex items-center justify-between">
-        <h2 class="text-xl font-semibold">Discussion Templates</h2>
-        <Button id="add-discussion-btn" type="button" variant="primary">
-          <i class="bx bx-plus mr-2"></i>
-          Add Discussion Item
-        </Button>
-      </div>
-
-      <div class="rounded-lg bg-white shadow dark:bg-gray-900">
-        <div
-          id="discussion-templates-container"
-          class="divide-y divide-gray-200 dark:divide-gray-700"
-        >
-          <!-- Templates will be loaded here -->
-        </div>
+      <div class="overflow-x-auto rounded-lg bg-white shadow dark:bg-gray-900">
+        <AccordionDataTable
+          id="discussion-templates"
+          data={discussionTemplates}
+          getItemId={(t) => String(t.id)}
+          slotIdPrefix="discussion-slot"
+          showCreateRow={true}
+          createRowLabel="+ Add Discussion Item"
+          getCreateSlotId={() => "create"}
+          triggerClass="template-accordion-trigger"
+          detailClass="template-accordion-detail"
+          slotClass="template-slot"
+          chevronClass="template-chevron"
+          detailRowIdPrefix="discussion"
+          emptyMessage='Use "Add Discussion Item" above to create your first template.'
+          getTriggerDataAttrs={(t) => ({ templateSlot: String(t.id), templateType: "discussion" })}
+          getDetailRowDataAttrs={(t) => ({ templateSlot: String(t.id), templateType: "discussion" })}
+          createRowDataAttrs={{ templateSlot: "create", templateType: "discussion" }}
+          createButtonId="add-discussion-btn"
+          columns={[
+            { key: "title", label: "Title", getValue: (t) => t.title || "—", width: 25 },
+            {
+              key: "message",
+              label: "Message",
+              getValue: (t) => (t.message ? String(t.message).slice(0, 60) + "…" : "—"),
+              cellClass: "max-w-64 truncate text-gray-500 dark:text-gray-400",
+              width: 45,
+            },
+            {
+              key: "meta",
+              label: "Meta",
+              getValue: (t) => {
+                const badges = [];
+                if (!t.enabled) badges.push("Disabled");
+                if (t.internal) badges.push("Internal");
+                if (t.markCompleted) badges.push("Auto-complete");
+                return badges.length ? badges.join(", ") : "—";
+              },
+              cellClass: "whitespace-nowrap text-xs text-gray-500 dark:text-gray-400",
+              width: 15,
+            },
+            { key: "order", label: "Order", getValue: (t) => String(t.orderIndex ?? 0), width: 10 },
+          ]}
+          actionsComponent={TemplateRowActions}
+          actionsGetProps={(t) => ({ template: t })}
+        />
       </div>
     </div>
   </div>
 
-  <!-- Edit Modal -->
-  <div
-    id="edit-modal"
-    class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-50"
-  >
-    <div
-      class="mx-4 max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white shadow-xl dark:bg-gray-900"
-    >
-      <div class="p-6">
+  <!-- Template editor form pool (moved into accordion slot by script) -->
+  <div id="template-editor-form-pool" class="hidden">
+    <div id="template-editor-form-container">
+      <div class="p-5">
         <div class="mb-4 flex items-center justify-between">
-          <h3 id="modal-title" class="text-xl font-semibold">Edit Template</h3>
-          <button
-            id="close-modal"
-            class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-          >
-            <i class="bx bx-x text-2xl"></i>
-          </button>
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white" id="template-editor-title">
+            Edit Template
+          </h3>
+          <CloseButton id="close-template-editor-btn" tooltipText="Close editor" position="top" />
         </div>
-
         <form id="template-form" class={globalFormClasses}>
           <input type="hidden" id="template-id" name="id" />
           <input type="hidden" id="template-type" name="type" />
@@ -290,13 +363,6 @@ if (supabaseAdmin) {
 
           <div class="mt-6 flex justify-end space-x-3">
             <button
-              type="button"
-              id="cancel-btn"
-              class="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-            >
-              Cancel
-            </button>
-            <button
               type="submit"
               class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
             >
@@ -308,355 +374,247 @@ if (supabaseAdmin) {
     </div>
   </div>
 
-  <script>
-    // State
-    const validSettingsTabs = ["defaults", "punchlist", "discussion"];
-    let currentTab = "defaults";
-    let templates: any = { punchlist: [], discussion: [] };
+  <script define:vars={{ punchlistTemplates, discussionTemplates }}>
+    const punchlist = punchlistTemplates || [];
+    const discussion = discussionTemplates || [];
+    const allTemplates = [...punchlist, ...discussion];
 
-    // DOM Elements
-    const modal = document.getElementById("edit-modal");
     const templateForm = document.getElementById("template-form");
+    const formContainer = document.getElementById("template-editor-form-container");
+    const formPool = document.getElementById("template-editor-form-pool");
+    const editorTitle = document.getElementById("template-editor-title");
+    const closeBtn = document.getElementById("close-template-editor-btn");
 
-    // Initialize
-    document.addEventListener("DOMContentLoaded", () => {
-      loadDefaults();
-      loadTemplates();
-      setupEventListeners();
-    });
+    let openSlotKey = null; // "punchlist-123" or "discussion-456" or "punchlist-create" etc.
 
-    function setupEventListeners() {
-      // Tab switching via SlidingTabs onclick; expose switchSettingsTab for URL init
-      window.switchSettingsTab = switchTab;
-
-      // Defaults save (UnitSlider updates its own display)
-      document.getElementById("save-defaults-btn")?.addEventListener("click", saveDefaults);
-
-      // Add buttons
-      document
-        .getElementById("add-punchlist-btn")
-        ?.addEventListener("click", () => openModal("punchlist"));
-      document
-        .getElementById("add-discussion-btn")
-        ?.addEventListener("click", () => openModal("discussion"));
-
-      // Modal controls
-      document.getElementById("close-modal")?.addEventListener("click", closeModal);
-      document.getElementById("cancel-btn")?.addEventListener("click", closeModal);
-      templateForm?.addEventListener("submit", handleFormSubmit);
-
-      // Close modal on backdrop click
-      modal?.addEventListener("click", (e) => {
-        if (e.target === modal) closeModal();
-      });
+    function getDetailRow(slotId, type) {
+      const prefix = type === "punchlist" ? "punchlist" : "discussion";
+      return document.getElementById(`${prefix}-detail-${slotId}`);
     }
 
-    function switchTab(tab: string) {
-      currentTab = tab;
+    function getTriggerRow(slotId, type) {
+      return document.querySelector(
+        `tr.template-accordion-trigger[data-template-slot="${slotId}"][data-template-type="${type}"]`
+      );
+    }
 
-      // Update URL
-      const url = new URL(window.location.href);
-      url.searchParams.set("tab", tab);
-      window.history.replaceState({}, "", url.toString());
+    function closeEditor() {
+      if (!openSlotKey) return;
+      const [type, slotId] = openSlotKey.split("-", 2);
+      const actualSlotId = openSlotKey.replace(/^punchlist-|^discussion-/, "");
+      const detailRow = getDetailRow(actualSlotId, type);
+      const triggerRow = getTriggerRow(actualSlotId, type);
+      if (detailRow) {
+        detailRow.classList.add("hidden");
+        detailRow.setAttribute("aria-hidden", "true");
+      }
+      if (triggerRow) {
+        triggerRow.setAttribute("aria-expanded", "false");
+        const chevron = triggerRow.querySelector(".template-chevron");
+        if (chevron) chevron.classList.remove("rotate-180");
+      }
+      if (formContainer && formPool) formPool.appendChild(formContainer);
+      openSlotKey = null;
+    }
 
-      // Update sections
-      document.querySelectorAll(".template-section").forEach((section) => {
-        const sectionId = section.id.replace("section-", "");
-        if (sectionId === tab) {
-          section.classList.remove("hidden");
-        } else {
-          section.classList.add("hidden");
+    function openEditor(type, slotId, template) {
+      const slotEl = document.getElementById(`${type}-slot-${slotId}`);
+      if (!slotEl) return;
+      closeEditor();
+      if (formContainer) slotEl.appendChild(formContainer);
+      openSlotKey = `${type}-${slotId}`;
+
+      const form = templateForm;
+      const typeInput = document.getElementById("template-type");
+      if (typeInput) typeInput.value = type;
+
+      if (template) {
+        const idInp = document.getElementById("template-id");
+        const titleInp = document.getElementById("template-title");
+        const messageInp = document.getElementById("template-message");
+        const orderInp = document.getElementById("template-order");
+        const internalInp = document.getElementById("template-internal");
+        const completedInp = document.getElementById("template-completed");
+        const enabledInp = document.getElementById("template-enabled");
+        if (idInp) idInp.value = String(template.id);
+        if (titleInp) titleInp.value = template.title || "";
+        if (messageInp && messageInp instanceof HTMLTextAreaElement) messageInp.value = template.message || "";
+        if (orderInp) orderInp.value = String(template.orderIndex ?? 0);
+        if (internalInp) internalInp.checked = !!template.internal;
+        if (completedInp) completedInp.checked = !!template.markCompleted;
+        if (enabledInp) enabledInp.checked = template.enabled !== false;
+        if (editorTitle) editorTitle.textContent = "Edit Template";
+      } else {
+        form.reset();
+        const typeInputEl = document.getElementById("template-type");
+        if (typeInputEl) typeInputEl.value = type;
+        const idInp = document.getElementById("template-id");
+        if (idInp) idInp.value = "";
+        if (editorTitle)
+          editorTitle.textContent = `Add ${type === "punchlist" ? "Punchlist" : "Discussion"} Item`;
+      }
+
+      const detailRow = getDetailRow(slotId, type);
+      const triggerRow = getTriggerRow(slotId, type);
+      if (detailRow) {
+        detailRow.classList.remove("hidden");
+        detailRow.setAttribute("aria-hidden", "false");
+      }
+      if (triggerRow) {
+        triggerRow.setAttribute("aria-expanded", "true");
+        const chevron = triggerRow.querySelector(".template-chevron");
+        if (chevron) chevron.classList.add("rotate-180");
+      }
+      detailRow?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      window.switchSettingsTab = (tab) => {
+        const url = new URL(window.location.href);
+        url.searchParams.set("tab", tab);
+        window.history.replaceState({}, "", url.toString());
+        document.querySelectorAll(".template-section").forEach((section) => {
+          const sectionId = section.id.replace("section-", "");
+          section.classList.toggle("hidden", sectionId !== tab);
+        });
+      };
+
+      document.getElementById("save-defaults-btn")?.addEventListener("click", async () => {
+        const slider = document.getElementById("defaultDueDateHours-slider-defaults");
+        const hours = slider ? parseInt(slider.value, 10) : 72;
+        try {
+          const res = await fetch("/api/settings/update", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              settings: { projectDefaultDueDateHours: String(hours) },
+            }),
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || "Failed to save defaults");
+          }
+          if (window.showSuccess) window.showSuccess("Defaults Saved", "Project defaults updated successfully", 4000);
+        } catch (err) {
+          console.error("Error saving defaults:", err);
+          if (window.showError) window.showError("Save Failed", err instanceof Error ? err.message : "Failed to save defaults", 0);
         }
       });
-    }
+
+      loadDefaults();
+
+      closeBtn?.addEventListener("click", (e) => {
+        e.preventDefault();
+        closeEditor();
+      });
+
+      document.getElementById("add-punchlist-btn")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        openEditor("punchlist", "create", null);
+      });
+      document.getElementById("add-discussion-btn")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        openEditor("discussion", "create", null);
+      });
+
+      templateForm?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const fd = new FormData(templateForm);
+        const type = fd.get("type");
+        const title = fd.get("title");
+        const message = fd.get("message");
+        if (!type || !title || !message) {
+          if (window.showError) window.showError("Validation Error", "Please fill in title and message", 0);
+          return;
+        }
+        const idVal = fd.get("id");
+        const id = idVal && String(idVal).trim() ? parseInt(String(idVal)) || null : null;
+        const data = {
+          type: String(type).trim(),
+          title: String(title).trim(),
+          message: String(message).trim(),
+          orderIndex: parseInt(String(fd.get("orderIndex"))) || 0,
+          internal: fd.get("internal") === "on",
+          markCompleted: fd.get("markCompleted") === "on",
+          enabled: fd.get("enabled") === "on",
+        };
+        if (id != null && !isNaN(id)) data.id = id;
+
+        try {
+          const res = await fetch("/api/project-templates/upsert", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+          });
+          const result = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(result.error || "Failed to save template");
+          if (!result.success) throw new Error(result.error || "Failed to save template");
+          if (window.showSuccess)
+            window.showSuccess(
+              data.id ? "Template Updated" : "Template Created",
+              data.id ? "Template updated successfully" : "Template created successfully",
+              4000
+            );
+          closeEditor();
+          location.reload();
+        } catch (err) {
+          console.error("Error saving template:", err);
+          if (window.showError) window.showError("Save Failed", err instanceof Error ? err.message : "Failed to save template", 0);
+        }
+      });
+
+      document.querySelectorAll(".edit-template-btn").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const id = btn.getAttribute("data-id");
+          const type = btn.getAttribute("data-type");
+          if (!id || !type) return;
+          const t = allTemplates.find((x) => String(x.id) === id);
+          if (t) openEditor(type, id, t);
+        });
+      });
+
+      document.querySelectorAll("tr.template-accordion-trigger").forEach((triggerRow) => {
+        triggerRow.addEventListener("click", (e) => {
+          const tgt = e.target instanceof Element ? e.target : null;
+          if (tgt?.closest(".edit-template-btn, .delete-confirm-btn, .delete-confirm-wrapper, .accordion-drag-handle")) return;
+          const slotId = triggerRow.getAttribute("data-template-slot");
+          const type = triggerRow.getAttribute("data-template-type");
+          if (!slotId || !type) return;
+          if (openSlotKey === `${type}-${slotId}`) {
+            closeEditor();
+            return;
+          }
+          if (slotId === "create") {
+            openEditor(type, "create", null);
+            return;
+          }
+          const t = allTemplates.find((x) => String(x.id) === slotId);
+          openEditor(type, slotId, t || null);
+        });
+      });
+
+      window.handleTemplateDeleted = async () => {
+        if (window.showSuccess) window.showSuccess("Template Deleted", "Template deleted successfully", 4000);
+        location.reload();
+      };
+    });
 
     async function loadDefaults() {
       try {
-        const response = await fetch("/api/project-defaults/get");
-        if (!response.ok) return;
-        const data = await response.json();
+        const res = await fetch("/api/project-defaults/get");
+        if (!res.ok) return;
+        const data = await res.json();
         const hours = Math.min(240, Math.max(1, data.defaultDueDateHours || 72));
         const slider = document.getElementById("defaultDueDateHours-slider-defaults");
         const valueDisplay = document.getElementById("defaultDueDateHours-value-defaults");
         if (slider) slider.value = String(hours);
         if (valueDisplay) valueDisplay.textContent = String(hours);
-      } catch (error) {
-        console.error("Error loading defaults:", error);
+      } catch (err) {
+        console.error("Error loading defaults:", err);
       }
     }
-
-    async function saveDefaults() {
-      const slider = document.getElementById("defaultDueDateHours-slider-defaults");
-      const hours = slider ? parseInt(slider.value, 10) : 72;
-      try {
-        const response = await fetch("/api/settings/update", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            settings: { projectDefaultDueDateHours: String(hours) },
-          }),
-        });
-
-        if (!response.ok) {
-          const err = await response.json().catch(() => ({}));
-          throw new Error(err.error || "Failed to save defaults");
-        }
-
-        if (window.showSuccess) {
-          window.showSuccess("Defaults Saved", "Project defaults updated successfully", 4000);
-        }
-      } catch (error) {
-        console.error("Error saving defaults:", error);
-        if (window.showError) {
-          window.showError(
-            "Save Failed",
-            error instanceof Error ? error.message : "Failed to save defaults",
-            0
-          );
-        }
-      }
-    }
-
-    async function loadTemplates() {
-      try {
-        const response = await fetch("/api/project-templates/get?includeDisabled=true");
-        if (!response.ok) throw new Error("Failed to load templates");
-
-        const data = await response.json();
-        templates.punchlist = data.templates.filter((t: any) => t.type === "punchlist");
-        templates.discussion = data.templates.filter((t: any) => t.type === "discussion");
-
-        renderTemplates();
-      } catch (error) {
-        console.error("Error loading templates:", error);
-        if (window.showError) {
-          window.showError(
-            "Failed to Load Templates",
-            "Unable to load templates. Please try again.",
-            0
-          );
-        }
-      }
-    }
-
-    function renderTemplates() {
-      renderTemplateList("punchlist", templates.punchlist);
-      renderTemplateList("discussion", templates.discussion);
-    }
-
-    function renderTemplateList(type: string, items: any[]) {
-      const container = document.getElementById(`${type}-templates-container`);
-      if (!container) return;
-
-      if (items.length === 0) {
-        container.innerHTML = `
-          <div class="p-8 text-center text-gray-500">
-            <i class="bx bx-info-circle text-4xl mb-2"></i>
-            <p>No ${type} templates yet. Click "Add ${type === "punchlist" ? "Punchlist" : "Discussion"} Item" to create one.</p>
-          </div>
-        `;
-        return;
-      }
-
-      container.innerHTML = items
-        .sort((a, b) => a.orderIndex - b.orderIndex)
-        .map(
-          (item) => `
-          <div class="p-4 ${!item.enabled ? "opacity-50" : ""}">
-            <div class="flex items-start justify-between">
-              <div class="flex-1">
-                <div class="flex items-center gap-2 mb-1">
-                  <h4 class="font-medium">${item.title}</h4>
-                  ${!item.enabled ? '<span class="text-xs bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">Disabled</span>' : ""}
-                  ${item.internal ? '<span class="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">Internal</span>' : ""}
-                  ${item.markCompleted ? '<span class="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">Auto-complete</span>' : ""}
-                </div>
-                <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">${item.message}</p>
-                <p class="text-xs text-gray-400 mt-1">Order: ${item.orderIndex}</p>
-              </div>
-              <div class="flex items-center gap-2 ml-4">
-                <button
-                  onclick="window.editTemplate(${item.id})"
-                  class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
-                  title="Edit"
-                >
-                  <i class="bx bx-edit"></i>
-                </button>
-                <button
-                  onclick="window.deleteTemplate(${item.id}, '${type}')"
-                  class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
-                  title="Delete"
-                >
-                  <i class="bx bx-trash"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-        `
-        )
-        .join("");
-    }
-
-    function openModal(type: string, template?: any) {
-      const modalTitle = document.getElementById("modal-title");
-      const form = templateForm;
-
-      if (!form || !modalTitle) return;
-
-      // Set title
-      modalTitle.textContent = template
-        ? "Edit Template"
-        : `Add ${type === "punchlist" ? "Punchlist" : "Discussion"} Item`;
-
-      // Reset form
-      form.reset();
-      document.getElementById("template-type").value = type;
-
-      // Populate form if editing
-      if (template) {
-        document.getElementById("template-id").value = template.id;
-        document.getElementById("template-title").value = template.title;
-        (document.getElementById("template-message") as HTMLTextAreaElement).value =
-          template.message;
-        document.getElementById("template-order").value = template.orderIndex;
-        document.getElementById("template-internal").checked = template.internal;
-        document.getElementById("template-completed").checked = template.markCompleted;
-        document.getElementById("template-enabled").checked = template.enabled;
-      }
-
-      // Show modal
-      modal.classList.remove("hidden");
-      modal.classList.add("flex");
-    }
-
-    function closeModal() {
-      modal.classList.add("hidden");
-      modal.classList.remove("flex");
-    }
-
-    async function handleFormSubmit(e: Event) {
-      e.preventDefault();
-
-      const formData = new FormData(templateForm);
-
-      // Get and validate required fields
-      const idValue = formData.get("id");
-      const type = formData.get("type") as string;
-      const title = formData.get("title") as string;
-      const message = formData.get("message") as string;
-
-      // Validate required fields
-      if (!type || !title || !message) {
-        if (window.showError) {
-          window.showError(
-            "Validation Error",
-            "Please fill in all required fields (type, title, message)",
-            0
-          );
-        }
-        return;
-      }
-
-      // Parse ID - convert to number if present, otherwise null
-      const id = idValue && idValue.toString().trim() ? parseInt(idValue.toString()) || null : null;
-
-      const data: any = {
-        type: type.trim(),
-        title: title.trim(),
-        message: message.trim(),
-        orderIndex: parseInt(formData.get("orderIndex") as string) || 0,
-        internal: formData.get("internal") === "on",
-        markCompleted: formData.get("markCompleted") === "on",
-        enabled: formData.get("enabled") === "on",
-      };
-
-      // Only include id if it's a valid number (for updates)
-      if (id !== null && !isNaN(id)) {
-        data.id = id;
-      }
-
-      try {
-        const response = await fetch("/api/project-templates/upsert", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
-        });
-
-        if (!response.ok) {
-          const errorData = await response
-            .json()
-            .catch(() => ({ error: "Failed to save template" }));
-          const errorMessage = errorData.error || `Failed to save template (${response.status})`;
-          const errorDetails = errorData.details ? `: ${errorData.details}` : "";
-          throw new Error(`${errorMessage}${errorDetails}`);
-        }
-
-        const result = await response.json();
-        if (!result.success) {
-          throw new Error(result.error || "Failed to save template");
-        }
-
-        if (window.showSuccess) {
-          window.showSuccess(
-            data.id ? "Template Updated" : "Template Created",
-            data.id ? "Template updated successfully" : "Template created successfully",
-            4000
-          );
-        }
-        closeModal();
-        await loadTemplates();
-      } catch (error) {
-        console.error("Error saving template:", error);
-        const errorMessage = error instanceof Error ? error.message : "Failed to save template";
-        if (window.showError) {
-          window.showError("Save Failed", errorMessage, 0);
-        }
-      }
-    }
-
-    async function deleteTemplate(id: number, type: string) {
-      if (!confirm("Are you sure you want to delete this template?")) return;
-
-      try {
-        const response = await fetch("/api/project-templates/delete", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id }),
-        });
-
-        if (!response.ok) throw new Error("Failed to delete template");
-
-        if (window.showSuccess) {
-          window.showSuccess("Template Deleted", "Template deleted successfully", 4000);
-        }
-        await loadTemplates();
-      } catch (error) {
-        console.error("Error deleting template:", error);
-        if (window.showError) {
-          window.showError("Delete Failed", "Failed to delete template", 0);
-        }
-      }
-    }
-
-    function editTemplate(id: number) {
-      const allTemplates = [...templates.punchlist, ...templates.discussion];
-      const template = allTemplates.find((t) => t.id === id);
-      if (template) {
-        openModal(template.type, template);
-      }
-    }
-
-    // Expose functions to window for onclick handlers
-    window.editTemplate = editTemplate;
-    window.deleteTemplate = deleteTemplate;
   </script>
 
-  <style>
-    .line-clamp-2 {
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-  </style>
 </LayoutDefault>

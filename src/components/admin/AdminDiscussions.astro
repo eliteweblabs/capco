@@ -168,9 +168,10 @@ if (currentUser?.id) {
     loadDiscussionStats();
 
     // Initialize the discussions system for global discussions
-    if (typeof window.initializeDiscussions === "function") {
+    const initFn = (window as Window & { initializeDiscussions?: () => void }).initializeDiscussions;
+    if (typeof initFn === "function") {
       console.log("🎬 [GLOBAL-DISCUSSIONS] Initializing global discussions system");
-      window.initializeDiscussions();
+      initFn();
     } else {
       console.error("❌ [GLOBAL-DISCUSSIONS] initializeDiscussions function not found");
     }

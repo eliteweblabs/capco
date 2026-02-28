@@ -253,6 +253,9 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
             if (v === "height") {
               elH.style.height = calcVal;
               elH.style.minHeight = "";
+            } else if (v === "maxHeight") {
+              elH.style.maxHeight = calcVal;
+              elH.style.minHeight = "";
             } else {
               elH.style.minHeight = calcVal;
               elH.style.height = "";
@@ -307,7 +310,19 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
     let translateY = 0;
     let lastAppliedTranslateY = -1;
     let scrollRafId = 0;
+    let desktopNavbarRafId = 0;
     const skipReveal = typeof template === "string" && template === "fullform";
+    const SCROLL_THRESHOLD_ADD = 24;
+    const SCROLL_THRESHOLD_REMOVE = 12;
+
+    function syncNavbarClasses(scrollTop, translateYVal, onMobile) {
+      const navbar = document.getElementById("main-navbar");
+      if (!navbar) return;
+      const atTop = onMobile ? translateYVal <= 0 : scrollTop <= SCROLL_THRESHOLD_REMOVE;
+      navbar.classList.toggle("navbar-at-top", atTop);
+      const isScrolled = scrollTop > (navbar.classList.contains("navbar-scrolled") ? SCROLL_THRESHOLD_REMOVE : SCROLL_THRESHOLD_ADD);
+      navbar.classList.toggle("navbar-scrolled", isScrolled);
+    }
 
     function run() {
       const scrollEl = document.getElementById("reveal-scroll");
@@ -344,16 +359,11 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
         });
       }
 
-      function syncNavbarAtTop(translateYVal) {
-        const navbar = document.getElementById("main-navbar");
-        if (navbar) navbar.classList.toggle("navbar-at-top", translateYVal <= 0);
-      }
-
       function updateTranslate() {
         if (skipReveal) {
           scrollEl.style.transform = "";
           setSidebarPosition(0);
-          syncNavbarAtTop(0);
+          syncNavbarClasses(clampedScrollTop(), 0, false);
           lastAppliedTranslateY = -1;
           return;
         }
@@ -366,7 +376,7 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
           translateY = 0;
           lastAppliedTranslateY = -1;
           setSidebarPosition(0);
-          syncNavbarAtTop(0);
+          syncNavbarClasses(scrollTop, 0, false);
           return;
         }
         // When at bottom: keep full reveal (translateY = maxPx). Opening the nav/sidebar
@@ -383,12 +393,11 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
           translateY = Math.max(0, Math.min(maxPx(), translateY));
         }
         prevScrollTop = scrollTop;
-        // Skip DOM writes when unchanged to avoid stuck feel at limits
+        syncNavbarClasses(scrollTop, translateY, true);
         if (lastAppliedTranslateY !== translateY) {
           lastAppliedTranslateY = translateY;
           scrollEl.style.transform = `translateY(-${translateY}px)`;
           setSidebarPosition(translateY);
-          syncNavbarAtTop(translateY);
         }
       }
 
@@ -398,7 +407,7 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
         scrollEl.style.transform = "";
         translateY = 0;
         setSidebarPosition(0);
-        syncNavbarAtTop(0);
+        syncNavbarClasses(clampedScrollTop(), 0, false);
       }
 
       // Skip observers on auth pages (e.g. /auth/login) to avoid layout thrash that can block iOS keypad
@@ -490,6 +499,19 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
             });
           }, { passive: true });
         }
+      }
+      if (!scrollEl.dataset.navbarDesktopBound && !isAuthPath) {
+        scrollEl.dataset.navbarDesktopBound = "true";
+        scrollEl.addEventListener("scroll", function desktopNavbarScroll() {
+          if (!window.matchMedia(MOBILE_MEDIA_QUERY).matches) {
+            if (desktopNavbarRafId) return;
+            desktopNavbarRafId = requestAnimationFrame(function () {
+              desktopNavbarRafId = 0;
+              syncNavbarClasses(scrollEl.scrollTop, 0, false);
+            });
+          }
+        }, { passive: true });
+        syncNavbarClasses(scrollEl.scrollTop, 0, false);
       }
       if (skipReveal) {
         scrollEl.style.transform = "";

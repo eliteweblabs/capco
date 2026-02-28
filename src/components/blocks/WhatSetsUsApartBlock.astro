@@ -22,6 +22,9 @@
  */
 import SimpleIcon from "../common/SimpleIcon.astro";
 import { buildArrayFromFlatProps } from "./BlockRegistry";
+import { globalClasses } from "../../pages/api/global/global-classes";
+
+const { globalTextH3 } = globalClasses();
 
 interface Item {
   icon?: string;
@@ -88,11 +91,15 @@ const defaultIcons = ["file-check", "shield", "building", "hospital", "award"];
 const getIcon = (item: Item, index: number) => item.icon || defaultIcons[index] || "check";
 
 /** Single neutral style for all icons – professional, not multicolor */
-const iconContainerClass =
-  "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
+const iconContainerClass = "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
 ---
 
-<section {id} class={`what-sets-us-apart-block py-16 md:py-24 ${className}`.trim()}>
+<section
+  {id}
+  class={`what-sets-us-apart-block py-16 md:py-24 ${className}`.trim()}
+  data-aos="fade-up"
+  data-aos-duration="600"
+>
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
     <div
       class:list={[
@@ -130,7 +137,7 @@ const iconContainerClass =
             items.map((item, index) => (
               <div
                 class={[
-                  "flex gap-4",
+                  "flex gap-4 align-middle",
                   variant === "numbered" && "items-start",
                   variant === "icons" && "items-start",
                 ].join(" ")}
@@ -145,7 +152,7 @@ const iconContainerClass =
                   )}
                 </div>
                 <div class="flex-1">
-                  <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{item.title}</h3>
+                  <h3 class={globalTextH3}>{item.title}</h3>
                   {item.description && (
                     <p class="mt-1 text-gray-600 dark:text-gray-300">{item.description}</p>
                   )}

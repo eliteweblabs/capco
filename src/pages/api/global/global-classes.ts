@@ -14,12 +14,24 @@ export const globalClasses = () => {
       "w-full h-full bg-transparent border-0 py-2.5 px-4 text-xl sm:text-2xl md:text-3xl lg:text-4xl text-left text-gray-900 placeholder:text-gray-500 focus:outline-none transition-colors duration-200 dark:text-white dark:placeholder:text-gray-400",
     primaryTextClasses: "text-gray-900 dark:text-gray-100",
     secondaryTextClasses: "text-gray-800 dark:text-gray-200",
+    /** H3/section heading: text-lg font-semibold. Use for card titles, section headings, modal titles. */
+    globalTextH3: "text-lg font-semibold text-gray-900 dark:text-white",
     /** Muted/tertiary text - highly repetitive. Use for descriptions, helper text, labels. */
     mutedTextClasses: "text-gray-600 dark:text-gray-400",
     /** Muted text + text-sm - common combo for captions, hints. */
     mutedTextSmClasses: "text-sm text-gray-600 dark:text-gray-400",
     /** Lighter muted text (gray-500) - for subtle descriptions, placeholders. */
     mutedAltTextClasses: "text-gray-500 dark:text-gray-400",
+    /** Form label: mb-2 block text-sm font-medium. Use for <label> elements. */
+    globalFormLabel: "mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300",
+    /** Inline code: rounded bg-gray-100 px-1. Use for <code> in prose. */
+    globalCodeInline: "rounded bg-gray-100 px-1 dark:bg-gray-800",
+    /** Extra-small muted text (xs, gray-500). Use for captions, metadata, timestamps. */
+    globalTextXsMuted: "text-xs text-gray-500 dark:text-gray-400",
+    /** Horizontal flex row: items-center space-x-2. Use for icon+text, buttons in a row. */
+    globalFlexRow: "flex items-center space-x-2",
+    /** Section header bar: mb-4 flex items-center justify-between. Use for card headers with actions. */
+    globalSectionHeaderBar: "mb-4 flex items-center justify-between",
     // Flowbite-standard icon-only button (gray/secondary)
     globalIconButtonClasses:
       "w-10 h-10 inline-flex items-center rounded-full justify-center p-2 text-black dark:text-white md:hover:bg-gray-100 dark:hover:bg-gray-700 dark:focus:ring-gray-700 focus:outline-none",
@@ -28,6 +40,8 @@ export const globalClasses = () => {
       "auth-icon-close absolute inset-0 flex items-center justify-center transition-opacity",
 
     globalAdminContainerClasses: "color-background rounded-lg shadow-md dark:shadow-gray-700",
+    /** Card container: rounded-lg border + semantic background. Use for card/panel containers. */
+    globalCardStyle: "rounded-lg border color-background",
     tabContentClasses:
       "color-background relative mb-16 min-h-[calc(100dvh-24rem)] p-6 sm:p-8 md:p-10 lg:p-12 shadow-lg",
 

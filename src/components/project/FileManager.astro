@@ -32,6 +32,9 @@ import SimpleIcon from "../common/SimpleIcon.astro";
 import Button from "../common/Button.astro";
 import LoadingSpinner from "../ui/LoadingSpinner.astro";
 import Dropzone from "../common/Dropzone.astro";
+import { globalClasses } from "../../pages/api/global/global-classes";
+
+const { globalTextH3 } = globalClasses();
 
 // Only show for Admin/Staff
 // Storage bucket configuration
@@ -193,6 +196,7 @@ const canDeleteFiles =
     primaryTextClasses,
     statusData,
     bucket,
+    globalTextH3,
   }}
   is:inline
 >
@@ -223,10 +227,17 @@ const canDeleteFiles =
       try {
         data = raw ? JSON.parse(raw) : {};
       } catch (parseErr) {
-        console.error("❌ [FILE-MANAGER] API returned non-JSON. Status:", response.status, "Body snippet:", raw.slice(0, 200));
+        console.error(
+          "❌ [FILE-MANAGER] API returned non-JSON. Status:",
+          response.status,
+          "Body snippet:",
+          raw.slice(0, 200)
+        );
         window.showNotice(
           "error",
-          "Invalid response from server (status " + response.status + "). Check console for details.",
+          "Invalid response from server (status " +
+            response.status +
+            "). Check console for details.",
           "24refWQ3reqfewc4Q#"
         );
         return;
@@ -837,7 +848,13 @@ const canDeleteFiles =
       }
 
       if (uploadInProgress) {
-        if (window.showNotice) window.showNotice("info", "Upload in progress", "Please wait for the current upload to finish.", 2000);
+        if (window.showNotice)
+          window.showNotice(
+            "info",
+            "Upload in progress",
+            "Please wait for the current upload to finish.",
+            2000
+          );
         return;
       }
       uploadInProgress = true;
@@ -1522,7 +1539,7 @@ const canDeleteFiles =
         <div class="bg-gray-100 color-background rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] flex flex-col">
           <!-- Modal Header -->
           <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+            <h3 class={globalTextH3}>
               📄 ${documentName}
             </h3>
             <button 

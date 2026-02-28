@@ -5,8 +5,10 @@
 import App from "../../components/ui/App.astro";
 import AIChatAgent from "../../features/ai-chat-agent/AIChatAgent.astro";
 import { checkAuth } from "../../lib/auth";
+import { globalClasses } from "../api/global/global-classes";
 
 const { currentUser } = await checkAuth(Astro.cookies);
+const { globalCardStyle } = globalClasses();
 
 if (!currentUser) {
   return Astro.redirect("/login");
@@ -31,7 +33,7 @@ if (!currentUser) {
     </div>
 
     <div
-      class="rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800"
+      class={`${globalCardStyle} shadow-sm`}
       style="height: calc(100vh - 200px); min-height: 600px;"
     >
       <AIChatAgent {currentUser} />

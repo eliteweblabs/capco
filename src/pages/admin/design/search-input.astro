@@ -8,7 +8,7 @@ const { currentUser, session } = await checkAuth(Astro.cookies);
 if (!currentUser || !session || currentUser?.profile?.role !== "Admin") {
   return Astro.redirect("/auth/login");
 }
-const { primaryTextClasses, mutedTextClasses, mutedTextSmClasses, globalInputClasses } = globalClasses();
+const { primaryTextClasses, mutedTextClasses, mutedTextSmClasses, globalInputClasses, globalCardStyle, globalCodeInline } = globalClasses();
 ---
 
 <LayoutDefault title="Search Input" description="Search field with icon, clear button, and optional autosuggest.">
@@ -16,7 +16,7 @@ const { primaryTextClasses, mutedTextClasses, mutedTextSmClasses, globalInputCla
     <h1 class={`mb-2 text-3xl font-bold ${primaryTextClasses}`}>Search Input</h1>
     <p class={`mb-6 ${mutedTextClasses}`}>Search field with icon, clear button. Filter mode (fires input events) or autosuggest mode with API-backed dropdown.</p>
 
-    <div class="space-y-10 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-900">
+    <div class={`space-y-10 ${globalCardStyle} p-6`}>
       <!-- Props reference -->
       <div>
         <h2 class={`mb-4 text-xl font-semibold ${primaryTextClasses}`}>Props reference</h2>
@@ -53,7 +53,7 @@ const { primaryTextClasses, mutedTextClasses, mutedTextSmClasses, globalInputCla
       <!-- Filter mode demos -->
       <div>
         <h2 class={`mb-4 text-xl font-semibold ${primaryTextClasses}`}>Filter mode (default)</h2>
-        <p class={`mb-4 ${mutedTextSmClasses}`}>No <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">fetchApiEndpoint</code>. Search icon left, clear button right. Fires <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">input</code> events; parent handles filtering.</p>
+        <p class={`mb-4 ${mutedTextSmClasses}`}>No <code class={globalCodeInline}>fetchApiEndpoint</code>. Search icon left, clear button right. Fires <code class={globalCodeInline}>input</code> events; parent handles filtering.</p>
         <div class="space-y-6">
           <div>
             <p class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">Default placeholder</p>
@@ -73,7 +73,7 @@ const { primaryTextClasses, mutedTextClasses, mutedTextSmClasses, globalInputCla
       <!-- currentLocation demos -->
       <div>
         <h2 class={`mb-4 text-xl font-semibold ${primaryTextClasses}`}>With location button</h2>
-        <p class={`mb-4 ${mutedTextSmClasses}`}><code class="rounded bg-gray-100 px-1 dark:bg-gray-800">currentLocation={true}</code> or <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">fetchApiEndpoint</code> shows the location/search button on the right.</p>
+        <p class={`mb-4 ${mutedTextSmClasses}`}><code class={globalCodeInline}>currentLocation={true}</code> or <code class={globalCodeInline}>fetchApiEndpoint</code> shows the location/search button on the right.</p>
         <div class="space-y-6">
           <div>
             <p class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">type="search" (default) – search icon</p>
@@ -89,7 +89,7 @@ const { primaryTextClasses, mutedTextClasses, mutedTextSmClasses, globalInputCla
       <!-- Autosuggest mode -->
       <div>
         <h2 class={`mb-4 text-xl font-semibold ${primaryTextClasses}`}>Autosuggest mode</h2>
-        <p class={`mb-4 ${mutedTextSmClasses}`}>Set <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">fetchApiEndpoint</code> for API-backed dropdown. Requires <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">/api/google/places-autocomplete</code> (PLACES_API_KEY). Hidden input stores selected value.</p>
+        <p class={`mb-4 ${mutedTextSmClasses}`}>Set <code class={globalCodeInline}>fetchApiEndpoint</code> for API-backed dropdown. Requires <code class={globalCodeInline}>/api/google/places-autocomplete</code> (PLACES_API_KEY). Hidden input stores selected value.</p>
         <div class="space-y-6">
           <div>
             <p class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">Address autocomplete (API)</p>
@@ -125,7 +125,7 @@ const { primaryTextClasses, mutedTextClasses, mutedTextSmClasses, globalInputCla
       <!-- Overrides (slot-machine integration) -->
       <div>
         <h2 class={`mb-4 text-xl font-semibold ${primaryTextClasses}`}>Overrides (slot-machine)</h2>
-        <p class={`mb-4 ${mutedTextSmClasses}`}><code class="rounded bg-gray-100 px-1 dark:bg-gray-800">useLocationButtonId</code> and <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">clearButtonId</code> – when <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">clearButtonId</code> is set, the clear button is hidden (SlotMachineModal manages it).</p>
+        <p class={`mb-4 ${mutedTextSmClasses}`}><code class={globalCodeInline}>useLocationButtonId</code> and <code class={globalCodeInline}>clearButtonId</code> – when <code class={globalCodeInline}>clearButtonId</code> is set, the clear button is hidden (SlotMachineModal manages it).</p>
         <div class="space-y-6">
           <div>
             <p class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">useLocationButtonId + clearButtonId overrides</p>
@@ -145,7 +145,7 @@ const { primaryTextClasses, mutedTextClasses, mutedTextSmClasses, globalInputCla
       <!-- wrapperClass / globalInputClasses -->
       <div>
         <h2 class={`mb-4 text-xl font-semibold ${primaryTextClasses}`}>Styling</h2>
-        <p class={`mb-4 ${mutedTextSmClasses}`}><code class="rounded bg-gray-100 px-1 dark:bg-gray-800">wrapperClass</code> for layout (e.g. max-w-md). <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">globalInputClasses</code> for input appearance.</p>
+        <p class={`mb-4 ${mutedTextSmClasses}`}><code class={globalCodeInline}>wrapperClass</code> for layout (e.g. max-w-md). <code class={globalCodeInline}>globalInputClasses</code> for input appearance.</p>
         <div class="space-y-6">
           <div>
             <p class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">wrapperClass="max-w-sm"</p>

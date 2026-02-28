@@ -42,6 +42,9 @@ const {
   template,
   hideFooter = false,
 } = Astro.props;
+
+const canCheckIn =
+  currentUser && (currentUser.profile?.role === "Admin" || currentUser.profile?.role === "Staff");
 ---
 
 <!-- shadow when scrolled: light drop shadow, animated via .navbar-scrolled -->
@@ -95,7 +98,7 @@ const {
 
       <ThemeToggle {currentUser} {session} {isBackend} {globalIconButtonClasses} />
 
-      <MyCheckInIndicator {currentUser} {globalIconButtonClasses} />
+      {canCheckIn && <MyCheckInIndicator {currentUser} {globalIconButtonClasses} />}
       <CheckedInUsersIndicator {currentUser} {globalIconButtonClasses} />
 
       <AuthIcon
@@ -114,29 +117,7 @@ const {
 
 <script is:inline>
   (function () {
-    var SCROLL_THRESHOLD = 8;
-
-    function initNavbarScrollShadow() {
-      var scrollEl = document.getElementById("reveal-scroll");
-      var navbar = document.getElementById("main-navbar");
-      if (!scrollEl || !navbar) return;
-      if (navbar.hasAttribute("data-navbar-scroll-shadow-bound")) return;
-      navbar.setAttribute("data-navbar-scroll-shadow-bound", "true");
-
-      function updateShadow() {
-        if (scrollEl.scrollTop > SCROLL_THRESHOLD) {
-          navbar.classList.add("navbar-scrolled");
-        } else {
-          navbar.classList.remove("navbar-scrolled");
-        }
-      }
-      scrollEl.addEventListener("scroll", updateShadow, { passive: true });
-      updateShadow();
-    }
-
     function run() {
-      initNavbarScrollShadow();
-
       var logoutBtn = document.getElementById("logout-btn");
       if (logoutBtn && !logoutBtn.hasAttribute("data-navbar-logout-bound")) {
         logoutBtn.setAttribute("data-navbar-logout-bound", "true");
@@ -172,16 +153,21 @@ const {
         function isMobile() {
           return window.innerWidth < 768;
         }
+        var modalRafId = 0;
         var observer = new MutationObserver(function () {
           if (!isMobile()) return;
-          var modals = document.querySelectorAll('[id*="modal"]');
-          var hasVisible = false;
-          modals.forEach(function (modal) {
-            if (!modal.classList.contains("hidden") && modal.classList.contains("flex"))
-              hasVisible = true;
+          if (modalRafId) return;
+          modalRafId = requestAnimationFrame(function () {
+            modalRafId = 0;
+            var modals = document.querySelectorAll('[id*="modal"]');
+            var hasVisible = false;
+            modals.forEach(function (modal) {
+              if (!modal.classList.contains("hidden") && modal.classList.contains("flex"))
+                hasVisible = true;
+            });
+            navbar.style.opacity = hasVisible ? "0" : "1";
+            navbar.style.pointerEvents = hasVisible ? "none" : "auto";
           });
-          navbar.style.opacity = hasVisible ? "0" : "1";
-          navbar.style.pointerEvents = hasVisible ? "none" : "auto";
         });
         observer.observe(document.body, {
           attributes: true,

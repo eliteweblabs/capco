@@ -1024,7 +1024,8 @@ const stats = {
           // Prepend in reverse so first uploaded ends up first in DOM (newest at start)
           cards.reverse().forEach((card) => filesGrid.insertBefore(card, filesGrid.firstChild));
           triggerMasonryRecalc();
-          if (typeof window.lazyLoadImages === "function") window.lazyLoadImages();
+          const lazyFn = (window as Window & { lazyLoadImages?: () => void }).lazyLoadImages;
+          if (typeof lazyFn === "function") lazyFn();
           else {
             const newImgs = filesGrid.querySelectorAll('img.lazyload[data-src]');
             newImgs.forEach((img) => {

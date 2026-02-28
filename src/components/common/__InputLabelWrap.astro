@@ -1,25 +1,28 @@
 ---
+/**
+ * Label wrapper for form inputs. Use with globalInputClasses.
+ * Props: id, label, show (boolean), required (optional)
+ */
+import { globalClasses } from "../../pages/api/global/global-classes";
+
+const { globalFormLabel } = globalClasses();
+
 interface Props {
   id: string;
   label: string;
-  required?: boolean;
   show?: boolean;
-  compact?: boolean;
+  required?: boolean;
 }
 
-const { id, label, required = false, show = true, compact = false } = Astro.props;
+const { id, label, show = true, required = false } = Astro.props;
 ---
 
-{
-  show && label ? (
-    <div class={compact ? "" : "relative"}>
-      <label for={id} class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-        {label}
-        {required ? <span class="text-red-500"> *</span> : null}
-      </label>
-      <slot />
-    </div>
-  ) : (
+{show && (
+  <div class="mb-4">
+    <label for={id} class={globalFormLabel}>
+      {label}
+      {required && <span class="text-red-500"> *</span>}
+    </label>
     <slot />
-  )
-}
+  </div>
+)}

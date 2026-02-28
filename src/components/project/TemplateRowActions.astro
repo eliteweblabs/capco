@@ -1,0 +1,37 @@
+---
+import Button from "../common/Button.astro";
+import DeleteConfirmButton from "../ui/DeleteConfirmButton.astro";
+
+interface Props {
+  template: { id: number; type: string; title?: string };
+}
+
+const { template } = Astro.props;
+---
+
+<div class="flex items-center gap-2">
+  <Button
+    variant="ghost"
+    size="sm"
+    iconOnly
+    icon="edit"
+    class="edit-template-btn"
+    dataAttributes={{
+      "data-id": String(template.id),
+      "data-type": template.type,
+    }}
+    title="Edit template"
+    iconClasses="mr-0"
+  />
+  <DeleteConfirmButton
+    id={"delete-template-" + template.id}
+    itemType="template"
+    apiEndpoint="/api/project-templates/delete"
+    deleteMethod="POST"
+    onDeleteCallback="handleTemplateDeleted"
+    tooltipText={"Delete " + (template.title || "template")}
+    size="sm"
+    variant="icon"
+    dataAttributes={{ itemId: String(template.id) }}
+  />
+</div>

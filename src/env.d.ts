@@ -225,5 +225,10 @@ declare global {
 
     // Banner alerts admin
     switchBannerAlertsTab?: (tab: "existing-banners" | "new-banner") => void;
+
+    // Admin components
+    loadAnalyticsData?: () => void | Promise<void>;
+    initializeDiscussions?: () => void;
+    lazyLoadImages?: () => void;
   }
 }

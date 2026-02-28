@@ -15,9 +15,17 @@ const {
   currentUser,
   globalIconButtonClasses = "w-10 h-10 inline-flex items-center rounded-full justify-center p-2 text-black dark:text-white md:hover:bg-gray-100 dark:hover:bg-gray-700 dark:focus:ring-gray-700 focus:outline-none",
 } = Astro.props;
+
+const canCheckIn =
+  currentUser && (currentUser.profile?.role === "Admin" || currentUser.profile?.role === "Staff");
 ---
 
-<div id="my-checkin-indicator" class="hidden" aria-label="You are checked in">
+<div
+  id="my-checkin-indicator"
+  class="hidden"
+  aria-label="You are checked in"
+  data-can-check-in={canCheckIn ? "true" : undefined}
+>
   <button
     type="button"
     id="my-checkin-trigger"
@@ -156,7 +164,6 @@ const {
 
     function show(e) {
       entry = e;
-      s;
       if (container) container.classList.remove("hidden");
       if (projectEl) projectEl.textContent = e.projectTitle || "General / No project";
       if (notesInput && "value" in notesInput) notesInput.value = e.notes || "";
@@ -234,11 +241,13 @@ const {
 
     function init() {
       if (!container || !stopBtn) return;
-      load();
-      setInterval(load, POLL_MS);
+      // Skip fetch/poll when not logged in as Admin/Staff (avoids 401 noise)
+      if (container.dataset.canCheckIn === "true") {
+        load();
+        setInterval(load, POLL_MS);
+        window.addEventListener("checkInStarted", () => load());
+      }
       stopBtn.addEventListener("click", handleStop);
-
-      window.addEventListener("checkInStarted", () => load());
     }
 
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

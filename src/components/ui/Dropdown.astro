@@ -4,6 +4,10 @@
  * Flowbite: trigger uses data-dropdown-toggle="account-dropdown"; this panel has id="account-dropdown".
  * Navbar.astro attaches the logout handler to #logout-btn.
  */
+import { globalClasses } from "../../pages/api/global/global-classes";
+
+const { globalTextH3 } = globalClasses();
+
 interface Props {
   id: string;
   currentUser?: any;
@@ -27,7 +31,7 @@ const { id, title = "", onOpenCallback, focusSelector, classList } = Astro.props
   role="menu"
   {...onOpenCallback ? { "data-on-open": onOpenCallback } : {}}
   {...focusSelector ? { "data-focus-on-open": focusSelector } : {}}
-  class={`${classList ? classList.join(" ") : ""} overflow-y-scroll no-scrollbar invisible fixed z-[1250] inline-block w-full max-w-md overflow-visible border border-gray-200 dark:border-gray-800 text-body text-sm opacity-0 transition-opacity duration-300 ease-out backdrop-blur-lg`}
+  class={`${classList ? classList.join(" ") : ""} overflow-y-scroll no-scrollbar invisible fixed z-[1250] inline-block w-full max-w-md opacity-0 transition-opacity duration-300 ease-out backdrop-blur-lg`}
   data-dynamic-height="height"
 >
   <div class="dropdown-arrow" data-popper-arrow></div>
@@ -35,7 +39,7 @@ const { id, title = "", onOpenCallback, focusSelector, classList } = Astro.props
   {
     title && (
       <div class="py-3">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white" set:html={title} />
+        <h3 class={globalTextH3} set:html={title} />
       </div>
     )
   }
@@ -45,51 +49,50 @@ const { id, title = "", onOpenCallback, focusSelector, classList } = Astro.props
 
 <script is:inline>
   (function () {
-    var DROPDOWN_Z = 9999;
-    // Flowbite doesn't portal to body; move panel to body so it (and arrow) paint above navbar (z-100)
+    /* var DROPDOWN_Z = 9999;
     function moveDropdownsToBody() {
       document.querySelectorAll("[id$='-dropdown'][data-popover]").forEach(function (panel) {
         if (panel.parentNode !== document.body) document.body.appendChild(panel);
         panel.style.zIndex = DROPDOWN_Z;
       });
-    }
+    } */
 
     function run() {
-      moveDropdownsToBody();
-
-      // Flowbite handles show/hide; we only: move to body on open, reopen classes, on-open callback, focus, close/X UX
+      /* moveDropdownsToBody();
+      function wirePopoverOnShow(panel) {
+        var panelId = panel.id;
+        if (!panelId) return;
+        var inst =
+          window.FlowbiteInstances && window.FlowbiteInstances.getInstance("Popover", panelId);
+        if (!inst || typeof inst.updateOnShow !== "function") return;
+        var onOpen = panel.getAttribute("data-on-open");
+        var focusSel = panel.getAttribute("data-focus-on-open");
+        inst.updateOnShow(function () {
+          moveDropdownsToBody();
+          if (panel) {
+            panel.classList.remove(
+              "opacity-0",
+              "transition-opacity",
+              "duration-300",
+              "ease-out",
+              "invisible",
+              "hidden"
+            );
+          }
+          if (focusSel && panel) {
+            var el = panel.querySelector(focusSel);
+            if (el && typeof el.focus === "function") el.focus();
+          }
+          if (onOpen && typeof window[onOpen] === "function") window[onOpen]();
+        });
+      }
       document.querySelectorAll("[id$='-dropdown']").forEach(function (panel) {
         var panelId = panel.id;
         if (!panelId) return;
-        var onOpen = panel.getAttribute("data-on-open");
-        var focusSel = panel.getAttribute("data-focus-on-open");
-        var selectors =
-          "[data-dropdown-toggle='" + panelId + "'], [data-popover-target='" + panelId + "']";
-        document.querySelectorAll(selectors).forEach(function (trigger) {
-          if (trigger.hasAttribute("data-onopen-bound")) return;
-          trigger.setAttribute("data-onopen-bound", "true");
-          trigger.addEventListener("click", function () {
-            moveDropdownsToBody();
-            if (panel) {
-              panel.classList.remove(
-                "opacity-0",
-                "transition-opacity",
-                "duration-300",
-                "ease-out",
-                "invisible",
-                "hidden"
-              );
-            }
-            if (focusSel && panel) {
-              var el = panel.querySelector(focusSel);
-              if (el && typeof el.focus === "function") el.focus();
-            }
-            setTimeout(function () {
-              if (panel && onOpen && typeof window[onOpen] === "function") window[onOpen]();
-            }, 50);
-          });
-        });
-
+        wirePopoverOnShow(panel);
+        setTimeout(function () {
+          wirePopoverOnShow(panel);
+        }, 200);
         panel.querySelectorAll("[data-dropdown-close]").forEach(function (btn) {
           if (btn.hasAttribute("data-close-bound")) return;
           btn.setAttribute("data-close-bound", "true");
@@ -106,7 +109,7 @@ const { id, title = "", onOpenCallback, focusSelector, classList } = Astro.props
             }
           });
         });
-      });
+      }); */
 
       // When dropdown open: show X on trigger; when closed: show default icon. Wire X to close.
       document.querySelectorAll(".auth-icon-close").forEach(function (closeEl) {

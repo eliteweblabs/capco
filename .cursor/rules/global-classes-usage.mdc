@@ -1,0 +1,48 @@
+---
+description: Use global-classes.ts vars instead of repeating Tailwind class strings when generating code
+alwaysApply: true
+---
+
+# Global Classes Usage
+
+When generating or editing Astro/HTML, **use variables from `globalClasses()`** instead of repeating Tailwind class strings. Import from `src/pages/api/global/global-classes`.
+
+## Pattern
+
+```astro
+---
+import { globalClasses } from "../../pages/api/global/global-classes";  // adjust path
+
+const { globalFormLabel, globalCodeInline, globalTextH3, ... } = globalClasses();
+---
+<label class={globalFormLabel}>...</label>
+<code class={globalCodeInline}>...</code>
+<h3 class={globalTextH3}>...</h3>
+```
+
+## Available Vars (use these, don't rewrite)
+
+| Variable | Use for |
+|----------|---------|
+| `globalFormLabel` | `<label>` – mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300 |
+| `globalCodeInline` | `<code>` in prose – rounded bg-gray-100 px-1 dark:bg-gray-800 |
+| `globalTextXsMuted` | xs muted text – captions, metadata, timestamps |
+| `globalFlexRow` | horizontal flex – icon+text, buttons in a row |
+| `globalSectionHeaderBar` | card/section header – mb-4 flex items-center justify-between |
+| `globalTextH3` | h3/section heading – text-lg font-semibold text-gray-900 dark:text-white |
+| `globalDropdownClose` | dropdown X overlay – auth-icon-close + absolute inset-0 flex center |
+| `globalIconButtonClasses` | icon-only buttons |
+| `globalInputClasses` | text inputs |
+| `globalFormClasses` | form containers |
+| `globalCardStyle` | card/panel containers |
+| `primaryTextClasses`, `secondaryTextClasses` | text colors |
+| `mutedTextClasses`, `mutedTextSmClasses`, `mutedAltTextClasses` | muted text |
+
+## Combining with extra classes
+
+```astro
+<h3 class={`${globalTextH3} mb-2`}>...</h3>
+<div class={`${globalSectionHeaderBar} text-sm`}>...</div>
+```
+
+Always prefer the global var when the pattern matches. Add only **extra** classes via template literal.
