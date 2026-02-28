@@ -1,0 +1,36 @@
+---
+/**
+ * Row actions for project tables (edit link + delete).
+ * Used by DashboardProjectAccordionTable.
+ * Delete uses data-project-id; global deleteConfirmed listener handles API call.
+ */
+import SimpleIcon from "../common/SimpleIcon.astro";
+import DeleteConfirmButton from "../ui/DeleteConfirmButton.astro";
+
+interface Props {
+  project: { id: string | number };
+  currentRole?: string | null;
+}
+
+const { project, currentRole } = Astro.props;
+const showDelete = currentRole === "Admin" || currentRole === "Staff";
+---
+
+<div class="flex items-center gap-2">
+  <a
+    href={`/project/${project.id}`}
+    class="inline-flex items-center justify-center rounded p-1 text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700"
+    title="Edit project"
+  >
+    <SimpleIcon name="edit" size="xs" />
+  </a>
+  {showDelete && (
+    <DeleteConfirmButton
+      id={`delete-project-${project.id}`}
+      size="xs"
+      variant="icon"
+      dataAttributes={{ "data-project-id": String(project.id) }}
+      tooltipText="Delete project"
+    />
+  )}
+</div>

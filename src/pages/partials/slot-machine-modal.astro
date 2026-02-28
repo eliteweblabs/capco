@@ -68,7 +68,7 @@ if (hasProps) {
 
 import Button from "../../components/common/Button.astro";
 import CloseButton from "../../components/ui/CloseButton.astro";
-import SimpleIcon from "../../components/common/SimpleIcon.astro";
+import SearchInput from "../../components/form/SearchInput.astro";
 ---
 
 <div
@@ -90,62 +90,18 @@ import SimpleIcon from "../../components/common/SimpleIcon.astro";
     <!-- Modal Content -->
     <div class="p-3 md:p-4 lg:p-6">
       <!-- Search Input Section (conditional) -->
-      {
-        showSearch && (
-          <div class="mb-4">
-            <div class="relative mb-2">
-              <input
-                type="text"
-                id={`${componentId}-slot-search-input`}
-                class={globalInputClasses}
-                placeholder={searchText}
-                autocomplete="off"
-              />
-              <button
-                type="button"
-                id={`${componentId}-slot-clear-btn`}
-                class="pointer-events-none absolute right-10 top-1/2 -translate-y-1/2 transform p-1.5 text-gray-400 opacity-0 transition-all duration-200 hover:text-gray-600 dark:hover:text-gray-300"
-                title="Clear search"
-              >
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-              {currentLocation ? (
-                <button
-                  type="button"
-                  id={`${componentId}-use-location-btn`}
-                  class="absolute right-2 top-1/2 -translate-y-1/2 transform p-1.5 text-gray-400 transition-colors duration-200 hover:text-gray-600 dark:hover:text-gray-300"
-                  title="Use my current location"
-                >
-                  <SimpleIcon name="pin-location" size="sm" />
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  id={`${componentId}-slot-search-btn`}
-                  class="absolute right-2 top-1/2 -translate-y-1/2 transform p-1.5 text-gray-400 transition-colors duration-200 hover:text-gray-600 dark:hover:text-gray-300"
-                  title="Search for address"
-                >
-                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
-                </button>
-              )}
-            </div>
-          </div>
-        )
-      }
+      {showSearch && (
+        <div class="mb-4">
+          <SearchInput
+            id={`${componentId}-slot-search-input`}
+            placeholder={searchText}
+            globalInputClasses={globalInputClasses}
+            currentLocation={currentLocation}
+            useLocationButtonId={currentLocation ? `${componentId}-use-location-btn` : undefined}
+            clearButtonId={`${componentId}-slot-clear-btn`}
+          />
+        </div>
+      )}
 
       <!-- Slot Machine Container with Fixed Height -->
       <div

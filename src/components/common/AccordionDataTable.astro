@@ -128,6 +128,8 @@ interface Props<T = any> {
   selectHeaderLabel?: string;
   /** When true, the actions column stays sticky on the right when horizontal scrolling (default: false) */
   actionsColumnSticky?: boolean;
+  /** When false, rows are not expandable — no detail row, no click-to-expand (default: true) */
+  expandable?: boolean;
 }
 
 const {
@@ -163,6 +165,7 @@ const {
   showSelectColumn: showSelectColumnProp = false,
   selectHeaderLabel: selectHeaderLabelProp = "Select",
   actionsColumnSticky: actionsColumnStickyProp = false,
+  expandable = true,
 } = Astro.props;
 
 /** When headers is provided, derive columns and options from it; otherwise use props. */
@@ -205,7 +208,7 @@ const hasActions = actionsRenderer || (actionsComponent && actionsGetProps);
 
 const createSlotId = getCreateSlotId();
 const colspan =
-  columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + (showSelectColumn ? 1 : 0) + 1; // +1 for chevron
+  columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + (showSelectColumn ? 1 : 0) + 1; // +1 for detail row spanning
 
 /** Resizable script only resizes columns with numeric width; sticky columns get data-col-sticky and are skipped */
 const getColWidth = (col: (typeof columns)[0]) =>
@@ -315,17 +318,19 @@ const isStickyCol = (col: (typeof columns)[0]) =>
               const slotId = `${slotIdPrefix}-${itemId}`;
               const dataAttrs = getTriggerDataAttrs?.(item) || {};
               const detailDataAttrs = getDetailRowDataAttrs?.(item) || {};
-              const triggerRowClasses = `${triggerClass} ${dataTableTriggerRowBaseClasses} ${draggable ? "cursor-grab" : ""}`;
-              return [
+              const triggerRowClasses = `${triggerClass} ${dataTableTriggerRowBaseClasses} ${draggable ? "cursor-grab" : ""} ${!expandable ? "cursor-default" : ""}`;
+              const triggerRow = (
                 <tr
                   class={triggerRowClasses}
                   data-slot={itemId}
                   data-item-id={itemId}
                   data-reorder-id={draggable && reorderId ? reorderId : undefined}
-                  role="button"
-                  tabindex="0"
-                  aria-expanded="false"
-                  aria-controls={detailRowId(itemId)}
+                  {...(expandable && {
+                    role: "button",
+                    tabindex: 0,
+                    "aria-expanded": "false",
+                    "aria-controls": detailRowId(itemId),
+                  })}
                   {...(dataAttrs &&
                     Object.fromEntries(
                       Object.entries(dataAttrs).map(([k, v]) => [
@@ -394,7 +399,9 @@ const isStickyCol = (col: (typeof columns)[0]) =>
                           })()}
                     </td>
                   )}
-                </tr>,
+                </tr>
+              );
+              const detailRow = expandable ? (
                 <tr
                   id={detailRowId(itemId)}
                   class={`${detailClass} hidden`}
@@ -405,8 +412,9 @@ const isStickyCol = (col: (typeof columns)[0]) =>
                   <td colspan={colspan} class={dataTableDetailTdClasses}>
                     <div id={slotId} class={`${slotClass} ${dataTableSlotMinHeightClasses}`} />
                   </td>
-                </tr>,
-              ];
+                </tr>
+              ) : null;
+              return expandable ? [triggerRow, detailRow] : [triggerRow];
             })
           )
         }

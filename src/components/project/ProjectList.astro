@@ -19,6 +19,7 @@ const allColumns = await getProjectListTableColumns();
 const visibleColumns = allColumns.filter((c) => isColumnAllowed(c, currentRole));
 
 // Normalize column widths so they sum to 100% (prevents jammed columns with table-layout: fixed)
+// Columns with width 0 are excluded and get fit-content (shrink to icon/button)
 const totalWeight = visibleColumns.reduce((sum, c) => sum + (c.width ?? 10), 0);
 const widthPcts: number[] =
   totalWeight > 0 && visibleColumns.length > 0
@@ -178,12 +179,14 @@ const { dataTableHeaderBarClasses, dataTableClearButtonClasses, dataTableTableWr
       {
         visibleColumns.map((col, i) => {
           const pct = widthPcts[i] ?? 100 / visibleColumns.length;
+          const isFitContent = col.width === 0;
           return (
           <th
             scope="col"
             data-col-id={col.id}
-            data-col-default-width={pct}
-            style={`width: ${pct}%; min-width: ${pct}%`}
+            data-col-default-width={isFitContent ? 0 : pct}
+            data-col-fit-content={isFitContent ? "true" : undefined}
+            style={isFitContent ? "width: 3rem; min-width: 3rem" : `width: ${pct}%; min-width: ${pct}%`}
             class={`color-border-primary snap-start border-r border-gray-200 px-4 py-3 font-semibold dark:border-gray-700 ${col.type === "edit" || col.type === "delete" ? "" : "text-center"}`}
           >
             {col.tooltip ? (

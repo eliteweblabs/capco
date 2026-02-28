@@ -1,12 +1,13 @@
 ---
 /**
  * Design demo: AccordionDataTable
- * Resizable data table with expandable rows. Same component as CMS and Users lists.
+ * All iterations: edit only, delete only, sticky left/right, expandable vs flat, etc.
  */
 import { checkAuth } from "../../../lib/auth";
 import LayoutDefault from "../../../components/layouts/LayoutDefault.astro";
 import AccordionDataTable, { type TableHeaderConfig } from "../../../components/common/AccordionDataTable.astro";
 import DesignDemoTableRowActions from "../../../components/admin/DesignDemoTableRowActions.astro";
+import TanStackDataTable from "../../../components/common/TanStackDataTable.astro";
 import { globalClasses } from "../../api/global/global-classes";
 
 const { currentUser, session } = await checkAuth(Astro.cookies);
@@ -21,13 +22,6 @@ if (currentRole !== "Admin") {
 
 const { primaryTextClasses, mutedTextClasses, mutedTextSmClasses } = globalClasses();
 
-const demoTableHeaders: TableHeaderConfig[] = [
-  { key: "select", label: "Select", width: "sticky-left", actions: ["select"] },
-  { key: "slug", label: "Slug", width: 24 },
-  { key: "title", label: "Title", width: 56 },
-  { key: "template", label: "Template", width: 20 },
-  { key: "actions", label: "Actions", width: "sticky-right", actions: ["edit", "delete"] },
-];
 const demoTableData = [
   { id: "1", slug: "about", title: "About Us", template: "fullwidth" },
   { id: "2", slug: "contact", title: "Contact", template: "fullwidth" },
@@ -38,33 +32,184 @@ const demoTableData = [
 
 <LayoutDefault
   title="Data Table Accordion Demo"
-  description="AccordionDataTable: resizable columns, expandable rows, actions. Used on CMS and Users."
+  description="AccordionDataTable: all iterations — edit only, delete only, sticky columns, expandable vs flat."
 >
   <div class="px-4 py-8">
-    <div class="mb-8">
-      <h1 class={`mb-2 text-3xl font-bold ${primaryTextClasses}`}>Data Table Accordion</h1>
-      <p class={mutedTextClasses}>
-        Resizable data table with expandable detail rows. Click a row to expand; drag column edges
-        to resize. Used on CMS and Users.
-      </p>
-    </div>
+    <h1 class={`mb-2 text-3xl font-bold ${primaryTextClasses}`}>Data Table Accordion</h1>
+    <p class={`mb-6 ${mutedTextClasses}`}>
+      All AccordionDataTable iterations. Resizable columns, expandable rows, sticky left/right.
+    </p>
 
-    <AccordionDataTable
-      id="design-demo-accordion-table"
-      title="Demo table"
-      description="Dummy data. Row actions are demo-only (Edit/Delete). Select column and sticky Actions derived from headers."
-      headers={demoTableHeaders}
-      data={demoTableData}
-      slotIdPrefix="design-demo-slot"
-      emptyMessage="No rows."
-      actionsComponent={DesignDemoTableRowActions}
-      actionsGetProps={(r) => ({ item: r })}
-    />
-    <div class="mt-4 rounded border border-gray-200 p-4 dark:border-gray-700">
+    {/* 1. Full: Select sticky-left + Actions sticky-right (edit + delete) */}
+    <section class="mb-10">
+      <h2 class={`mb-4 text-xl font-semibold ${primaryTextClasses}`}>1. Full — Select, Edit + Delete</h2>
+      <AccordionDataTable
+        id="design-demo-1-full"
+        title="Select (sticky-left) + Edit + Delete (sticky-right)"
+        description="Select column and sticky Actions with both edit and delete."
+        headers={[
+          { key: "select", label: "Select", width: "sticky-left", actions: ["select"] },
+          { key: "slug", label: "Slug", width: 24 },
+          { key: "title", label: "Title", width: 56 },
+          { key: "template", label: "Template", width: 20 },
+          { key: "actions", label: "Actions", width: "sticky-right", actions: ["edit", "delete"] },
+        ]}
+        data={demoTableData}
+        slotIdPrefix="design-demo-1-slot"
+        emptyMessage="No rows."
+        actionsComponent={DesignDemoTableRowActions}
+        actionsGetProps={(r) => ({ item: r, showEdit: true, showDelete: true })}
+      />
+    </section>
+
+    {/* 2. Edit only */}
+    <section class="mb-10">
+      <h2 class={`mb-4 text-xl font-semibold ${primaryTextClasses}`}>2. Edit Only</h2>
+      <AccordionDataTable
+        id="design-demo-2-edit-only"
+        title="Edit button only"
+        description="Actions column with edit icon only."
+        headers={[
+          { key: "slug", label: "Slug", width: 24 },
+          { key: "title", label: "Title", width: 56 },
+          { key: "template", label: "Template", width: 20 },
+          { key: "actions", label: "Actions", width: "sticky-right", actions: ["edit"] },
+        ]}
+        data={demoTableData}
+        slotIdPrefix="design-demo-2-slot"
+        emptyMessage="No rows."
+        actionsComponent={DesignDemoTableRowActions}
+        actionsGetProps={(r) => ({ item: r, showEdit: true, showDelete: false })}
+      />
+    </section>
+
+    {/* 3. Delete only */}
+    <section class="mb-10">
+      <h2 class={`mb-4 text-xl font-semibold ${primaryTextClasses}`}>3. Delete Only</h2>
+      <AccordionDataTable
+        id="design-demo-3-delete-only"
+        title="Delete button only"
+        description="Actions column with delete icon only."
+        headers={[
+          { key: "slug", label: "Slug", width: 24 },
+          { key: "title", label: "Title", width: 56 },
+          { key: "template", label: "Template", width: 20 },
+          { key: "actions", label: "Actions", width: "sticky-right", actions: ["delete"] },
+        ]}
+        data={demoTableData}
+        slotIdPrefix="design-demo-3-slot"
+        emptyMessage="No rows."
+        actionsComponent={DesignDemoTableRowActions}
+        actionsGetProps={(r) => ({ item: r, showEdit: false, showDelete: true })}
+      />
+    </section>
+
+    {/* 4. Sticky left: Select + Slug both sticky */}
+    <section class="mb-10">
+      <h2 class={`mb-4 text-xl font-semibold ${primaryTextClasses}`}>4. Sticky Left — Select + Slug</h2>
+      <AccordionDataTable
+        id="design-demo-4-sticky-left"
+        title="Select and Slug sticky-left"
+        description="Select and Slug columns stay fixed when scrolling horizontally."
+        headers={[
+          { key: "select", label: "Select", width: "sticky-left", actions: ["select"] },
+          { key: "slug", label: "Slug", width: "sticky-left" },
+          { key: "title", label: "Title", width: 56 },
+          { key: "template", label: "Template", width: 20 },
+          { key: "actions", label: "Actions", width: "sticky-right", actions: ["edit", "delete"] },
+        ]}
+        data={demoTableData}
+        slotIdPrefix="design-demo-4-slot"
+        emptyMessage="No rows."
+        actionsComponent={DesignDemoTableRowActions}
+        actionsGetProps={(r) => ({ item: r, showEdit: true, showDelete: true })}
+      />
+    </section>
+
+    {/* 5. No expand (expandable=false) */}
+    <section class="mb-10">
+      <h2 class={`mb-4 text-xl font-semibold ${primaryTextClasses}`}>5. No Expand — Flat Rows</h2>
+      <AccordionDataTable
+        id="design-demo-5-no-expand"
+        title="Expandable=false"
+        description="Rows are not expandable; no detail row."
+        headers={[
+          { key: "slug", label: "Slug", width: 24 },
+          { key: "title", label: "Title", width: 56 },
+          { key: "template", label: "Template", width: 20 },
+          { key: "actions", label: "Actions", width: "sticky-right", actions: ["edit", "delete"] },
+        ]}
+        data={demoTableData}
+        slotIdPrefix="design-demo-5-slot"
+        emptyMessage="No rows."
+        expandable={false}
+        actionsComponent={DesignDemoTableRowActions}
+        actionsGetProps={(r) => ({ item: r, showEdit: true, showDelete: true })}
+      />
+    </section>
+
+    {/* 6. Data only — no select, no actions */}
+    <section class="mb-10">
+      <h2 class={`mb-4 text-xl font-semibold ${primaryTextClasses}`}>6. Data Only — No Actions</h2>
+      <AccordionDataTable
+        id="design-demo-6-data-only"
+        title="No select, no actions"
+        description="Data columns only; no select or actions column."
+        headers={[
+          { key: "slug", label: "Slug", width: 24 },
+          { key: "title", label: "Title", width: 56 },
+          { key: "template", label: "Template", width: 20 },
+        ]}
+        data={demoTableData}
+        slotIdPrefix="design-demo-6-slot"
+        emptyMessage="No rows."
+      />
+    </section>
+
+    {/* 7. Minimal — slug + title only */}
+    <section class="mb-10">
+      <h2 class={`mb-4 text-xl font-semibold ${primaryTextClasses}`}>7. Minimal — Slug + Title</h2>
+      <AccordionDataTable
+        id="design-demo-7-minimal"
+        title="Minimal"
+        description="Two data columns only."
+        headers={[
+          { key: "slug", label: "Slug", width: 30 },
+          { key: "title", label: "Title", width: 70 },
+        ]}
+        data={demoTableData}
+        slotIdPrefix="design-demo-7-slot"
+        emptyMessage="No rows."
+      />
+    </section>
+
+    {/* 8. TanStack Table — icon, tooltip, sortable, expand, drag */}
+    <section class="mb-10">
+      <h2 class={`mb-4 text-xl font-semibold ${primaryTextClasses}`}>8. TanStack Table — Icon, Tooltip, Sortable, Expand, Drag</h2>
+      <TanStackDataTable
+        id="design-demo-8-tanstack"
+        title="TanStack Table (migrated)"
+        description="Sortable columns, icons and tooltips in headers, expandable rows, drag handle."
+        data={demoTableData}
+        columns={[
+          { id: "slug", accessorKey: "slug", header: "Slug", meta: { icon: "link", tooltip: "URL path", width: 24 } },
+          { id: "title", accessorKey: "title", header: "Title", meta: { icon: "edit", tooltip: "Page title", width: 56 } },
+          { id: "template", accessorKey: "template", header: "Template", meta: { tooltip: "Layout template", width: 20 } },
+        ]}
+        getRowIdKey="id"
+        emptyMessage="No rows."
+        expandable={true}
+        showDragHandle={true}
+      />
+    </section>
+
+    <div class="mt-6 rounded border border-gray-200 p-4 dark:border-gray-700">
       <p class={mutedTextSmClasses}>
-        Expand a row to see the detail slot. Column widths are resizable (drag the right edge of a
-        header). Use <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">global-classes.ts</code
-        > dataTable* classes for styling.
+        Use <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">global-classes.ts</code>
+        dataTable* classes. AccordionDataTable: column widths resizable (drag header edge). Sticky columns use
+        <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">width: "sticky-left"</code> or
+        <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">"sticky-right"</code>.
+        TanStackDataTable: sortable headers (click), icon/tooltip via column meta.
       </p>
     </div>
   </div>

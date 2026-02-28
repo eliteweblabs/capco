@@ -86,7 +86,10 @@ export const navigation = async (
         cmsNavItems = cmsPages.map((page: any) => {
           // Support both camelCase (navButtonStyle) and snake_case (nav_button_style) from DB
           const buttonStyle = page.navButtonStyle ?? page.nav_button_style ?? undefined;
-          const style = buttonStyle && String(buttonStyle).trim() ? (buttonStyle as NavItem["buttonStyle"]) : undefined;
+          const style =
+            buttonStyle && String(buttonStyle).trim()
+              ? (buttonStyle as NavItem["buttonStyle"])
+              : undefined;
           return {
             label: page.title || page.slug,
             href: `/${page.slug}`,
@@ -157,7 +160,8 @@ export const navigation = async (
 
     // Add flex md:hidden class to mobile navigation items (show in mobile sidebar, hide on desktop)
     // isAuth is available from parent scope
-    const mobileClass = filterType === "mobile" && !isAuth ? "flex md:hidden" : "";
+    // const mobileClass = filterType === "mobile" && !isAuth ? "flex md:hidden" : "";
+    const mobileClass = filterType === "mobile" ? "flex md:hidden" : "";
 
     const results = filteredItems.map((item: NavItem) => {
       // Handle dropdown items

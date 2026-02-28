@@ -28,6 +28,10 @@ interface Props {
   currentLocation?: boolean;
   type?: "address" | "search";
   /** Type of search input. If omitted, search mode only. */
+  /** Override for use-location button id (e.g. slot-machine expects componentId-use-location-btn) */
+  useLocationButtonId?: string;
+  /** Override for clear button id (e.g. slot-machine expects componentId-slot-clear-btn) */
+  clearButtonId?: string;
 }
 
 const {
@@ -43,14 +47,31 @@ const {
   noResultsText = "Type to search...",
   currentLocation = false,
   type = "search",
+  useLocationButtonId,
+  clearButtonId,
 } = Astro.props;
 
 const hasAutosuggest = !!fetchApiEndpoint;
+const resolvedClearBtnId = clearButtonId ?? `${id}-clear-btn`;
+const showLocationBtn = hasAutosuggest || currentLocation;
+const locationBtnId =
+  useLocationButtonId ?? (currentLocation ? `${id}-use-location-btn` : `${id}-location-btn`);
+/** Right padding: reserve space only when we have a visible right-side element. When clearButtonId is set, clear is permanently hidden (slot-machine manages it). */
+const needsRightPadding = showLocationBtn || !clearButtonId;
 ---
 
 <div class={`search-input-wrapper relative ${wrapperClass}`.trim()}>
   {hasAutosuggest && <input type="hidden" id={`${id}-value`} name={name} value="" />}
   <div class="relative">
+    <input
+      type="text"
+      id={hasAutosuggest ? `${id}-search-input` : id}
+      name={!hasAutosuggest ? name : undefined}
+      placeholder={placeholder}
+      autocomplete="off"
+      class={`${globalInputClasses} w-full ${hasAutosuggest ? " pl-4" : "pl-10"} ${needsRightPadding ? "pr-10" : "pr-4"}`}
+    />
+
     {
       !hasAutosuggest && (
         <SimpleIcon
@@ -59,19 +80,11 @@ const hasAutosuggest = !!fetchApiEndpoint;
         />
       )
     }
-    <input
-      type="text"
-      id={hasAutosuggest ? `${id}-search-input` : id}
-      name={!hasAutosuggest ? name : undefined}
-      placeholder={placeholder}
-      autocomplete="off"
-      class={`${globalInputClasses} w-full ${hasAutosuggest ? " pr-10 pl-4" : "pl-10 pr-10"}`}
-    />
     {
-      hasAutosuggest && (
+      showLocationBtn && (
         <button
           type="button"
-          id={currentLocation ? `${id}-use-location-btn` : `${id}-location-btn`}
+          id={locationBtnId}
           class="location-btn pointer-events-auto absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-primary-500 transition-colors duration-200 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300"
           title={
             currentLocation
@@ -92,8 +105,8 @@ const hasAutosuggest = !!fetchApiEndpoint;
     }
     <button
       type="button"
-      id={`${id}-clear-btn`}
-      class="search-input-clear absolute right-2 top-1/2 hidden -translate-y-1/2 p-1.5 text-primary-500 transition-colors duration-200 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300"
+      id={resolvedClearBtnId}
+      class={`search-input-clear absolute top-1/2 -translate-y-1/2 p-1.5 text-primary-500 transition-colors duration-200 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 ${showLocationBtn ? "right-10" : "right-2"} ${clearButtonId ? "pointer-events-none opacity-0" : "hidden"}`}
       title="Clear search"
       aria-label="Clear search"
     >
@@ -129,6 +142,7 @@ const hasAutosuggest = !!fetchApiEndpoint;
   define:vars={{
     id,
     hasAutosuggest,
+    resolvedClearBtnId,
     fetchApiEndpoint,
     apiParams,
     valueField,
@@ -142,7 +156,7 @@ const hasAutosuggest = !!fetchApiEndpoint;
   function initSearchInput() {
     const inputId = hasAutosuggest ? `${id}-search-input` : id;
     const input = document.getElementById(inputId);
-    const clearBtn = document.getElementById(`${id}-clear-btn`);
+    const clearBtn = document.getElementById(resolvedClearBtnId);
     if (!input || !clearBtn) return;
 
     function toggleClear() {

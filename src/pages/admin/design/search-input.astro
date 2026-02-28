@@ -1,0 +1,162 @@
+---
+import { checkAuth } from "../../../lib/auth";
+import LayoutDefault from "../../../components/layouts/LayoutDefault.astro";
+import SearchInput from "../../../components/form/SearchInput.astro";
+import { globalClasses } from "../../api/global/global-classes";
+
+const { currentUser, session } = await checkAuth(Astro.cookies);
+if (!currentUser || !session || currentUser?.profile?.role !== "Admin") {
+  return Astro.redirect("/auth/login");
+}
+const { primaryTextClasses, mutedTextClasses, mutedTextSmClasses, globalInputClasses } = globalClasses();
+---
+
+<LayoutDefault title="Search Input" description="Search field with icon, clear button, and optional autosuggest.">
+  <div class="px-4 py-8">
+    <h1 class={`mb-2 text-3xl font-bold ${primaryTextClasses}`}>Search Input</h1>
+    <p class={`mb-6 ${mutedTextClasses}`}>Search field with icon, clear button. Filter mode (fires input events) or autosuggest mode with API-backed dropdown.</p>
+
+    <div class="space-y-10 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-900">
+      <!-- Props reference -->
+      <div>
+        <h2 class={`mb-4 text-xl font-semibold ${primaryTextClasses}`}>Props reference</h2>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-800">
+              <tr>
+                <th class="px-4 py-2 text-left text-sm font-semibold text-gray-900 dark:text-white">Prop</th>
+                <th class="px-4 py-2 text-left text-sm font-semibold text-gray-900 dark:text-white">Type</th>
+                <th class="px-4 py-2 text-left text-sm font-semibold text-gray-900 dark:text-white">Default</th>
+                <th class="px-4 py-2 text-left text-sm font-semibold text-gray-900 dark:text-white">Description</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+              <tr><td class="px-4 py-2 text-sm"><code>id</code></td><td class="px-4 py-2 text-sm">string</td><td class="px-4 py-2 text-sm">—</td><td class={`px-4 py-2 text-sm ${mutedTextClasses}`}>Required. Unique identifier.</td></tr>
+              <tr><td class="px-4 py-2 text-sm"><code>name</code></td><td class="px-4 py-2 text-sm">string</td><td class="px-4 py-2 text-sm"><code>id</code></td><td class={`px-4 py-2 text-sm ${mutedTextClasses}`}>Form field name (filter mode).</td></tr>
+              <tr><td class="px-4 py-2 text-sm"><code>placeholder</code></td><td class="px-4 py-2 text-sm">string</td><td class="px-4 py-2 text-sm"><code>"Search..."</code></td><td class={`px-4 py-2 text-sm ${mutedTextClasses}`}>Input placeholder text.</td></tr>
+              <tr><td class="px-4 py-2 text-sm"><code>globalInputClasses</code></td><td class="px-4 py-2 text-sm">string</td><td class="px-4 py-2 text-sm"><code>""</code></td><td class={`px-4 py-2 text-sm ${mutedTextClasses}`}>Extra classes for the input (e.g. globalInputClasses).</td></tr>
+              <tr><td class="px-4 py-2 text-sm"><code>wrapperClass</code></td><td class="px-4 py-2 text-sm">string</td><td class="px-4 py-2 text-sm"><code>""</code></td><td class={`px-4 py-2 text-sm ${mutedTextClasses}`}>Extra classes for the outer wrapper div.</td></tr>
+              <tr><td class="px-4 py-2 text-sm"><code>fetchApiEndpoint</code></td><td class="px-4 py-2 text-sm">string</td><td class="px-4 py-2 text-sm">—</td><td class={`px-4 py-2 text-sm ${mutedTextClasses}`}>API endpoint for autosuggest. If set, enables autosuggest mode.</td></tr>
+              <tr><td class="px-4 py-2 text-sm"><code>apiParams</code></td><td class="px-4 py-2 text-sm">object</td><td class="px-4 py-2 text-sm"><code>{}</code></td><td class={`px-4 py-2 text-sm ${mutedTextClasses}`}>Params passed to fetch (e.g. types, components).</td></tr>
+              <tr><td class="px-4 py-2 text-sm"><code>valueField</code></td><td class="px-4 py-2 text-sm">string</td><td class="px-4 py-2 text-sm"><code>"description"</code></td><td class={`px-4 py-2 text-sm ${mutedTextClasses}`}>API response field for stored value (autosuggest).</td></tr>
+              <tr><td class="px-4 py-2 text-sm"><code>labelField</code></td><td class="px-4 py-2 text-sm">string</td><td class="px-4 py-2 text-sm"><code>"description"</code></td><td class={`px-4 py-2 text-sm ${mutedTextClasses}`}>API response field for display label (autosuggest).</td></tr>
+              <tr><td class="px-4 py-2 text-sm"><code>noResultsText</code></td><td class="px-4 py-2 text-sm">string</td><td class="px-4 py-2 text-sm"><code>"Type to search..."</code></td><td class={`px-4 py-2 text-sm ${mutedTextClasses}`}>Empty state text in dropdown (autosuggest).</td></tr>
+              <tr><td class="px-4 py-2 text-sm"><code>currentLocation</code></td><td class="px-4 py-2 text-sm">boolean</td><td class="px-4 py-2 text-sm"><code>false</code></td><td class={`px-4 py-2 text-sm ${mutedTextClasses}`}>Show use-current-location button.</td></tr>
+              <tr><td class="px-4 py-2 text-sm"><code>type</code></td><td class="px-4 py-2 text-sm">"address" \| "search"</td><td class="px-4 py-2 text-sm"><code>"search"</code></td><td class={`px-4 py-2 text-sm ${mutedTextClasses}`}>Affects location button icon/title (pin vs search).</td></tr>
+              <tr><td class="px-4 py-2 text-sm"><code>useLocationButtonId</code></td><td class="px-4 py-2 text-sm">string</td><td class="px-4 py-2 text-sm">—</td><td class={`px-4 py-2 text-sm ${mutedTextClasses}`}>Override location button id (e.g. slot-machine).</td></tr>
+              <tr><td class="px-4 py-2 text-sm"><code>clearButtonId</code></td><td class="px-4 py-2 text-sm">string</td><td class="px-4 py-2 text-sm">—</td><td class={`px-4 py-2 text-sm ${mutedTextClasses}`}>Override clear button id; when set, clear is hidden (slot-machine).</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Filter mode demos -->
+      <div>
+        <h2 class={`mb-4 text-xl font-semibold ${primaryTextClasses}`}>Filter mode (default)</h2>
+        <p class={`mb-4 ${mutedTextSmClasses}`}>No <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">fetchApiEndpoint</code>. Search icon left, clear button right. Fires <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">input</code> events; parent handles filtering.</p>
+        <div class="space-y-6">
+          <div>
+            <p class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">Default placeholder</p>
+            <SearchInput id="design-search-default" globalInputClasses={globalInputClasses} wrapperClass="max-w-md" />
+          </div>
+          <div>
+            <p class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">Custom placeholder</p>
+            <SearchInput id="design-search-custom" placeholder="Search by name, email..." globalInputClasses={globalInputClasses} wrapperClass="max-w-md" />
+          </div>
+          <div>
+            <p class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">Type to filter...</p>
+            <SearchInput id="design-search-filter" placeholder="Type to filter..." globalInputClasses={globalInputClasses} wrapperClass="max-w-md" />
+          </div>
+        </div>
+      </div>
+
+      <!-- currentLocation demos -->
+      <div>
+        <h2 class={`mb-4 text-xl font-semibold ${primaryTextClasses}`}>With location button</h2>
+        <p class={`mb-4 ${mutedTextSmClasses}`}><code class="rounded bg-gray-100 px-1 dark:bg-gray-800">currentLocation={true}</code> or <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">fetchApiEndpoint</code> shows the location/search button on the right.</p>
+        <div class="space-y-6">
+          <div>
+            <p class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">type="search" (default) – search icon</p>
+            <SearchInput id="design-search-loc-search" placeholder="Search location..." currentLocation={true} type="search" globalInputClasses={globalInputClasses} wrapperClass="max-w-md" />
+          </div>
+          <div>
+            <p class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">type="address" – pin icon</p>
+            <SearchInput id="design-search-loc-addr" placeholder="Enter address..." currentLocation={true} type="address" globalInputClasses={globalInputClasses} wrapperClass="max-w-md" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Autosuggest mode -->
+      <div>
+        <h2 class={`mb-4 text-xl font-semibold ${primaryTextClasses}`}>Autosuggest mode</h2>
+        <p class={`mb-4 ${mutedTextSmClasses}`}>Set <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">fetchApiEndpoint</code> for API-backed dropdown. Requires <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">/api/google/places-autocomplete</code> (PLACES_API_KEY). Hidden input stores selected value.</p>
+        <div class="space-y-6">
+          <div>
+            <p class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">Address autocomplete (API)</p>
+            <SearchInput
+              id="design-search-autosuggest"
+              placeholder="Start typing an address..."
+              fetchApiEndpoint="/api/google/places-autocomplete"
+              apiParams={{ types: "address", components: "country:us" }}
+              valueField="description"
+              labelField="description"
+              noResultsText="No addresses found. Keep typing..."
+              currentLocation={true}
+              type="address"
+              globalInputClasses={globalInputClasses}
+              wrapperClass="max-w-md"
+            />
+          </div>
+          <div>
+            <p class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">Custom noResultsText</p>
+            <SearchInput
+              id="design-search-noresults"
+              placeholder="Search..."
+              fetchApiEndpoint="/api/google/places-autocomplete"
+              apiParams={{ types: "geocode" }}
+              noResultsText="No matches. Try another query."
+              globalInputClasses={globalInputClasses}
+              wrapperClass="max-w-md"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Overrides (slot-machine integration) -->
+      <div>
+        <h2 class={`mb-4 text-xl font-semibold ${primaryTextClasses}`}>Overrides (slot-machine)</h2>
+        <p class={`mb-4 ${mutedTextSmClasses}`}><code class="rounded bg-gray-100 px-1 dark:bg-gray-800">useLocationButtonId</code> and <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">clearButtonId</code> – when <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">clearButtonId</code> is set, the clear button is hidden (SlotMachineModal manages it).</p>
+        <div class="space-y-6">
+          <div>
+            <p class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">useLocationButtonId + clearButtonId overrides</p>
+            <SearchInput
+              id="design-search-slot"
+              placeholder="Select carrier..."
+              useLocationButtonId="design-search-slot-use-location-btn"
+              clearButtonId="design-search-slot-clear-btn"
+              currentLocation={true}
+              globalInputClasses={globalInputClasses}
+              wrapperClass="max-w-md"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- wrapperClass / globalInputClasses -->
+      <div>
+        <h2 class={`mb-4 text-xl font-semibold ${primaryTextClasses}`}>Styling</h2>
+        <p class={`mb-4 ${mutedTextSmClasses}`}><code class="rounded bg-gray-100 px-1 dark:bg-gray-800">wrapperClass</code> for layout (e.g. max-w-md). <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">globalInputClasses</code> for input appearance.</p>
+        <div class="space-y-6">
+          <div>
+            <p class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">wrapperClass="max-w-sm"</p>
+            <SearchInput id="design-search-narrow" placeholder="Narrow width" globalInputClasses={globalInputClasses} wrapperClass="max-w-sm" />
+          </div>
+          <div>
+            <p class="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">Full width (no wrapperClass)</p>
+            <SearchInput id="design-search-full" placeholder="Full width search..." globalInputClasses={globalInputClasses} />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</LayoutDefault>

@@ -88,21 +88,27 @@ function initResizableColumns() {
 
   const tableWidth = () => table.getBoundingClientRect().width || 1;
 
-  // Apply saved widths
+  // Apply saved widths (skip fit-content columns - they keep width: 1px from server)
   headers.forEach((th) => {
     const colId = th.getAttribute("data-col-id");
-    if (colId) {
-      const w = savedWidths[colId] ?? (parseFloat(th.getAttribute("data-col-default-width") || "0") || (DEFAULT_WIDTHS[colId] ?? 10));
-      savedWidths[colId] = applyWidthToTh(th, w);
-    }
+    if (!colId) return;
+    if (th.getAttribute("data-col-fit-content") === "true") return;
+    const w = savedWidths[colId] ?? (parseFloat(th.getAttribute("data-col-default-width") || "0") || (DEFAULT_WIDTHS[colId] ?? 10));
+    savedWidths[colId] = applyWidthToTh(th, w);
   });
 
   // Add resize handles and drag logic (linked resize with neighbor)
   headers.forEach((th, index) => {
     const colId = th.getAttribute("data-col-id");
     if (!colId) return;
+    if (th.getAttribute("data-col-fit-content") === "true") return;
 
-    const nextTh = headers[index + 1] as HTMLElement | undefined;
+    // Find next resizable column (skip fit-content cols)
+    let nextIdx = index + 1;
+    while (nextIdx < headers.length && headers[nextIdx].getAttribute("data-col-fit-content") === "true") {
+      nextIdx++;
+    }
+    const nextTh = headers[nextIdx] as HTMLElement | undefined;
     const nextColId = nextTh?.getAttribute("data-col-id");
 
     const handle = document.createElement("div");

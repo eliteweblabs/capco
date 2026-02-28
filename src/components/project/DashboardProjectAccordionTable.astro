@@ -1,0 +1,103 @@
+---
+/**
+ * Dashboard project table using AccordionDataTable with no accordion effect.
+ * Recreates the project list as a simple data table (expandable=false).
+ */
+import AccordionDataTable from "../common/AccordionDataTable.astro";
+import ProjectRowActions from "./ProjectRowActions.astro";
+import { getProjectListTableColumns, isColumnAllowed } from "../../lib/project-list-table-config";
+
+interface Props {
+  projects: any[];
+  statusData: any;
+  currentUser: any;
+  globalInputClasses?: string;
+}
+
+const { projects, statusData, currentUser, globalInputClasses = "" } = Astro.props;
+const currentRole = currentUser?.profile?.role;
+
+const allColumns = await getProjectListTableColumns();
+const visibleColumns = allColumns.filter((c) => isColumnAllowed(c, currentRole));
+
+// Process projects with status data
+const processedProjects = projects.map((project: any) => {
+  const statusInt = project.status ?? 0;
+  const statusObj = statusData?.[statusInt] || {};
+  const current = statusObj?.current || {};
+  return {
+    ...project,
+    currentStatusName: current.statusName || "Unknown Status",
+  };
+});
+
+// Map visible columns to AccordionDataTable columns (simplified - text only)
+const columns = visibleColumns
+  .filter((c) => ["text", "company", "status", "dueDate"].includes(c.type))
+  .map((col) => {
+    const base = {
+      key: col.id,
+      label: col.label || col.tooltip || col.id,
+      width: typeof col.width === "number" && col.width > 0 ? col.width : 16,
+      cellClass: "whitespace-nowrap text-center",
+    };
+    if (col.type === "text" && col.field === "address") {
+      return {
+        ...base,
+        getValue: (p: any) => p.address || p.title || "No address",
+        cellClass: `${base.cellClass} font-medium`,
+      };
+    }
+    if (col.type === "company") {
+      return {
+        ...base,
+        getValue: (p: any) => p?.authorProfile?.companyName || "—",
+      };
+    }
+    if (col.type === "status") {
+      return {
+        ...base,
+        getValue: (p: any) => p.currentStatusName ?? "—",
+      };
+    }
+    if (col.type === "dueDate") {
+      return {
+        ...base,
+        getValue: (p: any) => {
+          const d = p.dueDate;
+          if (!d) return "—";
+          try {
+            return new Date(d).toLocaleDateString();
+          } catch {
+            return "—";
+          }
+        },
+      };
+    }
+    return base;
+  });
+
+// Only include if we have data columns
+const hasDataColumns = columns.length > 0;
+---
+
+{hasDataColumns && (
+  <div class="mb-6">
+    <AccordionDataTable
+      id="dashboard-projects-accordion"
+      title="Projects (AccordionDataTable)"
+      description="Table recreated with AccordionDataTable, no expand effect"
+      data={processedProjects}
+      getItemId={(p) => String(p.id)}
+      columns={columns}
+      slotIdPrefix="project-slot"
+      emptyMessage="No projects found"
+      expandable={false}
+      draggable={false}
+      resizable={false}
+      actionsComponent={ProjectRowActions}
+      actionsGetProps={(p) => ({ project: p, currentRole })}
+      getTriggerDataAttrs={(p) => ({ projectId: String(p.id) })}
+    />
+  </div>
+)}

@@ -1,0 +1,103 @@
+---
+/**
+ * TanStackDataTable — TanStack Table-powered data table with sorting, icons, tooltips, optional expand/drag.
+ * Does NOT replace AccordionDataTable or ProjectList; use alongside for new tables.
+ *
+ * @example
+ * <TanStackDataTable
+ *   id="my-table"
+ *   data={[{ id: "1", slug: "about", title: "About" }]}
+ *   columns={[
+ *     { id: "slug", accessorKey: "slug", header: "Slug", meta: { icon: "link", tooltip: "URL slug", sortable: true } },
+ *     { id: "title", accessorKey: "title", header: "Title", meta: { sortable: true } },
+ *   ]}
+ *   expandable
+ *   showDragHandle
+ * />
+ */
+import { globalClasses } from "../../pages/api/global/global-classes";
+
+export interface TanStackColumnMeta {
+  icon?: string;
+  tooltip?: string;
+  sticky?: "left" | "right";
+  width?: number;
+}
+
+export interface TanStackColumnConfig<T = unknown> {
+  id: string;
+  accessorKey?: keyof T & string;
+  header: string;
+  enableSorting?: boolean;
+  meta?: TanStackColumnMeta;
+}
+
+interface Props<T = unknown> {
+  id: string;
+  data: T[];
+  columns: TanStackColumnConfig<T>[];
+  /** Key for row id (e.g. "id") — used for expand state */
+  getRowIdKey?: keyof T & string;
+  emptyMessage?: string;
+  title?: string;
+  description?: string;
+  expandable?: boolean;
+  showDragHandle?: boolean;
+}
+
+const {
+  id,
+  data = [],
+  columns,
+  getRowIdKey = "id",
+  emptyMessage = "No rows.",
+  title,
+  description,
+  expandable = false,
+  showDragHandle = false,
+} = Astro.props;
+
+const { dataTableCardClasses, dataTableHeaderBarClasses, dataTableTitleClasses, dataTableDescriptionClasses, dataTableTableWrapperClasses } =
+  globalClasses();
+
+// Build config for client (JSON-serializable)
+const config = {
+  id,
+  columns: columns.map((c) => ({
+    id: c.id,
+    accessorKey: c.accessorKey,
+    header: c.header,
+    enableSorting: c.enableSorting ?? true,
+    meta: c.meta,
+  })),
+  data: data.map((row) => {
+    const r = row as Record<string, unknown>;
+    return { ...r };
+  }),
+  getRowIdKey: getRowIdKey as string | undefined,
+  emptyMessage,
+  expandable,
+  showDragHandle,
+};
+---
+
+<div class={`tanstack-data-table ${dataTableCardClasses}`}>
+  {(title || description) && (
+    <div class={dataTableHeaderBarClasses}>
+      <div class="min-w-0 flex-1">
+        {title && <h2 class={dataTableTitleClasses}>{title}</h2>}
+        {description && <p class={dataTableDescriptionClasses}>{description}</p>}
+      </div>
+    </div>
+  )}
+  <div class={dataTableTableWrapperClasses}>
+    <div
+      data-tanstack-table-init
+      data-tanstack-config={JSON.stringify(config)}
+    />
+  </div>
+</div>
+
+<script>
+  import "../../scripts/tanstack-data-table-init";
+</script>

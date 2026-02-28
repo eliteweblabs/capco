@@ -370,24 +370,6 @@ Image gallery with lightbox support.
 />
 ```
 
-### AlertBlock
-
-Alert and notification banners.
-
-**Variants:** `info`, `success`, `warning`, `danger`, `neutral`
-**Layouts:** `inline`, `banner`, `toast`, `card`
-
-```astro
-<AlertBlock 
-  variant="warning"
-  layout="banner"
-  title="Scheduled Maintenance"
-  message="System will be unavailable on Saturday 2-4 AM."
-  dismissible={true}
-  buttonText="Learn More"
-  buttonHref="/maintenance"
-/>
-```
 
 ### PricingBlock
 

@@ -156,6 +156,7 @@ const {
 
     function show(e) {
       entry = e;
+      s;
       if (container) container.classList.remove("hidden");
       if (projectEl) projectEl.textContent = e.projectTitle || "General / No project";
       if (notesInput && "value" in notesInput) notesInput.value = e.notes || "";
@@ -206,7 +207,8 @@ const {
     async function handleStop() {
       if (!entry || !stopBtn) return;
       if ("disabled" in stopBtn) stopBtn.disabled = true;
-      const notes = (notesInput && notesInput.value != null ? String(notesInput.value).trim() : "") || null;
+      const notes =
+        (notesInput && notesInput.value != null ? String(notesInput.value).trim() : "") || null;
       try {
         const body = { endedAt: new Date().toISOString(), ...(notes && { notes }) };
         const res = await fetch("/api/time-entries/" + entry.id, {
@@ -223,12 +225,7 @@ const {
         }
       } catch (err) {
         if (typeof window.showNotice === "function") {
-          window.showNotice(
-            "error",
-            "Error",
-            err?.message || "Failed to stop timer",
-            4000
-          );
+          window.showNotice("error", "Error", err?.message || "Failed to stop timer", 4000);
         }
       } finally {
         if (stopBtn && "disabled" in stopBtn) stopBtn.disabled = false;
