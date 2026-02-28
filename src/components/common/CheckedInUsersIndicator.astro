@@ -12,18 +12,18 @@ interface Props {
 const { currentUser, globalIconButtonClasses = "w-10 h-10 inline-flex items-center rounded-full justify-center p-2 text-black dark:text-white md:hover:bg-gray-100 dark:hover:bg-gray-700 dark:focus:ring-gray-700 focus:outline-none" } = Astro.props;
 
 const currentRole = currentUser?.profile?.role;
-if (currentRole !== "Admin") {
-  return null;
-}
+const showCheckedIn = currentRole === "Admin";
 ---
 
+{showCheckedIn && (
+<>
 <div
   id="checked-in-users-indicator"
   class="flex items-center gap-1"
   aria-label="Team members currently checked in"
 >
   <div id="checked-in-users-list" class="flex items-center gap-0.5">
-    {/_ Placeholder: script populates this _/}
+    {/* Placeholder: script populates this */}
   </div>
 </div>
 
@@ -43,7 +43,7 @@ if (currentRole !== "Admin") {
       }
     }
 
-    function render(users: Array<{ userId: string; name: string; durationFormatted: string; address: string | null; location: string | null }>) {
+    function render(users) {
       container.innerHTML = "";
       if (users.length === 0) return;
 
@@ -80,3 +80,5 @@ if (currentRole !== "Admin") {
     else init();
   })();
 </script>
+</>
+)}

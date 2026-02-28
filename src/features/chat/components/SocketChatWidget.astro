@@ -10,11 +10,11 @@ interface Props {
 
 const { currentUser } = Astro.props;
 const currentRole = currentUser?.profile?.role;
-if (currentRole !== "Admin" && currentRole !== "Staff") {
-  return null;
-}
+const showSocketChat = currentRole === "Admin" || currentRole === "Staff";
 ---
 
+{showSocketChat && (
+<>
 <!-- Chat Widget for Sidebar -->
 <div
   id="socket-chat-widget"
@@ -598,3 +598,5 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
     });
   </script>
 </div>
+</>
+)}

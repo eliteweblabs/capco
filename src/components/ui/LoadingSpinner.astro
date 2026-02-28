@@ -20,6 +20,9 @@ const {
   typewriter = true,
 } = Astro.props;
 
+import { globalClasses } from "../../pages/api/global/global-classes";
+const { mutedTextClasses } = globalClasses();
+
 // Plain text for typewriter (strip HTML; dots become "...")
 const typewriterText =
   typeof loadingText === "string"
@@ -69,13 +72,11 @@ const borderColorClass =
   </div>
 
   <!-- Loading text with typewriter effect -->
-  <p
-    class="loading-spinner-text text-sm text-gray-600 dark:text-gray-400"
-    data-text={typewriterText}
-    data-loading-typewriter
-  >
-    <span>{loadingText}</span>
-  </p><span class="hop-1">.</span><span class="hop-2">.</span><span class="hop-3">.</span>
+  <p class={`loading-spinner-text inline-flex text-sm ${mutedTextClasses}`}>
+    <span data-text={typewriterText} data-loading-typewriter>{typewriterText}</span><span
+      class="hop-1">.</span
+    ><span class="hop-2">.</span><span class="hop-3">.</span>
+  </p>
 </div>
 
 <style>

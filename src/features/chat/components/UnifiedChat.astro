@@ -11,18 +11,17 @@ interface Props {
 
 const { currentUser } = Astro.props;
 const currentRole = currentUser?.profile?.role;
+const showUnifiedChat = currentRole === "Admin" || currentRole === "Staff";
 
 // Debug logging
 console.log("🔧 [UNIFIED-CHAT] Current user object:", currentUser);
 console.log("🔧 [UNIFIED-CHAT] Current role:", currentRole);
 console.log("🔧 [UNIFIED-CHAT] User ID:", currentUser?.id);
 console.log("🔧 [UNIFIED-CHAT] Company name:", currentUser?.profile?.companyName);
-
-if (currentRole !== "Admin" && currentRole !== "Staff") {
-  return null;
-}
 ---
 
+{showUnifiedChat && (
+<>
 <!-- Unified Chat Widget -->
 <div
   id="unified-chat-widget"
@@ -707,3 +706,5 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
     }
   });
 </script>
+</>
+)}

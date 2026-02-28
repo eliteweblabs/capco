@@ -21,18 +21,11 @@ interface Props {
 
 const { currentUser, position = "bottom-right", theme = "auto" } = Astro.props;
 
-if (!currentUser) {
-  return null;
-}
-
 // Skip Campfire widget in development to avoid localhost errors
 // Set ENABLE_CAMPFIRE_IN_DEV=true if you want to test it locally
 const isDevelopment = import.meta.env.DEV || import.meta.env.NODE_ENV === "development";
 const enableInDev = import.meta.env.PUBLIC_ENABLE_CAMPFIRE_IN_DEV === "true";
-
-if (isDevelopment && !enableInDev) {
-  return null;
-}
+const showCampfire = !!currentUser && !(isDevelopment && !enableInDev);
 
 // Get Campfire URL from environment variable
 // In Astro, PUBLIC_ prefixed vars are available client-side
@@ -57,17 +50,16 @@ let campfireWidgetId =
 const themeMode = theme;
 ---
 
-{campfireUrl || campfireWidgetId ? (
+{showCampfire && ((campfireUrl || campfireWidgetId) ? (
   <div id="campfire-chat-widget-container" data-position={position}>
     {/* <!-- Campfire Chat Widget will be injected here by the script --> */}
   </div>
 ) : !campfireUrl && !campfireWidgetId ? (
   <script is:inline set:html="console.warn('[---CAMPFIRE-WIDGET] Widget not rendered - missing environment variables:', { hasPublicUrl: false, hasUrl: false, hasPublicWidgetId: false, hasWidgetId: false, message: 'Set PUBLIC_CAMPFIRE_URL or PUBLIC_CAMPFIRE_WIDGET_ID in environment variables' });"></script>
-) : null}
+) : null)}
 
 
-{
-  campfireUrl || campfireWidgetId ? (
+{showCampfire && (campfireUrl || campfireWidgetId) ? (
     <script define:vars={{ campfireUrl, campfireWidgetId, themeMode, currentUser }}>
       (function() {
         // Prevent duplicate initialization
@@ -254,8 +246,7 @@ const themeMode = theme;
         }
       })();
     </script>
-  ) : null
-}
+) : null}
 
 <style>
   #campfire-chat-widget-container {

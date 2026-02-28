@@ -14,15 +14,13 @@ interface Props {
 const { currentUser, project, supabaseUrl, id } = Astro.props;
 const currentRole = currentUser?.profile?.role;
 
-if (!project || !project.id || currentRole === "Client") {
-  return null;
-}
-
-const projectId = project.id;
+const showPunchlist = project && project.id && currentRole !== "Client";
+const projectId = project?.id;
 const drawerId = id || "punchlist-drawer";
-const drawerTitle = (project.title || project.address || "Project") + " Punchlist";
+const drawerTitle = showPunchlist ? (project.title || project.address || "Project") + " Punchlist" : "";
 ---
 
+{showPunchlist && (
 <Drawer id={drawerId} title={drawerTitle} placement="right" size="lg">
   <div id="content-punchlist" class="flex min-h-0 flex-1 flex-col">
     <div id="punchlist-container" class="flex min-h-0 flex-1 flex-col" data-project-id={projectId}>
@@ -712,3 +710,4 @@ const drawerTitle = (project.title || project.address || "Project") + " Punchlis
     console.log("[PUNCHLIST-DELETE] ✅ Click listener attached");
   }
 </script>
+)}

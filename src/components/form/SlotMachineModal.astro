@@ -36,6 +36,8 @@ interface Props {
   required?: boolean; // Optional: Whether the field is required (default: false)
   requiredText?: string; // Optional: Required text (default: "Required")
   currentLocation?: boolean; // Optional: Current location (default: false)
+  /** When true, PDF Data Extractor will include this field in guided scraping */
+  dataScrap?: boolean;
   buttonVariant?:
     | "primary"
     | "secondary"
@@ -84,6 +86,7 @@ const {
   buttonVariant = "primary",
   project,
   currentLocation = false,
+  dataScrap,
   // project = {},
 } = Astro.props;
 
@@ -126,7 +129,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
   value={selectedValue}
   data-refresh={name}
   data-project-id={projectId}
-  data-scrap={id === "address" ? "true" : undefined}
+  data-scrap={(dataScrap ?? (id === "address")) ? "true" : undefined}
   {required}
   data-required-text={requiredText}
 />

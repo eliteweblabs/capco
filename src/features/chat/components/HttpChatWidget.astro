@@ -16,9 +16,7 @@ interface Props {
 }
 import SimpleIcon from "../../../components/common/SimpleIcon.astro";
 const { currentUser, globalInputClasses, currentRole } = Astro.props;
-if (!currentUser || (currentRole !== "Admin" && currentRole !== "Staff")) {
-  return null;
-}
+const showChat = currentUser && (currentRole === "Admin" || currentRole === "Staff");
 
 // // Debug logging
 // console.log("🔧 [HTTP-CHAT-WIDGET] Current user object:", currentUser);
@@ -27,6 +25,7 @@ if (!currentUser || (currentRole !== "Admin" && currentRole !== "Staff")) {
 // console.log("🔧 [HTTP-CHAT-WIDGET] Company name:", currentUser?.profile?.companyName);
 ---
 
+{showChat && (
 <div
   id="chat-widget"
   data-user-role={currentRole || "Client"}
@@ -662,3 +661,4 @@ if (!currentUser || (currentRole !== "Admin" && currentRole !== "Staff")) {
     saveChatStateToCookie(isChatOpen);
   });
 </script>
+)}

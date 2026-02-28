@@ -3,7 +3,7 @@ export const globalClasses = () => {
     globalContainerClasses:
       "mx-auto max-w-7xl px-4 sm:px-6 md:px-8 lg:px-10 mb-4 sm:mb-8 md:mb-12 lg:mb-16",
     globalInputClasses:
-      "w-full rounded-md border border-gray-300 px-3 py-2 text-base text-gray-900 transition-colors duration-200 placeholder:text-gray-600 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500 shadow-secondary-inner-md scrollbar-hide dark:border-gray-600 bg-gray-100 dark:bg-gray-900 dark:text-white dark:placeholder:text-gray-300",
+      "w-full rounded-md border border-gray-300 px-3 py-2 text-base text-gray-900 transition-colors duration-200 placeholder:text-gray-600 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500 shadow-secondary-inner-md scrollbar-hide dark:border-gray-600 bg-[var(--color-input-bg)] dark:text-white dark:placeholder:text-gray-300",
     /** Applied to form elements (excl. MultiStepForm). Use for consistent form spacing. */
     globalFormClasses: "color-background p-4 space-y-6 rounded-sm",
     /** Applied to the input wrapper so it affects animated placeholder and input icons. Height and text size here; input uses multiStepInputCoreClasses to fill and inherit. */
@@ -14,6 +14,12 @@ export const globalClasses = () => {
       "w-full h-full bg-transparent border-0 py-2.5 px-4 text-xl sm:text-2xl md:text-3xl lg:text-4xl text-left text-gray-900 placeholder:text-gray-500 focus:outline-none transition-colors duration-200 dark:text-white dark:placeholder:text-gray-400",
     primaryTextClasses: "text-gray-900 dark:text-gray-100",
     secondaryTextClasses: "text-gray-800 dark:text-gray-200",
+    /** Muted/tertiary text - highly repetitive. Use for descriptions, helper text, labels. */
+    mutedTextClasses: "text-gray-600 dark:text-gray-400",
+    /** Muted text + text-sm - common combo for captions, hints. */
+    mutedTextSmClasses: "text-sm text-gray-600 dark:text-gray-400",
+    /** Lighter muted text (gray-500) - for subtle descriptions, placeholders. */
+    mutedAltTextClasses: "text-gray-500 dark:text-gray-400",
     // Flowbite-standard icon-only button (gray/secondary)
     globalIconButtonClasses:
       "w-10 h-10 inline-flex items-center rounded-full justify-center p-2 text-black dark:text-white md:hover:bg-gray-100 dark:hover:bg-gray-700 dark:focus:ring-gray-700 focus:outline-none",

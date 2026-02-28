@@ -13,16 +13,14 @@ export interface Props {
 
 const { currentUser, id = "notification", globalIconButtonClasses, projects } = Astro.props;
 
-// Return null if no user or client
-if (!currentUser) {
-  return null;
-}
+const showNotifications = !!currentUser;
 
 import CloseButton from "../ui/CloseButton.astro";
 import Dropdown from "../ui/Dropdown.astro";
 import LoadingSpinner from "../ui/LoadingSpinner.astro";
 ---
 
+{showNotifications && (
 <Dropdown {id} title="Notifications" {currentUser} {projects} {globalIconButtonClasses}>
   <!-- Notifications dropdown: Flowbite data-dropdown-toggle="notification-dropdown" on trigger(s) -->
 
@@ -83,3 +81,4 @@ import LoadingSpinner from "../ui/LoadingSpinner.astro";
     </div>
   </div>
 </Dropdown>
+)}

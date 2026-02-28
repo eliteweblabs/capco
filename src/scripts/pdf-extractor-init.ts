@@ -26,7 +26,6 @@ document.addEventListener("DOMContentLoaded", function () {
         !formWrapper ||
         !pdfWrapper ||
         !closeBtn ||
-        !pdfHeader ||
         !guidedInterface ||
         !currentFieldInput ||
         !setFieldBtn
@@ -152,7 +151,7 @@ document.addEventListener("DOMContentLoaded", function () {
           if (pdfFile) {
             // Hide dropzone and header, show viewer and guided interface
             dropzoneContainer.classList.add("hidden");
-            pdfHeader.classList.add("hidden");
+            pdfHeader?.classList.add("hidden");
             guidedInterface.classList.remove("hidden");
 
             // Build fields list from form and initialize with first field
@@ -195,7 +194,7 @@ document.addEventListener("DOMContentLoaded", function () {
         viewerSection.classList.add("hidden");
         viewerSection.classList.remove("flex", "flex-col", "h-full");
         dropzoneContainer.classList.remove("hidden");
-        pdfHeader.classList.remove("hidden");
+        pdfHeader?.classList.remove("hidden");
         guidedInterface.classList.add("hidden");
 
         // Reset guided interface
@@ -303,13 +302,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       function handleSetField() {
-        if (
-          !currentOCRResult ||
-          !formForPDF ||
-          !currentFieldInput ||
-          !setFieldBtn
-        )
-          return;
+        if (!currentOCRResult || !formForPDF || !currentFieldInput || !setFieldBtn) return;
 
         const currentField = fieldsToFill[currentFieldIndex];
 
@@ -384,7 +377,7 @@ document.addEventListener("DOMContentLoaded", function () {
           window.showNotice(
             "success",
             "Field Updated",
-            `${currentField.label.replace("Select ", "")} has been updated in the form.`
+            `${currentField.label.replace("Select ", "")} has been updated in the form. Next field: ${fieldsToFill[currentFieldIndex + 1].label}`
           );
         }
 
@@ -842,10 +835,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             // Track scroll direction: positive = down, negative = up
             // Accumulate scroll distance in the current direction
-            if (
-              (deltaY > 0 && scrollAccumulator >= 0) ||
-              (deltaY < 0 && scrollAccumulator <= 0)
-            ) {
+            if ((deltaY > 0 && scrollAccumulator >= 0) || (deltaY < 0 && scrollAccumulator <= 0)) {
               // Same direction - accumulate
               scrollAccumulator += deltaY;
             } else {
@@ -880,9 +870,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const prevBtn = document.querySelector("#pdf-prev-page") as HTMLButtonElement;
         const nextBtn = document.querySelector("#pdf-next-page") as HTMLButtonElement;
-        const pageInfo = document
-          .querySelector("#project-form-pdf-viewer")
-          ?.querySelector("span");
+        const pageInfo = document.querySelector("#project-form-pdf-viewer")?.querySelector("span");
 
         if (prevBtn) {
           prevBtn.disabled = currentPage === 1;
@@ -987,7 +975,23 @@ document.addEventListener("DOMContentLoaded", function () {
           .split(/\b/)
           .map((word, index) => {
             // Don't capitalize common small words unless they're first
-            const smallWords = ['a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'at', 'to', 'from', 'by', 'of', 'in'];
+            const smallWords = [
+              "a",
+              "an",
+              "the",
+              "and",
+              "but",
+              "or",
+              "for",
+              "nor",
+              "on",
+              "at",
+              "to",
+              "from",
+              "by",
+              "of",
+              "in",
+            ];
             if (index > 0 && smallWords.includes(word.toLowerCase().trim())) {
               return word.toLowerCase();
             }
@@ -997,7 +1001,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
             return word;
           })
-          .join('');
+          .join("");
       }
 
       // Format extracted text based on field type
@@ -1202,9 +1206,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
       }
 
-      async function cropAndOCR(
-        targetInput: HTMLInputElement | HTMLTextAreaElement | null = null
-      ) {
+      async function cropAndOCR(targetInput: HTMLInputElement | HTMLTextAreaElement | null = null) {
         // Use the provided target input, or fall back to current focusedInput
         const inputToUse = targetInput || focusedInput;
 
@@ -1374,7 +1376,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (guidedInterface && !guidedInterface.classList.contains("hidden")) {
               // Normalize capitalization for ALL CAPS text
               extractedText = normalizeCapitalization(extractedText);
-              
+
               // Populate the guided interface input (always overwrite)
               currentOCRResult = extractedText;
               if (currentFieldInput) {
@@ -1388,7 +1390,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
               // Clear selection
               clearSelection();
-              
+
               // Keep selection mode enabled for re-selection if needed
               setTimeout(() => {
                 enableSelectionMode();
@@ -1451,8 +1453,7 @@ document.addEventListener("DOMContentLoaded", function () {
               clearSelection();
 
               // Check if we're in guided mode
-              const isGuidedMode =
-                guidedInterface && !guidedInterface.classList.contains("hidden");
+              const isGuidedMode = guidedInterface && !guidedInterface.classList.contains("hidden");
 
               // In guided mode, keep selection enabled for next field
               // In regular mode, disable selection
@@ -1514,7 +1515,9 @@ document.addEventListener("DOMContentLoaded", function () {
             currentFieldInput.style.opacity = "1";
             currentFieldInput.style.cursor = "";
             const currentField = fieldsToFill[currentFieldIndex];
-            currentFieldInput.placeholder = currentField ? currentField.label : "Select text from PDF...";
+            currentFieldInput.placeholder = currentField
+              ? currentField.label
+              : "Select text from PDF...";
 
             // Re-enable selection mode for retry
             setTimeout(() => {
@@ -1558,4 +1561,4 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
   }
-  });
+});

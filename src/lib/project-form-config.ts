@@ -149,6 +149,8 @@ function unifiedToFormElements(pf: any): FormElementConfig[] {
     const el: FormElementConfig = {
       id: field.id,
       name: field.name,
+      type: "field",
+      elementType: field.type === "number" ? "number" : "text",
       label: field.label,
       placeholder: field.placeholder,
       required: field.required,
@@ -159,7 +161,7 @@ function unifiedToFormElements(pf: any): FormElementConfig[] {
       dataField: field.dataField,
       dataScrap: field.dataScrap,
       autocomplete: field.autocomplete,
-    } as FormElementConfig;
+    };
 
     if (field.type === "button-group") {
       el.type = "button-group";

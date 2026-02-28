@@ -74,8 +74,7 @@
             enableSelectionMode();
           }, 100);
         }, handleSetField = function() {
-          if (!currentOCRResult || !formForPDF || !currentFieldInput || !setFieldBtn)
-            return;
+          if (!currentOCRResult || !formForPDF || !currentFieldInput || !setFieldBtn) return;
           const currentField = fieldsToFill[currentFieldIndex];
           if (currentField.formFieldName === "address") {
             const addressHiddenInput = document.getElementById("address-value");
@@ -126,7 +125,7 @@
             window.showNotice(
               "success",
               "Field Updated",
-              `${currentField.label.replace("Select ", "")} has been updated in the form.`
+              `${currentField.label.replace("Select ", "")} has been updated in the form. Next field: ${fieldsToFill[currentFieldIndex + 1].label}`
             );
           }
           const formTabButton = document.getElementById("form-tab");
@@ -380,7 +379,23 @@
           const isAllCaps = letterCount > 0 && upperCount / letterCount > 0.8;
           if (!isAllCaps) return text;
           return text.toLowerCase().split(/\b/).map((word, index) => {
-            const smallWords = ["a", "an", "the", "and", "but", "or", "for", "nor", "on", "at", "to", "from", "by", "of", "in"];
+            const smallWords = [
+              "a",
+              "an",
+              "the",
+              "and",
+              "but",
+              "or",
+              "for",
+              "nor",
+              "on",
+              "at",
+              "to",
+              "from",
+              "by",
+              "of",
+              "in"
+            ];
             if (index > 0 && smallWords.includes(word.toLowerCase().trim())) {
               return word.toLowerCase();
             }
@@ -527,7 +542,7 @@
           "project-form-pdf-current-field-input"
         );
         const setFieldBtn = document.getElementById("project-form-pdf-set-field-btn");
-        if (!dropzone || !dropzoneContainer || !viewerSection || !pdfViewer || !formWrapper || !pdfWrapper || !closeBtn || !pdfHeader || !guidedInterface || !currentFieldInput || !setFieldBtn)
+        if (!dropzone || !dropzoneContainer || !viewerSection || !pdfViewer || !formWrapper || !pdfWrapper || !closeBtn || !guidedInterface || !currentFieldInput || !setFieldBtn)
           return;
         let pdfFile = null;
         let pdfDoc = null;
@@ -551,7 +566,7 @@
             pdfFile = files[0];
             if (pdfFile) {
               dropzoneContainer.classList.add("hidden");
-              pdfHeader.classList.add("hidden");
+              pdfHeader?.classList.add("hidden");
               guidedInterface.classList.remove("hidden");
               buildFieldsToFill();
               currentFieldIndex = 0;
@@ -581,7 +596,7 @@
           viewerSection.classList.add("hidden");
           viewerSection.classList.remove("flex", "flex-col", "h-full");
           dropzoneContainer.classList.remove("hidden");
-          pdfHeader.classList.remove("hidden");
+          pdfHeader?.classList.remove("hidden");
           guidedInterface.classList.add("hidden");
           currentFieldIndex = 0;
           currentOCRResult = null;

@@ -137,6 +137,7 @@ function fieldForRenderer(
                           project={project}
                           globalInputClasses={globalInputClasses ?? themeInputClasses}
                           currentLocation={true}
+                          dataScrap={field.dataScrap}
                         />
                       </div>
                     ) : (
@@ -209,6 +210,7 @@ function fieldForRenderer(
                         project={project}
                         globalInputClasses={globalInputClasses}
                         currentLocation={true}
+                        dataScrap={element.dataScrap}
                       />
                     </div>
                   ) : (
@@ -509,8 +511,8 @@ function fieldForRenderer(
     const currentRole = form.getAttribute("data-current-role");
 
     // Form submission handler
-    async function handleFormSubmit(event: Event) {
-      const form = event.target as HTMLFormElement;
+    async function handleFormSubmit(event) {
+      const form = event.target;
 
       // Check form validity before preventing default
       if (!form.checkValidity()) {
@@ -522,7 +524,7 @@ function fieldForRenderer(
 
       // console.log("📝 [ProjectForm] Form submission started");
       const formData = new FormData(form);
-      const projectData: any = {};
+      const projectData = {};
 
       // Convert FormData to object
       console.log("📝 [ProjectForm] FormData entries:");
@@ -557,7 +559,7 @@ function fieldForRenderer(
       }
 
       try {
-        const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+        const submitBtn = form.querySelector('button[type="submit"]');
         if (submitBtn) {
           submitBtn.disabled = true;
           const loaderIcon =
@@ -635,7 +637,7 @@ function fieldForRenderer(
                   // Fallback: redirect even if status update failed (project was created successfully)
                   window.location.href = `/project/${project.id}`;
                 }
-              }).catch((error: any) => {
+              }).catch((error) => {
                 console.error("❌ [PROPOSAL-VIEW] Status update error:", error);
                 // Fallback: redirect even if status update errored (project was created successfully)
                 window.location.href = `/project/${project.id}`;
@@ -651,7 +653,7 @@ function fieldForRenderer(
               localStorage.setItem(
                 "projectFormError",
                 JSON.stringify({
-                  error: (statusError as any)?.message || statusError,
+                  error: statusError?.message || statusError,
                   timestamp: new Date().toISOString(),
                   projectId: result.project.id,
                 })
@@ -690,7 +692,7 @@ function fieldForRenderer(
         }
       } finally {
         // Reset button state
-        const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+        const submitBtn = form.querySelector('button[type="submit"]');
         if (submitBtn) {
           submitBtn.disabled = false;
           const saveIcon =
@@ -716,7 +718,7 @@ function fieldForRenderer(
   });
 
   // Handle different form actions
-  function handleAction(action: any, projectId: any, isNewProject: any) {
+  function handleAction(action, projectId, isNewProject) {
     switch (action) {
       case "deleteProject":
         if (!isNewProject) {
@@ -763,10 +765,10 @@ function fieldForRenderer(
       });
 
       // Reset units slider to default
-      const unitsSlider = form.querySelector('input[name="units"]') as HTMLInputElement;
+      const unitsSlider = form.querySelector('input[name="units"]');
       if (unitsSlider) {
         unitsSlider.value = "0"; // Default to first option
-        const valueDisplay = form.querySelector('[id^="units-value-"]') as HTMLElement;
+        const valueDisplay = form.querySelector('[id^="units-value-"]');
         if (valueDisplay) {
           valueDisplay.textContent = "1";
         }
@@ -794,7 +796,7 @@ function fieldForRenderer(
     sqFtInputs.forEach((input) => {
       // Prevent non-numeric characters on keypress
       input.addEventListener("keypress", (e) => {
-        if (!/[0-9]/.test((e as KeyboardEvent).key)) {
+        if (!/[0-9]/.test(e.key)) {
           e.preventDefault();
         }
       });
@@ -802,14 +804,14 @@ function fieldForRenderer(
       // Handle paste events to filter out non-numeric characters
       input.addEventListener("paste", (e) => {
         e.preventDefault();
-        const paste = ((e as ClipboardEvent).clipboardData || window.clipboardData).getData("text");
+        const paste = (e.clipboardData || window.clipboardData).getData("text");
         const numericOnly = paste.replace(/[^0-9]/g, "");
-        (input as HTMLInputElement).value = numericOnly;
+        input.value = numericOnly;
       });
 
       // Handle input events to remove any non-numeric characters
       input.addEventListener("input", (e) => {
-        const target = e.target as HTMLInputElement;
+        const target = e.target;
         if (target) {
           target.value = target.value.replace(/[^0-9]/g, "");
         }

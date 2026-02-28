@@ -45,11 +45,7 @@ const {
 } = Astro.props;
 
 const effectiveShowLabel = showLabel ?? context === "standard";
-
-if (!field || typeof field !== "object") {
-  // Skip null/undefined or malformed fields to avoid "Cannot read properties of null"
-  return null;
-}
+const hasValidField = !!field && typeof field === "object";
 
 const hasWrapper = Boolean(wrapperClass);
 const wrapperAttrs = hasWrapper
@@ -81,10 +77,10 @@ const contentProps = {
 };
 ---
 
-{hasWrapper ? (
+{hasValidField && (hasWrapper ? (
   <div {...wrapperAttrs}>
     <FormFieldContent {...contentProps} />
   </div>
 ) : (
   <FormFieldContent {...contentProps} />
-)}
+))}

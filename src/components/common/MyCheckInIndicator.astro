@@ -11,19 +11,13 @@ interface Props {
   globalIconButtonClasses?: string;
 }
 
-const { currentUser, globalIconButtonClasses = "w-10 h-10 inline-flex items-center rounded-full justify-center p-2 text-black dark:text-white md:hover:bg-gray-100 dark:hover:bg-gray-700 dark:focus:ring-gray-700 focus:outline-none" } = Astro.props;
-
-const currentRole = currentUser?.profile?.role;
-if (currentRole !== "Admin" && currentRole !== "Staff") {
-  return null;
-}
+const {
+  currentUser,
+  globalIconButtonClasses = "w-10 h-10 inline-flex items-center rounded-full justify-center p-2 text-black dark:text-white md:hover:bg-gray-100 dark:hover:bg-gray-700 dark:focus:ring-gray-700 focus:outline-none",
+} = Astro.props;
 ---
 
-<div
-  id="my-checkin-indicator"
-  class="hidden"
-  aria-label="You are checked in"
->
+<div id="my-checkin-indicator" class="hidden" aria-label="You are checked in">
   <button
     type="button"
     id="my-checkin-trigger"
@@ -34,7 +28,10 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
     class={`relative ${globalIconButtonClasses}`}
     aria-label="Check-in active – open menu to stop"
   >
-    <span class="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 animate-pulse" title="Checked in">
+    <span
+      class="flex h-8 w-8 animate-pulse items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-400"
+      title="Checked in"
+    >
       <SimpleIcon name="stopwatch" size="md" />
     </span>
   </button>
@@ -48,16 +45,21 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
     <div class="p-4">
       <div class="mb-2 flex items-center justify-between">
         <span class="text-sm font-medium text-gray-900 dark:text-white">Timer active</span>
-        <span id="my-checkin-duration" class="text-sm font-mono text-gray-600 dark:text-gray-400">0m</span>
+        <span id="my-checkin-duration" class="font-mono text-sm text-gray-600 dark:text-gray-400"
+          >0m</span
+        >
       </div>
       <div id="my-checkin-project" class="mb-3 text-xs text-gray-500 dark:text-gray-400"></div>
-      <label for="my-checkin-notes-input" class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Notes (optional)</label>
+      <label
+        for="my-checkin-notes-input"
+        class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300"
+        >Notes (optional)</label
+      >
       <textarea
         id="my-checkin-notes-input"
         rows="2"
         class="mb-4 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-        placeholder="Add notes before stopping…"
-      ></textarea>
+        placeholder="Add notes before stopping…"></textarea>
       <button
         type="button"
         id="my-checkin-stop-btn"
@@ -71,6 +73,7 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
 </div>
 
 <script>
+  // @ts-nocheck - inline script uses vanilla JS to avoid TS compilation issues in some chunks
   (function () {
     const STORAGE_KEY = "location-checkin-state";
     const TIME_ENTRY_KEY = "location-checkin-time-entry-id";
@@ -79,14 +82,14 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
     const container = document.getElementById("my-checkin-indicator");
     const durationEl = document.getElementById("my-checkin-duration");
     const projectEl = document.getElementById("my-checkin-project");
-    const notesInput = document.getElementById("my-checkin-notes-input") as HTMLTextAreaElement | null;
+    const notesInput = document.getElementById("my-checkin-notes-input");
     const stopBtn = document.getElementById("my-checkin-stop-btn");
 
-    let entry: { id: number; startedAt: string; projectId?: number | null; projectTitle?: string | null; notes?: string | null } | null = null;
-    let tickInterval: ReturnType<typeof setInterval> | null = null;
-    let pingInterval: ReturnType<typeof setInterval> | null = null;
+    let entry = null;
+    let tickInterval = null;
+    let pingInterval = null;
 
-    function formatDuration(ms: number): string {
+    function formatDuration(ms) {
       const mins = Math.floor(ms / 60000);
       if (mins < 60) return mins + "m";
       const h = Math.floor(mins / 60);
@@ -100,14 +103,19 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
       durationEl.textContent = formatDuration(ms);
     }
 
-    function getPosition(): Promise<{ lat: number; lng: number; accuracy?: number }> {
+    function getPosition() {
       return new Promise((resolve, reject) => {
         if (!navigator.geolocation) {
           reject(new Error("Geolocation not supported"));
           return;
         }
         navigator.geolocation.getCurrentPosition(
-          (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }),
+          (pos) =>
+            resolve({
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+              accuracy: pos.coords.accuracy,
+            }),
           reject,
           { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
         );
@@ -117,6 +125,7 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
     function startPingInterval() {
       if (!entry) return;
       const sendPing = () => {
+        if (!entry) return;
         getPosition()
           .then((pos) =>
             fetch("/api/location/ping", {
@@ -124,11 +133,11 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
               headers: { "Content-Type": "application/json" },
               credentials: "include",
               body: JSON.stringify({
-                timeEntryId: entry!.id,
-                projectId: entry!.projectId ?? null,
+                timeEntryId: entry.id,
+                projectId: entry.projectId ?? null,
                 lat: pos.lat,
                 lng: pos.lng,
-                accuracy: pos.accuracy,
+                accuracy: pos.accuracy ?? undefined,
               }),
             })
           )
@@ -145,11 +154,11 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
       }
     }
 
-    function show(e: { id: number; startedAt: string; projectId?: number | null; projectTitle?: string | null; notes?: string | null }) {
+    function show(e) {
       entry = e;
       if (container) container.classList.remove("hidden");
       if (projectEl) projectEl.textContent = e.projectTitle || "General / No project";
-      if (notesInput) notesInput.value = e.notes || "";
+      if (notesInput && "value" in notesInput) notesInput.value = e.notes || "";
       tick();
       tickInterval = setInterval(tick, 1000);
       startPingInterval();
@@ -161,7 +170,7 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
       if (container) container.classList.add("hidden");
       if (durationEl) durationEl.textContent = "0m";
       if (projectEl) projectEl.textContent = "";
-      if (notesInput) notesInput.value = "";
+      if (notesInput && "value" in notesInput) notesInput.value = "";
       if (tickInterval) {
         clearInterval(tickInterval);
         tickInterval = null;
@@ -169,7 +178,9 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
       try {
         sessionStorage.removeItem(STORAGE_KEY);
         sessionStorage.removeItem(TIME_ENTRY_KEY);
-      } catch (_) {}
+      } catch {
+        // Ignore errors
+      }
       window.dispatchEvent(new CustomEvent("checkInStopped"));
     }
 
@@ -194,11 +205,10 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
 
     async function handleStop() {
       if (!entry || !stopBtn) return;
-      stopBtn.disabled = true;
-      const notes = notesInput?.value?.trim() || null;
+      if ("disabled" in stopBtn) stopBtn.disabled = true;
+      const notes = (notesInput && notesInput.value != null ? String(notesInput.value).trim() : "") || null;
       try {
-        const body: Record<string, unknown> = { endedAt: new Date().toISOString() };
-        if (notes) body.notes = notes;
+        const body = { endedAt: new Date().toISOString(), ...(notes && { notes }) };
         const res = await fetch("/api/time-entries/" + entry.id, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -208,15 +218,20 @@ if (currentRole !== "Admin" && currentRole !== "Staff") {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed to stop");
         hide();
-        if (typeof (window as any).showNotice === "function") {
-          (window as any).showNotice("success", "Timer stopped", "Time entry saved.", 2000);
+        if (typeof window.showNotice === "function") {
+          window.showNotice("success", "Timer stopped", "Time entry saved.", 2000);
         }
       } catch (err) {
-        if (typeof (window as any).showNotice === "function") {
-          (window as any).showNotice("error", "Error", (err as Error).message || "Failed to stop timer", 4000);
+        if (typeof window.showNotice === "function") {
+          window.showNotice(
+            "error",
+            "Error",
+            err?.message || "Failed to stop timer",
+            4000
+          );
         }
       } finally {
-        if (stopBtn) stopBtn.disabled = false;
+        if (stopBtn && "disabled" in stopBtn) stopBtn.disabled = false;
       }
     }
 

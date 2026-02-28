@@ -1,6 +1,9 @@
 /**
  * Form config loaders - read from site-config JSON (company-specific).
  * Replaces standalone TS config files (register-form-config, login-form-config, etc.)
+ *
+ * layout and formAction are NOT in config.json — ConfigForm derives layout from steps
+ * (1 step = standard, multiple = multi-step), and formAction is injected from this map.
  */
 
 import type { MultiStepFormConfig, FormFieldConfig } from "../multi-step-form-config";
@@ -8,6 +11,22 @@ import { GLOBAL_BUTTON_DEFAULTS, normalizeFormConfig } from "../multi-step-form-
 import type { FormElementConfig } from "../project-form-config";
 import { getFilteredUserFormElements } from "../__user-form-config";
 import { getSiteConfig } from "../content";
+
+const FORM_ACTION_MAP: Record<string, string> = {
+  "login-form": "/api/auth/signin",
+  "register-form": "/api/auth/register",
+  "contact-form": "/api/contact-form-submit",
+  "review-form": "/api/reviews/submit",
+  "mep-form": "/api/mep/submit",
+  "project-form": "/api/projects/upsert",
+  "nfpa25-wet-pipe-itm-form": "/api/nfpa25/wet-pipe-itm",
+};
+
+function injectFormAction<T extends { formId?: string; formAction?: string }>(config: T): T & { formAction: string } {
+  const formId = config?.formId;
+  const action = formId ? FORM_ACTION_MAP[formId] : undefined;
+  return { ...config, formAction: action ?? config.formAction ?? "" };
+}
 
 /**
  * Get any form config by id from config.json "forms" (or legacy top-level keys).
@@ -30,7 +49,8 @@ export async function getFormConfig(formId: string): Promise<MultiStepFormConfig
   }
   if (!json) return null;
   const merged = mergeFormButtonDefaults(config, json);
-  return normalizeFormConfig({ ...json, buttonDefaults: merged }) as MultiStepFormConfig;
+  const normalized = normalizeFormConfig({ ...json, buttonDefaults: merged }) as MultiStepFormConfig;
+  return injectFormAction(normalized) as MultiStepFormConfig;
 }
 
 /**
@@ -88,7 +108,8 @@ export async function getRegisterFormConfig(): Promise<MultiStepFormConfig> {
     );
   }
   const merged = mergeFormButtonDefaults(config, json);
-  return normalizeFormConfig({ ...json, buttonDefaults: merged }) as MultiStepFormConfig;
+  const normalized = normalizeFormConfig({ ...json, buttonDefaults: merged }) as MultiStepFormConfig;
+  return injectFormAction(normalized) as MultiStepFormConfig;
 }
 
 export async function getLoginFormConfig(): Promise<MultiStepFormConfig> {
@@ -102,7 +123,8 @@ export async function getLoginFormConfig(): Promise<MultiStepFormConfig> {
     );
   }
   const merged = mergeFormButtonDefaults(config, json);
-  return normalizeFormConfig({ ...json, buttonDefaults: merged }) as MultiStepFormConfig;
+  const normalized = normalizeFormConfig({ ...json, buttonDefaults: merged }) as MultiStepFormConfig;
+  return injectFormAction(normalized) as MultiStepFormConfig;
 }
 
 export async function getContactFormConfig(
@@ -119,7 +141,8 @@ export async function getContactFormConfig(
   };
   const result = replacePlaceholders(JSON.parse(JSON.stringify(base)), vars) as MultiStepFormConfig;
   result.buttonDefaults = mergeFormButtonDefaults(config, result);
-  return normalizeFormConfig(result) as MultiStepFormConfig;
+  const normalized = normalizeFormConfig(result) as MultiStepFormConfig;
+  return injectFormAction(normalized) as MultiStepFormConfig;
 }
 
 export async function getProjectFormConfig(
@@ -154,11 +177,12 @@ export async function getProjectFormConfig(
     return true;
   });
 
-  return {
+  const out = {
     ...pf,
     buttonDefaults: merged,
     steps: [{ ...step, fields, buttons }],
   } as MultiStepFormConfig;
+  return injectFormAction(out) as MultiStepFormConfig;
 }
 
 export async function getReviewFormConfig(
@@ -168,7 +192,7 @@ export async function getReviewFormConfig(
   if (fromForms) {
     const vars = { globalCompanyName: globalCompanyName || "Our Company" };
     const result = replacePlaceholders(JSON.parse(JSON.stringify(fromForms)), vars) as MultiStepFormConfig;
-    return normalizeFormConfig(result) as MultiStepFormConfig;
+    return injectFormAction(normalizeFormConfig(result) as MultiStepFormConfig) as MultiStepFormConfig;
   }
   const config = await getSiteConfig();
   const json = (config as any).reviewForm;
@@ -176,7 +200,7 @@ export async function getReviewFormConfig(
   const vars = { globalCompanyName: globalCompanyName || "Our Company" };
   const result = replacePlaceholders(JSON.parse(JSON.stringify(base)), vars) as MultiStepFormConfig;
   result.buttonDefaults = mergeFormButtonDefaults(config, result);
-  return normalizeFormConfig(result) as MultiStepFormConfig;
+  return injectFormAction(normalizeFormConfig(result) as MultiStepFormConfig) as MultiStepFormConfig;
 }
 
 export async function getMepFormConfig(
@@ -191,7 +215,7 @@ export async function getMepFormConfig(
       assistantName: virtualAssistantName || "Leah",
     };
     const result = replacePlaceholders(JSON.parse(JSON.stringify(fromForms)), vars) as MultiStepFormConfig;
-    return normalizeFormConfig(result) as MultiStepFormConfig;
+    return injectFormAction(normalizeFormConfig(result) as MultiStepFormConfig) as MultiStepFormConfig;
   }
   const config = await getSiteConfig();
   const json = (config as any).mepForm;
@@ -203,7 +227,7 @@ export async function getMepFormConfig(
   };
   const result = replacePlaceholders(JSON.parse(JSON.stringify(base)), vars) as MultiStepFormConfig;
   result.buttonDefaults = mergeFormButtonDefaults(config, result);
-  return normalizeFormConfig(result) as MultiStepFormConfig;
+  return injectFormAction(normalizeFormConfig(result) as MultiStepFormConfig) as MultiStepFormConfig;
 }
 
 /** Map FormElementConfig to FormFieldConfig for StandardForm */
@@ -222,6 +246,7 @@ function mapUserElementToField(el: FormElementConfig): FormFieldConfig | null {
       icon: el.icon,
       iconPosition: (el.iconPosition as "left" | "right") || "left",
     }),
+    ...((el as any).dataScrap != null && { dataScrap: (el as any).dataScrap }),
   };
   switch (el.elementType) {
     case "avatar":

@@ -18,6 +18,8 @@ export interface Props {
   html?: boolean; // Whether to render text as HTML
   /** When false, use flex instead of inline-flex (avoids nav/flex layout issues). Default true for backwards compat. */
   inline?: boolean;
+  /** Optional id for the tooltip content span; allows scripts to update text/position for dynamic tooltips (e.g. sliders). */
+  contentId?: string;
 }
 
 const {
@@ -33,6 +35,7 @@ const {
   hideOnMobile = false,
   html = false,
   inline = true,
+  contentId,
 } = Astro.props;
 
 const wrapperClasses =
@@ -54,7 +57,12 @@ const contentClasses = [
 
 <span class={wrapperClasses} data-tooltip-position={position} data-tooltip-touchable={touchable}>
   <slot />
-  <span class={contentClasses} data-dismissable={dismissable ? "true" : "false"} role="tooltip">
+  <span
+    class={contentClasses}
+    data-dismissable={dismissable ? "true" : "false"}
+    role="tooltip"
+    id={contentId}
+  >
     {html ? <span set:html={text} /> : text}
     {
       dismissable && (
@@ -123,16 +131,16 @@ const contentClasses = [
         }
 
         const { x, y, placement, middlewareData } = await computePosition(
-          trigger as HTMLElement,
-          tooltip as HTMLElement,
+          trigger,
+          tooltip,
           {
-            placement: preferredPosition as "top" | "bottom" | "left" | "right",
+            placement: preferredPosition,
             middleware,
           }
         );
 
-        Object.assign((tooltip as HTMLElement).style, { left: `${x}px`, top: `${y}px` });
-        (tooltip as HTMLElement).setAttribute("data-popper-placement", placement);
+        Object.assign(tooltip.style, { left: `${x}px`, top: `${y}px` });
+        tooltip.setAttribute("data-popper-placement", placement);
 
         // Position arrow (Floating UI sets only one axis per placement; set static axis and clear others per Flowbite/Popper)
         if (arrowElement && middlewareData.arrow) {
@@ -142,7 +150,7 @@ const contentClasses = [
             placementSide
           ];
           const staticValue = "-4px";
-          const arrowStyle: Record<string, string> = {
+          const arrowStyle = {
             left: "",
             top: "",
             right: "",
@@ -154,7 +162,7 @@ const contentClasses = [
           else if (staticSide === "top") arrowStyle.top = staticValue;
           if (staticSide === "right") arrowStyle.right = staticValue;
           if (staticSide === "bottom") arrowStyle.bottom = staticValue;
-          Object.assign((arrowElement as HTMLElement).style, arrowStyle);
+          Object.assign(arrowElement.style, arrowStyle);
         }
       }
 
@@ -162,26 +170,26 @@ const contentClasses = [
       const show = () => {
         tooltip.classList.remove("opacity-0");
         tooltip.classList.add("opacity-100");
-        (tooltip as HTMLElement).style.pointerEvents = "auto";
+        tooltip.style.pointerEvents = "auto";
         updatePosition();
       };
 
       const hide = () => {
         tooltip.classList.remove("opacity-100");
         tooltip.classList.add("opacity-0");
-        (tooltip as HTMLElement).style.pointerEvents = "none";
+        tooltip.style.pointerEvents = "none";
       };
 
       // Event handlers
       if (isTouchDevice && isMobileClickable) {
         // Mobile: click to toggle
-        const handleClick = (e: Event) => {
+        const handleClick = (e) => {
           e.stopPropagation();
-          const isVisible = (tooltip as HTMLElement).classList.contains("opacity-100");
+          const isVisible = tooltip.classList.contains("opacity-100");
 
           // Close all other tooltips
           document.querySelectorAll(".tooltip-content.opacity-100").forEach((other) => {
-            if (other !== (tooltip as HTMLElement)) {
+            if (other !== tooltip) {
               other.classList.remove("opacity-100");
               other.classList.add("opacity-0");
             }
@@ -190,10 +198,10 @@ const contentClasses = [
           isVisible ? hide() : show();
         };
 
-        const handleOutsideClick = (e: Event) => {
+        const handleOutsideClick = (e) => {
           if (
-            !wrapper.contains(e.target as Node) &&
-            (tooltip as HTMLElement).classList.contains("opacity-100")
+            !wrapper.contains(e.target) &&
+            tooltip.classList.contains("opacity-100")
           ) {
             hide();
           }
@@ -214,7 +222,7 @@ const contentClasses = [
       window.addEventListener("resize", updatePosition, { passive: true });
 
       // Close button
-      const closeBtn = (tooltip as HTMLElement).querySelector(".tooltip-close-btn");
+      const closeBtn = tooltip.querySelector(".tooltip-close-btn");
       closeBtn?.addEventListener("click", (e) => {
         e.stopPropagation();
         hide();

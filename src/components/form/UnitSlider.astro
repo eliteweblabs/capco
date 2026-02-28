@@ -1,4 +1,6 @@
 ---
+import Tooltip from "../ui/Tooltip.astro";
+
 export interface Props {
   projectId?: string | null;
   value?: number;
@@ -10,6 +12,8 @@ export interface Props {
   max?: number;
   step?: number;
   id?: string;
+  /** When true, PDF Data Extractor will include this field in guided scraping */
+  dataScrap?: boolean;
 }
 
 const {
@@ -23,6 +27,7 @@ const {
   min = 0,
   max = 100,
   step = 1,
+  dataScrap = false,
 } = Astro.props;
 
 // Convert units value to slider position (only for units)
@@ -69,63 +74,65 @@ const sliderId = `${name}-slider-${projectId}`;
       }`}>{value}</span
     >
   </label>
-  <div class="relative pt-6">
-    <div
-      id={`${name}-tooltip-${projectId}`}
-      class="slider-tooltip absolute top-0 -translate-x-1/2 -translate-y-1 px-2 py-1 text-xs font-medium rounded-md shadow-md bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 pointer-events-none opacity-0 transition-opacity duration-150 z-10 whitespace-nowrap"
-      role="tooltip"
-      aria-hidden="true"
-      style={`left: ${isUnitsSlider ? (sliderValue / 14) * 100 : min === max ? 50 : ((sliderValue - min) / (max - min)) * 100}%`}
-    >{isUnitsSlider ? unitsOptions[sliderValue] || "1" : sliderValue}</div
-    >
-    <input
-      type="range"
-      id={sliderId}
-      {name}
-      min={isUnitsSlider ? "0" : min.toString()}
-      max={isUnitsSlider ? "14" : max.toString()}
-      step={isUnitsSlider ? "1" : step.toString()}
-      value={sliderValue}
-      class={`w-full h-2 bg-gray-200 rounded-full appearance-none dark:bg-gray-700 ${
-        isUnitsSlider ? "units-range-slider" : "regular-range-slider"
-      } ${readOnly ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
-      data-values={isUnitsSlider ? unitsOptions.join(",") : ""}
-      aria-label={isUnitsSlider ? "Select number of units" : `Select ${label.toLowerCase()}`}
-      aria-valuetext={isUnitsSlider ? (unitsOptions[sliderValue] || "1") : sliderValue.toString()}
-      {required}
-      disabled={readOnly}
-    />
-    <!-- Tick marks and labels positioned to match actual slider positions (only for units) -->
-    {
-      isUnitsSlider && (
-        <div class="relative mx-4 mb-3 mt-1 h-6">
-          {unitsOptions.map((unit, index) => {
-            // Calculate position as percentage across the slider (accounting for padding)
-            const position = (index / (unitsOptions.length - 1)) * 100;
+  <Tooltip
+    text={isUnitsSlider ? unitsOptions[sliderValue] || "1" : String(sliderValue)}
+    position="top"
+    contentId={`${name}-tooltip-${projectId}`}
+    mobileClickable={true}
+    inline={false}
+    tooltipClass="!px-2 !py-1 !text-xs whitespace-nowrap"
+  >
+    <div class="relative">
+      <input
+        type="range"
+        id={sliderId}
+        {name}
+        min={isUnitsSlider ? "0" : min.toString()}
+        max={isUnitsSlider ? "14" : max.toString()}
+        step={isUnitsSlider ? "1" : step.toString()}
+        value={sliderValue}
+        class={`w-full h-2 bg-gray-200 rounded-full appearance-none dark:bg-gray-700 ${
+          isUnitsSlider ? "units-range-slider" : "regular-range-slider"
+        } ${readOnly ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+        data-values={isUnitsSlider ? unitsOptions.join(",") : ""}
+        aria-label={isUnitsSlider ? "Select number of units" : `Select ${label.toLowerCase()}`}
+        aria-valuetext={isUnitsSlider ? unitsOptions[sliderValue] || "1" : sliderValue.toString()}
+        {required}
+        disabled={readOnly}
+        data-scrap={dataScrap ? "true" : undefined}
+      />
+      <!-- Tick marks and labels positioned to match actual slider positions (only for units) -->
+      {
+        isUnitsSlider && (
+          <div class="relative mx-4 mb-3 mt-1 h-6">
+            {unitsOptions.map((unit, index) => {
+              // Calculate position as percentage across the slider (accounting for padding)
+              const position = (index / (unitsOptions.length - 1)) * 100;
 
-            // Show labels for key values to avoid overcrowding
-            const showLabel = [0, 4, 9, 12, 14].includes(index); // positions for 1, 5, 10, 30, 50
+              // Show labels for key values to avoid overcrowding
+              const showLabel = [0, 4, 9, 12, 14].includes(index); // positions for 1, 5, 10, 30, 50
 
-            return (
-              <div class="absolute -translate-x-1/2 transform" style={`left: ${position}%`}>
-                {/* Small tick mark */}
-                <div
-                  class={`w-px bg-gray-300 dark:bg-gray-600 ${showLabel ? "h-3" : "h-2"} mx-auto`}
-                />
+              return (
+                <div class="absolute -translate-x-1/2 transform" style={`left: ${position}%`}>
+                  {/* Small tick mark */}
+                  <div
+                    class={`w-px bg-gray-300 dark:bg-gray-600 ${showLabel ? "h-3" : "h-2"} mx-auto`}
+                  />
 
-                {/* Label for key positions */}
-                {showLabel && (
-                  <span class="mt-1 block text-center text-xs text-gray-500 dark:text-gray-400">
-                    {unit}
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )
-    }
-  </div>
+                  {/* Label for key positions */}
+                  {showLabel && (
+                    <span class="mt-1 block text-center text-xs text-gray-500 dark:text-gray-400">
+                      {unit}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )
+      }
+    </div>
+  </Tooltip>
 </div>
 
 <style>
@@ -252,7 +259,7 @@ const sliderId = `${name}-slider-${projectId}`;
 </style>
 
 <script
-  define:vars={{ projectId, unitsOptions, readOnly, sliderFieldName: name, isUnitsSlider, minVal: min, maxVal: max }}
+  define:vars={{ projectId, unitsOptions, readOnly, sliderFieldName: name, isUnitsSlider }}
   is:inline
 >
   // sliderFieldName avoids no-redeclare (global 'name' is built-in)
@@ -260,53 +267,22 @@ const sliderId = `${name}-slider-${projectId}`;
   const valueDisplay = document.getElementById(`${sliderFieldName}-value-${projectId}`);
   const tooltip = document.getElementById(`${sliderFieldName}-tooltip-${projectId}`);
 
-  const THUMB_HALF = 15; // half of 30px thumb - thumb center doesn't reach 0% or 100%
-
-  function updateTooltip(sliderEl) {
+  function updateTooltipContent(sliderEl) {
     if (!tooltip || !sliderEl) return;
     const rawVal = parseInt(sliderEl.value);
-    const displayVal = isUnitsSlider ? (unitsOptions[rawVal] || "1") : rawVal;
-    const pct =
-      isUnitsSlider
-        ? (rawVal / 14) * 100
-        : minVal === maxVal
-          ? 50
-          : ((rawVal - minVal) / (maxVal - minVal)) * 100;
-    const trackWidth = sliderEl.offsetWidth;
-    const leftPx = THUMB_HALF + (pct / 100) * (trackWidth - 2 * THUMB_HALF);
-    tooltip.style.left = trackWidth > 0 ? (leftPx / trackWidth) * 100 + "%" : pct + "%";
-    tooltip.textContent = displayVal;
+    tooltip.textContent = isUnitsSlider ? unitsOptions[rawVal] || "1" : String(rawVal);
   }
 
   if (slider && valueDisplay) {
-    if (!readOnly && tooltip) {
-      const showTooltip = () => {
-        updateTooltip(slider);
-        tooltip.classList.remove("opacity-0");
-        tooltip.setAttribute("aria-hidden", "false");
-      };
-      const hideTooltip = () => {
-        tooltip.classList.add("opacity-0");
-        tooltip.setAttribute("aria-hidden", "true");
-      };
-
-      slider.addEventListener("input", (e) => {
-        const target = e.target;
-        const sliderValue = parseInt(target.value);
-        if (isUnitsSlider) {
-          const unitsValue = unitsOptions[sliderValue] || "1";
-          valueDisplay.textContent = unitsValue;
-        } else {
-          valueDisplay.textContent = sliderValue;
-        }
-        updateTooltip(target);
-        showTooltip();
-      });
-      slider.addEventListener("pointerdown", () => showTooltip());
-      slider.addEventListener("pointerup", () => setTimeout(hideTooltip, 300));
-      slider.addEventListener("pointerleave", () => setTimeout(hideTooltip, 150));
-      slider.addEventListener("focus", () => showTooltip());
-      slider.addEventListener("blur", () => hideTooltip());
-    }
+    slider.addEventListener("input", (e) => {
+      const target = e.target;
+      const sliderValue = parseInt(target.value);
+      if (isUnitsSlider) {
+        valueDisplay.textContent = unitsOptions[sliderValue] || "1";
+      } else {
+        valueDisplay.textContent = sliderValue;
+      }
+      if (!readOnly && tooltip) updateTooltipContent(target);
+    });
   }
 </script>
