@@ -23,9 +23,6 @@ if (authCode && !Astro.url.pathname.startsWith("/auth/callback")) {
 
 const { currentUser, globalIconButtonClasses, closeButton = false, id, onOpen } = Astro.props;
 
-const redirectUrl = Astro.url.searchParams.get("redirect") || "/project/dashboard";
-
-const currentRole = currentUser?.profile?.role;
 import Dropdown from "./Dropdown.astro";
 import LoadingSpinner from "./LoadingSpinner.astro";
 ---
@@ -35,9 +32,7 @@ import LoadingSpinner from "./LoadingSpinner.astro";
   <!-- Panel body: data-dropdown-id passed so script can find panel/triggers (Navbar uses id="notifications") -->
   <div class="min-h-0 flex-1 overflow-y-auto" data-dropdown-id={id}>
     <!-- Header with Mark all read and Archive all -->
-    <div
-      class="flex items-center justify-between gap-2 border-b border-gray-200 px-3 py-2 dark:border-gray-700"
-    >
+    <div class="flex items-center justify-between gap-2">
       <button
         id="mark-all-read"
         class="text-sm text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300"
@@ -368,7 +363,7 @@ import LoadingSpinner from "./LoadingSpinner.astro";
     createNotificationElement(notification: any) {
       const isRead = !!notification.viewed;
       const div = document.createElement("div");
-      div.className = `relative notification-item overflow-hidden border-b border-gray-200 dark:border-gray-700 transition-colors ${isRead ? "notification-item-read opacity-90 bg-gray-50/80 dark:bg-gray-800/50" : "dark:bg-primary-900/20"}`;
+      div.className = `relative notification-item overflow-hidden border border-gray-200 dark:border-gray-700 m-4 rounded-lg transition-colors ${isRead ? "notification-item-read opacity-90 bg-gray-50/80 dark:bg-gray-800/50" : "dark:bg-primary-900/20"}`;
       div.dataset.notificationId = String(notification.id);
       div.dataset.viewed = String(isRead);
 

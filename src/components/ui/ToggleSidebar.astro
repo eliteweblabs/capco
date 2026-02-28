@@ -246,19 +246,48 @@ const responsiveClass = !currentUser ? "md:hidden" : "";
       { signal }
     );
 
+    // Click outside: close sidebar on mobile
+    const isOutsideSidebar = (target: EventTarget | null) =>
+      target instanceof Node &&
+      !sidebar.contains(target) &&
+      !toggleButtons.some((btn) => btn.contains(target));
+
     document.addEventListener(
       "click",
       (e) => {
-        if (isMobile() && !sidebar.classList.contains("-translate-x-full")) {
-          if (
-            !sidebar.contains(e.target as Node) &&
-            !toggleButtons.some((btn) => btn.contains(e.target as Node))
-          ) {
-            hideSidebarMobile();
-          }
+        if (isMobile() && !sidebar.classList.contains("-translate-x-full") && isOutsideSidebar(e.target)) {
+          hideSidebarMobile();
         }
       },
       { signal }
+    );
+
+    // Tap outside: same behavior for touch (scroll = touchend with movement, we ignore those)
+    let tapOutsideTarget: EventTarget | null = null;
+    let tapOutsideStartY = 0;
+    document.addEventListener(
+      "touchstart",
+      (e) => {
+        if (isMobile() && !sidebar.classList.contains("-translate-x-full")) {
+          tapOutsideTarget = e.target;
+          tapOutsideStartY = e.touches[0]?.clientY ?? 0;
+        } else {
+          tapOutsideTarget = null;
+        }
+      },
+      { passive: true, signal }
+    );
+    document.addEventListener(
+      "touchend",
+      (e) => {
+        if (!tapOutsideTarget || !isMobile() || sidebar.classList.contains("-translate-x-full")) return;
+        const deltaY = Math.abs((e.changedTouches[0]?.clientY ?? 0) - tapOutsideStartY);
+        if (deltaY < 10 && isOutsideSidebar(tapOutsideTarget)) {
+          hideSidebarMobile();
+        }
+        tapOutsideTarget = null;
+      },
+      { passive: true, signal }
     );
 
     let touchStartX = 0;
@@ -417,6 +446,16 @@ const responsiveClass = !currentUser ? "md:hidden" : "";
       btns[0].dataset.sidebarInited = "1";
       var md = (typeof window !== "undefined" && window.BREAKPOINTS?.MD) || 768;
       var isMobile = function () { return window.innerWidth < md; };
+      function hideSidebar() {
+        sidebar.classList.add("-translate-x-full");
+        sidebar.classList.remove("translate-x-0");
+        document.body.style.overflow = "";
+        if (main) main.classList.remove("overflow-hidden", "pointer-events-none");
+        updateIcons(false);
+      }
+      function isOutside(el) {
+        return el && !sidebar.contains(el) && !Array.prototype.some.call(btns, function (b) { return b.contains(el); });
+      }
       btns.forEach(function (btn) {
         btn.addEventListener("click", function () {
           if (isMobile()) {
@@ -428,15 +467,26 @@ const responsiveClass = !currentUser ? "md:hidden" : "";
               if (main) main.classList.add("overflow-hidden", "pointer-events-none");
               updateIcons(true);
             } else {
-              sidebar.classList.add("-translate-x-full");
-              sidebar.classList.remove("translate-x-0");
-              document.body.style.overflow = "";
-              if (main) main.classList.remove("overflow-hidden", "pointer-events-none");
-              updateIcons(false);
+              hideSidebar();
             }
           }
         });
       });
+      document.addEventListener("click", function (e) {
+        if (isMobile() && !sidebar.classList.contains("-translate-x-full") && isOutside(e.target)) hideSidebar();
+      });
+      var tapTarget = null, tapY = 0;
+      document.addEventListener("touchstart", function (e) {
+        if (isMobile() && !sidebar.classList.contains("-translate-x-full")) {
+          tapTarget = e.target;
+          tapY = e.touches[0] ? e.touches[0].clientY : 0;
+        } else tapTarget = null;
+      }, { passive: true });
+      document.addEventListener("touchend", function (e) {
+        if (!tapTarget || !isMobile() || sidebar.classList.contains("-translate-x-full")) return;
+        if (Math.abs((e.changedTouches[0] ? e.changedTouches[0].clientY : 0) - tapY) < 10 && isOutside(tapTarget)) hideSidebar();
+        tapTarget = null;
+      }, { passive: true });
       if (isMobile()) {
         sidebar.classList.add("-translate-x-full");
         updateIcons(false);

@@ -305,6 +305,8 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
 
     let prevScrollTop = 0;
     let translateY = 0;
+    let lastAppliedTranslateY = -1;
+    let scrollRafId = 0;
     const skipReveal = typeof template === "string" && template === "fullform";
 
     function run() {
@@ -352,6 +354,7 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
           scrollEl.style.transform = "";
           setSidebarPosition(0);
           syncNavbarAtTop(0);
+          lastAppliedTranslateY = -1;
           return;
         }
         const scrollTop = clampedScrollTop();
@@ -361,6 +364,7 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
           scrollEl.style.transform = "";
           prevScrollTop = 0;
           translateY = 0;
+          lastAppliedTranslateY = -1;
           setSidebarPosition(0);
           syncNavbarAtTop(0);
           return;
@@ -379,9 +383,13 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
           translateY = Math.max(0, Math.min(maxPx(), translateY));
         }
         prevScrollTop = scrollTop;
-        scrollEl.style.transform = `translateY(-${translateY}px)`;
-        setSidebarPosition(translateY);
-        syncNavbarAtTop(translateY);
+        // Skip DOM writes when unchanged to avoid stuck feel at limits
+        if (lastAppliedTranslateY !== translateY) {
+          lastAppliedTranslateY = translateY;
+          scrollEl.style.transform = `translateY(-${translateY}px)`;
+          setSidebarPosition(translateY);
+          syncNavbarAtTop(translateY);
+        }
       }
 
       updateBannerOffsets();
@@ -462,13 +470,25 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
             updateTranslate();
             if (isMobile() && !scrollEl.dataset.revealScrollAdded) {
               scrollEl.dataset.revealScrollAdded = "true";
-              scrollEl.addEventListener("scroll", updateTranslate, { passive: true });
+              scrollEl.addEventListener("scroll", () => {
+                if (scrollRafId) return;
+                scrollRafId = requestAnimationFrame(() => {
+                  scrollRafId = 0;
+                  updateTranslate();
+                });
+              }, { passive: true });
             }
           });
         }
         if (isMobile() && !scrollEl.dataset.revealScrollAdded) {
           scrollEl.dataset.revealScrollAdded = "true";
-          scrollEl.addEventListener("scroll", updateTranslate, { passive: true });
+          scrollEl.addEventListener("scroll", () => {
+            if (scrollRafId) return;
+            scrollRafId = requestAnimationFrame(() => {
+              scrollRafId = 0;
+              updateTranslate();
+            });
+          }, { passive: true });
         }
       }
       if (skipReveal) {

@@ -23,6 +23,9 @@ export const globalClasses = () => {
     // Flowbite-standard icon-only button (gray/secondary)
     globalIconButtonClasses:
       "w-10 h-10 inline-flex items-center rounded-full justify-center p-2 text-black dark:text-white md:hover:bg-gray-100 dark:hover:bg-gray-700 dark:focus:ring-gray-700 focus:outline-none",
+    /** Dropdown close icon overlay: auth-icon-close + absolute inset-0 flex center + transition-opacity. Used in AuthIcon, NotificationBellButton, StaffSelectTooltip. */
+    globalDropdownClose:
+      "auth-icon-close absolute inset-0 flex items-center justify-center transition-opacity",
 
     globalAdminContainerClasses: "color-background rounded-lg shadow-md dark:shadow-gray-700",
     tabContentClasses:
