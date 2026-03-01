@@ -3,7 +3,7 @@ export const globalClasses = () => {
     globalContainerClasses:
       "mx-auto max-w-7xl px-4 sm:px-6 md:px-8 lg:px-10 mb-4 sm:mb-8 md:mb-12 lg:mb-16",
     globalInputClasses:
-      "w-full rounded-md border border-gray-300 px-3 py-2 text-base text-gray-900 transition-colors duration-200 placeholder:text-gray-600 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500 shadow-secondary-inner-md scrollbar-hide dark:border-gray-600 bg-[var(--color-input-bg)] dark:text-white dark:placeholder:text-gray-300",
+      "w-full rounded-md border border-gray-300 px-3 py-2 text-base text-gray-900 transition-colors duration-200 placeholder:text-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500 shadow-secondary-inner-md scrollbar-hide dark:border-gray-600 bg-[var(--color-input-bg)] dark:text-white dark:placeholder:text-gray-700",
     /** Applied to form elements (excl. MultiStepForm). Use for consistent form spacing. */
     globalFormClasses: "color-background p-4 space-y-6 rounded-sm",
     /** Applied to the input wrapper so it affects animated placeholder and input icons. Height and text size here; input uses multiStepInputCoreClasses to fill and inherit. */
