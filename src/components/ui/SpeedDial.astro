@@ -8,217 +8,427 @@ const buttonClasses =
 
 const currentRole = currentUser?.profile?.role;
 import SimpleIcon from "../common/SimpleIcon.astro";
+import Tooltip from "./Tooltip.astro";
+import Button from "../common/Button.astro";
+// Speed dial component for quick actions
 ---
 
 <div id="speed-dial" class="group">
   <div
     id="speed-dial-menu"
-    popover="auto"
-    class="speed-dial-menu mb-4 flex flex-col items-center space-y-2"
+    class="speed-dial-menu mb-4 flex hidden flex-col items-center space-y-2"
   >
     {
       currentUser && (
-        <button
-          id="tutorial-trigger"
-          type="button"
-          title="Start Tutorial"
-          aria-label="Start Tutorial"
-          class={buttonClasses}
-        >
-          <SimpleIcon name="book" size="lg" />
-        </button>
+        <Tooltip position="left" text="Tutorial" className="speed-dial-tooltip" dismissable={false}>
+          <button
+            id="tutorial-trigger"
+            type="button"
+            title="Start Tutorial"
+            aria-label="Start Tutorial"
+            class={buttonClasses}
+          >
+            <SimpleIcon name="book" size="lg" />
+          </button>
+        </Tooltip>
       )
     }
 
     {
-      currentRole === "Admin" && (
-        <button
-          id="debug-toggle-btn"
-          type="button"
-          title="Debug Panel (Admin Only)"
-          aria-label="Debug Panel (Admin Only)"
-          class={buttonClasses}
-        >
-          <SimpleIcon name="bug" size="lg" />
-        </button>
+      currentUser && currentRole === "Admin" && (
+        <Tooltip position="left" text="Debug" className="speed-dial-tooltip" dismissable={false}>
+          <button
+            id="debug-toggle-btn"
+            type="button"
+            title="Debug Panel (Admin Only)"
+            aria-label="Debug Panel (Admin Only)"
+            class={buttonClasses}
+          >
+            <SimpleIcon name="bug" size="lg" />
+          </button>
+        </Tooltip>
       )
     }
 
     {
       !currentUser && (
         <>
-          <button
-            id="register-toggle-btn"
-            type="button"
-            title="Register"
-            aria-label="Register"
-            onclick="window.location.href='/auth/register'"
-            class={buttonClasses}
+          <Tooltip
+            position="left"
+            text="Register"
+            className="speed-dial-tooltip"
+            dismissable={false}
           >
-            <SimpleIcon name="user-plus" size="lg" />
-          </button>
+            <button
+              id="register-toggle-btn"
+              type="button"
+              title="Login"
+              aria-label="Login"
+              onclick="window.location.href='/auth/register'"
+              class={buttonClasses}
+            >
+              <SimpleIcon name="user-plus" size="lg" />
+            </button>
+          </Tooltip>
 
-          <button
-            id="login-toggle-btn"
-            type="button"
-            title="Login"
-            aria-label="Login"
-            onclick="window.location.href='/auth/login'"
-            class={buttonClasses}
-          >
-            <SimpleIcon name="user" size="lg" />
-          </button>
+          <Tooltip position="left" text="Login" className="speed-dial-tooltip" dismissable={false}>
+            <button
+              id="login-toggle-btn"
+              type="button"
+              title="Login"
+              aria-label="Login"
+              onclick="window.location.href='/auth/login'"
+              class={buttonClasses}
+            >
+              <SimpleIcon name="user" size="lg" />
+            </button>
+          </Tooltip>
         </>
       )
     }
 
-    <button
-      id="phone-call-btn"
-      type="button"
-      title="Call Us"
-      aria-label="Call Us"
-      onclick={`window.location.href='tel:${globalCompanyPhone}'`}
-      class={buttonClasses}
-    >
-      <SimpleIcon name="phone" size="lg" />
-    </button>
+    <Tooltip position="left" text={`Call`} className="speed-dial-tooltip" dismissable={false}>
+      <button
+        id="phone-call-btn"
+        type="button"
+        title="Call Us"
+        aria-label="Call Us"
+        onclick={`window.location.href='tel:${globalCompanyPhone}'`}
+        class={buttonClasses}
+      >
+        <SimpleIcon name="phone" size="lg" />
+      </button>
+    </Tooltip>
 
     {
       currentUser && (
-        <button
-          id="feedback-button"
-          type="button"
-          title="Feedback"
-          aria-label="Open feedback form"
-          class={buttonClasses}
-        >
-          <SimpleIcon name="comment-dots" size="lg" />
-        </button>
+        <Tooltip position="left" text="Feedback" className="speed-dial-tooltip" dismissable={false}>
+          <button
+            id="feedback-button"
+            type="button"
+            title="Feedback"
+            aria-label="Open feedback form"
+            class={buttonClasses}
+          >
+            <SimpleIcon name="comment-dots" size="lg" />
+          </button>
+        </Tooltip>
       )
     }
 
-    <button
-      id="contact-toggle-btn"
-      type="button"
-      title="Contact"
-      aria-label="Contact"
-      onclick="window.location.href='/contact'"
-      class={buttonClasses}
-    >
-      <SimpleIcon name="message-square" size="lg" />
-    </button>
+    <Tooltip position="left" text="Contact" className="speed-dial-tooltip" dismissable={false}>
+      <button
+        id="contact-toggle-btn"
+        type="button"
+        title="Contact"
+        aria-label="Contact"
+        onclick="window.location.href='/contact'"
+        class={buttonClasses}
+      >
+        <SimpleIcon name="message-square" size="lg" />
+      </button>
+    </Tooltip>
   </div>
 
-  <button
+  <Button
     type="button"
-    class="speed-dial-trigger-btn h-14 w-14 sm:h-12 sm:w-12 inline-flex items-center justify-center rounded-full border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 dark:focus:ring-gray-700 [@media(hover:hover)]:hover:translate-y-0"
-    popovertarget="speed-dial-menu"
-    popovertargetaction="toggle"
-    aria-label="Open actions menu"
+    variant="outline"
+    icon="plus"
+    iconClasses="mr-0 shrink-0"
+    size="md"
+    class="speed-dial-trigger-btn h-14 w-14 rounded-full sm:h-12 sm:w-12 [@media(hover:hover)]:hover:translate-y-0"
+    dataAttributes={{
+      "data-dial-toggle": "speed-dial-menu",
+    }}
   >
-    <SimpleIcon name="plus" size="md" class="icon-default" />
     <span class="sr-only">Open actions menu</span>
-  </button>
+  </Button>
 </div>
 
 <script is:inline>
-  (function () {
-    const tutorialButton = document.getElementById("tutorial-trigger");
-    if (tutorialButton) {
-      const hasTutorials = document.querySelectorAll("[data-welcome]").length > 0 || document.body.getAttribute("data-has-tutorials") === "true";
-      if (!hasTutorials) tutorialButton.style.display = "none";
-    }
+  const tutorials = document.querySelectorAll("[data-welcome]");
+  const tutorialButton = document.getElementById("tutorial-trigger");
 
-    function positionSpeedDialMenu() {
-      const trigger = document.querySelector(".speed-dial-trigger-btn");
-      const menu = document.getElementById("speed-dial-menu");
-      if (!trigger || !menu || !menu.matches(":popover-open")) return;
-      var rect = trigger.getBoundingClientRect();
-      menu.style.top = (rect.top - 8) + "px";
-      menu.style.left = rect.left + "px";
-      menu.style.transformOrigin = "bottom center";
-    }
+  if (tutorialButton && tutorials.length === 0) {
+    tutorialButton.style.display = "none";
+  }
 
-    function initSpeedDial() {
-      const trigger = document.querySelector(".speed-dial-trigger-btn");
-      const menu = document.getElementById("speed-dial-menu");
-      const container = document.getElementById("speed-dial");
-      if (!trigger || !menu) return;
+  function initSpeedDial() {
+    const speedDialButton = document.querySelector('[data-dial-toggle="speed-dial-menu"]');
+    const speedDialMenu = document.getElementById("speed-dial-menu");
+    const speedDial = document.getElementById("speed-dial");
+    // const speedDialOverlay = document.getElementById("global-backdrop");
 
-      menu.addEventListener("toggle", function () {
-        if (menu.matches(":popover-open")) {
-          requestAnimationFrame(positionSpeedDialMenu);
-          setTimeout(positionSpeedDialMenu, 50);
+    let isOpen = false;
+    let touchHandled = false;
+
+    // Use hover when primary input can hover (mouse); otherwise use click/touch only.
+    // Touch-capability alone is not used, so laptops with touchscreens still get hover.
+    const useHover = window.matchMedia("(hover: hover)").matches;
+
+    // Toggle function
+    function toggleSpeedDial() {
+      isOpen = !isOpen;
+      const svg = speedDialButton?.querySelector("svg");
+
+      if (isOpen) {
+        speedDialMenu?.classList.remove("hidden");
+        speedDialButton?.setAttribute("aria-expanded", "true");
+        if (svg) {
+          svg.style.transform = "rotate(45deg)";
+          svg.style.transition = "transform 0.2s ease";
         }
-      });
-
-      const useHover = window.matchMedia("(hover: hover)").matches;
-
-      if (useHover) {
-        trigger.addEventListener("mouseenter", function () {
-          if (!menu.matches(":popover-open")) menu.showPopover();
+        // Trigger staggered animation on menu items
+        requestAnimationFrame(() => {
+          speedDialMenu?.classList.add("speed-dial-open");
         });
-        container.addEventListener("mouseleave", function () {
-          if (menu.matches(":popover-open")) menu.hidePopover();
+
+        // Wait for menu to settle, then show tooltips with simple inline positioning (no import - script is inlined in SSR, browser cannot resolve @floating-ui/dom)
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            const tooltips = speedDialMenu?.querySelectorAll(".speed-dial-tooltip");
+            if (tooltips) {
+              const tooltipsArray = Array.from(tooltips).reverse();
+
+              tooltipsArray.forEach((tooltipWrapper, index) => {
+                const tooltipContent = tooltipWrapper.querySelector(".tooltip-content");
+                if (tooltipContent) {
+                  setTimeout(() => {
+                    tooltipContent.classList.remove("opacity-0");
+                    tooltipContent.classList.add("opacity-100");
+                    tooltipContent.style.pointerEvents = "auto";
+
+                    const trigger = tooltipWrapper.firstElementChild;
+                    const preferredPosition =
+                      tooltipWrapper.getAttribute("data-tooltip-position") || "left";
+
+                    if (trigger) {
+                      const wrapper = tooltipWrapper;
+                      const wr = wrapper.getBoundingClientRect();
+                      const tr = trigger.getBoundingClientRect();
+                      const tc = tooltipContent.getBoundingClientRect();
+                      const offset = 8;
+                      if (preferredPosition === "left") {
+                        tooltipContent.style.left = `${tr.left - wr.left - tc.width - offset}px`;
+                        tooltipContent.style.top = `${tr.top - wr.top + tr.height / 2 - tc.height / 2}px`;
+                      } else {
+                        tooltipContent.style.left = `${tr.right - wr.left + offset}px`;
+                        tooltipContent.style.top = `${tr.top - wr.top + tr.height / 2 - tc.height / 2}px`;
+                      }
+                      tooltipContent.setAttribute("data-popper-placement", preferredPosition);
+                    }
+                  }, index * 100); // 100ms stagger between each tooltip
+                }
+              });
+            }
+          }, 50); // 50ms base delay for menu to settle
         });
+      } else {
+        // Hide tooltips immediately when closing
+        const tooltips = speedDialMenu?.querySelectorAll(".speed-dial-tooltip .tooltip-content");
+        tooltips?.forEach((tooltip) => {
+          tooltip.classList.remove("opacity-100");
+          tooltip.classList.add("opacity-0");
+          tooltip.style.pointerEvents = "none";
+        });
+
+        speedDialMenu?.classList.remove("speed-dial-open");
+        speedDialMenu?.classList.add("hidden");
+        speedDialButton?.setAttribute("aria-expanded", "false");
+        if (svg) {
+          svg.style.transform = "rotate(0deg)";
+          svg.style.transition = "transform 0.2s ease";
+        }
       }
     }
 
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", initSpeedDial);
-    } else {
-      initSpeedDial();
+    // Hide function
+    function hideSpeedDial() {
+      if (isOpen) {
+        isOpen = false;
+
+        // Hide tooltips immediately
+        const tooltips = speedDialMenu?.querySelectorAll(".speed-dial-tooltip .tooltip-content");
+        tooltips?.forEach((tooltip) => {
+          tooltip.classList.remove("opacity-100");
+          tooltip.classList.add("opacity-0");
+          tooltip.style.pointerEvents = "none";
+        });
+
+        speedDialMenu?.classList.add("hidden");
+        // speedDialOverlay?.classList.add("hidden");
+        speedDialButton?.setAttribute("aria-expanded", "false");
+        const svg = speedDialButton?.querySelector("svg");
+        if (svg) {
+          svg.style.transform = "rotate(0deg)";
+          svg.style.transition = "transform 0.2s ease";
+        }
+      }
     }
 
-    function checkTutorials() {
-      const hasTutorials = document.body.getAttribute("data-has-tutorials") === "true";
-      const tutorialButton = document.getElementById("tutorial-trigger");
-      const parent = tutorialButton?.parentElement;
-      if (parent && !hasTutorials) parent.style.display = "none";
+    // Handle button interaction - works for both touch and click
+    if (speedDialButton) {
+      // Touch event handler for mobile. Only preventDefault when cancelable to avoid [Intervention] warning.
+      speedDialButton.addEventListener(
+        "touchstart",
+        function (e) {
+          touchHandled = true;
+          e.stopPropagation();
+          if (e.cancelable) e.preventDefault(); // Prevent click from firing; skip if e.g. scroll in progress
+          toggleSpeedDial();
+          setTimeout(() => {
+            touchHandled = false;
+          }, 400);
+        },
+        { passive: false }
+      );
+
+      // Click event handler when hover is not used (touch devices, no-pointer)
+      if (!useHover) {
+        speedDialButton.addEventListener(
+          "click",
+          function (e) {
+            // If touch was just handled, ignore this click to prevent double-firing
+            if (touchHandled) {
+              e.preventDefault();
+              e.stopPropagation();
+              return;
+            }
+            e.stopPropagation();
+            toggleSpeedDial();
+          },
+          true
+        ); // Use capture phase to handle before document click
+      }
     }
-    checkTutorials();
-    window.addEventListener("tutorials-loaded", checkTutorials);
-  })();
+
+    // Open on mouseenter, close on mouseleave when primary input can hover
+    if (useHover) {
+      speedDialButton?.addEventListener("mouseenter", function (e) {
+        e.stopPropagation();
+        // Only auto-open on hover if not already open (prevents flickering)
+        if (!isOpen) {
+          toggleSpeedDial();
+        }
+      });
+
+      // Desktop hover behavior - close when mouse leaves entire speed dial area
+      speedDial?.addEventListener("mouseleave", function (e) {
+        e.stopPropagation();
+        // Only auto-close on hover if open (prevents flickering)
+        if (isOpen) {
+          toggleSpeedDial();
+        }
+      });
+    }
+
+    // Hide when clicking outside (works for both desktop and mobile)
+    document.addEventListener("click", function (e) {
+      // Don't close if touch was just handled (prevents immediate close on mobile)
+      if (touchHandled) {
+        return;
+      }
+      if (!speedDial?.contains(e.target)) {
+        hideSpeedDial();
+      }
+    });
+
+    // Hide when clicking on the overlay
+    // speedDialOverlay?.addEventListener("click", function (e) {
+    //   e.stopPropagation();
+    //   hideSpeedDial();
+    // });
+
+    // Hide when pressing Escape key
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") {
+        hideSpeedDial();
+      }
+    });
+
+    // Prevent menu clicks from closing the dial (desktop hover)
+    speedDialMenu?.addEventListener("mouseover", function (e) {
+      e.stopPropagation();
+    });
+
+    // Allow all buttons and links in the menu to work properly
+    // Stop propagation so document click handler doesn't interfere
+    speedDialMenu?.addEventListener("click", function (e) {
+      // Allow the click to proceed but prevent it from bubbling to document handler
+      e.stopPropagation();
+
+      // If it's a button or link, let the browser handle it naturally
+      const target = e.target;
+      const button = target.closest("button, a");
+
+      if (button) {
+        // Let the button's onclick or href work naturally
+        // The stopPropagation above prevents the document click handler from hiding the menu
+      }
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initSpeedDial);
+  } else {
+    initSpeedDial();
+  }
+
+  // Check for tutorials on load and hide tutorial button if none exist
+  function checkTutorials() {
+    const hasTutorials = document.body.getAttribute("data-has-tutorials") === "true";
+    const tutorialButton = document.getElementById("tutorial-trigger");
+    const tutorialButtonParent = tutorialButton ? tutorialButton.parentElement : null;
+
+    if (tutorialButtonParent && !hasTutorials) {
+      tutorialButtonParent.style.display = "none";
+    }
+  }
+
+  // Check immediately and on tutorial load event
+  checkTutorials();
+  window.addEventListener("tutorials-loaded", checkTutorials);
 </script>
 
 <style>
-  .speed-dial-menu[popover] {
-    position: fixed;
+  /* Staggered animation for menu items when dial opens */
+  .speed-dial-menu .speed-dial-tooltip {
     transform: scale(0.8);
     opacity: 0;
     transition:
       opacity 0.2s ease,
       transform 0.2s ease;
   }
-  .speed-dial-menu[popover]:popover-open {
-    transform: scale(1);
+  .speed-dial-menu.speed-dial-open .speed-dial-tooltip {
+    transform: scale(1) translateY(0);
     opacity: 1;
   }
-  .speed-dial-menu[popover] > * {
-    transform: scale(0.8);
-    opacity: 0;
-    transition:
-      opacity 0.2s ease,
-      transform 0.2s ease;
+  .speed-dial-menu.speed-dial-open .speed-dial-tooltip:nth-child(1) {
+    transition-delay: 0ms;
   }
-  .speed-dial-menu[popover]:popover-open > *:nth-child(1) { transition-delay: 0ms; }
-  .speed-dial-menu[popover]:popover-open > *:nth-child(2) { transition-delay: 40ms; }
-  .speed-dial-menu[popover]:popover-open > *:nth-child(3) { transition-delay: 80ms; }
-  .speed-dial-menu[popover]:popover-open > *:nth-child(4) { transition-delay: 120ms; }
-  .speed-dial-menu[popover]:popover-open > *:nth-child(5) { transition-delay: 160ms; }
-  .speed-dial-menu[popover]:popover-open > *:nth-child(6) { transition-delay: 200ms; }
-  .speed-dial-menu[popover]:popover-open > *:nth-child(7) { transition-delay: 240ms; }
-  .speed-dial-menu[popover]:popover-open > *:nth-child(8) { transition-delay: 280ms; }
-  .speed-dial-menu[popover]:popover-open > * {
-    transform: scale(1);
-    opacity: 1;
+  .speed-dial-menu.speed-dial-open .speed-dial-tooltip:nth-child(2) {
+    transition-delay: 40ms;
+  }
+  .speed-dial-menu.speed-dial-open .speed-dial-tooltip:nth-child(3) {
+    transition-delay: 80ms;
+  }
+  .speed-dial-menu.speed-dial-open .speed-dial-tooltip:nth-child(4) {
+    transition-delay: 120ms;
+  }
+  .speed-dial-menu.speed-dial-open .speed-dial-tooltip:nth-child(5) {
+    transition-delay: 160ms;
+  }
+  .speed-dial-menu.speed-dial-open .speed-dial-tooltip:nth-child(6) {
+    transition-delay: 200ms;
+  }
+  .speed-dial-menu.speed-dial-open .speed-dial-tooltip:nth-child(7) {
+    transition-delay: 240ms;
+  }
+  .speed-dial-menu.speed-dial-open .speed-dial-tooltip:nth-child(8) {
+    transition-delay: 280ms;
   }
 
-  [popover]:popover-open + .speed-dial-trigger-btn svg {
-    transform: rotate(45deg);
-    transition: transform 0.2s ease;
-  }
-
+  /* Ensure plus icon stroke is visible (inherits button text color) */
   .speed-dial-trigger-btn svg.icon-default {
     stroke: currentColor;
     stroke-width: 2;

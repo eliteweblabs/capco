@@ -34,30 +34,101 @@ if (isPartial) {
 }
 ---
 
-<details
-  class={`${globalCardStyle} ${className} group`}
-  open={open}
+<div
+  class={`${globalCardStyle} ${className}`}
 >
-  <summary class={`flex cursor-pointer list-none items-center justify-between rounded-lg p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 [&::-webkit-details-marker]:hidden ${headerClass}`}>
-    <div class="flex-1">
+  <!-- Accordion Header -->
+  <div class={`flex items-center justify-between relative ${headerClass}`}>
+    <!-- Clickable header area -->
+    <div
+      class="flex-1 cursor-pointer rounded-lg p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+      data-accordion-target={`#accordion-${id}`}
+      aria-expanded={open}
+      aria-controls={`accordion-${id}`}
+      role="button"
+      tabindex="0"
+      onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"
+    >
       <h3 class="text-lg font-medium text-gray-900 dark:text-white">
         {title}
       </h3>
       {description && <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{description}</p>}
     </div>
-    <svg
-      class="h-4 w-4 shrink-0 transition-transform duration-200 group-open:rotate-180 text-gray-400"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-      aria-hidden="true"
+
+    <!-- Accordion Toggle Button -->
+    <button
+      class="absolute right-0 p-4 text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-300"
+      data-accordion-target={`#accordion-${id}`}
+      aria-expanded={open}
+      aria-controls={`accordion-${id}`}
+      type="button"
     >
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-    </svg>
-  </summary>
-  <div class={`border-t border-gray-200 px-4 pb-4 dark:border-gray-700 ${contentClass}`}>
-    <div class="pt-4">
-      <div set:html={content} />
+      <svg
+        class={`h-4 w-4 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"
+        ></path>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Accordion Content -->
+  <div
+    id={`accordion-${id}`}
+    class={`${open ? "" : "hidden"} ${contentClass}`}
+    aria-labelledby={`accordion-${id}`}
+  >
+    <div class="border-t border-gray-200 px-4 pb-4 dark:border-gray-700">
+      <div class="pt-4">
+        <div set:html={content} />
+      </div>
     </div>
   </div>
-</details>
+
+  <script>
+    // Accordion functionality
+    document.addEventListener("DOMContentLoaded", function () {
+      const accordionButtons = document.querySelectorAll("[data-accordion-target]");
+
+      accordionButtons.forEach((button) => {
+        button.addEventListener("click", function (this: HTMLElement) {
+          const targetId = this.getAttribute("data-accordion-target");
+          const target = document.querySelector(targetId as string);
+          const isExpanded = this.getAttribute("aria-expanded") === "true";
+
+          if (target) {
+            // Toggle visibility
+            if (isExpanded) {
+              target.classList.add("hidden");
+              this.setAttribute("aria-expanded", "false");
+            } else {
+              target.classList.remove("hidden");
+              this.setAttribute("aria-expanded", "true");
+            }
+
+            // Update both the main header and the toggle button
+            const arrow = this.querySelector("svg");
+            if (arrow) {
+              arrow.classList.toggle("rotate-180");
+            }
+
+            // Also update the toggle button if it exists and is different from this element
+            const toggleButton = document.querySelector(
+              `button[data-accordion-target="${targetId}"]`
+            );
+            if (toggleButton && toggleButton !== this) {
+              const toggleArrow = toggleButton.querySelector("svg");
+              if (toggleArrow) {
+                toggleArrow.classList.toggle("rotate-180");
+              }
+              toggleButton.setAttribute("aria-expanded", String(!isExpanded));
+            }
+          }
+        });
+      });
+    });
+  </script>
+</div>

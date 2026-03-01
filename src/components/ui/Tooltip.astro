@@ -20,8 +20,6 @@ export interface Props {
   inline?: boolean;
   /** Optional id for the tooltip content span; allows scripts to update text/position for dynamic tooltips (e.g. sliders). */
   contentId?: string;
-  /** When true, use native title attribute only (no JS, no Floating UI). Best for simple hover-only tooltips. */
-  useNative?: boolean;
 }
 
 const {
@@ -38,7 +36,6 @@ const {
   html = false,
   inline = true,
   contentId,
-  useNative = false,
 } = Astro.props;
 
 const wrapperClasses =
@@ -58,11 +55,6 @@ const contentClasses = [
   .join(" ");
 ---
 
-{useNative ? (
-  <span class={`${inline ? "inline-flex" : "flex"} items-center ${className}`.trim()} title={text}>
-    <slot />
-  </span>
-) : (
 <span class={wrapperClasses} data-tooltip-position={position} data-tooltip-touchable={touchable}>
   <slot />
   <span
@@ -95,7 +87,6 @@ const contentClasses = [
     <span class="tooltip-arrow" data-popper-arrow></span>
   </span>
 </span>
-)}
 
 <script>
   // Dynamic import so production build emits a resolvable chunk (avoids "Failed to resolve module specifier '@floating-ui/dom'" in browser)

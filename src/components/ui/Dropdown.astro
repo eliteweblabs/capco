@@ -1,18 +1,19 @@
 ---
 /**
- * Dropdown panel using native Popover API.
- * Trigger: popovertarget="{id}-dropdown" popovertargetaction="toggle"
- * Positions below trigger; supports onOpenCallback, focusSelector.
+ * Account dropdown panel for the header avatar (AuthIcon).
+ * Flowbite: trigger uses data-dropdown-toggle="account-dropdown"; this panel has id="account-dropdown".
+ * Navbar.astro attaches the logout handler to #logout-btn.
  */
 import { globalClasses } from "../../pages/api/global/global-classes";
 
-const { globalTextH3, globalSidebarClasses } = globalClasses();
+const { globalTextH3 } = globalClasses();
 
 interface Props {
   id: string;
   currentUser?: any;
   globalIconButtonClasses?: string;
   title?: string;
+  // closeButton?: boolean;
   /** Name of global function to call when dropdown opens (e.g. for lazy load or refresh) */
   onOpenCallback?: string;
   /** Selector for input to focus when dropdown opens. Must run in same click handler for iOS keypad. */
@@ -23,15 +24,18 @@ interface Props {
 const { id, title = "", onOpenCallback, focusSelector, classList } = Astro.props;
 ---
 
+{/* Account dropdown: Flowbite data-dropdown-toggle / data-popover-target on AuthIcon trigger */}
 <div
   id={`${id}-dropdown`}
-  popover="auto"
+  data-popover
   role="menu"
-  data-on-open={onOpenCallback || undefined}
-  data-focus-on-open={focusSelector || undefined}
-  class={`dropdown-popover ${globalSidebarClasses} ${classList ? classList.join(" ") : ""} overflow-y-scroll no-scrollbar fixed z-[1250] w-full max-w-md`}
+  {...onOpenCallback ? { "data-on-open": onOpenCallback } : {}}
+  {...focusSelector ? { "data-focus-on-open": focusSelector } : {}}
+  class={`${classList ? classList.join(" ") : ""} overflow-y-scroll no-scrollbar invisible fixed z-[1250] inline-block w-full max-w-md opacity-0 transition-opacity duration-300 ease-out backdrop-blur-lg`}
   data-dynamic-height="height"
 >
+  <div class="dropdown-arrow" data-popper-arrow></div>
+
   {
     title && (
       <div class="py-3">
@@ -45,81 +49,122 @@ const { id, title = "", onOpenCallback, focusSelector, classList } = Astro.props
 
 <script is:inline>
   (function () {
-    function positionDropdown(panel, trigger) {
-      if (!panel || !trigger) return;
-      var rect = trigger.getBoundingClientRect();
-      var panelRect = panel.getBoundingClientRect();
-      var gap = 8;
-      var top = rect.bottom + gap;
-      var left = Math.max(8, Math.min(rect.left, window.innerWidth - panelRect.width - 8));
-      panel.style.top = top + "px";
-      panel.style.left = left + "px";
-    }
-    function run() {
-      document.querySelectorAll("[id$='-dropdown'][popover]").forEach(function (panel) {
-        var panelId = panel.id;
-        var trigger = document.querySelector("[popovertarget=\"" + panelId + "\"]");
-        if (!trigger) return;
-        panel.addEventListener("toggle", function (e) {
-          if (panel.matches(":popover-open")) {
-            positionDropdown(panel, trigger);
-            requestAnimationFrame(function () { positionDropdown(panel, trigger); });
-            var focusSel = panel.getAttribute("data-focus-on-open");
-            if (focusSel) {
-              var el = panel.querySelector(focusSel);
-              if (el && typeof el.focus === "function") el.focus();
-            }
-            var onOpen = panel.getAttribute("data-on-open");
-            if (onOpen && typeof window[onOpen] === "function") window[onOpen]();
-          }
-        });
+    /* var DROPDOWN_Z = 9999;
+    function moveDropdownsToBody() {
+      document.querySelectorAll("[id$='-dropdown'][data-popover]").forEach(function (panel) {
+        if (panel.parentNode !== document.body) document.body.appendChild(panel);
+        panel.style.zIndex = DROPDOWN_Z;
       });
-      window.addEventListener("resize", function () {
-        document.querySelectorAll("[id$='-dropdown'][popover]:popover-open").forEach(function (panel) {
-          var trigger = document.querySelector("[popovertarget=\"" + panel.id + "\"]");
-          if (trigger) positionDropdown(panel, trigger);
-        });
-      });
-      window.addEventListener("scroll", function () {
-        document.querySelectorAll("[id$='-dropdown'][popover]:popover-open").forEach(function (panel) {
-          var trigger = document.querySelector("[popovertarget=\"" + panel.id + "\"]");
-          if (trigger) positionDropdown(panel, trigger);
-        });
-      }, { passive: true });
+    } */
 
+    function run() {
+      /* moveDropdownsToBody();
+      function wirePopoverOnShow(panel) {
+        var panelId = panel.id;
+        if (!panelId) return;
+        var inst =
+          window.FlowbiteInstances && window.FlowbiteInstances.getInstance("Popover", panelId);
+        if (!inst || typeof inst.updateOnShow !== "function") return;
+        var onOpen = panel.getAttribute("data-on-open");
+        var focusSel = panel.getAttribute("data-focus-on-open");
+        inst.updateOnShow(function () {
+          moveDropdownsToBody();
+          if (panel) {
+            panel.classList.remove(
+              "opacity-0",
+              "transition-opacity",
+              "duration-300",
+              "ease-out",
+              "invisible",
+              "hidden"
+            );
+          }
+          if (focusSel && panel) {
+            var el = panel.querySelector(focusSel);
+            if (el && typeof el.focus === "function") el.focus();
+          }
+          if (onOpen && typeof window[onOpen] === "function") window[onOpen]();
+        });
+      }
+      document.querySelectorAll("[id$='-dropdown']").forEach(function (panel) {
+        var panelId = panel.id;
+        if (!panelId) return;
+        wirePopoverOnShow(panel);
+        setTimeout(function () {
+          wirePopoverOnShow(panel);
+        }, 200);
+        panel.querySelectorAll("[data-dropdown-close]").forEach(function (btn) {
+          if (btn.hasAttribute("data-close-bound")) return;
+          btn.setAttribute("data-close-bound", "true");
+          btn.addEventListener("click", function (e) {
+            e.preventDefault();
+            var inst =
+              window.FlowbiteInstances && window.FlowbiteInstances.getInstance("Popover", panelId);
+            if (inst && typeof inst.hide === "function") inst.hide();
+            else {
+              panel.classList.add("opacity-0", "invisible");
+              setTimeout(function () {
+                panel.classList.add("hidden");
+              }, 150);
+            }
+          });
+        });
+      }); */
+
+      // When dropdown open: show X on trigger; when closed: show default icon. Wire X to close.
       document.querySelectorAll(".auth-icon-close").forEach(function (closeEl) {
-        var trigger = closeEl.closest("[popovertarget]");
+        var trigger = closeEl.closest("[data-popover-target], [data-dropdown-toggle]");
         if (!trigger) return;
-        var panelId = trigger.getAttribute("popovertarget");
+        var panelId =
+          trigger.getAttribute("data-popover-target") ||
+          trigger.getAttribute("data-dropdown-toggle");
         var panel = panelId ? document.getElementById(panelId) : null;
-        if (!panel || !panel.matches("[popover]")) return;
+        if (!panel) return;
         if (closeEl.hasAttribute("data-dropdown-close-bound")) return;
         closeEl.setAttribute("data-dropdown-close-bound", "true");
+
+        function closePopover() {
+          var inst =
+            window.FlowbiteInstances && window.FlowbiteInstances.getInstance("Popover", panelId);
+          if (inst && typeof inst.hide === "function") inst.hide();
+          else {
+            panel.classList.add("opacity-0", "invisible");
+            setTimeout(function () {
+              panel.classList.add("hidden");
+            }, 150);
+          }
+        }
         closeEl.addEventListener("click", function (e) {
           e.preventDefault();
           e.stopPropagation();
-          panel.hidePopover();
+          closePopover();
         });
-      });
 
-      document.querySelectorAll("[popovertarget]").forEach(function (trigger) {
-        var panelId = trigger.getAttribute("popovertarget");
-        var panel = panelId ? document.getElementById(panelId) : null;
-        if (!panel) return;
-        function updateTrigger() {
-          var isOpen = panel.matches(":popover-open");
+        function updateTrigger(isOpen) {
           var defaultEl = trigger.querySelector(".auth-icon-default");
-          var closeEl = trigger.querySelector(".auth-icon-close");
           if (defaultEl && closeEl) {
-            defaultEl.style.opacity = isOpen ? "0" : "1";
-            defaultEl.style.pointerEvents = isOpen ? "none" : "auto";
-            closeEl.style.opacity = isOpen ? "1" : "0";
-            closeEl.style.pointerEvents = isOpen ? "auto" : "none";
+            if (isOpen) {
+              defaultEl.style.opacity = "0";
+              defaultEl.style.pointerEvents = "none";
+              closeEl.style.opacity = "1";
+              closeEl.style.pointerEvents = "auto";
+            } else {
+              defaultEl.style.opacity = "1";
+              defaultEl.style.pointerEvents = "auto";
+              closeEl.style.opacity = "0";
+              closeEl.style.pointerEvents = "none";
+            }
           }
-          trigger.setAttribute("aria-expanded", String(isOpen));
         }
-        panel.addEventListener("toggle", updateTrigger);
-        updateTrigger();
+        var observer = new MutationObserver(function () {
+          updateTrigger(
+            !panel.classList.contains("hidden") && !panel.classList.contains("invisible")
+          );
+        });
+        observer.observe(panel, { attributes: true, attributeFilter: ["class"] });
+        updateTrigger(
+          !panel.classList.contains("hidden") && !panel.classList.contains("invisible")
+        );
       });
     }
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run);
@@ -128,14 +173,36 @@ const { id, title = "", onOpenCallback, focusSelector, classList } = Astro.props
 </script>
 
 <style>
-  .dropdown-popover[popover] {
-    border: 1px solid var(--color-gray-200);
-    border-radius: 0.5rem;
-    background: var(--color-white);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  /* Panel above navbar: create stacking context so z-[1250] competes with nav (z-100) when panel is in body */
+  [role="tooltip"][id$="-dropdown"] {
+    isolation: isolate;
   }
-  :global(.dark) .dropdown-popover[popover] {
-    border-color: var(--color-gray-800);
-    background: var(--color-gray-900);
+
+  /* Arrow (pointer) above panel content and navbar – high z-index so it never paints under the nav */
+  [role="tooltip"] > .dropdown-arrow,
+  [role="tooltip"] > [data-popper-arrow] {
+    position: relative;
+    z-index: 9999;
+  }
+  [role="tooltip"] > [data-popper-arrow]:before,
+  [role="tooltip"] > [data-popper-arrow]:after {
+    z-index: inherit;
+  }
+
+  /* Only override border-color; Flowbite sets placement-specific border-width for the arrow triangle */
+  [role="tooltip"] > [data-popper-arrow]:before {
+    border-color: var(--color-gray-200) !important;
+  }
+
+  [role="tooltip"] > [data-popper-arrow]:after {
+    border-color: var(--color-gray-200) !important;
+  }
+
+  :global(.dark) [role="tooltip"] > [data-popper-arrow]:before {
+    border-color: var(--color-gray-800) !important;
+  }
+
+  :global(.dark) [role="tooltip"] > [data-popper-arrow]:after {
+    border-color: var(--color-gray-800) !important;
   }
 </style>
