@@ -31,12 +31,18 @@ function toHex(color: string): string {
  * Transform raw SVG string for favicon: primary color fill + padding for apple-touch.
  * Returns the transformed SVG string.
  */
+/** Fix malformed SVG width attribute (e.g. width="100% version="1.1") */
+function sanitizeSvgWidth(svg: string): string {
+  return svg.replace(/width="100%\s*version="/gi, 'width="100%" version="');
+}
+
 export function transformSvgForFavicon(svgString: string, primaryColor: string): string {
   if (!svgString || !svgString.includes("<svg")) return svgString;
+  let svg = sanitizeSvgWidth(svgString);
   const primary = toHex(primaryColor);
 
   // 1) Replace theme-dependent fill/stroke: black, #000, currentColor with primary
-  let svg = svgString
+  svg = svg
     .replace(/\bfill\s*=\s*["'](?:#000|black|currentColor)["']/gi, `fill="${primary}"`)
     .replace(/\bstroke\s*=\s*["'](?:#000|black|currentColor)["']/gi, `stroke="${primary}"`)
     .replace(/\bfill\s*=\s*["']#000000["']/gi, `fill="${primary}"`);

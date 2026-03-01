@@ -107,18 +107,10 @@
     }
 
     /* Better touch targets on mobile */
-    .toast-element button {
-      min-height: 1.25rem;
-      min-width: 1.25rem;
+    .toast-element .close-button {
+      min-height: 2rem;
+      min-width: 2rem;
     }
-
-    /* Adjust icon size on mobile */
-    .toast-element svg {
-      width: 1.25rem;
-      height: 1.25rem;
-    }
-
-    /* Improve text readability on mobile */
   }
 </style>
 
@@ -376,49 +368,17 @@
     }
 
     private async renderToast(notification: NotificationOptions & { id: string }): Promise<void> {
-      const typeConfig = {
-        success: {
-          iconBg: "text-[#22c55e] bg-[#dcfce7] dark:bg-[#166534] dark:text-[#86efac]",
-          progressColor: "bg-[#22c55e]",
-          icon: `<svg class="w-5 h-5 sm:w-6 sm:h-6" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                   <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z"/>
-                 </svg>`,
-          label: "Success",
-        },
-        error: {
-          iconBg: "text-red-500 bg-red-100 dark:bg-red-800 dark:text-red-200",
-          progressColor: "bg-red-500",
-          icon: `<svg class="w-5 h-5 sm:w-6 sm:h-6" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                   <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 11.793a1 1 0 1 1-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 0 1-1.414-1.414L8.586 10 6.293 7.707a1 1 0 0 1 1.414-1.414L10 8.586l2.293-2.293a1 1 0 0 1 1.414 1.414L11.414 10l2.293 2.293Z"/>
-                 </svg>`,
-          label: "Error",
-        },
-        warning: {
-          iconBg: "text-orange-500 bg-orange-100 dark:bg-orange-700 dark:text-orange-200",
-          progressColor: "bg-orange-500",
-          icon: `<svg class="w-5 h-5 sm:w-6 sm:h-6" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                   <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM10 15a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm0-4a1 1 0 0 1-1-1V6a1 1 0 0 1 2 0v4a1 1 0 0 1-1 1Z"/>
-                 </svg>`,
-          label: "Warning",
-        },
-        info: {
-          iconBg: "text-primary-500 bg-primary-100 dark:bg-primary-800 dark:text-primary-200",
-          progressColor: "bg-primary-500",
-          icon: `<svg class="w-5 h-5 sm:w-6 sm:h-6" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 20">
-                   <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.147 15.085a7.159 7.159 0 0 1-6.189 3.307A6.713 6.713 0 0 1 3.1 15.444c-2.679-4.513.287-8.737.888-9.548A4.373 4.373 0 0 0 5 1.608c1.287.953 6.445 3.218 5.537 10.5 1.5-1.122 2.706-3.01 2.853-6.14 1.433 1.049 3.993 5.395 1.757 9.117Z"/>
-                 </svg>`,
-          label: "Info",
-        },
+      const typeConfig: Record<string, { progressColor: string }> = {
+        success: { progressColor: "bg-[#22c55e]" },
+        error: { progressColor: "bg-red-500" },
+        warning: { progressColor: "bg-orange-500" },
+        info: { progressColor: "bg-primary-500" },
       };
 
-      const config = typeConfig[notification.type];
+      const config = typeConfig[notification.type] || typeConfig.info;
 
       // Add error handling for invalid notification types
       if (!config) {
-        console.error("🔔 [UNIFIED-NOTIFICATION] Invalid notification type:", notification.type);
-        console.error("🔔 [UNIFIED-NOTIFICATION] Available types:", Object.keys(typeConfig));
-        // Fallback to info type
-        const fallbackConfig = typeConfig.info;
         return await this.renderToast({ ...notification, type: "info" });
       }
 
@@ -433,55 +393,38 @@
       element.setAttribute("role", "alert");
 
       element.className = `
-          color-background rounded-lg shadow-lg border border-gray-200 dark:border-gray-700
-          toast-element p-4 mb-2 relative
-          text-base
-          sm:text-lg
-          m-0
-          sm:m-4
+          color-background rounded-xl shadow-md border border-gray-200/80 dark:border-gray-700/80
+          toast-element px-4 py-3 mb-2 relative
+          m-0 sm:m-4
         `.trim();
 
       element.innerHTML = `
-          <div class="flex items-start">
+          <div class="flex items-start gap-3">
             ${
               notification.duration && notification.duration > 0
                 ? `
-              <div class="absolute top-0 left-0 w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-t-lg">
+              <div class="absolute top-0 left-0 w-full h-0.5 bg-gray-200/50 dark:bg-gray-700/50 rounded-t-lg overflow-hidden">
                 <div id="progress-bar-${notification.id}" class="h-full ${config?.progressColor || "bg-primary-500"} rounded-t-lg" style="width: 0%; animation: progress-bar-fill ${notification.duration}ms linear forwards;"></div>
               </div>
             `
                 : ""
             }
-            <div class="flex-shrink-0 mr-3">
-              <div class="inline-flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 ${config?.iconBg || "text-primary-500 bg-primary-100 dark:bg-primary-800 dark:text-primary-200"} rounded-full">
-                ${config?.icon || ""}
-                <span class="sr-only">${config?.label || "Notification"}</span>
-              </div>
-            </div>
-            <div class="flex-1 min-w-0 pr-2">
-              <h4 class="text-base sm:text-md font-semibold text-gray-900 dark:text-white mb-1">${notification.title}</h4>
-              <div class="notification-message text-base sm:text-md text-gray-600 dark:text-gray-400 leading-relaxed">${notification.message}</div>
-              ${actionsHTML}
-            </div>
             <button 
               type="button" 
-              class="close-button flex-shrink-0 ml-2 sm:ml-3 inline-flex h-4 w-4 items-center justify-center rounded-full transition-colors hover:bg-red-50 dark:hover:bg-red-950/30" 
+              class="close-button flex-shrink-0 -ml-1 inline-flex h-6 w-6 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300" 
               aria-label="Close"
               onclick="toastNotificationManager.hide('${notification.id}')"
             >
-              <svg
-                class="h-5 w-5 text-gray-600 transition-colors hover:text-red-600 dark:text-gray-400 dark:hover:text-red-500"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
             </button>
+            <div class="flex-1 min-w-0 py-0.5">
+              <h4 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-0.5">${notification.title}</h4>
+              <div class="notification-message text-sm sm:text-base text-gray-600 dark:text-gray-400 leading-relaxed">${notification.message}</div>
+              ${actionsHTML}
+            </div>
           </div>
         `;
 

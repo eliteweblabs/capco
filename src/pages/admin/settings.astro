@@ -115,6 +115,18 @@ const iconFileCandidates: { file: string; path: string; size: string; type: stri
 const renderedIconFiles = iconFileCandidates.filter((c) =>
   fs.existsSync(path.join(publicDir, c.file))
 );
+
+/** Fix malformed SVG width attribute (e.g. width="100% version="1.1" from bad edit/replace) */
+function sanitizeSvgForDisplay(svg: string): string {
+  if (!svg || !svg.includes("<svg")) return svg;
+  return svg.replace(
+    /width="100%\s*version="/gi,
+    'width="100%" version="'
+  );
+}
+
+const displayIcon = sanitizeSvgForDisplay(settings.icon);
+const displayLogo = sanitizeSvgForDisplay(settings.logo);
 ---
 
 <LayoutFullWidth
@@ -971,7 +983,7 @@ const renderedIconFiles = iconFileCandidates.filter((c) =>
               <p class="absolute left-2 top-1 mb-2 text-xs text-gray-500">Light Mode</p>
               {
                 settings.logo ? (
-                  <div class="mt-4 max-h-32 max-w-full [&>*]:w-full" set:html={settings.logo} />
+                  <div class="mt-4 max-h-32 max-w-full [&>*]:w-full" set:html={displayLogo} />
                 ) : (
                   <p class="text-center text-xs text-gray-400">Preview will appear here</p>
                 )
@@ -985,7 +997,7 @@ const renderedIconFiles = iconFileCandidates.filter((c) =>
               <p class="absolute left-2 top-1 mb-2 text-xs text-gray-400">Dark Mode</p>
               {
                 settings.logo ? (
-                  <div class="mt-4 max-h-32 max-w-full [&>*]:w-full" set:html={settings.logo} />
+                  <div class="mt-4 max-h-32 max-w-full [&>*]:w-full" set:html={displayLogo} />
                 ) : (
                   <p class="text-center text-xs text-gray-400">Preview will appear here</p>
                 )
@@ -1050,8 +1062,8 @@ const renderedIconFiles = iconFileCandidates.filter((c) =>
             >
               <p class="absolute left-2 top-1 mb-2 text-xs text-gray-500">Light Mode</p>
               {
-                settings.icon ? (
-                  <div class="mt-4 h-16 w-16" set:html={settings.icon} />
+                displayIcon ? (
+                  <div class="mt-4 h-16 w-16" set:html={displayIcon} />
                 ) : (
                   <p class="text-center text-xs text-gray-400">Preview will appear here</p>
                 )
@@ -1064,8 +1076,8 @@ const renderedIconFiles = iconFileCandidates.filter((c) =>
             >
               <p class="absolute left-2 top-1 mb-2 text-xs text-gray-400">Dark Mode</p>
               {
-                settings.icon ? (
-                  <div class="mt-4 h-16 w-16" set:html={settings.icon} />
+                displayIcon ? (
+                  <div class="mt-4 h-16 w-16" set:html={displayIcon} />
                 ) : (
                   <p class="text-center text-xs text-gray-400">Preview will appear here</p>
                 )
@@ -1273,6 +1285,12 @@ const renderedIconFiles = iconFileCandidates.filter((c) =>
     }
   });
 
+  // Fix malformed SVG width (e.g. width="100% version="1.1")
+  function sanitizeSvg(svg: string): string {
+    if (!svg || !svg.includes("<svg")) return svg;
+    return svg.replace(/width="100%\s*version="/gi, 'width="100%" version="');
+  }
+
   // Live preview for logos and icons
   function updatePreview(textareaId: string, previewSelector: string) {
     const textarea = document.getElementById(textareaId) as HTMLTextAreaElement;
@@ -1292,7 +1310,7 @@ const renderedIconFiles = iconFileCandidates.filter((c) =>
     }
   }
 
-  // Set up live previews for both light and dark mode
+  // Set up live previews (uses sanitizeSvg above)
   function updatePreviewBoth(
     textareaId: string,
     lightSelector: string,
@@ -1305,8 +1323,9 @@ const renderedIconFiles = iconFileCandidates.filter((c) =>
 
     if (textarea && lightPreview && darkPreview) {
       textarea.addEventListener("input", (e) => {
-        const svgContent = (e.target as HTMLTextAreaElement).value.trim();
+        let svgContent = (e.target as HTMLTextAreaElement).value.trim();
         if (svgContent && svgContent.startsWith("<svg")) {
+          svgContent = sanitizeSvg(svgContent);
           // Determine size class based on whether it's an icon or logo
           const sizeClass = isIcon ? "w-16 h-16" : "max-w-full max-h-32";
 
