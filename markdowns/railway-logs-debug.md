@@ -4,8 +4,9 @@ To use Cursor’s Railway MCP to fetch live deploy logs:
 
 1. **Log in to Railway CLI** (once per machine / session):
    ```bash
-   railway login
+   railway login --browserless
    ```
+   (`--browserless` required for headless/terminal contexts; interactive browser login may fail.)
 
 2. **Link the project** (if not already):
    ```bash

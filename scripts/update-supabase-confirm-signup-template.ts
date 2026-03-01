@@ -13,12 +13,13 @@ dotenv.config({ path: resolve(process.cwd(), ".env") });
 import { readFileSync } from "fs";
 import { join } from "path";
 
+const COMPANY_NAME = process.env.RAILWAY_PROJECT_NAME || "Rothco Built";
 const CONFIRM_CONTENT = `<h2>Confirm your signup</h2>
 
 <p>Follow this link to confirm your user:</p>
 <p><a href="{{ .ConfirmationURL }}">Confirm your mail</a></p>`;
 
-const SUBJECT = "Confirm your signup";
+const SUBJECT = `${COMPANY_NAME} - Confirm your account`;
 
 /** Replace placeholders from env (avoids importing app code that needs import.meta.env) */
 function replacePlaceholdersFromEnv(html: string): string {
@@ -40,9 +41,18 @@ function replacePlaceholdersFromEnv(html: string): string {
   const repl: [RegExp, string][] = [
     [/\{\{\s*RAILWAY_PROJECT_NAME\s*\}\}/g, companyName],
     [/\{\{\s*GLOBAL_COMPANY_SLOGAN\s*\}\}/g, slogan],
-    [/\{\{\s*GLOBAL_COLOR_PRIMARY\s*\}\}/g, primaryColor.startsWith("#") ? primaryColor : `#${primaryColor}`],
-    [/\{\{\s*GLOBAL_COLOR_SECONDARY\s*\}\}/g, secondaryColor.startsWith("#") ? secondaryColor : `#${secondaryColor}`],
-    [/\{\{\s*GLOBAL_BACKGROUND_COLOR_LIGHT\s*\}\}/g, bgLight.startsWith("#") ? bgLight : `#${bgLight}`],
+    [
+      /\{\{\s*GLOBAL_COLOR_PRIMARY\s*\}\}/g,
+      primaryColor.startsWith("#") ? primaryColor : `#${primaryColor}`,
+    ],
+    [
+      /\{\{\s*GLOBAL_COLOR_SECONDARY\s*\}\}/g,
+      secondaryColor.startsWith("#") ? secondaryColor : `#${secondaryColor}`,
+    ],
+    [
+      /\{\{\s*GLOBAL_BACKGROUND_COLOR_LIGHT\s*\}\}/g,
+      bgLight.startsWith("#") ? bgLight : `#${bgLight}`,
+    ],
     [/\{\{\s*GLOBAL_BACKGROUND_COLOR_DARK\s*\}\}/g, bgDark.startsWith("#") ? bgDark : `#${bgDark}`],
     [/\{\{\s*RAILWAY_PUBLIC_DOMAIN\s*\}\}/g, siteUrl],
     [/\{\{\s*GLOBAL_COMPANY_WEBSITE\s*\}\}/g, siteUrl],
@@ -59,7 +69,8 @@ function replacePlaceholdersFromEnv(html: string): string {
 }
 
 /** When true, exit 0 on missing token (used during build so build doesn't fail) */
-const LENIENT = process.env.SUPABASE_TEMPLATE_UPDATE_LENIENT === "1" || process.argv.includes("--lenient");
+const LENIENT =
+  process.env.SUPABASE_TEMPLATE_UPDATE_LENIENT === "1" || process.argv.includes("--lenient");
 
 async function main() {
   const accessToken = process.env.SUPABASE_ACCESS_TOKEN;
@@ -71,7 +82,9 @@ async function main() {
       return;
     }
     console.error("❌ SUPABASE_ACCESS_TOKEN is required");
-    console.error("   Add it to .env or run: SUPABASE_ACCESS_TOKEN=your_token npm run update:supabase-confirm-email");
+    console.error(
+      "   Add it to .env or run: SUPABASE_ACCESS_TOKEN=your_token npm run update:supabase-confirm-email"
+    );
     process.exit(1);
   }
 
