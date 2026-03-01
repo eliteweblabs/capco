@@ -216,69 +216,19 @@
 
         // Handle both toast and modal elements
         const toastElement = document.getElementById(`toast-${id}`);
-        const modalElement = document.getElementById(`modal-${id}`);
 
         if (toastElement) {
           toastElement.classList.add("toast-slide-out");
           setTimeout(() => toastElement.remove(), 300);
         }
-
-        if (modalElement) {
-          // Add fade-out animation to modal content
-          const modalContent = modalElement.querySelector(".modal-animated");
-          if (modalContent) {
-            modalContent.classList.remove("modal-content-slide-in", "modal-fade-in");
-            modalContent.classList.add("modal-content-slide-out");
-          }
-
-          // Add fade-out to backdrop
-          const backdrop = document.getElementById(`modal-backdrop-${id}`);
-          if (backdrop) {
-            backdrop.classList.remove("modal-fade-in");
-            backdrop.classList.add("modal-fade-out");
-          }
-
-          // Remove elements after animation completes
-          setTimeout(() => {
-            if (backdrop) backdrop.remove();
-            modalElement.remove();
-
-            // Unlock body scroll if needed
-            if (window.unlockBodyScroll) {
-              window.unlockBodyScroll();
-            } else {
-              document.body.style.overflow = "";
-            }
-          }, 300);
-        }
       } else {
         // Hide all notifications
         this.notifications.forEach((notification, notificationId) => {
           const toastElement = document.getElementById(`toast-${notificationId}`);
-          const modalElement = document.getElementById(`modal-${notificationId}`);
-          const backdrop = document.getElementById(`modal-backdrop-${notificationId}`);
 
           if (toastElement) {
             toastElement.classList.add("toast-slide-out");
             setTimeout(() => toastElement.remove(), 300);
-          }
-
-          if (modalElement) {
-            const modalContent = modalElement.querySelector(".modal-animated");
-            if (modalContent) {
-              modalContent.classList.remove("modal-content-slide-in", "modal-fade-in");
-              modalContent.classList.add("modal-content-slide-out");
-            }
-
-            if (backdrop) {
-              backdrop.classList.remove("modal-fade-in");
-              backdrop.classList.add("modal-fade-out");
-            }
-
-            setTimeout(() => {
-              if (backdrop) backdrop.remove();
-              modalElement.remove();
-            }, 300);
           }
         });
 

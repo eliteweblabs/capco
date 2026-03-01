@@ -97,7 +97,7 @@ export const globalClasses = () => {
 
     // Aside / sidebar nav (Aside.astro)
     globalSidebarClasses:
-      "bg-gray-50/90 dark:bg-gray-950/90 backdrop-blur-sm transition-duration-[350ms]",
+      "bg-gray-50/90 dark:bg-gray-950/90 backdrop-blur-sm transition-duration-[350ms] overflow-y-scroll no-scrollbar",
     navAnchorClasses:
       "lowercase hover:bg-gray-300 dark:hover:bg-gray-700 flex w-full align-center rounded-lg px-3 py-2 whitespace-nowrap",
     navActiveClasses: "bg-gray-300 dark:bg-gray-700 font-bold",

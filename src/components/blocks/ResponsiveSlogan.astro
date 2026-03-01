@@ -1,0 +1,32 @@
+---
+/**
+ * ResponsiveSlogan - Company slogan with tight variant for small screens
+ * Use in CMS: <ResponsiveSlogan /> or <ResponsiveSlogan primaryTextClasses="..." />
+ * Shows tightSlogan on <md, regular slogan on >= md.
+ */
+import { globalCompanyData } from "../../pages/api/global/global-company-data";
+
+const companyData = await globalCompanyData();
+const slogan = companyData.globalCompanySlogan || "";
+const tightSlogan = companyData.globalCompanyTightSlogan?.trim() || "";
+
+interface Props {
+  primaryTextClasses?: string;
+  secondaryTextClasses?: string;
+}
+
+const { primaryTextClasses = "", secondaryTextClasses = "" } = Astro.props;
+---
+
+{slogan && (
+  <div class={`text-xl ${primaryTextClasses || secondaryTextClasses || "text-black dark:text-white"}`}>
+    {tightSlogan ? (
+      <>
+        <span class="md:hidden">{tightSlogan}</span>
+        <span class="hidden md:inline">{slogan}</span>
+      </>
+    ) : (
+      <span>{slogan}</span>
+    )}
+  </div>
+)}

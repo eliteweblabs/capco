@@ -1,24 +1,26 @@
 # Config File Naming and Client-Specific Config
 
-All client-specific configuration lives in JSON config. The app loads config by **project name** when deployed.
+**Independent site settings** live in `config-[company-name].json` (e.g. `config-rothco-built.json`, `config-capco-design-group.json`). This replaces the single `config.json` for per-deployment customization.
 
 ## Config file resolution
 
 1. **Env / URL** – `SITE_CONFIG`, `SITE_CONFIG_JSON`, `SITE_CONFIG_1/2/...`, or `SITE_CONFIG_URL` (if set).
-2. **File (when no env config)** – In order:
-   - `public/data/config-${RAILWAY_PROJECT_NAME}.json` (slugified)
-   - `dist/client/data/config-${RAILWAY_PROJECT_NAME}.json`
-   - `public/data/config.json`
-   - `dist/client/data/config.json`
+2. **File (when no env config)** – In order (primary = `config-[company-name].json`):
+   - `config-${globalCompanyName}.json` (from DB `companyName`, slugified)
+   - `config-${RAILWAY_PROJECT_NAME}.json` (slugified)
+   - `config.json` (fallback for local dev)
+   - Searched in both `public/data/` and `dist/client/data/`
 3. **Fallback** – `site-config.json` in project root (local dev).
 
-`RAILWAY_PROJECT_NAME` is slugified for the filename: lowercased, non-alphanumeric replaced with `-`, e.g. `"Rothco Built"` → `config-rothco-built.json`, `"rothcobuilt"` → `config-rothcobuilt.json`.
+Company/project names are slugified: lowercased, non-alphanumeric → `-`, e.g. `"Rothco Built"` → `config-rothco-built.json`, `"CAPCO Design Group"` → `config-capco-design-group.json`.
 
 ## Per-client setup
 
-- For a deployment with `RAILWAY_PROJECT_NAME="Rothco Built"`, use **`public/data/config-rothco-built.json`** (or keep using `config.json` as fallback).
-- Put all client-specific keys in that file: `projectListColumns`, `asideNav`, `forms`, `contactForm`, `registerForm`, `loginForm`, `formButtonDefaults`, etc.
-- Shared or local dev can keep using **`config.json`** with no env set.
+- For Rothco: **`public/data/config-rothco-built-llc.json`**
+- For Capco: **`public/data/config-capco-design-group.json`**
+- Run `node scripts/copy-config-to-company.mjs` to generate both from `config.json`, or pass a slug to create one
+- Put all client-specific keys in the company file: `projectListColumns`, `asideNav`, `forms`, `contactForm`, `registerForm`, `loginForm`, `formButtonDefaults`, etc.
+- Local dev without `RAILWAY_PROJECT_NAME` / DB company name falls back to `config.json`
 
 ## What is client-specific (in config JSON)
 

@@ -67,6 +67,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         [
           "companyName",
           "slogan",
+          "tightSlogan",
           "address",
           "phone",
           "email",

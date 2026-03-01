@@ -19,32 +19,37 @@ const { globalInputClasses } = globalClasses();
 
 import MediaFilter from "../../features/media-filter/MediaFilter.astro";
 import Hero from "@/components/common/Hero.astro";
-import LayoutDefault from "@/components/layouts/LayoutDefault.astro";
+import LayoutFullWidth from "@/components/layouts/LayoutFullWidth.astro";
 
 const siteConfig = await getSiteConfig();
 const adminMediaFilters = (siteConfig as any).adminMediaFilters;
-const filterGroups = Array.isArray(adminMediaFilters?.groups) && adminMediaFilters.groups.length > 0
-  ? adminMediaFilters.groups
-  : undefined;
+const filterGroups =
+  Array.isArray(adminMediaFilters?.groups) && adminMediaFilters.groups.length > 0
+    ? adminMediaFilters.groups
+    : undefined;
 ---
 
-<LayoutDefault
+<LayoutFullWidth
   title="Media Manager"
-  description="Browse, upload, and manage all media files across the system"
+  description="Browse, upload, and manage all media files across the project"
+  {currentUser}
+  classList="p-4"
 >
-  <Hero
-    title="Project Media Manager"
-    description="Browse, upload, and manage all media files across the project"
-  />
+  <>
+    <Hero
+      title="Project Media Manager"
+      description="Browse, upload, and manage all media files across the project"
+    />
 
-  <MediaFilter
-    {currentUser}
-    {supabase}
-    filterGroups={filterGroups}
-    showSearch={true}
-    minSearchChars={2}
-    searchPlaceholder="Search media files..."
-    {globalInputClasses}
-    includeGrid={true}
-  />
-</LayoutDefault>
+    <MediaFilter
+      {currentUser}
+      {supabase}
+      filterGroups={filterGroups}
+      showSearch={true}
+      minSearchChars={2}
+      searchPlaceholder="Search media files..."
+      {globalInputClasses}
+      includeGrid={true}
+    />
+  </>
+</LayoutFullWidth>

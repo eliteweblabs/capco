@@ -129,7 +129,7 @@ const displayText = buttonText || selectedOption?.label || placeholder;
   value={selectedValue}
   data-refresh={name}
   data-project-id={projectId}
-  data-scrap={(dataScrap ?? (id === "address")) ? "true" : undefined}
+  data-scrap={(dataScrap ?? id === "address") ? "true" : undefined}
   {required}
   data-required-text={requiredText}
 />
@@ -1599,34 +1599,6 @@ const displayText = buttonText || selectedOption?.label || placeholder;
     // Initial setup
     centerSelectedItem();
     updateSelection();
-
-    // Cleanup function to restore body scroll and animate modal close
-    function cleanupModal() {
-      return new Promise((resolve) => {
-        // Add fade-out animation to modal content
-        const modalContent = modal.querySelector(".slot-machine-modal-content");
-        if (modalContent) {
-          modalContent.classList.remove("modal-content-slide-in");
-          modalContent.classList.add("modal-content-slide-out");
-        }
-
-        // Add fade-out to modal backdrop
-        modal.classList.remove("modal-fade-in");
-        modal.classList.add("modal-fade-out");
-
-        // Wait for animation to complete before cleanup
-        setTimeout(() => {
-          // Unlock body scroll (Safari iOS compatible)
-          if (window.unlockBodyScroll) {
-            window.unlockBodyScroll();
-          } else {
-            // Fallback for older implementations
-            document.body.style.overflow = "";
-          }
-          resolve();
-        }, 300);
-      });
-    }
 
     // Close modal when clicking outside
     modal.addEventListener("click", async (e) => {

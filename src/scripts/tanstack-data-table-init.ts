@@ -73,6 +73,17 @@ export function initTanStackDataTable<T extends Record<string, unknown>>(
     showDragHandle = false,
   } = config;
 
+  // Guard: ensure columns is a non-empty array with valid structure
+  const validColumns = Array.isArray(configColumns)
+    ? configColumns.filter((c) => c && typeof c.id === "string" && typeof c.header === "string")
+    : [];
+  if (validColumns.length === 0) {
+    container.innerHTML = `<p class="px-4 py-6 text-sm text-gray-500 dark:text-gray-400">${emptyMessage}</p>`;
+    return;
+  }
+
+  const columnsToUse = validColumns.length === configColumns?.length ? configColumns : validColumns;
+
   const getRowId = getRowIdKey
     ? (row: T) => String((row as Record<string, unknown>)[getRowIdKey as string] ?? "")
     : undefined;
@@ -81,7 +92,7 @@ export function initTanStackDataTable<T extends Record<string, unknown>>(
 
   let tableState: { sorting: { id: string; desc: boolean }[] } = { sorting: [] };
 
-  const columnDefs = configColumns.map((c) => ({
+  const columnDefs = columnsToUse.map((c) => ({
     id: c.id,
     accessorKey: c.accessorKey,
     header: c.header,
@@ -179,7 +190,7 @@ export function initTanStackDataTable<T extends Record<string, unknown>>(
     if (rowModel.rows.length === 0) {
       const tr = document.createElement("tr");
       const td = document.createElement("td");
-      td.colSpan = configColumns.length + (showDragHandle ? 1 : 0) + (expandable ? 1 : 0);
+      td.colSpan = columnsToUse.length + (showDragHandle ? 1 : 0) + (expandable ? 1 : 0);
       td.className = DEFAULT_CLASSES.emptyCellClasses;
       td.textContent = emptyMessage;
       tr.appendChild(td);
@@ -236,7 +247,7 @@ export function initTanStackDataTable<T extends Record<string, unknown>>(
           detailTr.className = "accordion-detail border-b border-gray-200 dark:border-gray-700";
           detailTr.dataset.slot = rowId;
           const td = document.createElement("td");
-          td.colSpan = configColumns.length + (showDragHandle ? 1 : 0) + 1;
+          td.colSpan = columnsToUse.length + (showDragHandle ? 1 : 0) + 1;
           td.className = DEFAULT_CLASSES.detailTdClasses;
           const slot = document.createElement("div");
           slot.id = `tanstack-slot-${id}-${rowId}`;
@@ -263,9 +274,18 @@ function initAll() {
     if (!raw) return;
     try {
       const config = JSON.parse(raw) as TanStackTableConfig;
-      initTanStackDataTable(el, config);
+      // Ensure data is array (TanStack chokes on undefined)
+      if (!Array.isArray(config.data)) config.data = [];
+      // Defer to next frame so container is laid out (avoids "left" measurement errors)
+      requestAnimationFrame(() => {
+        try {
+          initTanStackDataTable(el, config);
+        } catch (err) {
+          console.error("[TanStackDataTable] Failed to init:", err);
+        }
+      });
     } catch (err) {
-      console.error("[TanStackDataTable] Failed to init:", err);
+      console.error("[TanStackDataTable] Failed to parse config:", err);
     }
   });
 }

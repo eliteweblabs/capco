@@ -485,6 +485,19 @@ export async function replacePlaceholders(
     }
   }
 
+  // Replace GLOBAL_COMPANY_TIGHT_SLOGAN placeholders (shorter slogan for <md screens)
+  if (companyData.globalCompanyTightSlogan) {
+    const beforeReplace = result;
+    result = result.replace(
+      /\{\{\s*GLOBAL_COMPANY_TIGHT_SLOGAN\s*\}\}/g,
+      companyData.globalCompanyTightSlogan
+    );
+    if (result !== beforeReplace) {
+      placeholderApplied = true;
+      addBoldTags = true;
+    }
+  }
+
   // Replace GLOBAL_COMPANY_PHONE placeholders
   const globalCompanyPhone = companyData.globalCompanyPhone;
   if (globalCompanyPhone) {

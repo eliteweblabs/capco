@@ -153,6 +153,9 @@ const canDeleteFiles =
     <p id="upload-status" class="mt-2 text-sm text-gray-600 dark:text-gray-400">Uploading...</p>
   </div>
 
+  <!-- File status alert (checked out / all available) -->
+  <div id="file-status-alert" class="hidden" aria-live="polite"></div>
+
   <!-- File List -->
   <div id="files-container" class="space-y-3">
     <!-- <div class="py-8 text-center text-gray-500 dark:text-gray-400">Loading files...</div> -->
@@ -163,20 +166,9 @@ const canDeleteFiles =
   {
     canCheckoutFiles && (
       <StickyActions columns="2" id="management-panel">
-        {/* <h4 class="mb-4 text-sm font-medium text-gray-700 dark:text-gray-300">File Management</h4> */}
-
-        {/* <!-- Quick Actions --> */}
-        {/* <!-- Checkout Status --> */}
-        <div class="flex items-center space-x-2">
-          <div id="overall-status-indicator" class="h-3 w-3 rounded-full bg-gray-400" />
-          <span id="overall-status-text" class="text-sm text-gray-600 dark:text-gray-300">
-            <div class="items-left flex space-x-2">
-              <SimpleIcon name="alert-circle" class="bx-lg" />
-              {/* <p class={`${primaryTextClasses}`}>Keep File Name the Same to Check In File.</p> */}
-            </div>
-            Loading status...
-          </span>
-        </div>
+        {/* <div class="flex items-center space-x-2">
+          <SimpleIcon name="alert-circle" class="bx-lg" />
+        </div> */}
       </StickyActions>
     )
   }
@@ -279,7 +271,7 @@ const canDeleteFiles =
         updateFileCount();
         renderFiles();
         if (canCheckoutFiles) {
-          updateManagementPanel();
+          updateFileManagementPanel();
         }
       } else {
         console.error("❌ [FILE-MANAGER] Failed to load files:", data.error);
@@ -935,7 +927,7 @@ const canDeleteFiles =
           await loadProjectFiles();
           renderFiles(currentRole);
           if (canCheckoutFiles) {
-            updateManagementPanel();
+            updateFileManagementPanel();
           }
 
           // Show individual success notification
@@ -990,37 +982,45 @@ const canDeleteFiles =
     }
   }
 
-  // Update management panel
-  function updateManagementPanel() {
-    // Only update management panel if project status allows it
-    if (projectStatus < 20) {
-      return;
-    }
+  // Update file status alert (holder between upload-progress and files-container)
+  function updateFileManagementPanel() {
+    const holder = document.getElementById("file-status-alert");
+    if (!holder) return;
 
     const checkedOutCount = files.filter((f) => f.checkedOutBy).length;
 
-    const statusTextElement = document.getElementById("overall-status-text");
-    const statusIndicatorElement = document.getElementById("overall-status-indicator");
-
-    // Update status text and indicator
-    if (statusTextElement && statusIndicatorElement) {
-      if (files.length > 0) {
-        if (checkedOutCount > 0) {
-          statusTextElement.textContent = `${checkedOutCount} file${checkedOutCount !== 1 ? "s" : ""} checked out`;
-          statusIndicatorElement.className = "h-3 w-3 rounded-full bg-yellow-400";
-        } else {
-          statusTextElement.textContent = "All files available";
-          statusIndicatorElement.className = "h-3 w-3 rounded-full bg-green-400";
-        }
-      } else {
-        statusTextElement.classList.add("hidden");
-        statusIndicatorElement.classList.add("hidden");
-      }
-    } else {
-      console.error(
-        "❌ [FILE-MANAGER] Management panel elements not found (overall-status-text / overall-status-indicator)"
-      );
+    if (files.length === 0) {
+      holder.classList.add("hidden");
+      holder.innerHTML = "";
+      return;
     }
+
+    const msg =
+      checkedOutCount > 0
+        ? `${checkedOutCount} file${checkedOutCount !== 1 ? "s" : ""} checked out`
+        : "All files available";
+    const isWarning = checkedOutCount > 0;
+
+    // Alert-like structure (matches components/partials/Alert.astro)
+    const bgClass = isWarning
+      ? "bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800"
+      : "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800";
+    const textClass = isWarning
+      ? "text-orange-800 dark:text-orange-400"
+      : "text-green-800 dark:text-green-400";
+    const iconClass = isWarning
+      ? "text-orange-600 dark:text-orange-400"
+      : "text-green-600 dark:text-green-400";
+    const icon = isWarning ? "bx-error" : "bx-check-circle";
+
+    holder.className = `w-full rounded-lg border p-2 ${bgClass}`;
+    holder.innerHTML = `
+      <div class="flex items-start">
+        <i class="bx ${icon} mr-2 mt-0.5 text-lg ${iconClass}"></i>
+        <div class="flex-1 ${textClass} text-sm">${msg}</div>
+      </div>
+    `;
+    holder.classList.remove("hidden");
   }
 
   // Use global if available (app-globals); fallback so FileManager works regardless of script order
@@ -1299,7 +1299,7 @@ const canDeleteFiles =
       await loadProjectFiles();
       renderFiles(currentRole);
       if (canCheckoutFiles) {
-        updateManagementPanel();
+        updateFileManagementPanel();
       }
     } catch (error) {
       console.error("❌ [FILE-MANAGER] Error saving file details:", error);
@@ -1330,7 +1330,7 @@ const canDeleteFiles =
         // Refresh file list
         await loadProjectFiles();
         if (canCheckoutFiles) {
-          updateManagementPanel();
+          updateFileManagementPanel();
         }
       } else {
         // Check if error is due to missing table
@@ -1458,7 +1458,7 @@ const canDeleteFiles =
                     await loadProjectFiles();
                     renderFiles(currentRole);
                     if (canCheckoutFiles) {
-                      updateManagementPanel();
+                      updateFileManagementPanel();
                     }
                   }, 1000);
                 })

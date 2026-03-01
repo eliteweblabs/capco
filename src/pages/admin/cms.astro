@@ -4,7 +4,7 @@
  * Template pages (cmsPages) – markdown/content + layout (default, fullwidth, fullform, etc.).
  */
 import { checkAuth } from "../../lib/auth";
-import LayoutDefault from "../../components/layouts/LayoutDefault.astro";
+import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
 import Button from "../../components/common/Button.astro";
 import CloseButton from "../../components/ui/CloseButton.astro";
 import DeleteConfirmButton from "../../components/ui/DeleteConfirmButton.astro";
@@ -50,7 +50,7 @@ try {
 }
 ---
 
-<LayoutDefault title="CMS Management" description="Template pages (content + layout).">
+<LayoutFullWidth title="CMS Management" description="Template pages (content + layout)." classList="p-4">
   <div class="mb-6">
     <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Content Management System</h1>
     <!-- <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
@@ -66,9 +66,24 @@ try {
       description="Sortable view. Use table below for edit/create and drag to reorder."
       data={templatePages}
       columns={[
-        { id: "slug", accessorKey: "slug", header: "Slug", meta: { icon: "link", tooltip: "URL path", width: 24 } },
-        { id: "title", accessorKey: "title", header: "Title", meta: { icon: "edit", tooltip: "Page title", width: 56 } },
-        { id: "template", accessorKey: "template", header: "Template", meta: { tooltip: "Layout template", width: 20 } },
+        {
+          id: "slug",
+          accessorKey: "slug",
+          header: "Slug",
+          meta: { icon: "link", tooltip: "URL path", width: 24 },
+        },
+        {
+          id: "title",
+          accessorKey: "title",
+          header: "Title",
+          meta: { icon: "edit", tooltip: "Page title", width: 56 },
+        },
+        {
+          id: "template",
+          accessorKey: "template",
+          header: "Template",
+          meta: { tooltip: "Layout template", width: 20 },
+        },
       ]}
       getRowIdKey="slug"
       emptyMessage="No pages yet."
@@ -130,7 +145,7 @@ try {
       actionsGetProps={(p) => ({ page: p })}
     />
   </section>
-</LayoutDefault>
+</LayoutFullWidth>
 
 <!-- Template page editor (slug, title, description, content, template) -->
 <div id="template-editor-form-pool" class="hidden">
@@ -282,7 +297,8 @@ try {
       if (window.showSuccess) window.showSuccess("Order Updated", "Page order saved", 2000);
     } catch (err) {
       console.error("CMS pages reorder failed:", err);
-      if (window.showError) window.showError("Save Failed", "Failed to save order. Reloading...", 3000);
+      if (window.showError)
+        window.showError("Save Failed", "Failed to save order. Reloading...", 3000);
       setTimeout(() => location.reload(), 1000);
     }
   };

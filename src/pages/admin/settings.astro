@@ -6,7 +6,7 @@
  */
 import { checkAuth } from "../../lib/auth";
 import { isAdminOrSuperAdmin } from "../../lib/user-utils";
-import LayoutDefault from "../../components/layouts/LayoutDefault.astro";
+import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
 import Button from "../../components/common/Button.astro";
 import DeleteConfirmButton from "../../components/ui/DeleteConfirmButton.astro";
 import SocialMediaRepeater from "../../components/form/SocialMediaRepeater.astro";
@@ -58,6 +58,7 @@ const settings = {
   // Company Info
   companyName: companyData.globalCompanyName || "",
   slogan: companyData.globalCompanySlogan || "",
+  tightSlogan: companyData.globalCompanyTightSlogan || "",
   address: companyData.globalCompanyAddress || "",
   phone: companyData.globalCompanyPhone || "",
   email: companyData.globalCompanyEmail || "",
@@ -104,16 +105,22 @@ const publicDir = path.join(process.cwd(), "public");
 const iconFileCandidates: { file: string; path: string; size: string; type: string }[] = [
   { file: "favicon.svg", path: "/favicon.svg", size: "any", type: "image/svg+xml" },
   { file: "favicon.png", path: "/favicon.png", size: "512x512", type: "image/png" },
-  { file: "apple-touch-icon.png", path: "/apple-touch-icon.png", size: "180x180", type: "image/png" },
+  {
+    file: "apple-touch-icon.png",
+    path: "/apple-touch-icon.png",
+    size: "180x180",
+    type: "image/png",
+  },
 ];
 const renderedIconFiles = iconFileCandidates.filter((c) =>
   fs.existsSync(path.join(publicDir, c.file))
 );
 ---
 
-<LayoutDefault
+<LayoutFullWidth
   title="Global Settings"
   description="Manage company branding, colors, logos, and global settings. Changes are saved to the database."
+  classList="p-4"
 >
   <div class="px-4 py-8">
     <div class="mb-6">
@@ -137,8 +144,6 @@ const renderedIconFiles = iconFileCandidates.filter((c) =>
     >
       <p class="text-sm text-red-800 dark:text-red-200"></p>
     </div>
-
- 
 
     <form id="settings-form" class={globalFormClasses}>
       <!-- Company Information -->
@@ -189,6 +194,30 @@ const renderedIconFiles = iconFileCandidates.filter((c) =>
             value={settings.slogan}
             class={globalInputClasses}
             placeholder="Your company slogan"
+          />
+        </div>
+
+        <div>
+          <label for="tightSlogan" class="mb-2 block text-sm font-medium">
+            Tight Slogan (short for &lt;md screens)
+            {
+              isFromDatabase("tightSlogan") && (
+                <span
+                  class="ml-2 text-xs text-green-600 dark:text-green-400"
+                  title="Stored in database"
+                >
+                  💾
+                </span>
+              )
+            }
+          </label>
+          <input
+            type="text"
+            id="tightSlogan"
+            name="tightSlogan"
+            value={settings.tightSlogan}
+            class={globalInputClasses}
+            placeholder="Short slogan for mobile"
           />
         </div>
 
@@ -423,8 +452,7 @@ const renderedIconFiles = iconFileCandidates.filter((c) =>
         </div>
       </div>
 
-    <!-- Custom Footer HTML -->
-    <div class="rounded-lg">
+      <!-- Custom Footer HTML -->
       <h2 class="mb-4 text-xl font-semibold">Custom Footer HTML</h2>
       <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
         Inject custom HTML into the footer. Use for scripts, tracking pixels, or extra links.
@@ -973,8 +1001,8 @@ const renderedIconFiles = iconFileCandidates.filter((c) =>
         class="mb-4 rounded border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900"
       >
         <p class="text-xs text-gray-600 dark:text-gray-400">
-          <strong>💡 Tip:</strong> Use a single SVG with CSS for theme support. The icon is used for
-          favicons and app icons.
+          <strong>💡 Tip:</strong> Use a single SVG with CSS for theme support. The icon is used for favicons
+          and app icons.
         </p>
       </div>
       <div>
@@ -1048,11 +1076,13 @@ const renderedIconFiles = iconFileCandidates.filter((c) =>
       </div>
 
       <!-- Rendered Icons (favicon.svg / favicon.png / apple-touch-icon.png created on save) -->
-      <div class="mt-6 rounded border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900">
+      <div
+        class="mt-6 rounded border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900"
+      >
         <h3 class="mb-2 text-sm font-semibold">Rendered Icons</h3>
         <p class="mb-3 text-xs text-gray-600 dark:text-gray-400">
-          On save, the icon above is transformed (primary color + padding) and written as favicon and
-          apple-touch-icon files. Current files (persist after refresh):
+          On save, the icon above is transformed (primary color + padding) and written as favicon
+          and apple-touch-icon files. Current files (persist after refresh):
         </p>
         <div
           id="rendered-icons-container"
@@ -1063,31 +1093,31 @@ const renderedIconFiles = iconFileCandidates.filter((c) =>
             id="rendered-icons-placeholder"
             class={`text-xs text-gray-500 dark:text-gray-400 ${renderedIconFiles.length > 0 ? "hidden" : ""}`}
           >
-            Save settings to generate favicon.svg, favicon.png (512×512), and
-            apple-touch-icon.png (180×180).
+            Save settings to generate favicon.svg, favicon.png (512×512), and apple-touch-icon.png
+            (180×180).
           </p>
           <div
             id="rendered-icons-list"
             class={`mt-2 space-y-2 ${renderedIconFiles.length === 0 ? "hidden" : ""}`}
           >
-            {renderedIconFiles.map((f) => (
-              <div
-                class="flex flex-wrap items-center gap-3 rounded border border-gray-200 bg-gray-50 p-2 dark:border-gray-600 dark:bg-gray-800"
-              >
-                <img
-                  src={f.path}
-                  alt=""
-                  class="h-10 w-10 shrink-0 object-contain"
-                  loading="lazy"
-                />
-                <div class="min-w-0 text-xs">
-                  <div class="font-mono text-gray-700 dark:text-gray-300">{f.path}</div>
-                  <div class="text-gray-500 dark:text-gray-400">
-                    {f.size} · {f.type}
+            {
+              renderedIconFiles.map((f) => (
+                <div class="flex flex-wrap items-center gap-3 rounded border border-gray-200 bg-gray-50 p-2 dark:border-gray-600 dark:bg-gray-800">
+                  <img
+                    src={f.path}
+                    alt=""
+                    class="h-10 w-10 shrink-0 object-contain"
+                    loading="lazy"
+                  />
+                  <div class="min-w-0 text-xs">
+                    <div class="font-mono text-gray-700 dark:text-gray-300">{f.path}</div>
+                    <div class="text-gray-500 dark:text-gray-400">
+                      {f.size} · {f.type}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            }
           </div>
         </div>
       </div>
@@ -1166,10 +1196,9 @@ const renderedIconFiles = iconFileCandidates.filter((c) =>
           <Button type="submit" variant="secondary" id="save-settings-btn"> Save Settings </Button>
         </div>
       </div>
-      </div>
     </form>
   </div>
-</LayoutDefault>
+</LayoutFullWidth>
 
 <script>
   function escapeHtml(s: string) {
@@ -1389,6 +1418,7 @@ const renderedIconFiles = iconFileCandidates.filter((c) =>
     const fieldMapping: Record<string, string> = {
       companyName: "companyName",
       slogan: "slogan",
+      tightSlogan: "tightSlogan",
       address: "address",
       phone: "phone",
       email: "email",

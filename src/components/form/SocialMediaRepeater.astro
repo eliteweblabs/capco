@@ -177,7 +177,9 @@ const noItemsId = `${id}-no-items`;
       if (urlInput && iconPreview) {
         const icon = detectSocialIcon(urlInput.value || "");
         iconPreview.innerHTML = `<i class="${icon}"></i>`;
-        if (urlInput.value && !urlInput.value.includes("link")) {
+        // Use primary color when a brand icon is detected (fa-brands); gray for generic link/empty
+        const isBrandIcon = icon.startsWith("fa-brands ");
+        if (urlInput.value && isBrandIcon) {
           iconPreview.classList.remove("text-gray-400");
           iconPreview.classList.add("text-primary-600", "dark:text-primary-400");
         } else {

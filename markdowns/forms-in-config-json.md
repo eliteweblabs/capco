@@ -30,7 +30,7 @@ if (!formConfig) throw new Error("Form not found in config.json");
 
 ## Adding a new form
 
-1. Add a new key under `forms` in **public/data/config.json**, e.g. `forms["my-form-id"]` with a full `MultiStepFormConfig` (formId, formAction, steps, etc.).
+1. Add a new key under `forms` in **config-[company-name].json** (e.g. `public/data/config-rothco-built.json`), e.g. `forms["my-form-id"]` with a full `MultiStepFormConfig` (formId, formAction, steps, etc.).
 2. In your page, call `const config = await getFormConfig("my-form-id")` and pass it to `MultiStepForm` or `ConfigForm`.
 
 Existing getters (`getRegisterFormConfig`, `getLoginFormConfig`, `getContactFormConfig`, etc.) first check `config.forms[formId]`; if missing, they use the legacy top-level key. You can move register/login/contact into `forms` anytime and the app will use them from there.

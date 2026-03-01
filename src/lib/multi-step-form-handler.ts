@@ -857,19 +857,22 @@ export function createMultiStepFormHandler(
       });
     });
 
-    // SMS checkbox change listener - update next button data-next from config (dataNext when checked, dataSkip when unchecked)
+    // SMS checkbox change listener - update next button data-next (dataNext when checked, data-skip when unchecked)
     const smsCheckbox = form.querySelector('input[name="smsAlerts"]') as HTMLInputElement;
     if (smsCheckbox) {
       const smsStep = smsCheckbox.closest(".step-content");
       const smsNextBtn = smsStep?.querySelector("[data-skip]") as HTMLElement;
       const updateSmsButtonDest = () => {
         if (!smsNextBtn) return;
-        const validDest = smsNextBtn.getAttribute("data-valid-dest");
         const skipDest = smsNextBtn.getAttribute("data-skip");
+        const validDest =
+          options.formConfig?.steps?.find(
+            (s: any) => s.stepNumber === parseInt(smsStep?.getAttribute("data-step") || "0")
+          )?.buttons?.find((b: any) => b.type === "next")?.dataNext;
         if (validDest != null && skipDest != null) {
           smsNextBtn.setAttribute(
             "data-next",
-            smsCheckbox.checked ? validDest : skipDest
+            smsCheckbox.checked ? String(validDest) : skipDest
           );
         }
       };
@@ -1287,7 +1290,23 @@ export function createMultiStepFormHandler(
           });
         }
         e.preventDefault();
-        let nextStep = parseInt(nextBtn.getAttribute("data-next") || "1");
+
+        // When button has data-skip and currently shows the skip label, user intent is to skip — use data-skip
+        const skipDest = nextBtn.getAttribute("data-skip");
+        const defaultLabel = nextBtn.getAttribute("data-default-label");
+        const buttonTextEl = nextBtn.querySelector(".button-text");
+        const isShowingSkip =
+          skipDest != null &&
+          defaultLabel != null &&
+          buttonTextEl &&
+          buttonTextEl.textContent?.trim().toLowerCase().startsWith(defaultLabel.trim().toLowerCase());
+
+        let nextStep: number;
+        if (isShowingSkip) {
+          nextStep = parseInt(skipDest!);
+        } else {
+          nextStep = parseInt(nextBtn.getAttribute("data-next") || "1");
+        }
 
         // Check if this is submit button
         if (
@@ -1308,11 +1327,22 @@ export function createMultiStepFormHandler(
         (nextBtn as HTMLButtonElement).disabled = true;
 
         try {
-          const valid = await validateStep(currentStep);
-          if (valid) {
+          if (isShowingSkip) {
+            // User explicitly chose skip — go to skip dest without validating
             await showStep(nextStep);
+          } else {
+            const valid = await validateStep(currentStep);
+            if (valid) {
+              await showStep(nextStep);
+            } else {
+              // When validation fails: data-skip trumps — go to skip dest instead of staying
+              const skipDestAttr = nextBtn.getAttribute("data-skip");
+              if (skipDestAttr != null) {
+                await showStep(parseInt(skipDestAttr));
+              }
+              // Else: no data-skip, stay and show validation errors (validateStep already marks fields)
+            }
           }
-          // When validation fails we stay on the current step; validateStep() already shows the error and marks fields
         } finally {
           (nextBtn as HTMLButtonElement).disabled = false;
         }
@@ -1620,15 +1650,11 @@ export function createMultiStepFormHandler(
 
       if (conditionalNextButton && validDest != null) {
         const phoneValue = (phoneInputs[0] as HTMLInputElement)?.value?.trim() || "";
-        if (phoneValue) {
-          const isValid = phoneValue.replace(/\D/g, "").length >= 10 && validatePhone(phoneValue);
-          if (isValid) {
-            conditionalNextButton.setAttribute("data-next", String(validDest));
-          }
-          // When invalid: never overwrite data-next; click handler uses data-skip when validation fails
-        } else {
+        const isValid = phoneValue && phoneValue.replace(/\D/g, "").length >= 10 && validatePhone(phoneValue);
+        if (isValid) {
           conditionalNextButton.setAttribute("data-next", String(validDest));
         }
+        // When invalid: leave data-next as-is; click handler uses data-skip and advances to skip dest
       }
     }
 

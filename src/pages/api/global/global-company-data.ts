@@ -113,6 +113,7 @@ export const globalCompanyData = async () => {
   return {
     globalCompanyName: get("companyName", "RAILWAY_PROJECT_NAME") || "Company Name Not Set",
     globalCompanySlogan: get("slogan"), // Database only, no env fallback
+    globalCompanyTightSlogan: get("tightSlogan"), // Shorter slogan for <md screens
     globalCompanyAddress: get("address", "GLOBAL_COMPANY_ADDRESS"),
     globalCompanyPhone: get("phone", "VAPI_PHONE_NUMBER"),
     globalCompanyEmail: get("email", "GLOBAL_COMPANY_EMAIL"),

@@ -1,0 +1,97 @@
+---
+/**
+ * Email Template Preview
+ * Previews src/templates/email/template.html with different use cases
+ */
+import { checkAuth } from "../../../lib/auth";
+import LayoutFullWidth from "../../../components/layouts/LayoutFullWidth.astro";
+import { globalClasses } from "../../api/global/global-classes";
+
+const { currentUser, session } = await checkAuth(Astro.cookies);
+if (!currentUser || !session || currentUser?.profile?.role !== "Admin") {
+  return Astro.redirect("/auth/login");
+}
+
+const { primaryTextClasses, mutedTextClasses, globalFormLabel, globalInputClasses } = globalClasses();
+
+const useCases = [
+  { value: "projectUpdate", label: "Project Status Update", desc: "Notification when project status changes" },
+  { value: "magicLink", label: "Magic Link / Login", desc: "Access dashboard link" },
+  { value: "contactFormAdmin", label: "Contact Form (Admin)", desc: "New lead notification to admin" },
+  { value: "confirmSignup", label: "Confirm Signup", desc: "Email verification" },
+  { value: "projectCreated", label: "Project Created", desc: "New project confirmation to client" },
+  { value: "minimal", label: "Minimal", desc: "Simple notification with minimal content" },
+];
+---
+
+<LayoutFullWidth
+  title="Email Template"
+  description="Preview the branded email template with different use cases"
+  classList="p-4"
+>
+  <div class="px-4 py-8">
+    <h1 class={`mb-2 text-3xl font-bold ${primaryTextClasses}`}>Email Template Preview</h1>
+    <p class={`mb-6 ${mutedTextClasses}`}>
+      Preview <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">src/templates/email/template.html</code> with
+      different use cases. Uses your current company branding from Settings.
+    </p>
+
+    <div class="mb-4 flex flex-wrap items-end gap-4">
+      <div>
+        <label for="useCase" class={globalFormLabel}>Use case</label>
+        <select
+          id="useCase"
+          name="useCase"
+          class={globalInputClasses}
+        >
+          {
+            useCases.map((uc) => (
+              <option value={uc.value}>{uc.label}</option>
+            ))
+          }
+        </select>
+      </div>
+      <p id="useCaseDesc" class={`text-sm ${mutedTextClasses}`}>
+        {useCases[0].desc}
+      </p>
+    </div>
+
+    <p class={`mb-2 text-xs ${mutedTextClasses}`}>
+      Dark mode styling follows your system preference (template uses <code>prefers-color-scheme: dark</code>).
+    </p>
+
+    <div class="rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
+      <iframe
+        id="emailPreview"
+        title="Email template preview"
+        class="h-[min(80vh,800px)] w-full rounded-lg border-0"
+        src={`/api/admin/email-preview?useCase=projectUpdate`}
+      />
+    </div>
+  </div>
+</LayoutFullWidth>
+
+<script>
+  const useCaseSelect = document.getElementById("useCase");
+  const iframe = document.getElementById("emailPreview");
+  const descEl = document.getElementById("useCaseDesc");
+
+  const useCaseDescs: Record<string, string> = {
+    projectUpdate: "Notification when project status changes",
+    magicLink: "Access dashboard link",
+    contactFormAdmin: "New lead notification to admin",
+    confirmSignup: "Email verification",
+    projectCreated: "New project confirmation to client",
+    minimal: "Simple notification with minimal content",
+  };
+
+  useCaseSelect?.addEventListener("change", () => {
+    const val = (useCaseSelect as HTMLSelectElement).value;
+    if (iframe instanceof HTMLIFrameElement) {
+      iframe.src = `/api/admin/email-preview?useCase=${encodeURIComponent(val)}`;
+    }
+    if (descEl) {
+      descEl.textContent = useCaseDescs[val] || "";
+    }
+  });
+</script>

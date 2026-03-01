@@ -20,6 +20,8 @@ export interface Props {
   inline?: boolean;
   /** Optional id for the tooltip content span; allows scripts to update text/position for dynamic tooltips (e.g. sliders). */
   contentId?: string;
+  /** When true, use native title attribute only (no JS, no Floating UI). Best for simple hover-only tooltips. */
+  useNative?: boolean;
 }
 
 const {
@@ -36,10 +38,13 @@ const {
   html = false,
   inline = true,
   contentId,
+  useNative = false,
 } = Astro.props;
 
+// flex breaks form eleenst
 const wrapperClasses =
-  `tooltip-wrapper relative ${inline ? "inline-flex" : "flex"} items-center ${mobileClickable ? "mobile-clickable" : ""} ${className}`.trim();
+  `tooltip-wrapper relative ${inline ? "inline-flex" : ""} items-center ${mobileClickable ? "mobile-clickable" : ""} ${className}`.trim();
+
 // Flowbite-aligned: absolute z-10, rounded-base (rounded-lg), shadow-xs, transition-opacity duration-300
 const contentClasses = [
   "tooltip-content tooltip absolute z-10 inline-block",
@@ -55,38 +60,51 @@ const contentClasses = [
   .join(" ");
 ---
 
-<span class={wrapperClasses} data-tooltip-position={position} data-tooltip-touchable={touchable}>
-  <slot />
-  <span
-    class={contentClasses}
-    data-dismissable={dismissable ? "true" : "false"}
-    role="tooltip"
-    id={contentId}
-  >
-    {html ? <span set:html={text} /> : text}
-    {
-      dismissable && (
-        <button
-          type="button"
-          class="tooltip-close-btn ml-2 inline-flex h-4 w-4 items-center justify-center rounded-full transition-colors hover:bg-white/20"
-          aria-label="Close tooltip"
-        >
-          <svg
-            class="h-3 w-3"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
+{
+  useNative ? (
+    <span
+      class={`${inline ? "inline-flex" : "flex"} items-center ${className}`.trim()}
+      title={text}
+    >
+      <slot />
+    </span>
+  ) : (
+    <span
+      class={wrapperClasses}
+      data-tooltip-position={position}
+      data-tooltip-touchable={touchable}
+    >
+      <slot />
+      <span
+        class={contentClasses}
+        data-dismissable={dismissable ? "true" : "false"}
+        role="tooltip"
+        id={contentId}
+      >
+        {html ? <span set:html={text} /> : text}
+        {dismissable && (
+          <button
+            type="button"
+            class="tooltip-close-btn ml-2 inline-flex h-4 w-4 items-center justify-center rounded-full transition-colors hover:bg-white/20"
+            aria-label="Close tooltip"
           >
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
-      )
-    }
-    <span class="tooltip-arrow" data-popper-arrow></span>
-  </span>
-</span>
+            <svg
+              class="h-3 w-3"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        )}
+        <span class="tooltip-arrow" data-popper-arrow />
+      </span>
+    </span>
+  )
+}
 
 <script>
   // Dynamic import so production build emits a resolvable chunk (avoids "Failed to resolve module specifier '@floating-ui/dom'" in browser)
@@ -130,14 +148,10 @@ const contentClasses = [
           middleware.push(arrow({ element: arrowElement }));
         }
 
-        const { x, y, placement, middlewareData } = await computePosition(
-          trigger,
-          tooltip,
-          {
-            placement: preferredPosition,
-            middleware,
-          }
-        );
+        const { x, y, placement, middlewareData } = await computePosition(trigger, tooltip, {
+          placement: preferredPosition,
+          middleware,
+        });
 
         Object.assign(tooltip.style, { left: `${x}px`, top: `${y}px` });
         tooltip.setAttribute("data-popper-placement", placement);
@@ -199,10 +213,7 @@ const contentClasses = [
         };
 
         const handleOutsideClick = (e) => {
-          if (
-            !wrapper.contains(e.target) &&
-            tooltip.classList.contains("opacity-100")
-          ) {
+          if (!wrapper.contains(e.target) && tooltip.classList.contains("opacity-100")) {
             hide();
           }
         };

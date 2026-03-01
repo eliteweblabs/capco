@@ -10,6 +10,7 @@ import { join } from "path";
 import matter from "gray-matter";
 import { supabaseAdmin } from "./supabase-admin";
 import { filterTitle, filterDescription, filterContent } from "./content-filters";
+import { replacePlaceholders } from "./placeholder-utils";
 
 /** Quote clientId for PostgREST when it contains spaces, commas, or double quotes */
 export function quoteClientIdForPostgrest(clientId: string): string {
@@ -264,7 +265,8 @@ export async function getSiteConfig(): Promise<SiteConfig> {
     if (chunks.length > 0) envConfigJson = chunks.join("");
   }
 
-  // 1d. config-${globalCompanyName}.json, then config-${RAILWAY_PROJECT_NAME}.json, then config.json (per-instance forms/site config)
+  // 1d. config-[company-name].json (primary: independent site settings). Fallback: config.json
+  // Order: config-${globalCompanyName}.json, config-${RAILWAY_PROJECT_NAME}.json, config.json
   if (!envConfigJson) {
     const slugify = (s: string) =>
       s
@@ -281,6 +283,7 @@ export async function getSiteConfig(): Promise<SiteConfig> {
     const dataDir = join(process.cwd(), "public", "data");
     const distDataDir = join(process.cwd(), "dist", "client", "data");
     const candidates: string[] = [];
+    // Primary: config-[company-name].json (independent per-site settings)
     if (companySlug) {
       candidates.push(join(dataDir, `config-${companySlug}.json`));
       candidates.push(join(distDataDir, `config-${companySlug}.json`));
@@ -289,6 +292,7 @@ export async function getSiteConfig(): Promise<SiteConfig> {
       candidates.push(join(dataDir, `config-${railwaySlug}.json`));
       candidates.push(join(distDataDir, `config-${railwaySlug}.json`));
     }
+    // Fallback: config.json (local dev or when no company-specific file exists)
     candidates.push(join(dataDir, "config.json"));
     candidates.push(join(distDataDir, "config.json"));
     for (const p of candidates) {
@@ -328,23 +332,46 @@ export async function getSiteConfig(): Promise<SiteConfig> {
     }
   }
 
-  // Fallback: if projectListColumns still missing (e.g. env config without it), load from public/data/config.json
+  // Fallback: if projectListColumns still missing (e.g. env config without it), load from config-[company-name].json or config.json
   if (!Array.isArray((config as any).projectListColumns) || (config as any).projectListColumns.length === 0) {
+    const slugify = (s: string) =>
+      s
+        .toLowerCase()
+        .replace(/[^a-z0-9-]/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "")
+        .trim();
+    const companyName = companyData?.globalCompanyName || "";
+    const companySlug =
+      companyName && companyName !== "Company Name Not Set" ? slugify(companyName) : "";
+    const railwaySlug = slugify(process.env.RAILWAY_PROJECT_NAME || "");
     const dataDir = join(process.cwd(), "public", "data");
     const distDataDir = join(process.cwd(), "dist", "client", "data");
-    for (const dir of [dataDir, distDataDir]) {
-      const dataConfigPath = join(dir, "config.json");
-      if (existsSync(dataConfigPath)) {
-        try {
-          const dataConfig = JSON.parse(readFileSync(dataConfigPath, "utf-8"));
-          if (Array.isArray(dataConfig.projectListColumns) && dataConfig.projectListColumns.length > 0) {
-            (config as any).projectListColumns = dataConfig.projectListColumns;
-            break;
+    const dirs = [dataDir, distDataDir];
+    const fallbackCandidates: string[] = [];
+    if (companySlug) {
+      fallbackCandidates.push(`config-${companySlug}.json`);
+    }
+    if (railwaySlug && railwaySlug !== companySlug) {
+      fallbackCandidates.push(`config-${railwaySlug}.json`);
+    }
+    fallbackCandidates.push("config.json");
+    for (const dir of dirs) {
+      for (const name of fallbackCandidates) {
+        const p = join(dir, name);
+        if (existsSync(p)) {
+          try {
+            const dataConfig = JSON.parse(readFileSync(p, "utf-8"));
+            if (Array.isArray(dataConfig.projectListColumns) && dataConfig.projectListColumns.length > 0) {
+              (config as any).projectListColumns = dataConfig.projectListColumns;
+              break;
+            }
+          } catch {
+            /* ignore */
           }
-        } catch {
-          /* ignore */
         }
       }
+      if (Array.isArray((config as any).projectListColumns) && (config as any).projectListColumns.length > 0) break;
     }
   }
 
@@ -466,14 +493,25 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
         normalizedTemplate = templateMap[normalizedTemplate] ?? normalizedTemplate;
 
         // Ensure main content is never overwritten by frontmatter spread; filter CMS text so entities like &amp; display correctly
+        let rawContent = dbPage.content || (dbPage.frontmatter?.content as string) || "";
+        let rawTitle = dbPage.title || slug;
+        let rawDescription = dbPage.description || "";
+        // Replace company placeholders ({{GLOBAL_COMPANY_SLOGAN}}, {{GLOBAL_COMPANY_TIGHT_SLOGAN}}, etc.) in CMS content
+        if (rawContent.includes("{{") || rawTitle.includes("{{") || rawDescription.includes("{{")) {
+          try {
+            rawContent = await replacePlaceholders(rawContent, null, false);
+            rawTitle = await replacePlaceholders(rawTitle, null, false);
+            rawDescription = await replacePlaceholders(rawDescription, null, false);
+          } catch (e) {
+            console.warn("[CONTENT] Placeholder replacement failed for CMS content:", e);
+          }
+        }
         const pageContent: PageContent = {
-          title: filterTitle(dbPage.title || slug),
-          description: filterDescription(dbPage.description || ""),
+          title: filterTitle(rawTitle),
+          description: filterDescription(rawDescription),
           template: normalizedTemplate,
           ...(dbPage.frontmatter || {}),
-          content: filterContent(
-            dbPage.content || (dbPage.frontmatter?.content as string) || ""
-          ),
+          content: filterContent(rawContent),
         };
         cache.set(cacheKey, pageContent);
         // console.log(`✅ [CONTENT] Loaded ${slug} from database (CMS)`, {
