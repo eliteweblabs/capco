@@ -1,109 +1,237 @@
 ---
-// Enable use as both component and partial (partial page passes props from X-headers)
+/**
+ * NumberStepper – unified stepper component.
+ * - Input mode: editable number with +/- (min, max, step, onchangeInline). Use for quantities.
+ * - Display mode: read-only display with +/- calling onIncrement/onDecrement. Use for dates, server-refreshed values.
+ * Display mode is used when onIncrement or onDecrement is provided.
+ */
 export const partial = true;
 import SimpleIcon from "../common/SimpleIcon.astro";
 
 export interface Props {
-  value?: number | string;
+  value?: number | string | null;
+  placeholder?: string;
+  disabled?: boolean;
+  class?: string;
+
+  // === Input mode (editable number) ===
   min?: number;
   max?: number;
   step?: number;
   name?: string;
   id?: string;
-  class?: string;
   inputClass?: string;
   /** For proposal line items: row index */
   dataRowIndex?: string | number;
   /** For proposal line items: field name (e.g. "quantity") */
   dataField?: string;
-  /** Inline onchange handler string (e.g. "window.proposalManager.updateLineItemFromInput(this)") */
+  /** Inline onchange handler string */
   onchangeInline?: string;
-  disabled?: boolean;
-  /** For table refresh/polling: field name (data-refresh, data-meta) */
+  /** For table refresh/polling */
   dataRefresh?: string;
-  /** For table refresh: raw value for comparison (data-meta-value) */
   dataMetaValue?: string | number;
-  /** For table refresh: entity id (data-project-id) */
   dataProjectId?: string | number;
+
+  // === Display mode (read-only + action handlers) ===
+  /** Entity id for data attributes (e.g. project.id). Required for display mode */
+  entityId?: string | number;
+  /** Show stepper (+/-); false = display-only span */
+  showStepper?: boolean;
+  /** onclick handler for increment (e.g. `adjustDueDate(24, 1)`) */
+  onIncrement?: string;
+  /** onclick handler for decrement (e.g. `adjustDueDate(24, -1)`) */
+  onDecrement?: string;
+  meta?: string;
+  refresh?: string;
+  inputId?: string;
+  wrapperClass?: string;
+  decrementButtonClass?: string;
+  incrementButtonClass?: string;
+  displayOnlyClass?: string;
+  locale?: string;
+  dateFormatShort?: Intl.DateTimeFormatOptions;
+  dateFormatLong?: Intl.DateTimeFormatOptions;
+  displayShort?: string;
+  displayLong?: string;
+  dataEntityAttr?: string;
+  dataValueAttr?: string;
 }
 
 const {
   value = 0,
+  placeholder = "",
+  disabled = false,
+  class: className = "",
   min,
   max,
   step = 1,
   name,
   id,
-  class: className = "",
   inputClass = "",
   dataRowIndex,
   dataField,
   onchangeInline,
-  disabled = false,
   dataRefresh,
   dataMetaValue,
   dataProjectId,
+  entityId,
+  showStepper = true,
+  onIncrement,
+  onDecrement,
+  meta = "dueDate",
+  refresh,
+  inputId,
+  wrapperClass = "inline-flex items-center rounded-lg border border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-700",
+  decrementButtonClass = "inline-flex shrink-0 items-center justify-center rounded-l-lg p-2.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-600 dark:hover:text-gray-300",
+  incrementButtonClass = "inline-flex shrink-0 items-center justify-center rounded-r-lg p-2.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-600 dark:hover:text-gray-300",
+  displayOnlyClass = "",
+  locale = "en-US",
+  dateFormatShort = {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    hour12: true,
+  },
+  dateFormatLong = {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  },
+  displayShort: displayShortOverride,
+  displayLong: displayLongOverride,
+  dataEntityAttr = "project-id",
+  dataValueAttr = "due-date",
 } = Astro.props;
 
-const numValue = typeof value === "string" ? (value === "" ? 0 : Number(value)) : Number(value);
-const wrapperClass =
+const isDisplayMode = onIncrement != null || onDecrement != null;
+
+// Input mode values
+const numValue =
+  typeof value === "string" ? (value === "" ? 0 : Number(value)) : Number(value ?? 0);
+const numberWrapperClass =
   "number-stepper flex items-center gap-0 rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden";
 const btnClass =
   "flex items-center justify-center p-2 h-9 w-9 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 border-0 text-gray-600 dark:text-gray-300 disabled:opacity-50 disabled:pointer-events-none transition-colors";
 const inputBaseClass =
   "w-14 sm:w-20 text-center border-0 border-x border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm focus:ring-primary-500 focus:border-primary-500 py-1.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
-const resolvedInputClass = [inputBaseClass, inputClass].filter(Boolean).join(" ");
+const resolvedNumberInputClass = [inputBaseClass, inputClass].filter(Boolean).join(" ");
+
+// Display mode values
+const refreshValue = refresh ?? meta;
+const resolvedInputId = inputId ?? (entityId != null ? `stepper-${entityId}` : undefined);
+const rawValue = value ?? "";
+const displayShort =
+  displayShortOverride ??
+  (typeof rawValue === "string" && rawValue
+    ? new Date(rawValue).toLocaleDateString(locale, dateFormatShort)
+    : rawValue != null && rawValue !== ""
+      ? String(rawValue)
+      : placeholder);
+const displayLong =
+  displayLongOverride ??
+  (typeof rawValue === "string" && rawValue
+    ? new Date(rawValue).toLocaleDateString(locale, dateFormatLong)
+    : rawValue != null && rawValue !== ""
+      ? String(rawValue)
+      : placeholder);
+const dataIdAttr = `data-${dataEntityAttr}`;
+const dataValueKey = `data-${dataValueAttr}`;
+const displayInputClass =
+  "min-w-[6rem] shrink-0 border-0 bg-transparent text-center text-xs font-medium text-gray-900 focus:ring-0 dark:text-white";
 ---
 
-<div class={`${wrapperClass} ${className}`.trim()}>
-  <button
-    type="button"
-    class={btnClass}
-    data-action="decrement"
-    aria-label="Decrease"
-    disabled={disabled || (min != null && numValue <= min)}
-  >
-    <SimpleIcon name="minus" size="xs" />
-  </button>
-  <input
-    type="number"
-    value={numValue}
-    {min}
-    {max}
-    {step}
-    {name}
-    {id}
-    class={resolvedInputClass}
-    data-row-index={dataRowIndex != null ? String(dataRowIndex) : undefined}
-    data-field={dataField}
-    data-refresh={dataRefresh}
-    data-meta={dataRefresh}
-    data-meta-value={dataMetaValue != null ? String(dataMetaValue) : undefined}
-    data-project-id={dataProjectId != null ? String(dataProjectId) : undefined}
-    autocomplete="off"
-    {disabled}
-    {...onchangeInline && { onchange: onchangeInline }}
-  />
-  <button
-    type="button"
-    class={btnClass}
-    data-action="increment"
-    aria-label="Increase"
-    disabled={disabled || (max != null && numValue >= max)}
-  >
-    <SimpleIcon name="plus" size="xs" />
-  </button>
-</div>
+{isDisplayMode ? (
+  showStepper ? (
+    <div class={`${wrapperClass} ${className}`.trim()}>
+      <button
+        type="button"
+        class={decrementButtonClass}
+        data-action="decrement"
+        {...(entityId != null && { [dataIdAttr]: entityId })}
+        onclick={onDecrement ? `event.stopPropagation(); ${onDecrement}` : undefined}
+      >
+        <SimpleIcon name="minus" size="xs" class="text-gray-600" />
+      </button>
+      <div class="relative inline-block">
+        <input
+          type="text"
+          id={resolvedInputId}
+          value={displayShort}
+          {...(rawValue != null && rawValue !== "" && { [dataValueKey]: rawValue })}
+          data-refresh={refreshValue}
+          {...(entityId != null && { [dataIdAttr]: entityId })}
+          data-meta={meta}
+          data-meta-value={rawValue}
+          readonly
+          class={displayInputClass}
+          placeholder={placeholder || undefined}
+        />
+      </div>
+      <button
+        type="button"
+        class={incrementButtonClass}
+        data-action="increment"
+        {...(entityId != null && { [dataIdAttr]: entityId })}
+        onclick={onIncrement ? `event.stopPropagation(); ${onIncrement}` : undefined}
+      >
+        <SimpleIcon name="plus" size="xs" class="text-gray-600" />
+      </button>
+    </div>
+  ) : (
+    <span class={`${displayOnlyClass} ${className}`.trim()}>{displayLong || placeholder}</span>
+  )
+) : (
+  <div class={`${numberWrapperClass} ${className}`.trim()}>
+    <button
+      type="button"
+      class={btnClass}
+      data-action="decrement"
+      aria-label="Decrease"
+      disabled={disabled || (min != null && numValue <= min)}
+    >
+      <SimpleIcon name="minus" size="xs" />
+    </button>
+    <input
+      type="number"
+      value={numValue}
+      min={min}
+      max={max}
+      step={step}
+      name={name}
+      id={id}
+      class={resolvedNumberInputClass}
+      data-row-index={dataRowIndex != null ? String(dataRowIndex) : undefined}
+      data-field={dataField}
+      data-refresh={dataRefresh}
+      data-meta={dataRefresh}
+      data-meta-value={dataMetaValue != null ? String(dataMetaValue) : undefined}
+      data-project-id={dataProjectId != null ? String(dataProjectId) : undefined}
+      autocomplete="off"
+      disabled={disabled}
+      {...(onchangeInline && { onchange: onchangeInline })}
+    />
+    <button
+      type="button"
+      class={btnClass}
+      data-action="increment"
+      aria-label="Increase"
+      disabled={disabled || (max != null && numValue >= max)}
+    >
+      <SimpleIcon name="plus" size="xs" />
+    </button>
+  </div>
+)}
 
 <script>
-  // Event delegation: handle +/- for any .number-stepper (including dynamically added rows)
+  // Event delegation: handle +/- for input mode (input[type='number']) only
   function handleStepperClick(e: Event) {
     const target = (e.target as HTMLElement).closest(
       "[data-action='decrement'], [data-action='increment']"
     );
     if (!target) return;
     const wrap = (target as HTMLElement).closest(".number-stepper");
-    const input = wrap?.querySelector("input[type='number']") as HTMLInputElement;
+    if (!wrap) return;
+    const input = wrap.querySelector("input[type='number']") as HTMLInputElement;
     if (!input || input.disabled) return;
     const action = (target as HTMLElement).getAttribute("data-action");
     const step = Number(input.step) || 1;

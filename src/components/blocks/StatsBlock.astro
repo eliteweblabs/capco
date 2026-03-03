@@ -23,6 +23,12 @@
  */
 import SimpleIcon from "../common/SimpleIcon.astro";
 import { parseJsonProp, buildArrayFromFlatProps } from "./BlockRegistry";
+import {
+  paddingClasses,
+  getContainerWrapperClasses,
+  type MaxWidthOption,
+  type PaddingOption,
+} from "../../lib/container-width";
 
 interface Stat {
   value: string;
@@ -87,7 +93,9 @@ interface Props {
   backgroundColor?: string;
   backgroundImage?: string;
 
-  // Styling
+  // Styling / container (CMS shortcode)
+  maxWidth?: MaxWidthOption;
+  padding?: PaddingOption;
   className?: string;
   id?: string;
 
@@ -113,9 +121,12 @@ const {
   variant = "simple",
   backgroundColor,
   backgroundImage,
+  maxWidth = "full",
+  padding = "medium",
   className = "",
   id,
 } = props;
+const containerClasses = getContainerWrapperClasses(maxWidth);
 
 const columns = typeof props.columns === "string" ? parseInt(props.columns) : (props.columns ?? 4);
 
@@ -194,7 +205,8 @@ const bgStyle = backgroundImage
 <section
   {id}
   class:list={[
-    "stats-block relative py-16 md:py-24",
+    "stats-block relative",
+    paddingClasses[padding],
     backgroundColor || variantBg[variant],
     className,
   ]}
@@ -204,7 +216,7 @@ const bgStyle = backgroundImage
 >
   {backgroundImage && <div class="absolute inset-0 bg-black/60" />}
 
-  <div class="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+  <div class:list={["relative z-10", ...containerClasses]}>
     {
       (title || description) && (
         <div class="mb-12 text-center">

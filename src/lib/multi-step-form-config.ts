@@ -69,6 +69,22 @@ export const GLOBAL_BUTTON_DEFAULTS = {
     iconPosition: "right" as const,
     responsive: false,
   },
+  cancel: {
+    variant: "outline" as const,
+    size: "md" as const,
+    icon: "x",
+    iconPosition: "left" as const,
+    label: "Cancel",
+    responsive: false,
+  },
+  new: {
+    variant: "primary" as const,
+    size: "md" as const,
+    icon: "plus",
+    iconPosition: "left" as const,
+    label: "New",
+    responsive: false,
+  },
   choice: {
     variant: "outline" as const,
     size: "md" as const,
@@ -157,7 +173,7 @@ export interface FormFieldConfig {
 }
 
 export interface FormButtonConfig {
-  type: "next" | "prev" | "skip" | "submit" | "choice" | "slider" | "action";
+  type: "next" | "prev" | "skip" | "submit" | "cancel" | "new" | "choice" | "slider" | "action";
   label?: string; // Optional button label
   validLabel?: string; // Label to show when field is valid (for dynamic labels based on validation)
   validIcon?: string; // Icon to show when valid (e.g. "enter" for next, default "check"). Must exist in SimpleIcon.
@@ -239,6 +255,8 @@ export interface MultiStepFormConfig {
     prev?: Partial<FormButtonConfig>;
     skip?: Partial<FormButtonConfig>;
     submit?: Partial<FormButtonConfig>;
+    cancel?: Partial<FormButtonConfig>;
+    new?: Partial<FormButtonConfig>;
   };
   // Steps
   steps: FormStepConfig[];

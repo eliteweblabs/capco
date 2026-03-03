@@ -43,6 +43,12 @@ interface Props<T = unknown> {
   description?: string;
   expandable?: boolean;
   showDragHandle?: boolean;
+  /** When set, expanding a row scrolls to and opens the accordion table row with data-editor-slot=rowId */
+  expandLinkedAccordionId?: string;
+  /** Window function name to call on reorder: (order: {id:string,displayOrder:number}[]) => void */
+  reorderCallback?: string;
+  /** Key for reorder API id (e.g. "id" for uuid); defaults to getRowIdKey */
+  getReorderIdKey?: keyof T & string;
 }
 
 const {
@@ -55,6 +61,9 @@ const {
   description,
   expandable = false,
   showDragHandle = false,
+  expandLinkedAccordionId,
+  reorderCallback,
+  getReorderIdKey,
 } = Astro.props;
 
 const { dataTableCardClasses, dataTableHeaderBarClasses, dataTableTitleClasses, dataTableDescriptionClasses, dataTableTableWrapperClasses } =
@@ -78,6 +87,9 @@ const config = {
   emptyMessage,
   expandable,
   showDragHandle,
+  expandLinkedAccordionId,
+  reorderCallback,
+  getReorderIdKey,
 };
 ---
 

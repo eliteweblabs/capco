@@ -44,7 +44,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     // Check if discussion exists
     const { data: discussion, error: discussionError } = await supabaseAdmin
-      .from("discussions")
+      .from("discussion")
       .select("id, title, projectId, authorId")
       .eq("id", id)
       .single();
@@ -69,7 +69,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     }
 
     // Delete the discussion
-    const { error: deleteError } = await supabaseAdmin.from("discussions").delete().eq("id", id);
+    const { error: deleteError } = await supabaseAdmin.from("discussion").delete().eq("id", id);
 
     if (deleteError) {
       console.error("❌ [DISCUSSIONS-DELETE] Error deleting discussion:", deleteError);

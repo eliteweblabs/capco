@@ -33,6 +33,12 @@ export interface TanStackTableConfig<T = unknown> {
   emptyMessage?: string;
   expandable?: boolean;
   showDragHandle?: boolean;
+  /** When set, expanding a row scrolls to and opens the accordion trigger with data-editor-slot=rowId in table #{id}-table */
+  expandLinkedAccordionId?: string;
+  /** Window function name to call on reorder: (order: {id:string,displayOrder:number}[]) => void */
+  reorderCallback?: string;
+  /** Key for reorder API id (e.g. "id" for uuid); defaults to getRowIdKey */
+  getReorderIdKey?: keyof T & string;
 }
 
 const DEFAULT_CLASSES = {
@@ -59,6 +65,14 @@ function renderIcon(name: string, size = 16): string {
   }
 }
 
+/** Strip HTML tags and decode entities for plain-text display in table cells */
+function stripHtmlToText(html: string): string {
+  if (html == null || typeof html !== "string") return html != null ? String(html) : "";
+  const div = document.createElement("div");
+  div.innerHTML = html;
+  return (div.textContent || div.innerText || "").trim() || html.replace(/<[^>]*>/g, "").trim();
+}
+
 export function initTanStackDataTable<T extends Record<string, unknown>>(
   container: HTMLElement,
   config: TanStackTableConfig<T>
@@ -71,6 +85,9 @@ export function initTanStackDataTable<T extends Record<string, unknown>>(
     emptyMessage = "No rows.",
     expandable = false,
     showDragHandle = false,
+    expandLinkedAccordionId,
+    reorderCallback,
+    getReorderIdKey,
   } = config;
 
   // Guard: ensure columns is a non-empty array with valid structure
@@ -90,7 +107,10 @@ export function initTanStackDataTable<T extends Record<string, unknown>>(
 
   const expanded = new Set<string>();
 
-  let tableState: { sorting: { id: string; desc: boolean }[] } = { sorting: [] };
+  let tableState: { sorting: { id: string; desc: boolean }[]; columnPinning?: { left: string[]; right: string[] } } = {
+    sorting: [],
+    columnPinning: { left: [], right: [] },
+  };
 
   const columnDefs = columnsToUse.map((c) => ({
     id: c.id,
@@ -102,6 +122,11 @@ export function initTanStackDataTable<T extends Record<string, unknown>>(
 
   const table = createTable({
     data,
+    enableColumnPinning: false,
+    enableColumnResizing: false,
+    initialState: {
+      columnPinning: { left: [], right: [] },
+    },
     columns: columnDefs.map((c) => ({
       id: c.id,
       accessorKey: c.accessorKey as string | undefined,
@@ -119,7 +144,7 @@ export function initTanStackDataTable<T extends Record<string, unknown>>(
     state: tableState,
     onStateChange: (updater) => {
       const next = typeof updater === "function" ? updater(tableState) : updater;
-      tableState = next;
+      tableState = { ...tableState, ...next };
       table.setOptions((prev) => ({ ...prev, state: tableState }));
       render();
     },
@@ -198,10 +223,15 @@ export function initTanStackDataTable<T extends Record<string, unknown>>(
     } else {
       rowModel.rows.forEach((row) => {
         const rowId = row.id;
+        const raw = row.original as Record<string, unknown>;
+        const reorderIdKey = (getReorderIdKey ?? getRowIdKey) as string | undefined;
+        const reorderId = reorderIdKey ? String(raw[reorderIdKey] ?? rowId) : rowId;
+
         const tr = document.createElement("tr");
         tr.className = DEFAULT_CLASSES.triggerRowClasses;
         tr.dataset.rowId = rowId;
         tr.dataset.slot = rowId;
+        if (reorderCallback && reorderId) tr.dataset.reorderId = reorderId;
         if (expandable) {
           tr.style.cursor = "pointer";
           tr.setAttribute("role", "button");
@@ -209,10 +239,22 @@ export function initTanStackDataTable<T extends Record<string, unknown>>(
           tr.setAttribute("aria-expanded", String(expanded.has(rowId)));
           tr.addEventListener("click", (e) => {
             if ((e.target as HTMLElement).closest("[data-skip-expand]")) return;
-            if (expanded.has(rowId)) expanded.delete(rowId);
+            const wasExpanded = expanded.has(rowId);
+            if (wasExpanded) expanded.delete(rowId);
             else expanded.add(rowId);
             tr.setAttribute("aria-expanded", String(expanded.has(rowId)));
             render();
+            if (!wasExpanded && expandLinkedAccordionId) {
+              requestAnimationFrame(() => {
+                const trigger = document.querySelector<HTMLElement>(
+                  `#${expandLinkedAccordionId}-table tr[data-editor-slot="${rowId}"]`
+                );
+                if (trigger) {
+                  trigger.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                  trigger.click();
+                }
+              });
+            }
           });
         }
         if (showDragHandle) {
@@ -220,6 +262,11 @@ export function initTanStackDataTable<T extends Record<string, unknown>>(
           td.className = DEFAULT_CLASSES.dragTdClasses;
           td.innerHTML = renderIcon("grip-dots", 20) || "⋮⋮";
           td.setAttribute("data-skip-expand", "");
+          if (reorderCallback) {
+            td.draggable = true;
+            td.classList.add("cursor-grab");
+            td.setAttribute("aria-label", "Drag to reorder");
+          }
           tr.appendChild(td);
         }
         row.getVisibleCells().forEach((cell) => {
@@ -229,7 +276,8 @@ export function initTanStackDataTable<T extends Record<string, unknown>>(
           if (meta?.sticky === "left") td.classList.add(...DEFAULT_CLASSES.stickyLeft.split(" "));
           if (meta?.sticky === "right") td.classList.add(...DEFAULT_CLASSES.stickyRight.split(" "));
           const val = cell.getValue();
-          td.textContent = val != null ? String(val) : "—";
+          const raw = val != null ? String(val) : "—";
+          td.textContent = raw === "—" ? "—" : stripHtmlToText(raw);
           tr.appendChild(td);
         });
         if (expandable) {
@@ -252,7 +300,7 @@ export function initTanStackDataTable<T extends Record<string, unknown>>(
           const slot = document.createElement("div");
           slot.id = `tanstack-slot-${id}-${rowId}`;
           slot.className = `accordion-slot ${DEFAULT_CLASSES.slotMinHeightClasses}`;
-          slot.textContent = "Detail slot";
+          slot.textContent = expandLinkedAccordionId ? "Opening editor below…" : "Detail slot";
           td.appendChild(slot);
           detailTr.appendChild(td);
           tbody.appendChild(detailTr);
@@ -263,6 +311,91 @@ export function initTanStackDataTable<T extends Record<string, unknown>>(
     tableEl.appendChild(tbody);
     container.innerHTML = "";
     container.appendChild(tableEl);
+
+    if (showDragHandle && reorderCallback) {
+      setupReorderHandlers(tbody, expandable);
+    }
+  }
+
+  function setupReorderHandlers(tbodyEl: HTMLTableSectionElement, hasDetailRows: boolean) {
+    const cb = (typeof window !== "undefined" && (window as unknown as Record<string, unknown>)[reorderCallback!]) as
+      | ((order: { id: string | null; displayOrder: number }[]) => void | Promise<void>)
+      | undefined;
+    if (typeof cb !== "function") return;
+
+    const getDataRows = () =>
+      Array.from(
+        tbodyEl.querySelectorAll<HTMLTableRowElement>("tr[data-reorder-id]:not(.accordion-detail)")
+      );
+
+    const rows = getDataRows();
+    let draggedRow: HTMLTableRowElement | null = null;
+    let draggedDetail: HTMLTableRowElement | null = null;
+
+    rows.forEach((row) => {
+      const dragCell = row.querySelector<HTMLTableCellElement>("td[data-skip-expand]");
+      const next = row.nextElementSibling;
+      const isDetailRow =
+        next?.classList.contains("accordion-detail") || next?.hasAttribute("data-slot");
+      const detailRow = isDetailRow ? (next as HTMLTableRowElement) : null;
+
+      if (dragCell) {
+        dragCell.addEventListener("dragstart", (e) => {
+          draggedRow = row;
+          draggedDetail = detailRow;
+          row.classList.add("opacity-50", "cursor-grabbing");
+          dragCell.classList.add("cursor-grabbing");
+          if (e.dataTransfer) {
+            e.dataTransfer.effectAllowed = "move";
+            e.dataTransfer.setData("text/plain", row.dataset.reorderId ?? "");
+          }
+        });
+      }
+
+      row.addEventListener("dragend", () => {
+        if (draggedRow) {
+          draggedRow.classList.remove("opacity-50", "cursor-grabbing");
+          draggedRow.querySelector("td[data-skip-expand]")?.classList.remove("cursor-grabbing");
+        }
+        getDataRows().forEach((r) => r.classList.remove("border-t-2", "border-primary-500"));
+        draggedRow = null;
+        draggedDetail = null;
+      });
+
+      row.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+        if (draggedRow && row !== draggedRow) row.classList.add("border-t-2", "border-primary-500");
+      });
+
+      row.addEventListener("dragleave", () => {
+        row.classList.remove("border-t-2", "border-primary-500");
+      });
+
+      row.addEventListener("drop", async (e) => {
+        e.preventDefault();
+        row.classList.remove("border-t-2", "border-primary-500");
+        if (!draggedRow || draggedRow === row) return;
+        const targetIdx = getDataRows().indexOf(row);
+        if (targetIdx < 0) return;
+        const draggedIdx = getDataRows().indexOf(draggedRow);
+        if (draggedIdx === targetIdx) return;
+
+        if (draggedDetail) tbodyEl.insertBefore(draggedDetail, row);
+        tbodyEl.insertBefore(draggedRow, draggedDetail || row);
+
+        const order = getDataRows()
+          .map((r, i) => ({ id: r.dataset.reorderId ?? null, displayOrder: i }))
+          .filter((o) => o.id);
+        try {
+          await cb(order);
+        } catch (err) {
+          console.error("[TanStackDataTable] Reorder failed:", err);
+        }
+        draggedRow = null;
+        draggedDetail = null;
+      });
+    });
   }
 
   render();

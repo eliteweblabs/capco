@@ -1,11 +1,22 @@
 ---
 // Dynamic 3D Mapbox Component that reads from CMS and geocodes addresses
-// Supports shortcode: <DynamicProjectsMap /> or <DynamicProjectsMap height="600px" />
+// Supports shortcode: <DynamicProjectsMap /> or <DynamicProjectsMap height="600px" maxWidth="2xl" />
 // When used as shortcode with no projects prop, MarkdownPage injects featured projects (single query).
+import {
+  paddingClasses,
+  getContainerWrapperClasses,
+  type MaxWidthOption,
+  type PaddingOption,
+} from "../../lib/container-width";
+
 interface Props {
   projects?: any[] | string;
   height?: string;
   mapboxToken?: string;
+  maxWidth?: MaxWidthOption;
+  padding?: PaddingOption;
+  className?: string;
+  id?: string;
 }
 
 const {
@@ -14,7 +25,12 @@ const {
   mapboxToken = import.meta.env.PUBLIC_MAPBOX_ACCESS_TOKEN ||
     import.meta.env.MAPBOX_PUBLIC_KEY ||
     "",
+  maxWidth = "full",
+  padding = "medium",
+  className = "",
+  id,
 } = Astro.props;
+const containerClasses = getContainerWrapperClasses(maxWidth);
 
 // Normalize projects: support CMS shape (p.data), API shape (p.title/p.address), or JSON string from shortcode
 const projects = (() => {
@@ -46,13 +62,17 @@ const projectsData = JSON.stringify(projects);
 <link href="https://api.mapbox.com/mapbox-gl-js/v3.18.1/mapbox-gl.css" rel="stylesheet" />
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.18.1/mapbox-gl.js"></script>
 
-<div
-  id="dynamic-projects-map"
-  data-height={height}
-  data-projects={projectsData}
-  data-mapbox-token={mapboxToken}
->
-</div>
+<section id={id} class:list={["dynamic-projects-map-wrapper", paddingClasses[padding], className]}>
+  <div class:list={containerClasses}>
+    <div
+      id="dynamic-projects-map"
+      data-height={height}
+      data-projects={projectsData}
+      data-mapbox-token={mapboxToken}
+    >
+    </div>
+  </div>
+</section>
 
 <style>
   /* Prevent map pan/zoom from scrolling the page */

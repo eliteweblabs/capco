@@ -28,7 +28,7 @@ const {
   placeholder = "Write a comment...",
 } = Astro.props;
 
-import Button from "../common/Button.astro";
+import FormActionButton from "./FormActionButton.astro";
 const currentRole = currentUser?.profile?.role;
 const projectId = project?.id || null;
 const isGlobalDiscussion = !project;
@@ -43,10 +43,7 @@ const isGlobalDiscussion = !project;
           (0)
         </span>
       </h2>
-      <Button id="new-comment-btn" icon="plus" iconPosition="left" size="sm">
-        {" "}
-        New Comment{" "}
-      </Button>
+      <FormActionButton action="new" label="New Comment" id="new-comment-btn" size="sm" />
     </div>
   )
 }
@@ -89,20 +86,15 @@ const isGlobalDiscussion = !project;
   }
 
   <div class="flex gap-3">
-    <button
+    <FormActionButton
+      action="submit"
+      label="Post Comment"
+      icon="send"
+      size="sm"
+      type="button"
       id="submit-discussion"
-      class="inline-flex items-center rounded-lg bg-primary-500 px-4 py-2.5 text-center text-xs font-medium text-white hover:bg-primary-600 focus:ring-4 focus:ring-primary-200 disabled:opacity-50 dark:focus:ring-primary-900"
-    >
-      <SimpleIcon name="send" class="mr-2 text-lg" />
-      Post Comment
-    </button>
-    <button
-      id="cancel-discussion"
-      class="inline-flex items-center rounded-lg border border-gray-300 bg-gray-100 px-4 py-2.5 text-center text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-    >
-      <SimpleIcon name="x" class="mr-2 text-lg" />
-      Cancel
-    </button>
+    />
+    <FormActionButton action="cancel" size="sm" id="cancel-discussion" />
   </div>
 </div>
 
@@ -458,12 +450,18 @@ const isGlobalDiscussion = !project;
     `;
   }
 
+  let submitBtnOriginalHTML = '';
+
   function setupDiscussionForm() {
     const newCommentBtn = document.getElementById("new-comment-btn");
     const form = document.getElementById("discussion-form");
     const submitBtn = document.getElementById("submit-discussion");
     const cancelBtn = document.getElementById("cancel-discussion");
     const messageInput = document.getElementById("discussion-message");
+
+    if (submitBtn) {
+      submitBtnOriginalHTML = submitBtn.innerHTML;
+    }
 
     if (newCommentBtn && form) {
       newCommentBtn.addEventListener("click", () => {
@@ -503,7 +501,7 @@ const isGlobalDiscussion = !project;
       if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.innerHTML =
-          '<SimpleIcon name="loader-2" class="animate-spin text-lg" /> Posting...';
+          '<svg class="-ml-1 mr-2 h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/></svg> Posting...';
       }
 
       const response = await fetch("/api/discussions/upsert", {
@@ -552,9 +550,9 @@ const isGlobalDiscussion = !project;
       alert("Failed to post comment");
     } finally {
       const submitBtn = document.getElementById("submit-discussion");
-      if (submitBtn) {
+      if (submitBtn && submitBtnOriginalHTML) {
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<SimpleIcon name="send" class="text-lg" /> Post Comment';
+        submitBtn.innerHTML = submitBtnOriginalHTML;
       }
     }
   }
@@ -780,10 +778,10 @@ const isGlobalDiscussion = !project;
   // Global functions for discussion actions
   window.markDiscussionCompleted = async function (discussionId) {
     try {
-      const response = await fetch("/api/update-discussion-completed", {
+      const response = await fetch("/api/discussions/upsert", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ discussionId, markCompleted: true }),
+        body: JSON.stringify({ id: discussionId, markCompleted: true }),
         credentials: "include",
       });
 
@@ -794,15 +792,6 @@ const isGlobalDiscussion = !project;
         const discussion = discussions.find((d) => d.id === discussionId);
         if (discussion) {
           discussion.markCompleted = true;
-        }
-
-        // Update the discussion count bubble
-        if (result.incompleteCount !== undefined) {
-          try {
-            updateDiscussionCount(result.incompleteCount);
-          } catch (error) {
-            console.error("Error updating discussion count:", error);
-          }
         }
 
         // Refresh the display and update counts
@@ -824,10 +813,10 @@ const isGlobalDiscussion = !project;
 
   window.markDiscussionIncomplete = async function (discussionId) {
     try {
-      const response = await fetch("/api/update-discussion-completed", {
+      const response = await fetch("/api/discussions/upsert", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ discussionId, markCompleted: false }),
+        body: JSON.stringify({ id: discussionId, markCompleted: false }),
         credentials: "include",
       });
 
@@ -838,15 +827,6 @@ const isGlobalDiscussion = !project;
         const discussion = discussions.find((d) => d.id === discussionId);
         if (discussion) {
           discussion.markCompleted = false;
-        }
-
-        // Update the discussion count bubble
-        if (result.incompleteCount !== undefined) {
-          try {
-            updateDiscussionCount(result.incompleteCount);
-          } catch (error) {
-            console.error("Error updating discussion count:", error);
-          }
         }
 
         // Refresh the display and update counts
@@ -867,8 +847,11 @@ const isGlobalDiscussion = !project;
   };
 
   window.editDiscussion = function (discussionId) {
-    // TODO: Implement edit functionality
-    console.log("Edit discussion:", discussionId);
+    if (window.showNotice) {
+      window.showNotice("info", "Coming Soon", "Edit discussion is not yet implemented.", 3000);
+    } else {
+      alert("Edit discussion is not yet implemented.");
+    }
   };
 
   window.replyToDiscussion = function (parentId) {
@@ -910,16 +893,16 @@ const isGlobalDiscussion = !project;
       <div class="flex gap-3">
         <button
           onclick="submitReply(${parentId})"
-          class="inline-flex items-center rounded-lg bg-primary-500 px-4 py-2.5 text-center text-xs font-medium text-white hover:bg-primary-600 focus:ring-4 focus:ring-primary-200 dark:focus:ring-primary-900 disabled:opacity-50"
+          class="select-none font-secondary relative inline-flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed py-2 px-3 text-[12px] rounded-full border-2 border-primary-500 bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600"
         >
-          <SimpleIcon name="send" class="mr-2 text-lg" />
+          <svg class="mr-2 inline-block h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"></path><path d="M22 2l-7 20-4-9-9-4 20-7z"></path></svg>
           Post Reply
         </button>
         <button
           onclick="cancelReply(${parentId})"
-          class="inline-flex items-center rounded-lg border border-gray-300 bg-gray-100 px-4 py-2.5 text-center text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+          class="select-none font-secondary relative inline-flex items-center justify-center transition-all duration-200 py-2 px-3 text-[12px] rounded-full border-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white dark:border-primary-400 dark:text-primary-400 dark:hover:bg-primary-600 dark:hover:text-white"
         >
-          <SimpleIcon name="x" class="mr-2 text-lg" />
+          <svg class="mr-2 inline-block h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18"></path><path d="M6 6l12 12"></path></svg>
           Cancel
         </button>
       </div>
@@ -928,12 +911,16 @@ const isGlobalDiscussion = !project;
     // Add reply form to the discussion item
     discussionItem.appendChild(replyForm);
 
-    // Focus on the textarea
     const textarea = replyForm.querySelector("textarea");
     if (textarea) {
-      textarea.focus();
-      // Add mention functionality to the textarea
+      // Add mention functionality
       setupMentionFunctionality(textarea);
+      // Defer focus to avoid aria-hidden conflict (e.g. punchlist-drawer closed with aria-hidden)
+      requestAnimationFrame(() => {
+        if (!textarea.closest('[aria-hidden="true"]')) {
+          textarea.focus();
+        }
+      });
     }
   };
 

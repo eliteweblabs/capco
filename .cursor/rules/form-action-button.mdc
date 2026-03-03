@@ -1,0 +1,64 @@
+---
+description: Use FormActionButton for all form submit, cancel, and navigation buttons
+globs: ["**/*.astro", "**/*.ts", "**/*.tsx"]
+alwaysApply: false
+---
+
+# Form Action Button Rule
+
+**Use `FormActionButton.astro` for all form buttons.** This ensures consistent styling across submit, cancel, next, prev, and skip actions.
+
+## DO
+
+```astro
+import FormActionButton from "../components/form/FormActionButton.astro";
+
+<!-- Submit -->
+<FormActionButton action="submit" />
+<FormActionButton action="submit" label="Save" />
+<FormActionButton action="submit" label="Post Comment" icon="send" type="button" />
+
+<!-- Cancel -->
+<FormActionButton action="cancel" />
+<FormActionButton action="cancel" id="cancel-btn" />
+
+<!-- New (add/create) -->
+<FormActionButton action="new" label="New Comment" />
+<FormActionButton action="new" label="Add Punchlist Item" />
+```
+
+## DON'T
+
+```astro
+<!-- Do NOT use raw buttons for form actions -->
+<button type="submit">Submit</button>
+<button type="button">Cancel</button>
+
+<!-- Do NOT use Button.astro for form submit/cancel -->
+<Button type="submit" variant="primary">Submit</Button>
+```
+
+## Dynamic/JS-built forms
+
+When building form HTML in JavaScript (e.g. table rows, injected templates), use `getFormActionButtonHTML()` from `src/lib/form-action-button-html.ts`:
+
+```ts
+import { getFormActionButtonHTML } from "./form-action-button-html";
+
+const submitHtml = getFormActionButtonHTML("submit", { label: "Save", size: "sm" });
+const cancelHtml = getFormActionButtonHTML("cancel", { size: "sm", className: "my-cancel", dataIdPlaceholder: "__ID__" });
+// Replace __ID__ at runtime: cancelHtml.replace(/__ID__/g, String(id))
+```
+
+## Overlays and fixed positioning
+
+**When a button is fixed on screen or over an image/hero**, use `variant="outline"` so the background shows through. Solid primary buttons block the view; outline keeps them legible while letting the background remain visible.
+
+```astro
+<!-- Fixed FAB, hero CTA, image overlay, etc. -->
+<FormActionButton action="new" label="New" variant="outline" />
+```
+
+## Config
+
+Defaults live in `GLOBAL_BUTTON_DEFAULTS` (src/lib/multi-step-form-config.ts). Change there to update all form buttons across the app.

@@ -20,7 +20,7 @@ Single source for rendering inputs from JSON config. Shared by Forms, Tables, an
 | `textarea`       | `<textarea>`                   | `rows`                                                           |
 | `slider`         | UnitSlider                     | `min`, `max`, `step`, `preset`                                   |
 | `toggle`         | SlideToggle                    | `checked`, `icon`, `color`, `size`                               |
-| `stepper`        | NumberStepper or Stepper       | `min`, `max`, `step`, `variant` ("number" \| "date")             |
+| `stepper`        | NumberStepper                  | `min`, `max`, `step`, `variant` ("number" \| "date")             |
 | `dateTime`       | `<input type="date">`          | `inputType` ("date" \| "datetime-local" \| "time")               |
 | `buttonGroup`    | ToggleButton                   | `options`, `groupType` ("radio" \| "multi-select"), `cssClass`   |
 | `dropdownSelect` | `<select>` or SlotMachineModal | `options`, `searchable`                                          |

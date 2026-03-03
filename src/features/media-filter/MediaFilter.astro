@@ -13,9 +13,11 @@
  * @prop {string} searchPlaceholder - Search input placeholder
  * @prop {string} globalInputClasses - Tailwind classes for inputs
  * @prop {boolean} includeGrid - Include media grid (true) or just filters (false)
+ * @prop {"masonry"|"regular"} gridVariant - Masonry (variable sizes) or regular uniform grid
  */
 
 import SimpleIcon from "../../components/common/SimpleIcon.astro";
+import SearchInput from "../../components/form/SearchInput.astro";
 import Button from "../../components/common/Button.astro";
 import ToggleButton from "../../components/form/ToggleButton.astro";
 import DeleteConfirmButton from "../../components/ui/DeleteConfirmButton.astro";
@@ -45,6 +47,8 @@ export interface Props {
   searchPlaceholder?: string;
   globalInputClasses?: string;
   includeGrid?: boolean;
+  /** "masonry" = variable card sizes, "regular" = uniform grid */
+  gridVariant?: "masonry" | "regular";
   currentUser?: any;
   supabase?: any;
 }
@@ -59,6 +63,7 @@ const {
   searchPlaceholder = "Search media files...",
   globalInputClasses = "rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-gray-900 dark:text-white focus:border-primary-500 focus:ring-primary-500",
   includeGrid = true,
+  gridVariant = "masonry",
   currentUser,
   supabase,
 } = Astro.props;
@@ -314,36 +319,17 @@ const stats = includeGrid ? {
   )}
 
   <!-- Filter Section -->
-  <div class="bg-white dark:bg-gray-900 rounded-lg shadow-sm p-4 mb-6">
     <!-- Search with Autosuggest -->
     {showSearch && (
-      <div class="relative mb-4">
-        <input
-          type="text"
+      <div class="mb-4">
+        <SearchInput
           id={`${uniqueId}-search`}
           placeholder={searchPlaceholder}
-          class={`${globalInputClasses} w-full pr-10`}
-          autocomplete="off"
-          data-searchable
+          globalInputClasses={globalInputClasses}
+          suggestionsSlot={true}
+          suggestionsId={`${uniqueId}-suggestions`}
+          wrapperClass="w-full"
         />
-        <SimpleIcon
-          id={`${uniqueId}-search-icon`}
-          name="search"
-          class="search-icon absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-        />
-        <SimpleIcon
-          id={`${uniqueId}-clear`}
-          name="x"
-          class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 cursor-pointer hover:text-gray-600 dark:hover:text-gray-300 hidden"
-        />
-        
-        <!-- Auto-suggest dropdown -->
-        <div
-          id={`${uniqueId}-suggestions`}
-          class="absolute left-0 right-0 top-full z-50 hidden max-h-60 overflow-y-auto rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 shadow-lg mt-1"
-        >
-          <!-- Suggestions populated by JavaScript -->
-        </div>
       </div>
     )}
 
@@ -373,7 +359,6 @@ const stats = includeGrid ? {
       </Button>
       <input type="file" id={`${uniqueId}-file-input`} class="hidden" multiple accept="image/*,image/webp,image/avif,image/svg+xml,video/*,.mp4,.webm,.mov,.ogv,.avi,.mkv,application/pdf,.doc,.docx,.xls,.xlsx" />
     </div>
-  </div>
 
   {includeGrid && (
     <>
@@ -386,8 +371,16 @@ const stats = includeGrid ? {
         </div>
       )}
 
-      {/* <!-- Files Masonry Grid --> */}
-      <div id={`${uniqueId}-files-grid`} class="masonry-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 auto-rows-[150px]">
+      {/* <!-- Files Grid --> */}
+      <div
+        id={`${uniqueId}-files-grid`}
+        class:list={[
+          "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3",
+          gridVariant === "masonry"
+            ? "masonry-grid auto-rows-[150px]"
+            : "auto-rows-[200px]",
+        ]}
+      >
         {allFiles.length === 0 ? (
           <div class="col-span-full text-center py-12 text-gray-500 dark:text-gray-400">
             <SimpleIcon name="folder-open" class="w-16 h-16 mx-auto mb-4 opacity-50" />
@@ -400,7 +393,7 @@ const stats = includeGrid ? {
               { col: 1, row: 1 }, { col: 1, row: 2 }, { col: 1, row: 4 }, { col: 2, row: 1 },
               { col: 3, row: 1 }, { col: 2, row: 2 }, { col: 1, row: 3 }, { col: 2, row: 3 },
             ];
-            const sizePattern = sizes[index % sizes.length];
+            const sizePattern = gridVariant === "regular" ? { col: 1, row: 1 } : sizes[index % sizes.length];
             const colSpan = `col-span-${sizePattern.col}`;
             const rowSpan = `row-span-${sizePattern.row}`;
             
@@ -502,14 +495,12 @@ const stats = includeGrid ? {
   )}
 </div>
 
-<script define:vars={{ uniqueId, itemSelector, showSearch, minSearchChars, includeGrid }}>
+<script define:vars={{ uniqueId, itemSelector, showSearch, minSearchChars, includeGrid, gridVariant }}>
   document.addEventListener("DOMContentLoaded", () => {
     const container = document.querySelector(`[data-filter-id="${uniqueId}"]`);
     if (!container) return;
 
     const searchInput = document.getElementById(`${uniqueId}-search`);
-    const searchIcon = document.getElementById(`${uniqueId}-search-icon`);
-    const clearBtn = document.getElementById(`${uniqueId}-clear`);
     const suggestionsDiv = document.getElementById(`${uniqueId}-suggestions`);
     const filesGrid = document.getElementById(`${uniqueId}-files-grid`);
     const noResults = document.getElementById(`${uniqueId}-no-results`);
@@ -628,35 +619,20 @@ const stats = includeGrid ? {
         noResults.classList.toggle("hidden", visibleCount > 0 || totalCards === 0);
       }
 
-      // Show/hide clear button and search icon (only one visible at a time)
-      if (clearBtn && searchInput) {
-        const hasValue = searchInput.value.length > 0;
-        clearBtn.classList.toggle("hidden", !hasValue);
-        if (searchIcon) searchIcon.classList.toggle("hidden", hasValue);
-      }
-
-      // Retrigger masonry layout
-      retriggerMasonryLayout();
+      // Retrigger masonry layout (only when using masonry variant)
+      if (gridVariant === "masonry") retriggerMasonryLayout();
     }
 
-    // Function to retrigger masonry layout after filtering
+    // Function to retrigger masonry layout after filtering (masonry only)
     function retriggerMasonryLayout() {
-      if (!filesGrid) return;
+      if (!filesGrid || gridVariant !== "masonry") return;
       
       // Force grid recalculation by temporarily toggling grid-auto-flow
-      const originalAutoFlow = filesGrid.style.gridAutoFlow;
       filesGrid.style.gridAutoFlow = 'row';
-      
-      // Force a reflow
       void filesGrid.offsetHeight;
-      
-      // Restore dense packing
       filesGrid.style.gridAutoFlow = 'dense';
       
-      // Alternative: Add a class that triggers recalculation
       filesGrid.classList.add('masonry-recalculate');
-      
-      // Use requestAnimationFrame for smooth transition
       requestAnimationFrame(() => {
         filesGrid.classList.remove('masonry-recalculate');
       });
@@ -680,22 +656,10 @@ const stats = includeGrid ? {
         }
       });
 
-      searchInput.addEventListener("blur", () => {
-        setTimeout(() => hideSuggestions(), 150);
-      });
-
-      searchInput.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") hideSuggestions();
-      });
+      // Blur/escape to hide suggestions handled by SearchInput when suggestionsSlot=true
     }
 
-    if (clearBtn && searchInput) {
-      clearBtn.addEventListener("click", () => {
-        searchInput.value = "";
-        applyFilters();
-        hideSuggestions();
-      });
-    }
+    // Clear btn: SearchInput manages its own clear; it dispatches "input" which triggers applyFilters above
 
     // Build initial suggestions
     if (includeGrid && showSearch) {

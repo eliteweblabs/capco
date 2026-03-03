@@ -451,7 +451,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Get admin and staff emails using reusable API (same as GET route)
     const adminAndStaffResponse = await fetch(
-      `${getApiBaseUrl(request)}/api/users?role=Admin&role=Staff`,
+      `${getApiBaseUrl(request)}/api/users/get?role=Admin&role=Staff`,
       {
         method: "GET",
         headers: { "Content-Type": "application/json" },

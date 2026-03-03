@@ -7,6 +7,7 @@ import { checkAuth } from "../../lib/auth";
 import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
 import Hero from "../../components/common/Hero.astro";
 import Button from "../../components/common/Button.astro";
+import { getFormActionButtonHTML } from "../../lib/form-action-button-html";
 import { globalClasses } from "../api/global/global-classes";
 
 const { currentUser, currentRole } = await checkAuth(Astro.cookies);
@@ -36,6 +37,13 @@ function defaultFrom(): string {
 function defaultTo(): string {
   return new Date().toISOString().slice(0, 10);
 }
+
+const timeEntrySubmitBtnHtml = getFormActionButtonHTML("submit", { label: "Save", size: "sm" });
+const timeEntryCancelBtnHtml = getFormActionButtonHTML("cancel", {
+  size: "sm",
+  dataIdPlaceholder: "__ENTRY_ID__",
+  className: "time-entry-cancel-edit",
+});
 ---
 
 <LayoutFullWidth
@@ -44,6 +52,7 @@ function defaultTo(): string {
   classList="p-4"
 >
   <Hero
+    enableAos={false}
     title="Time Entries"
     description="Time tracker: check-in sessions with author, project, start, end, and notes."
     {primaryTextClasses}
@@ -107,7 +116,7 @@ function defaultTo(): string {
   </div>
 </LayoutFullWidth>
 
-<script define:vars={{ globalFormClasses, globalInputClasses }}>
+<script define:vars={{ globalFormClasses, globalInputClasses, timeEntrySubmitBtnHtml, timeEntryCancelBtnHtml }}>
   const placeholderEl = document.getElementById("time-entries-placeholder");
   const tableWrapEl = document.getElementById("time-entries-table");
   const tbodyEl = document.getElementById("time-entries-tbody");
@@ -211,8 +220,8 @@ function defaultTo(): string {
             </div>
           </div>
           <div class="flex gap-2">
-            <button type="submit" class="rounded-md bg-primary-600 px-3 py-2 text-sm font-medium text-white hover:bg-primary-700">Save</button>
-            <button type="button" class="time-entry-cancel-edit rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700" data-id="${entry.id}">Cancel</button>
+            ${timeEntrySubmitBtnHtml}
+            ${timeEntryCancelBtnHtml.replace(/__ENTRY_ID__/g, String(entry.id))}
           </div>
         </form>
       </td>

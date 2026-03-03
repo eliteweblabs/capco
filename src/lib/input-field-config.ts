@@ -107,13 +107,13 @@ export interface ToggleFieldConfig extends InputFieldConfigBase {
   size?: "sm" | "md" | "lg";
 }
 
-/** stepper: NumberStepper (numeric) or Stepper (date) */
+/** stepper: NumberStepper – numeric (input mode) or date/display (display mode with onIncrement/onDecrement) */
 export interface StepperFieldConfig extends InputFieldConfigBase {
   type: "stepper";
   min?: number;
   max?: number;
   step?: number;
-  /** "date" = Stepper.astro (dueDate style); default = NumberStepper */
+  /** "date" = display mode (read-only + handlers); default = input mode (editable number) */
   variant?: "number" | "date";
   /** For date variant: hours to add on increment */
   hourStep?: number;

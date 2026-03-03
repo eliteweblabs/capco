@@ -19,6 +19,12 @@
  */
 import Button from "../common/Button.astro";
 import SimpleIcon from "../common/SimpleIcon.astro";
+import {
+  paddingClasses,
+  getContainerWrapperClasses,
+  type MaxWidthOption,
+  type PaddingOption,
+} from "../../lib/container-width";
 
 interface Props {
   // Content
@@ -59,7 +65,9 @@ interface Props {
     | "fade";
   animateDelay?: string;
 
-  // Additional
+  // Additional / container (CMS shortcode)
+  maxWidth?: MaxWidthOption;
+  padding?: PaddingOption;
   className?: string;
   id?: string;
 }
@@ -89,9 +97,12 @@ const {
   secondaryButtonHref,
   secondaryButtonVariant = "outline",
   secondaryButtonIcon,
+  maxWidth = "full",
+  padding = "medium",
   className = "",
   id,
 } = props;
+const containerClasses = getContainerWrapperClasses(maxWidth);
 
 // Handle boolean/string conversion for shortcode compatibility
 const backgroundOverlay =
@@ -114,17 +125,17 @@ const getAnimationType = () => {
 const animationType = getAnimationType();
 const animateDelay = props.animateDelay;
 
-// Variant-specific styles
+// Variant-specific styles (padding overridden by padding prop when used)
 const variantStyles = {
-  centered: "text-center py-16 md:py-24",
-  left: "text-left py-16 md:py-24",
-  split: "py-16 md:py-24",
-  gradient: "text-center py-16 md:py-24 bg-gradient-to-r from-primary-600 to-secondary-600",
-  banner: "py-8 md:py-12",
-  minimal: "py-12 md:py-16",
+  centered: "text-center",
+  left: "text-left",
+  split: "",
+  gradient: "text-center bg-gradient-to-r from-primary-600 to-secondary-600",
+  banner: "",
+  minimal: "",
 };
 
-const containerStyles = variantStyles[variant] || variantStyles.centered;
+const variantBaseStyles = variantStyles[variant] || variantStyles.centered;
 
 // Background styles
 const bgStyle = backgroundImage
@@ -142,7 +153,8 @@ const textColorClass =
   {id}
   class:list={[
     "cta-block relative overflow-hidden rounded-lg",
-    containerStyles,
+    variantBaseStyles,
+    paddingClasses[padding],
     bgColorClass,
     className,
   ]}
@@ -157,7 +169,11 @@ const textColorClass =
   }
 
   <div
-    class={`relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 ${variant === "split" ? "lg:flex lg:items-center lg:justify-between" : ""}`}
+    class:list={[
+      "relative z-10",
+      ...containerClasses,
+      variant === "split" && "lg:flex lg:items-center lg:justify-between",
+    ]}
   >
     {
       variant === "split" ? (

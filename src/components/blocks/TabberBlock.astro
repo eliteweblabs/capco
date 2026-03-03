@@ -20,8 +20,6 @@
  */
 import SlidingTabs from "../common/SlidingTabs.astro";
 import { parseJsonProp, buildArrayFromFlatProps } from "./BlockRegistry";
-import { globalClasses } from "../../pages/api/global/global-classes";
-const { globalContainerClasses } = globalClasses();
 
 interface TabItem {
   label: string;
@@ -63,13 +61,7 @@ interface Props {
 }
 
 const props = Astro.props;
-const {
-  className = "",
-  id,
-  navId: propsNavId,
-  compact = false,
-  activeItem: activeItemProp = 0,
-} = props;
+const { className = "", id, navId: propsNavId, compact = false, activeItem = 0 } = props;
 const isCompact = compact === true || compact === "true";
 
 // Build tabs from JSON or flat props
@@ -81,9 +73,6 @@ if (props.tabs) {
 }
 
 tabs = tabs.filter((t) => t.label);
-
-// Clamp activeItem to valid index
-const activeItem = Math.max(0, Math.min(activeItemProp, tabs.length - 1));
 
 // Unique ID for this tabber instance
 const blockId = id || `tabber-${Math.random().toString(36).slice(2, 9)}`;
@@ -100,7 +89,7 @@ const navItems = tabs.map((t) => ({
 
 <section
   id={blockId}
-  class={`tabber-block ${className} ${globalContainerClasses}`}
+  class={`tabber-block ${className}`}
   data-tabber
   style="
 position: relative;
@@ -114,7 +103,7 @@ top: -38px;
     compact={isCompact}
     urlParam=""
   />
-  <div class="tabber-panels mt-6">
+  <div class="tabber-panels mt-6 px-4">
     {
       /* activeItem panel visible on server, rest hidden – see .cursor/rules/tabber-sliding-tabs-ssr.mdc */
     }

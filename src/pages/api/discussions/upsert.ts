@@ -278,7 +278,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         // Get admin and staff emails using reusable API
         const baseUrl = getApiBaseUrl(request);
-        const adminAndStaffResponse = await fetch(`${baseUrl}/api/users?role=Admin&role=Staff`, {
+        const adminAndStaffResponse = await fetch(`${baseUrl}/api/users/get?role=Admin&role=Staff`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
         });
@@ -297,7 +297,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         // Get client email if not internal
         let clientEmail = null;
         if (!internal && projectAuthorId) {
-          const clientResponse = await fetch(`${baseUrl}/api/users?id=${projectAuthorId}`, {
+          const clientResponse = await fetch(`${baseUrl}/api/users/get?id=${projectAuthorId}`, {
             method: "GET",
             headers: { "Content-Type": "application/json" },
           });

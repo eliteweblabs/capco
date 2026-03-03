@@ -593,10 +593,16 @@ const currentUserRole = currentUser?.profile?.role || "Client";
 
       document.addEventListener("click", (e) => {
         const el = e.target;
-        if (panel && !panel.contains(el) && !fab.contains(el)) {
-          console.log(LOG, "outside click close");
-          closePanel();
+        if (!panel || !fab) return;
+        if (panel.contains(el) || fab.contains(el)) return;
+        // Don't close when clicking discussion dropdown, reply form, or other interactive UI
+        if (
+          el.closest?.("[data-discussion-id], [data-dropdown-toggle], .reply-form, #discussions-list, [id^='dropdownComment']")
+        ) {
+          return;
         }
+        console.log(LOG, "outside click close");
+        closePanel();
       });
 
       if (startBtn) {

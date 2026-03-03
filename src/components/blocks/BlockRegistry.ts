@@ -43,6 +43,8 @@ export const blockRegistry: Record<string, BlockDefinition> = {
     name: "CTABlock",
     description: "Call-to-action section with title, description, and buttons",
     props: {
+      maxWidth: { type: "string", default: "full", description: "Container max width: sm, md, lg, xl, 2xl, full" },
+      padding: { type: "string", default: "medium", description: "Section padding: none, small, medium, large" },
       title: { type: "string", required: true, description: "Main headline" },
       description: { type: "string", description: "Supporting text" },
       variant: {
@@ -69,6 +71,8 @@ export const blockRegistry: Record<string, BlockDefinition> = {
       description: { type: "string", description: "Section description" },
       columns: { type: "number", default: 3, description: "Number of columns (2, 3, 4)" },
       variant: { type: "string", default: "cards", description: "Style: cards, icons, minimal" },
+      maxWidth: { type: "string", default: "full", description: "Container max width: sm, md, lg, xl, 2xl, full" },
+      padding: { type: "string", default: "medium", description: "Section padding: none, small, medium, large" },
       // Features are passed as JSON string for CMS
       features: {
         type: "string",
@@ -189,6 +193,8 @@ export const blockRegistry: Record<string, BlockDefinition> = {
     name: "CountUpBlock",
     description: "Animated odometer-style statistics (title left, stats right)",
     props: {
+      maxWidth: { type: "string", default: "full", description: "Container max width: sm, md, lg, xl, 2xl, full" },
+      padding: { type: "string", default: "medium", description: "Section padding: none, small, medium, large" },
       title: { type: "string", default: "Rothco Built by the Numbers...", description: "Section title" },
       stat1Value: { type: "string", description: "First stat value (e.g. 2.5M)" },
       stat1Label: { type: "string", description: "First stat label" },

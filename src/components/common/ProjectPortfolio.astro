@@ -3,8 +3,13 @@ import SimpleIcon from "./SimpleIcon.astro";
 import Button from "./Button.astro";
 import GridFilter from "../../features/grid-filter/GridFilter.astro";
 import { formatDate } from "../../lib/global-display-utils";
-import { globalClasses } from "../../pages/api/global/global-classes";
-const { globalContainerClasses } = globalClasses();
+import {
+  maxWidthClasses,
+  paddingClasses,
+  getContainerWrapperClasses,
+  type MaxWidthOption,
+  type PaddingOption,
+} from "../../lib/container-width";
 
 // Fetch featured projects
 interface Project {
@@ -113,8 +118,21 @@ export type GridLayout = "masonry" | 2 | 3 | 4 | 6 | "2" | "3" | "4" | "6";
 interface Props {
   gridLayout?: GridLayout;
   masonry?: boolean;
+  /** Max width (CMS shortcode) */
+  maxWidth?: MaxWidthOption;
+  /** Padding (CMS shortcode) */
+  padding?: PaddingOption;
+  className?: string;
+  id?: string;
 }
-const { gridLayout: gridLayoutProp = "masonry", masonry: masonryProp } = Astro.props;
+const {
+  gridLayout: gridLayoutProp = "masonry",
+  masonry: masonryProp,
+  maxWidth = "2xl",
+  padding = "medium",
+  className = "",
+  id,
+} = Astro.props;
 // Normalize: HTML/JSON can pass "3" as string
 const gridLayout =
   gridLayoutProp === "masonry"
@@ -123,9 +141,14 @@ const gridLayout =
       ? (parseInt(gridLayoutProp, 10) as 2 | 3 | 4 | 6) || "masonry"
       : gridLayoutProp;
 const masonry = masonryProp ?? (gridLayout === "masonry");
+const containerClasses = getContainerWrapperClasses(maxWidth);
 ---
 
-<div class={globalContainerClasses}>
+<section
+  id={id}
+  class:list={["project-portfolio-section", paddingClasses[padding], className]}
+>
+  <div class:list={containerClasses}>
   {
     error ? (
       <div class="py-16 text-center">
@@ -260,7 +283,8 @@ const masonry = masonryProp ?? (gridLayout === "masonry");
       </div>
     )
   }
-</div>
+  </div>
+</section>
 
 <style>
   .line-clamp-2 {

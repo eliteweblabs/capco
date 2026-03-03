@@ -48,6 +48,8 @@ interface Props {
   rightButtonHref?: string;
   rightButtonIcon?: string;
   rightButtonVariant?: string;
+  /** When false, omit AOS attributes so hero is visible immediately (e.g. on /project where AOS init is skipped). */
+  enableAos?: boolean;
 }
 
 const props = Astro.props;
@@ -74,6 +76,7 @@ const {
   backgroundVideoSource,
   backgroundVideoPoster = backgroundImage || "/hero.png",
   backgroundVideoAlt = "Hero background",
+  enableAos = false,
 } = props;
 
 // Handle boolean/string conversion for shortcode compatibility
@@ -114,8 +117,8 @@ const hasBackground = backgroundImage || backgroundVideoSource;
 
 <div
   class={`col-span-12 py-8 md:py-12 w-max-w-7xl mx-auto relative overflow-hidden ${hasBackground ? "min-h-[400px] flex items-center" : ""}`}
-  data-aos="fade"
-  data-aos-duration="600"
+  data-component-name="Hero"
+  {...(enableAos && { "data-aos": "fade", "data-aos-duration": "600" })}
   style={backgroundImage && !backgroundVideoSource
     ? `background-image: url('${backgroundImage}'); background-size: cover; background-position: center;`
     : ""}

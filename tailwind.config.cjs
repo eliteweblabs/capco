@@ -56,8 +56,9 @@ module.exports = {
     extend: {
       //      ### Fonts
       fontFamily: {
-        // #### Headings, Call-to-actions, Header Navigation
-        // Use CSS variables so fonts can be updated dynamically from database
+        // #### Primary font (headings, main body). Use font-primary or font-sans.
+        primary: ['var(--font-family, "Outfit Variable")', "var(--font-family-secondary, sans-serif)"],
+        // #### Alias: Tailwind default for main font
         sans: ['var(--font-family, "Outfit Variable")', "var(--font-family-secondary, sans-serif)"],
         // #### Secondary font only (use with font-secondary class)
         secondary: ["var(--font-family-secondary, sans-serif)"],

@@ -3,11 +3,19 @@
  * ProjectPortfolioSocial - Social card style project portfolio (CodePen-inspired)
  * Copy of ProjectPortfolio styled like https://codepen.io/frankuxui/pen/xxXgBxZ
  * Includes placeholder likes and comments.
+ * Supports maxWidth, padding for CMS shortcode usage.
  */
 import SimpleIcon from "./SimpleIcon.astro";
 import Button from "./Button.astro";
 import GridFilter from "../../features/grid-filter/GridFilter.astro";
 import { formatDate } from "../../lib/global-display-utils";
+import {
+  maxWidthClasses,
+  paddingClasses,
+  getContainerWrapperClasses,
+  type MaxWidthOption,
+  type PaddingOption,
+} from "../../lib/container-width";
 
 interface Project {
   id: number;
@@ -143,11 +151,26 @@ try {
 }
 
 const categories = ["All", "New Construction", "Renovation"];
+
+interface Props {
+  maxWidth?: MaxWidthOption;
+  padding?: PaddingOption;
+  className?: string;
+  id?: string;
+}
+const { maxWidth = "2xl", padding = "medium", className = "", id } = Astro.props;
+const containerClasses = getContainerWrapperClasses(maxWidth);
 ---
 
-<div
-  class="mx-auto min-h-screen max-w-7xl bg-slate-200 px-4 py-10 text-black dark:bg-slate-900 dark:text-slate-100 sm:px-6 md:px-8 lg:px-10"
+<section
+  id={id}
+  class:list={[
+    "min-h-screen bg-slate-200 text-black dark:bg-slate-900 dark:text-slate-100",
+    paddingClasses[padding],
+    className,
+  ]}
 >
+  <div class:list={containerClasses}>
   {
     error ? (
       <div class="py-16 text-center">
@@ -299,7 +322,8 @@ const categories = ["All", "New Construction", "Renovation"];
       </div>
     )
   }
-</div>
+  </div>
+</section>
 
 <style>
   .line-clamp-3 {

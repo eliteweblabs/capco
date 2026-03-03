@@ -3,12 +3,15 @@
  * SearchInput - Reusable search field with icon, clear button, and optional autosuggest
  * Based on InlineAddressSearch pattern.
  *
- * Filter mode (default): fires input events. Parent handles filtering (e.g. filterUserRows).
- * Autosuggest mode: set fetchApiEndpoint for API-backed dropdown (like address search).
+ * Modes:
+ * - Filter (default): input events only. Parent handles filtering.
+ * - API autosuggest: fetchApiEndpoint for API-backed dropdown (address search).
+ * - Slot autosuggest: suggestionsSlot=true for parent-populated dropdown (e.g. from DOM).
  *
  * @example
- *   <SearchInput id="user-search" placeholder="Search by name, email..." />
+ *   <SearchInput id="user-search" placeholder="Search..." />
  *   <SearchInput id="addr" fetchApiEndpoint="/api/google/places-autocomplete" />
+ *   <SearchInput id="media-search" suggestionsSlot suggestionsId="media-suggestions" />
  */
 import SimpleIcon from "../common/SimpleIcon.astro";
 
@@ -27,7 +30,10 @@ interface Props {
   noResultsText?: string;
   currentLocation?: boolean;
   type?: "address" | "search";
-  /** Type of search input. If omitted, search mode only. */
+  /** When true, renders a suggestions dropdown container for parent to populate. Parent populates via JS and handles show/hide; SearchInput handles blur/escape to hide. */
+  suggestionsSlot?: boolean;
+  /** Override for suggestions container id (default: ${id}-suggestions). Use when parent expects a specific id. */
+  suggestionsId?: string;
   /** Override for use-location button id (e.g. slot-machine expects componentId-use-location-btn) */
   useLocationButtonId?: string;
   /** Override for clear button id (e.g. slot-machine expects componentId-slot-clear-btn) */
@@ -38,7 +44,6 @@ const {
   id,
   name = id,
   placeholder = "Search...",
-  globalInputClasses = "",
   wrapperClass = "",
   fetchApiEndpoint,
   apiParams = {},
@@ -47,9 +52,16 @@ const {
   noResultsText = "Type to search...",
   currentLocation = false,
   type = "search",
+  suggestionsSlot = false,
+  suggestionsId,
   useLocationButtonId,
   clearButtonId,
 } = Astro.props;
+
+const resolvedSuggestionsId = suggestionsId ?? `${id}-suggestions`;
+
+import { globalClasses } from "../../pages/api/global/global-classes";
+const { globalInputClasses } = globalClasses();
 
 const hasAutosuggest = !!fetchApiEndpoint;
 const resolvedClearBtnId = clearButtonId ?? `${id}-clear-btn`;
@@ -135,13 +147,24 @@ const needsRightPadding = showLocationBtn || !clearButtonId;
       </div>
     )
   }
-  <slot name="suggestions" />
+  {
+    suggestionsSlot && (
+      <div
+        id={resolvedSuggestionsId}
+        class="search-input-suggestions absolute left-0 right-0 top-full z-50 mt-2 hidden max-h-60 overflow-y-auto rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 shadow-lg"
+      >
+        {/* Parent populates via JavaScript */}
+      </div>
+    )
+  }
 </div>
 
 <script
   define:vars={{
     id,
     hasAutosuggest,
+    suggestionsSlot,
+    resolvedSuggestionsId,
     resolvedClearBtnId,
     fetchApiEndpoint,
     apiParams,
@@ -163,6 +186,13 @@ const needsRightPadding = showLocationBtn || !clearButtonId;
       clearBtn.classList.toggle("hidden", !input.value.trim());
     }
 
+    function hideSuggestionsSlot() {
+      if (suggestionsSlot) {
+        const el = document.getElementById(resolvedSuggestionsId);
+        if (el) el.classList.add("hidden");
+      }
+    }
+
     input.addEventListener("input", toggleClear);
 
     clearBtn.addEventListener("click", () => {
@@ -172,7 +202,15 @@ const needsRightPadding = showLocationBtn || !clearButtonId;
       input.dispatchEvent(new Event("input", { bubbles: true }));
       const dropdown = document.getElementById(`${id}-dropdown`);
       if (dropdown) dropdown.classList.add("hidden");
+      hideSuggestionsSlot();
     });
+
+    if (suggestionsSlot) {
+      input.addEventListener("blur", () => setTimeout(hideSuggestionsSlot, 150));
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") hideSuggestionsSlot();
+      });
+    }
 
     toggleClear();
   }

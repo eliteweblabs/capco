@@ -376,12 +376,12 @@ export const GET: APIRoute = async ({ url, cookies, request }) => {
     let projectTotalCount = 0;
     if (filters.projectId) {
       const { count: totalCountResult } = await supabase
-        .from("discussions")
+        .from("discussion")
         .select("*", { count: "exact", head: true })
         .eq("projectId", filters.projectId);
 
       const { count: incompleteCountResult } = await supabase
-        .from("discussions")
+        .from("discussion")
         .select("*", { count: "exact", head: true })
         .eq("projectId", filters.projectId)
         .eq("markCompleted", false);

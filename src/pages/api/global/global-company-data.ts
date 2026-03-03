@@ -159,6 +159,9 @@ export const globalCompanyData = async () => {
     // Custom CSS (allows per-client CSS overrides and customization)
     customCss: get("customCss") || "",
 
+    // Custom JS (allows per-client script injection)
+    customJs: get("customJs") || "",
+
     // Custom Footer HTML (injected into footer)
     customFooterHtml: get("customFooterHtml") || "",
 

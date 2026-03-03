@@ -8,6 +8,7 @@ import { checkAuth } from "../../lib/auth";
 import { isAdminOrSuperAdmin } from "../../lib/user-utils";
 import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
 import Button from "../../components/common/Button.astro";
+import FormActionButton from "../../components/form/FormActionButton.astro";
 import DeleteConfirmButton from "../../components/ui/DeleteConfirmButton.astro";
 import SocialMediaRepeater from "../../components/form/SocialMediaRepeater.astro";
 import { globalCompanyData } from "../api/global/global-company-data";
@@ -90,6 +91,9 @@ const settings = {
 
   // Custom CSS (advanced customization)
   customCss: companyData.customCss || "",
+
+  // Custom JS (advanced customization)
+  customJs: companyData.customJs || "",
 
   // Custom Footer HTML (injected into footer)
   customFooterHtml: companyData.customFooterHtml || "",
@@ -460,6 +464,54 @@ const displayLogo = sanitizeSvgForDisplay(settings.logo);
           <p class="mt-1 text-xs text-gray-500">
             Enter custom CSS rules. Changes take effect immediately after saving. Use CSS variables
             like <code>var(--color-primary-500)</code> for consistent theming.
+          </p>
+        </div>
+      </div>
+
+      <!-- Custom JS -->
+      <h2 class="mb-4 text-xl font-semibold">Custom JS</h2>
+      <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+        Add custom JavaScript to run on every page. Runs after the DOM is ready.
+      </p>
+      <div
+        class="mb-4 rounded border border-yellow-200 bg-yellow-50 p-3 dark:border-yellow-800 dark:bg-yellow-900/20"
+      >
+        <p class="text-xs text-yellow-800 dark:text-yellow-200">
+          <strong>⚠️ Advanced:</strong> Only use trusted scripts. Malicious code can compromise your
+          site. JS runs globally on every page.
+        </p>
+      </div>
+      <div class="grid grid-cols-1 gap-4">
+        <div>
+          <label for="custom_js" class="mb-2 block text-sm font-medium">
+            JavaScript code
+            {
+              isFromDatabase("customJs") && (
+                <span
+                  class="ml-2 text-xs text-green-600 dark:text-green-400"
+                  title="Stored in database"
+                >
+                  💾
+                </span>
+              )
+            }
+          </label>
+          <textarea
+            id="custom_js"
+            name="custom_js"
+            rows="12"
+            class={globalInputClasses + " font-mono text-xs"}
+            placeholder={`// Example: Log on load
+console.log('Custom JS loaded');
+
+// Example: Add a simple animation
+document.querySelectorAll('.my-element').forEach(el => {
+  el.addEventListener('click', () => el.classList.toggle('active'));
+});`}>{settings.customJs}</textarea
+          >
+          <p class="mt-1 text-xs text-gray-500">
+            Enter JavaScript code. Do not wrap in <code>&lt;script&gt;</code> tags. Changes take
+            effect immediately after saving.
           </p>
         </div>
       </div>
@@ -1205,7 +1257,7 @@ const displayLogo = sanitizeSvgForDisplay(settings.logo);
         </a>
         <div class="flex gap-3">
           <Button type="button" variant="primary" id="reset-form-btn"> Reset </Button>
-          <Button type="submit" variant="secondary" id="save-settings-btn"> Save Settings </Button>
+          <FormActionButton action="submit" label="Save Settings" variant="secondary" id="save-settings-btn" />
         </div>
       </div>
     </form>
@@ -1456,6 +1508,7 @@ const displayLogo = sanitizeSvgForDisplay(settings.logo);
       plausible_tracking_script: "plausibleTrackingScript",
       social_networks: "socialNetworks",
       custom_css: "customCss",
+      custom_js: "customJs",
       custom_footer_html: "customFooterHtml",
     };
 

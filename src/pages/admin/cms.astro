@@ -6,6 +6,7 @@
 import { checkAuth } from "../../lib/auth";
 import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
 import Button from "../../components/common/Button.astro";
+import FormActionButton from "../../components/form/FormActionButton.astro";
 import CloseButton from "../../components/ui/CloseButton.astro";
 import DeleteConfirmButton from "../../components/ui/DeleteConfirmButton.astro";
 import StickyActions from "../../components/project/StickyActions.astro";
@@ -50,7 +51,11 @@ try {
 }
 ---
 
-<LayoutFullWidth title="CMS Management" description="Template pages (content + layout)." classList="p-4">
+<LayoutFullWidth
+  title="CMS Management"
+  description="Template pages (content + layout)."
+  classList="p-4"
+>
   <div class="mb-6">
     <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Content Management System</h1>
     <!-- <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
@@ -59,11 +64,11 @@ try {
   </div>
 
   {/* TanStack table at top — runs in tandem with AccordionDataTable below */}
-  <section class="mb-10">
+  <!-- <section class="mb-10">
     <TanStackDataTable
       id="cms-pages-tanstack"
       title="CMS Pages (TanStack)"
-      description="Sortable view. Use table below for edit/create and drag to reorder."
+      description="Sortable view. Expand a row to jump to the editor below."
       data={templatePages}
       columns={[
         {
@@ -86,11 +91,14 @@ try {
         },
       ]}
       getRowIdKey="slug"
+      getReorderIdKey="id"
       emptyMessage="No pages yet."
       expandable={true}
       showDragHandle={true}
+      reorderCallback="handleCmsPagesReorder"
+      expandLinkedAccordionId="cms-template-pages"
     />
-  </section>
+  </section> -->
 
   <section class="mb-10">
     <AccordionDataTable
@@ -241,7 +249,7 @@ try {
             Roles that can see this page in the nav (any = all)
           </p>
         </div>
-        <div>
+        <div id="template-page-nav-button-style-wrapper" class="hidden">
           <label for="template-page-nav-button-style" class="mb-2 block text-sm font-medium">
             Button type (nav style)
           </label>
@@ -272,8 +280,8 @@ try {
         <div id="template-form-success" class="hidden text-sm text-green-600 dark:text-green-400">
         </div>
         <div class="flex justify-end gap-3">
-          <Button type="button" id="cancel-template-btn" variant="primary"> Cancel </Button>
-          <Button type="submit" variant="secondary"> Save Page </Button>
+          <FormActionButton action="cancel" id="cancel-template-btn" variant="primary" />
+          <FormActionButton action="submit" label="Save Page" variant="secondary" />
         </div>
       </form>
     </div>
@@ -344,6 +352,11 @@ try {
         cb.checked = arr.includes(cb.value);
       });
     }
+    function updateNavButtonStyleVisibility() {
+      const includeNavEl = document.getElementById("template-page-include-in-nav");
+      const wrapper = document.getElementById("template-page-nav-button-style-wrapper");
+      if (wrapper) wrapper.classList.toggle("hidden", !includeNavEl?.checked);
+    }
     function closeTemplateEditor() {
       if (!openTemplateSlotId) return;
       const slugEl = document.getElementById("template-page-slug");
@@ -408,6 +421,7 @@ try {
         if (ch) ch.classList.add("rotate-180");
       }
       openTemplateSlotId = slotId;
+      updateNavButtonStyleVisibility();
       detailRow?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
     function applyTemplatePageToForm(page) {
@@ -429,6 +443,9 @@ try {
       if (navStyleEl && "value" in navStyleEl)
         navStyleEl.value = page.navButtonStyle || page.nav_button_style || "";
     }
+
+    const includeNavEl = document.getElementById("template-page-include-in-nav");
+    if (includeNavEl) includeNavEl.addEventListener("change", updateNavButtonStyleVisibility);
 
     if (createBtn) {
       createBtn.addEventListener("click", (e) => {

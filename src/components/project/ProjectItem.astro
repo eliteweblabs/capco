@@ -5,7 +5,7 @@ import DeleteConfirmButton from "../ui/DeleteConfirmButton.astro";
 import StaffSelectTooltip from "../form/StaffSelectTooltip.astro";
 import Tooltip from "../ui/Tooltip.astro";
 import { getFileIconSvg, getFileName } from "../../lib/file-icon";
-import Stepper from "../form/Stepper.astro";
+import NumberStepper from "../form/NumberStepper.astro";
 import SlideToggle from "../form/SlideToggle.astro";
 import type { ProjectListColumnConfig } from "../../lib/project-list-table-config";
 
@@ -358,8 +358,8 @@ const statusColor = currentStatusColor || "gray";
             return (
               <td class={centerClass}>
                 <Button
-                variant="outline"
-                size="xs"
+                  variant="outline"
+                  size="xs"
                   class="group !w-full !px-8"
                   href={`/project/${project.id}?status=${currentStatusTab}`}
                   dataAttributes={{
@@ -367,7 +367,11 @@ const statusColor = currentStatusColor || "gray";
                     "data-status": project.status,
                   }}
                 >
-                  <span class="absolute left-2 inline-block h-2 w-2 mx-1.5 shrink-0 rounded-full group-hover:animate-pulse-breathe" style={`background-color: ${statusColor}`} aria-hidden="true" />
+                  <span
+                    class="group-hover:animate-pulse-breathe absolute left-2 mx-1.5 inline-block h-2 w-2 shrink-0 rounded-full"
+                    style={`background-color: ${statusColor}`}
+                    aria-hidden="true"
+                  />
                   {currentStatusName || "Unknown Status"}
                 </Button>
               </td>
@@ -406,7 +410,7 @@ const statusColor = currentStatusColor || "gray";
             const showTooltips = displayOpts.tooltips !== false;
             const iconSize = (displayOpts.size ?? "sm") as "sm" | "md" | "lg";
             return (
-              <td class="block min-w-0 overflow-hidden whitespace-nowrap px-4 py-2 text-center">
+              <td class="block min-w-0 whitespace-nowrap px-4 py-2 text-center">
                 <div class="flex justify-center">
                   <a href={`/project/${project.id}?status=files`} class="text-sm text-gray-600">
                     {hasFiles ? (
@@ -425,10 +429,7 @@ const statusColor = currentStatusColor || "gray";
                             const iconHtml = getFileIconSvg(fileType, iconSize);
                             return (
                               <Tooltip text={fileName} position="top">
-                                <span
-                                  class="cursor-pointer inline-flex"
-                                  set:html={iconHtml}
-                                />
+                                <span class="inline-flex cursor-pointer" set:html={iconHtml} />
                               </Tooltip>
                             );
                           })}
@@ -551,7 +552,7 @@ const statusColor = currentStatusColor || "gray";
           if (col.type === "dueDate") {
             return (
               <td class={centerClass}>
-                <Stepper
+                <NumberStepper
                   entityId={project.id}
                   value={project?.dueDate ?? ""}
                   showStepper={currentRole === "Admin" || currentRole === "Staff"}

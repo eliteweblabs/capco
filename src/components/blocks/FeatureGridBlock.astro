@@ -20,6 +20,12 @@
 import SimpleIcon from "../common/SimpleIcon.astro";
 import { parseJsonProp, buildArrayFromFlatProps } from "./BlockRegistry";
 import { globalClasses } from "../../pages/api/global/global-classes";
+import {
+  paddingClasses,
+  getContainerWrapperClasses,
+  type MaxWidthOption,
+  type PaddingOption,
+} from "../../lib/container-width";
 
 const { globalTextH3 } = globalClasses();
 
@@ -86,7 +92,9 @@ interface Props {
   feature8Href?: string;
   feature8Color?: string;
 
-  // Styling
+  // Styling / container (CMS shortcode)
+  maxWidth?: MaxWidthOption;
+  padding?: PaddingOption;
   className?: string;
   id?: string;
 
@@ -106,7 +114,17 @@ interface Props {
 }
 
 const props = Astro.props;
-const { title, description, eyebrow, variant = "cards", className = "", id } = props;
+const {
+  title,
+  description,
+  eyebrow,
+  variant = "cards",
+  maxWidth = "full",
+  padding = "medium",
+  className = "",
+  id,
+} = props;
+const containerClasses = getContainerWrapperClasses(maxWidth);
 
 // Parse columns (handle string from CMS)
 const columns = typeof props.columns === "string" ? parseInt(props.columns) : (props.columns ?? 3);
@@ -168,11 +186,11 @@ const getColorClass = (color: string | undefined, index: number): string => {
 
 <section
   {id}
-  class:list={["feature-grid-block py-16 md:py-24", className]}
+  class:list={["feature-grid-block", paddingClasses[padding], className]}
   data-animate={animationType || undefined}
   data-animate-delay={animateDelay || undefined}
 >
-  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+  <div class:list={containerClasses}>
     {
       (title || description || eyebrow) && (
         <div class={`mb-12 md:mb-16 ${variant === "centered" ? "text-center" : ""}`}>

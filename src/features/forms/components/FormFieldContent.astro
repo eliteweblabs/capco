@@ -115,7 +115,20 @@ const isMultistep = context === "multistep";
   />
 ) : field.type === "component" && field.component === "SlideToggle" ? (
   <div class={isMultistep ? "flex items-center justify-center py-8" : ""} tabindex="-1">
-    <SlideToggle id={id} name={field.name} {...field.componentProps} />
+    <SlideToggle
+      id={id}
+      name={field.name}
+      {...field.componentProps}
+      label={field.label ?? (field.componentProps as any)?.label ?? ""}
+      checked={
+        initialData[field.name] !== undefined && initialData[field.name] !== null
+          ? initialData[field.name] === true ||
+            initialData[field.name] === "true" ||
+            initialData[field.name] === 1 ||
+            initialData[field.name] === "1"
+          : (field.componentProps as any)?.checked ?? false
+      }
+    />
   </div>
 ) : field.type === "component" && field.component === "InlineAddressSearch" ? (
   <InlineAddressSearch

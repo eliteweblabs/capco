@@ -1,0 +1,98 @@
+---
+/**
+ * FormActionButton – action-based form buttons with consistent defaults.
+ * Uses GLOBAL_BUTTON_DEFAULTS from multi-step-form-config.
+ * All submit buttons same style, all cancel same style, etc.
+ *
+ * Usage:
+ *   <FormActionButton action="submit">Save</FormActionButton>
+ *   <FormActionButton action="submit" label="Post Comment" icon="send" />
+ *   <FormActionButton action="cancel" id="cancel-btn" />
+ */
+import Button from "../common/Button.astro";
+import {
+  GLOBAL_BUTTON_DEFAULTS,
+  type FormButtonConfig,
+} from "../../lib/multi-step-form-config";
+
+export type FormActionType = "submit" | "cancel" | "next" | "prev" | "skip" | "new";
+
+export interface Props {
+  action: FormActionType;
+  /** Override default label (slot or label prop) */
+  label?: string;
+  id?: string;
+  form?: string;
+  disabled?: boolean;
+  class?: string;
+  /** Override default variant */
+  variant?: FormButtonConfig["variant"];
+  /** Override default size */
+  size?: FormButtonConfig["size"];
+  /** Override default icon */
+  icon?: string;
+  /** Override default icon position */
+  iconPosition?: "left" | "right";
+  /** For submit: use type="submit" (default). For others: type="button" */
+  /** Override: submit defaults to type="submit", others to type="button" */
+  type?: "button" | "submit";
+  onclick?: string;
+  fullWidth?: boolean;
+}
+
+/** Default labels per action (when no slot/label provided) */
+const ACTION_LABELS: Record<FormActionType, string> = {
+  submit: "Submit",
+  cancel: "Cancel",
+  next: "Next",
+  prev: "Back",
+  skip: "Skip",
+  new: "New",
+};
+
+const {
+  action,
+  label: labelProp,
+  id,
+  form,
+  disabled = false,
+  class: className = "",
+  variant: variantOverride,
+  size: sizeOverride,
+  icon: iconOverride,
+  iconPosition: iconPositionOverride,
+  type: typeOverride,
+  onclick,
+  fullWidth = false,
+} = Astro.props;
+
+type ActionDefaults = Partial<Pick<FormButtonConfig, "variant" | "size" | "icon" | "iconPosition" | "label">>;
+const defaults: ActionDefaults =
+  GLOBAL_BUTTON_DEFAULTS[action as keyof typeof GLOBAL_BUTTON_DEFAULTS] ?? {};
+
+const variant = variantOverride ?? defaults.variant ?? "primary";
+const size = sizeOverride ?? defaults.size ?? "md";
+const icon = iconOverride ?? defaults.icon;
+const iconPosition = iconPositionOverride ?? defaults.iconPosition ?? "left";
+const defaultLabel = defaults.label ?? ACTION_LABELS[action];
+// type: submit action → type="submit" by default; others (including new) → type="button"
+const btnType =
+  typeOverride ??
+  (action === "submit" ? ("submit" as const) : ("button" as const));
+---
+
+<Button
+  type={btnType}
+  variant={variant}
+  size={size}
+  icon={icon}
+  iconPosition={iconPosition}
+  id={id}
+  form={form}
+  disabled={disabled}
+  class={className}
+  onclick={onclick}
+  fullWidth={fullWidth}
+>
+  {labelProp ?? (Astro.slots.has("default") ? <slot /> : defaultLabel)}
+</Button>
