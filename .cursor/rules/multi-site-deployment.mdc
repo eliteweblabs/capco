@@ -1,0 +1,23 @@
+# Multi-Site Deployment
+
+This repository deploys **multiple sites** when synced to GitHub. A single codebase serves multiple companies; each deployment has its own Railway project, Supabase database, and environment variables.
+
+## Current Sites
+
+- **CAPCO Design Group** (capcofire.com)
+- **Rothco Built, LLC** (rothco-built.com or similar)
+
+More sites will be added over time.
+
+## Implications for Changes
+
+1. **No site-specific hacks** – Code must work for all deployments. Use config, env vars, or feature flags instead of hardcoding for one company.
+2. **Per-site config** – `SITE_CONFIG` env var, `SITE_CONFIG_JSON`, or `config-[company-slug].json` in `public/data/` or `dist/client/data/`.
+3. **Post-deploy verification** – After sync, verify both CAPCO and Rothco (and any new sites) are working. See post-change-site-check.mdc and railway-env-config.mdc.
+
+## Adding a New Site
+
+1. Create a new Railway project (or branch).
+2. Set env vars (Supabase, SITE_CONFIG, etc.).
+3. Add `config-[company-slug].json` if not using SITE_CONFIG env.
+4. Add to post-deploy check list.
