@@ -218,6 +218,52 @@ export async function getSiteConfig(): Promise<SiteConfig> {
       blog: false,
       pricing: false,
     },
+    // Minimal form configs when no SITE_CONFIG / config file is present (e.g. CAPCO without env vars)
+    loginForm: {
+      formId: "login-form",
+      layout: "standard",
+      steps: [
+        {
+          title: "Sign in",
+          fields: [
+            { id: "email", name: "email", type: "email", label: "Email", required: true },
+            { id: "password", name: "password", type: "password", label: "Password", required: true },
+          ],
+          buttons: [{ type: "submit" as const, label: "Sign in" }],
+        },
+      ],
+    },
+    registerForm: {
+      formId: "register-form",
+      layout: "standard",
+      steps: [
+        {
+          title: "Create account",
+          fields: [
+            { id: "email", name: "email", type: "email", label: "Email", required: true },
+            { id: "password", name: "password", type: "password", label: "Password", required: true },
+          ],
+          buttons: [{ type: "submit" as const, label: "Create account" }],
+        },
+      ],
+    },
+    contactForm: {
+      formId: "contact-form",
+      layout: "standard",
+      steps: [
+        {
+          title: "Contact us",
+          fields: [
+            { id: "name", name: "name", type: "text", label: "Name", required: true },
+            { id: "email", name: "email", type: "email", label: "Email", required: true },
+            { id: "message", name: "message", type: "textarea", label: "Message", required: true },
+          ],
+          buttons: [{ type: "submit" as const, label: "Send" }],
+        },
+      ],
+    },
+    mepForm: {},
+    reviewForm: {},
   };
 
   // 1. Priority: env-based config (Railway limits vars to 32KB, so we support multiple methods)

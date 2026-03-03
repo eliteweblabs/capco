@@ -62,15 +62,21 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       timestamp: new Date().toISOString(),
     };
 
-    // Get basic company information
-    const { data: companySettings, error: settingsError } = await supabase
-      .from("company_settings")
-      .select("*")
-      .single();
-
-    if (settingsError && settingsError.code !== "PGRST116") {
-      // PGRST116 = no rows returned
-      console.error("❌ [GLOBAL-COMPANY-DATA] Error fetching company settings:", settingsError);
+    // Get basic company information (company_settings may not exist on all deployments e.g. CAPCO)
+    let companySettings: Record<string, unknown> | null = null;
+    try {
+      const { data, error: settingsError } = await supabase
+        .from("company_settings")
+        .select("*")
+        .single();
+      if (settingsError && settingsError.code !== "PGRST116") {
+        // PGRST116 = no rows; 42P01 = table does not exist
+        console.warn("⚠️ [GLOBAL-COMPANY-DATA] company_settings fetch:", settingsError.message);
+      } else {
+        companySettings = data;
+      }
+    } catch (e) {
+      console.warn("⚠️ [GLOBAL-COMPANY-DATA] company_settings unavailable:", e);
     }
 
     // Get company data from global settings as fallback
@@ -95,13 +101,14 @@ export const GET: APIRoute = async ({ url, cookies }) => {
 
     // Get project statistics if requested
     if (filters.includeProjects) {
-      const { data: projects, error: projectsError } = await supabase
-        .from("projects")
-        .select("id, status, createdAt, authorId, assignedToId");
+      try {
+        const { data: projects, error: projectsError } = await supabase
+          .from("projects")
+          .select("id, status, createdAt, authorId, assignedToId");
 
-      if (projectsError) {
-        console.error("❌ [GLOBAL-COMPANY-DATA] Error fetching projects:", projectsError);
-      } else {
+        if (projectsError) {
+          console.warn("⚠️ [GLOBAL-COMPANY-DATA] projects fetch:", projectsError.message);
+        } else if (projects) {
         const totalProjects = projects?.length || 0;
         const projectsByStatus =
           projects?.reduce((acc: Record<string, number>, project: any) => {
@@ -121,50 +128,61 @@ export const GET: APIRoute = async ({ url, cookies }) => {
           recent: recentProjects,
           byStatus: projectsByStatus,
         };
+        }
+      } catch (e) {
+        console.warn("⚠️ [GLOBAL-COMPANY-DATA] projects fetch failed:", e);
       }
     }
 
     // Get user statistics if requested
     if (filters.includeUsers) {
-      const { data: users, error: usersError } = await supabase
-        .from("profiles")
-        .select("id, role, createdAt, companyName");
+      try {
+        const { data: users, error: usersError } = await supabase
+          .from("profiles")
+          .select("id, role, createdAt, companyName");
 
-      if (usersError) {
-        console.error("❌ [GLOBAL-COMPANY-DATA] Error fetching users:", usersError);
-      } else {
-        const totalUsers = users?.length || 0;
-        const usersByRole =
-          users?.reduce((acc: Record<string, number>, user: any) => {
-            acc[user.role] = (acc[user.role] || 0) + 1;
-            return acc;
-          }, {}) || {};
+        if (usersError) {
+          console.warn("⚠️ [GLOBAL-COMPANY-DATA] profiles fetch:", usersError.message);
+        } else if (users) {
+          const totalUsers = users.length;
+          const usersByRole =
+            users.reduce((acc: Record<string, number>, user: any) => {
+              acc[user.role] = (acc[user.role] || 0) + 1;
+              return acc;
+            }, {}) || {};
 
-        const uniqueCompanies = new Set(users?.map((user: any) => user.companyName).filter(Boolean))
-          .size;
+          const uniqueCompanies = new Set(users.map((user: any) => user.companyName).filter(Boolean))
+            .size;
 
-        companyData.users = {
-          total: totalUsers,
-          byRole: usersByRole,
-          uniqueCompanies,
-        };
+          companyData.users = {
+            total: totalUsers,
+            byRole: usersByRole,
+            uniqueCompanies,
+          };
+        }
+      } catch (e) {
+        console.warn("⚠️ [GLOBAL-COMPANY-DATA] profiles fetch failed:", e);
       }
     }
 
-    // Get system health metrics
-    const { data: recentActivity, error: activityError } = await supabase
-      .from("activity_log")
-      .select("id, createdAt, action")
-      .gte("createdAt", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-      .limit(100);
+    // Get system health metrics (activity_log may not exist on all deployments)
+    try {
+      const { data: recentActivity, error: activityError } = await supabase
+        .from("activity_log")
+        .select("id, createdAt, action")
+        .gte("createdAt", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+        .limit(100);
 
-    if (activityError) {
-      console.error("❌ [GLOBAL-COMPANY-DATA] Error fetching recent activity:", activityError);
-    } else {
-      companyData.system = {
-        recentActivity: recentActivity?.length || 0,
-        lastUpdated: new Date().toISOString(),
-      };
+      if (activityError) {
+        console.warn("⚠️ [GLOBAL-COMPANY-DATA] activity_log fetch:", activityError.message);
+      } else {
+        companyData.system = {
+          recentActivity: recentActivity?.length || 0,
+          lastUpdated: new Date().toISOString(),
+        };
+      }
+    } catch (e) {
+      console.warn("⚠️ [GLOBAL-COMPANY-DATA] activity_log unavailable:", e);
     }
 
     // Add type-specific data
