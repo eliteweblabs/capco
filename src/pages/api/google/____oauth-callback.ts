@@ -6,9 +6,7 @@ function getOrigin(url: URL, request: Request): string {
     request.headers.get("x-forwarded-proto") || request.headers.get("x-forwarded-protocol");
   const forwardedHost = request.headers.get("x-forwarded-host") || request.headers.get("host");
   const host = forwardedHost || request.headers.get("host");
-  const proto =
-    forwardedProto ||
-    (url.protocol === "https:" ? "https" : "http");
+  const proto = forwardedProto || (url.protocol === "https:" ? "https" : "http");
 
   if (host) {
     const origin = `${proto}://${host}`;
@@ -27,10 +25,12 @@ function getOrigin(url: URL, request: Request): string {
   }
 
   // Fallback only when request gives no usable origin
-  const productionUrl = import.meta.env.PUBLIC_SITE_URL || import.meta.env.SITE_URL;
+  const productionUrl = import.meta.env.RAILWAY_PUBLIC_DOMAIN || import.meta.env.SITE_URL;
   if (productionUrl) {
     try {
-      const prodUrl = new URL(productionUrl.startsWith("http") ? productionUrl : `https://${productionUrl}`);
+      const prodUrl = new URL(
+        productionUrl.startsWith("http") ? productionUrl : `https://${productionUrl}`
+      );
       console.log("🔍 [GOOGLE-OAUTH] Using env fallback origin:", prodUrl.origin);
       return prodUrl.origin;
     } catch (e) {

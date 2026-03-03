@@ -9,7 +9,7 @@
 
 ### OAuth localhost redirect
 
-The OAuth flow uses the **origin** to build the callback URL. If `RAILWAY_PUBLIC_DOMAIN` or `PUBLIC_SITE_URL` is missing in production, or if Supabase/Google are misconfigured, the user can end up on localhost.
+The OAuth flow uses the **origin** to build the callback URL. If `RAILWAY_PUBLIC_DOMAIN` or `RAILWAY_PUBLIC_DOMAIN` is missing in production, or if Supabase/Google are misconfigured, the user can end up on localhost.
 
 **Code fix applied:** `google-start.ts` now prefers `RAILWAY_PUBLIC_DOMAIN` first when set, so production never accidentally falls back to localhost.
 
@@ -18,7 +18,7 @@ The OAuth flow uses the **origin** to build the callback URL. If `RAILWAY_PUBLIC
 ```bash
 # With Railway CLI (ensure project linked: railway status)
 railway variables                                    # list current
-railway variables --set "PUBLIC_SITE_URL=https://rothco-firstbranch.up.railway.app"
+railway variables --set "RAILWAY_PUBLIC_DOMAIN=https://rothco-firstbranch.up.railway.app"
 # RAILWAY_PUBLIC_DOMAIN is usually set by Railway (rothco-firstbranch.up.railway.app)
 # For capco: railway link → select CAPCO Design Group, then run same --set
 ```
@@ -60,7 +60,7 @@ The `import("../../scripts/app-globals")` script is bundled by Astro/Vite. In pr
 
 ## Quick checklist
 
-- [ ] `RAILWAY_PUBLIC_DOMAIN` or `PUBLIC_SITE_URL` set in Railway for each deployment
+- [ ] `RAILWAY_PUBLIC_DOMAIN` or `RAILWAY_PUBLIC_DOMAIN` set in Railway for each deployment
 - [ ] Supabase Site URL = live domain (not localhost)
 - [ ] Supabase Redirect URLs include `https://<your-domain>/auth/callback`
 - [ ] Google OAuth Client has Supabase callback: `https://<project>.supabase.co/auth/v1/callback`

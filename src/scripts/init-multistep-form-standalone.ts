@@ -90,6 +90,10 @@ function runStepCascadeInit(): void {
 
 /** Animated placeholder rotation (company name, email, etc.) when MultiStepForm.astro module is not loaded. */
 function runAnimatedPlaceholderInit(): void {
+  // Skip if MultiStepForm.astro already initialized placeholders (prevents double-firing)
+  if ((window as any).__animatedPlaceholderInited) return;
+  (window as any).__animatedPlaceholderInited = true;
+
   const animatedInputs = document.querySelectorAll(
     'input[data-has-animated-placeholder="true"]'
   ) as NodeListOf<HTMLInputElement>;

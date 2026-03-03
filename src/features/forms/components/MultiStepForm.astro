@@ -997,12 +997,16 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
       'input[data-has-animated-placeholder="true"]'
     ) as NodeListOf<HTMLInputElement>;
 
-    // console.log(
-    //   `[ANIMATED-PLACEHOLDER] 🎯 Found ${animatedInputs.length} inputs with animated placeholders`
-    // );
+    const shouldInitPlaceholders =
+      animatedInputs.length > 0 &&
+      !(globalThis as any).__animatedPlaceholderInited;
+    if (shouldInitPlaceholders) {
+      (globalThis as any).__animatedPlaceholderInited = true;
+    }
 
-    // Store placeholder data for each field
-    const placeholderData = new Map<
+    if (shouldInitPlaceholders) {
+      // Store placeholder data for each field
+      const placeholderData = new Map<
       string,
       { index: number; values: string[]; syncGroup?: string }
     >();
@@ -1108,7 +1112,6 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
         });
 
         // Check initial value immediately
-        console.log(`[ANIMATED-PLACEHOLDER] ⏱️ Initial check (0ms) for ${input.id}`);
         checkAndHidePlaceholder();
 
         // Delayed checks for autofill (fallback for browsers that don't support animation detection)
@@ -1335,6 +1338,7 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
           attributeFilter: ["class"],
         });
       });
+    }
     }
 
     // Add focus/blur shadow animation to all form inputs using event delegation

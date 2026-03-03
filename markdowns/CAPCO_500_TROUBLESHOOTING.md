@@ -15,6 +15,7 @@ When no site config is loaded (no `SITE_CONFIG` env, no `config-*.json`, no `sit
 ### 1. Identify the Failing URL
 
 The homepage (https://capcofire.com) and core routes often return 200. The 500 may occur on:
+
 - Specific pages (e.g. `/project/[id]`, `/admin/settings`, `/mep-form`)
 - API routes (e.g. `/api/global/company-data`, `/api/discussions/get`)
 - Actions (form submit, file upload, etc.)
@@ -39,6 +40,7 @@ railway logs --lines 200
 ```
 
 **Or via Railway Dashboard:**
+
 1. Go to [railway.app](https://railway.app)
 2. Open **CAPCO Design Group** project
 3. Select the main web service
@@ -47,13 +49,13 @@ railway logs --lines 200
 
 ### 3. Common 500 Causes for CAPCO
 
-| Cause | Symptom in logs | Fix |
-|-------|-----------------|-----|
-| **Missing `company_settings` table** | `relation "company_settings" does not exist` | API now handles gracefully; returns fallback from `globalSettings` |
-| **Missing `activity_log` table** | `relation "activity_log" does not exist` | API now handles gracefully; `system` section omitted |
-| **Supabase env vars** | `[---SUPABASE-ADMIN] Supabase admin client not configured` | Set `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_PUBLISHABLE`, `SUPABASE_SECRET` in Railway |
-| **Schema mismatch** | `column "createdAt" does not exist` | CAPCO DB may use snake_case; compare schemas (see COMPARE_SCHEMAS_NOW.md) |
-| **globalCompanyData throws** | Used in middleware for `/mep-form` | Check `globalSettings` table exists; `supabaseAdmin` configured |
+| Cause                                | Symptom in logs                                            | Fix                                                                                    |
+| ------------------------------------ | ---------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| **Missing `company_settings` table** | `relation "company_settings" does not exist`               | API now handles gracefully; returns fallback from `globalSettings`                     |
+| **Missing `activity_log` table**     | `relation "activity_log" does not exist`                   | API now handles gracefully; `system` section omitted                                   |
+| **Supabase env vars**                | `[---SUPABASE-ADMIN] Supabase admin client not configured` | Set `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_PUBLISHABLE`, `SUPABASE_SECRET` in Railway |
+| **Schema mismatch**                  | `column "createdAt" does not exist`                        | CAPCO DB may use snake_case; compare schemas (see COMPARE_SCHEMAS_NOW.md)              |
+| **globalCompanyData throws**         | Used in middleware for `/mep-form`                         | Check `globalSettings` table exists; `supabaseAdmin` configured                        |
 
 ### 4. Verify Environment Variables
 
@@ -62,7 +64,7 @@ In Railway (CAPCO project → Variables):
 - `PUBLIC_SUPABASE_URL` – Supabase project URL
 - `PUBLIC_SUPABASE_PUBLISHABLE` – Publishable/anonymous key
 - `SUPABASE_SECRET` – Service role key (for admin operations)
-- `RAILWAY_PUBLIC_DOMAIN` or `PUBLIC_SITE_URL` – For OAuth redirects
+- `RAILWAY_PUBLIC_DOMAIN` or `RAILWAY_PUBLIC_DOMAIN` – For OAuth redirects
 
 ### 5. Schema Differences (Rothco vs CAPCO)
 

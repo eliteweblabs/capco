@@ -100,7 +100,7 @@ Make sure these are set in your `.env`:
 ```bash
 PUBLIC_SUPABASE_URL=your_supabase_url
 SUPABASE_SECRET=your_supabase_secret_key
-PUBLIC_SITE_URL=http://localhost:4321  # Or your production URL
+RAILWAY_PUBLIC_DOMAIN=http://localhost:4321  # Or your production URL
 EMAIL_API_KEY=your_resend_api_key
 FROM_EMAIL=your@email.com
 FROM_NAME=Your Company Name

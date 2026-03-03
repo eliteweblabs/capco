@@ -55,7 +55,7 @@ async function processScheduledNewsletters() {
       try {
         // Call the send API endpoint
         const response = await fetch(
-          `${process.env.PUBLIC_SITE_URL || "http://localhost:4321"}/api/newsletters/send`,
+          `${process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:4321"}/api/newsletters/send`,
           {
             method: "POST",
             headers: {

@@ -24,7 +24,9 @@ const SUBJECT = `${COMPANY_NAME} - Confirm your account`;
 /** Replace placeholders from env (avoids importing app code that needs import.meta.env) */
 function replacePlaceholdersFromEnv(html: string): string {
   const baseUrl =
-    process.env.RAILWAY_PUBLIC_DOMAIN || process.env.PUBLIC_SITE_URL || "https://rothcollc.com";
+    process.env.RAILWAY_PUBLIC_DOMAIN ||
+    process.env.RAILWAY_PUBLIC_DOMAIN ||
+    "https://rothcollc.com";
   const siteUrl = baseUrl.startsWith("http") ? baseUrl : `https://${baseUrl}`;
 
   const companyName = process.env.RAILWAY_PROJECT_NAME || "Rothco Built";

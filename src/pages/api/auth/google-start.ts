@@ -14,8 +14,9 @@ function getOrigin(request: Request, url: URL): string {
     (typeof import.meta !== "undefined" && (import.meta.env?.RAILWAY_PUBLIC_DOMAIN as string)) ||
     (typeof process !== "undefined" && process.env.RAILWAY_PUBLIC_DOMAIN);
   const explicit =
-    (typeof import.meta !== "undefined" && (import.meta.env?.PUBLIC_SITE_URL || import.meta.env?.SITE_URL)) ||
-    (typeof process !== "undefined" && (process.env.PUBLIC_SITE_URL || process.env.SITE_URL));
+    (typeof import.meta !== "undefined" &&
+      (import.meta.env?.RAILWAY_PUBLIC_DOMAIN || import.meta.env?.SITE_URL)) ||
+    (typeof process !== "undefined" && (process.env.RAILWAY_PUBLIC_DOMAIN || process.env.SITE_URL));
 
   // Production: prefer RAILWAY_PUBLIC_DOMAIN so we never accidentally use localhost
   if (railway) {
@@ -56,7 +57,9 @@ function getOrigin(request: Request, url: URL): string {
   }
 
   const fallback = "http://localhost:4321";
-  console.warn("[auth/google-start] getOrigin fallback to localhost – set RAILWAY_PUBLIC_DOMAIN or PUBLIC_SITE_URL for production");
+  console.warn(
+    "[auth/google-start] getOrigin fallback to localhost – set RAILWAY_PUBLIC_DOMAIN or RAILWAY_PUBLIC_DOMAIN for production"
+  );
   return fallback;
 }
 

@@ -7,7 +7,7 @@ import "dotenv/config";
  * DATA SOURCES (priority order):
  * 1. CMS Database (globalSettings) - same as process-manifest
  * 2. SITE_CONFIG / SITE_CONFIG_JSON / site-config.json
- * 3. Env: PUBLIC_SITE_URL, PUBLIC_URL, RAILWAY_PUBLIC_DOMAIN, GLOBAL_COMPANY_*
+ * 3. Env: RAILWAY_PUBLIC_DOMAIN, PUBLIC_URL, RAILWAY_PUBLIC_DOMAIN, GLOBAL_COMPANY_*
  */
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join, dirname } from "path";
@@ -54,16 +54,18 @@ async function main() {
   const getEntity = (key, envKey, fallback) => get(s, key, envKey, fallback);
 
   const website =
-    getEntity("website", "PUBLIC_SITE_URL", null) ||
+    getEntity("website", "RAILWAY_PUBLIC_DOMAIN", null) ||
     process.env.PUBLIC_URL ||
     (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : null) ||
     "https://example.com";
 
   const entity = {
-    name: getEntity("companyName", "POLICYGEN_ENTITY_NAME", null) ||
+    name:
+      getEntity("companyName", "POLICYGEN_ENTITY_NAME", null) ||
       getEntity("companyName", "RAILWAY_PROJECT_NAME", "Fire Protection Services"),
     website,
-    address: getEntity("address", "POLICYGEN_ENTITY_ADDRESS", null) ||
+    address:
+      getEntity("address", "POLICYGEN_ENTITY_ADDRESS", null) ||
       getEntity("address", "GLOBAL_COMPANY_ADDRESS", "123 Main St"),
   };
 
@@ -71,7 +73,10 @@ async function main() {
   try {
     config = JSON.parse(readFileSync(configPath, "utf-8"));
   } catch (e) {
-    console.warn("[prepare-policygen] Could not read policygen.json, using entity only:", e.message);
+    console.warn(
+      "[prepare-policygen] Could not read policygen.json, using entity only:",
+      e.message
+    );
     config = {};
   }
 
@@ -110,7 +115,12 @@ async function main() {
   }
 
   writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
-  console.log("[prepare-policygen] Updated policygen.json entity:", config.entity.name, "| website:", config.entity.website);
+  console.log(
+    "[prepare-policygen] Updated policygen.json entity:",
+    config.entity.name,
+    "| website:",
+    config.entity.website
+  );
 }
 
 main().catch((e) => {
