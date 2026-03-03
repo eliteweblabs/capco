@@ -179,10 +179,22 @@ async function processManifest() {
   const primaryColor = companyData?.primaryColor || process.env.GLOBAL_COLOR_PRIMARY || "#825BDD";
   if (globalCompanyIcon && (globalCompanyIcon.includes("<svg") || globalCompanyIcon.includes("<?xml"))) {
     const faviconPath = path.join(__dirname, "../public/favicon.svg");
-    const transformedSvg = transformSvgForFavicon(globalCompanyIcon, primaryColor);
-    fs.writeFileSync(faviconPath, transformedSvg, "utf-8");
-    await generateFaviconPng();
-    console.log("📊 Favicon: written from CMS icon (primary color + padding), png regenerated");
+    const defaultSvgPath = path.join(__dirname, "../public/favicon-default.svg");
+    try {
+      const transformedSvg = transformSvgForFavicon(globalCompanyIcon, primaryColor);
+      fs.writeFileSync(faviconPath, transformedSvg, "utf-8");
+      await generateFaviconPng();
+      console.log("📊 Favicon: written from CMS icon (primary color + padding), png regenerated");
+    } catch (err) {
+      console.warn(
+        "⚠️ Favicon generation failed (icon may be malformed in CMS/DB). Using default favicon.",
+        err?.message || err
+      );
+      if (fs.existsSync(defaultSvgPath)) {
+        fs.copyFileSync(defaultSvgPath, faviconPath);
+        await generateFaviconPng().catch(() => {});
+      }
+    }
   }
 
   // Template file paths
