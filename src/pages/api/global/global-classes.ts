@@ -47,6 +47,10 @@ export const globalClasses = () => {
     bgGradientToBackgroundBottom: "bg-gradient-to-background-bottom",
     bgGradientToBackgroundLeft: "bg-gradient-to-background-left",
     bgGradientToBackgroundRight: "bg-gradient-to-background-right",
+    /** Linear gradient transparent → gray-900 at bottom. */
+    bgGradientToGray900Bottom: "bg-gradient-to-gray-900-bottom",
+    /** Same gradient, dark mode only. */
+    darkBgGradientToGray900Bottom: "dark:bg-gradient-to-gray-900-bottom",
     /** Invert element (e.g. <video>) in light mode only; regular in dark mode. Apply to video or its wrapper. */
     darkInvertVideo: "invert dark:invert-0",
     tabContentClasses:
