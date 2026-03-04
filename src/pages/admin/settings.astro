@@ -13,6 +13,12 @@ import DeleteConfirmButton from "../../components/ui/DeleteConfirmButton.astro";
 import SocialMediaRepeater from "../../components/form/SocialMediaRepeater.astro";
 import { globalCompanyData } from "../api/global/global-company-data";
 import { globalClasses } from "../api/global/global-classes";
+import {
+  getPrimaryFonts,
+  getFontsForSelect,
+  getOptionStyle,
+  getFontPreloadUrls,
+} from "../../lib/font-config";
 
 const { currentUser, session } = await checkAuth(Astro.cookies);
 const currentRole = currentUser?.profile?.role;
@@ -75,6 +81,7 @@ const settings = {
   // Typography
   fontFamily: companyData.fontFamily || "Outfit Variable",
   secondaryFontFamily: companyData.secondaryFontFamily || "sans-serif",
+  tertiaryFontFamily: companyData.tertiaryFontFamily || "",
 
   // Logos & Icons (single SVG with CSS for theme support)
   logo: companyData.globalCompanyLogo || "",
@@ -578,82 +585,15 @@ document.querySelectorAll('.my-element').forEach(el => {
             }
           </label>
           <select id="font_family" name="font_family" class={globalInputClasses}>
-            <option value="Outfit Variable" selected={settings.fontFamily === "Outfit Variable"}
-              >Outfit Variable</option
-            >
-            <option value="Roboto" selected={settings.fontFamily === "Roboto"}>Roboto</option>
-            <option value="Open Sans" selected={settings.fontFamily === "Open Sans"}
-              >Open Sans</option
-            >
-            <option value="Lato" selected={settings.fontFamily === "Lato"}>Lato</option>
-            <option value="Montserrat" selected={settings.fontFamily === "Montserrat"}
-              >Montserrat</option
-            >
-            <option value="Poppins" selected={settings.fontFamily === "Poppins"}>Poppins</option>
-            <option value="Inter" selected={settings.fontFamily === "Inter"}>Inter</option>
-            <option value="Raleway" selected={settings.fontFamily === "Raleway"}>Raleway</option>
-            <option value="Source Sans Pro" selected={settings.fontFamily === "Source Sans Pro"}
-              >Source Sans Pro</option
-            >
-            <option value="Nunito" selected={settings.fontFamily === "Nunito"}>Nunito</option>
-            <option value="Playfair Display" selected={settings.fontFamily === "Playfair Display"}
-              >Playfair Display</option
-            >
-            <option value="Merriweather" selected={settings.fontFamily === "Merriweather"}
-              >Merriweather</option
-            >
-            <option value="Oswald" selected={settings.fontFamily === "Oswald"}>Oswald</option>
-            <option value="Lora" selected={settings.fontFamily === "Lora"}>Lora</option>
-            <option value="PT Sans" selected={settings.fontFamily === "PT Sans"}>PT Sans</option>
-            <option value="Ubuntu" selected={settings.fontFamily === "Ubuntu"}>Ubuntu</option>
-            <option value="Noto Sans" selected={settings.fontFamily === "Noto Sans"}
-              >Noto Sans</option
-            >
-            <option value="Work Sans" selected={settings.fontFamily === "Work Sans"}
-              >Work Sans</option
-            >
-            <option value="Crimson Text" selected={settings.fontFamily === "Crimson Text"}
-              >Crimson Text</option
-            >
-            <option value="Fira Sans" selected={settings.fontFamily === "Fira Sans"}
-              >Fira Sans</option
-            >
-            <option value="Dancing Script" selected={settings.fontFamily === "Dancing Script"}
-              >Dancing Script</option
-            >
-            <option value="Bebas Neue" selected={settings.fontFamily === "Bebas Neue"}
-              >Bebas Neue</option
-            >
-            <option value="Comfortaa" selected={settings.fontFamily === "Comfortaa"}
-              >Comfortaa</option
-            >
-            <option value="Quicksand" selected={settings.fontFamily === "Quicksand"}
-              >Quicksand</option
-            >
-            <option value="Rubik" selected={settings.fontFamily === "Rubik"}>Rubik</option>
-            <option value="Josefin Sans" selected={settings.fontFamily === "Josefin Sans"}
-              >Josefin Sans</option
-            >
-            <option value="Libre Baskerville" selected={settings.fontFamily === "Libre Baskerville"}
-              >Libre Baskerville</option
-            >
-            <option value="Cabin" selected={settings.fontFamily === "Cabin"}>Cabin</option>
-            <option value="Dosis" selected={settings.fontFamily === "Dosis"}>Dosis</option>
-            <option value="Arvo" selected={settings.fontFamily === "Arvo"}>Arvo</option>
-            <option value="Titillium Web" selected={settings.fontFamily === "Titillium Web"}
-              >Titillium Web</option
-            >
-            <option value="Mukta" selected={settings.fontFamily === "Mukta"}>Mukta</option>
-            <option value="Karla" selected={settings.fontFamily === "Karla"}>Karla</option>
-            <option value="Barlow" selected={settings.fontFamily === "Barlow"}>Barlow</option>
-            <option value="DM Sans" selected={settings.fontFamily === "DM Sans"}>DM Sans</option>
-            <option value="Manrope" selected={settings.fontFamily === "Manrope"}>Manrope</option>
-            <option value="Space Grotesk" selected={settings.fontFamily === "Space Grotesk"}
-              >Space Grotesk</option
-            >
-            <option value="Plus Jakarta Sans" selected={settings.fontFamily === "Plus Jakarta Sans"}
-              >Plus Jakarta Sans</option
-            >
+            {getPrimaryFonts().map((f) => (
+              <option
+                value={f.value}
+                selected={settings.fontFamily === f.value}
+                style={getOptionStyle(f.value)}
+              >
+                {f.handwritten ? `${f.label} ✒` : f.label}
+              </option>
+            ))}
           </select>
           <p class="mt-1 text-xs text-gray-500">
             Primary font used throughout the site (headings, body text, UI elements).
@@ -678,125 +618,52 @@ document.querySelectorAll('.my-element').forEach(el => {
             name="secondary_font_family"
             class={globalInputClasses}
           >
-            <option value="sans-serif" selected={settings.secondaryFontFamily === "sans-serif"}
-              >sans-serif (System Default)</option
-            >
-            <option value="serif" selected={settings.secondaryFontFamily === "serif"}
-              >serif (System Default)</option
-            >
-            <option value="monospace" selected={settings.secondaryFontFamily === "monospace"}
-              >monospace (System Default)</option
-            >
-            <option
-              value="Outfit Variable"
-              selected={settings.secondaryFontFamily === "Outfit Variable"}>Outfit Variable</option
-            >
-            <option value="Roboto" selected={settings.secondaryFontFamily === "Roboto"}
-              >Roboto</option
-            >
-            <option value="Open Sans" selected={settings.secondaryFontFamily === "Open Sans"}
-              >Open Sans</option
-            >
-            <option value="Lato" selected={settings.secondaryFontFamily === "Lato"}>Lato</option>
-            <option value="Montserrat" selected={settings.secondaryFontFamily === "Montserrat"}
-              >Montserrat</option
-            >
-            <option value="Poppins" selected={settings.secondaryFontFamily === "Poppins"}
-              >Poppins</option
-            >
-            <option value="Inter" selected={settings.secondaryFontFamily === "Inter"}>Inter</option>
-            <option value="Raleway" selected={settings.secondaryFontFamily === "Raleway"}
-              >Raleway</option
-            >
-            <option
-              value="Source Sans Pro"
-              selected={settings.secondaryFontFamily === "Source Sans Pro"}>Source Sans Pro</option
-            >
-            <option value="Nunito" selected={settings.secondaryFontFamily === "Nunito"}
-              >Nunito</option
-            >
-            <option
-              value="Playfair Display"
-              selected={settings.secondaryFontFamily === "Playfair Display"}
-              >Playfair Display</option
-            >
-            <option value="Merriweather" selected={settings.secondaryFontFamily === "Merriweather"}
-              >Merriweather</option
-            >
-            <option value="Oswald" selected={settings.secondaryFontFamily === "Oswald"}
-              >Oswald</option
-            >
-            <option value="Lora" selected={settings.secondaryFontFamily === "Lora"}>Lora</option>
-            <option value="PT Sans" selected={settings.secondaryFontFamily === "PT Sans"}
-              >PT Sans</option
-            >
-            <option value="Ubuntu" selected={settings.secondaryFontFamily === "Ubuntu"}
-              >Ubuntu</option
-            >
-            <option value="Noto Sans" selected={settings.secondaryFontFamily === "Noto Sans"}
-              >Noto Sans</option
-            >
-            <option value="Work Sans" selected={settings.secondaryFontFamily === "Work Sans"}
-              >Work Sans</option
-            >
-            <option value="Crimson Text" selected={settings.secondaryFontFamily === "Crimson Text"}
-              >Crimson Text</option
-            >
-            <option value="Fira Sans" selected={settings.secondaryFontFamily === "Fira Sans"}
-              >Fira Sans</option
-            >
-            <option
-              value="Dancing Script"
-              selected={settings.secondaryFontFamily === "Dancing Script"}>Dancing Script</option
-            >
-            <option value="Bebas Neue" selected={settings.secondaryFontFamily === "Bebas Neue"}
-              >Bebas Neue</option
-            >
-            <option value="Comfortaa" selected={settings.secondaryFontFamily === "Comfortaa"}
-              >Comfortaa</option
-            >
-            <option value="Quicksand" selected={settings.secondaryFontFamily === "Quicksand"}
-              >Quicksand</option
-            >
-            <option value="Rubik" selected={settings.secondaryFontFamily === "Rubik"}>Rubik</option>
-            <option value="Josefin Sans" selected={settings.secondaryFontFamily === "Josefin Sans"}
-              >Josefin Sans</option
-            >
-            <option
-              value="Libre Baskerville"
-              selected={settings.secondaryFontFamily === "Libre Baskerville"}
-              >Libre Baskerville</option
-            >
-            <option value="Cabin" selected={settings.secondaryFontFamily === "Cabin"}>Cabin</option>
-            <option value="Dosis" selected={settings.secondaryFontFamily === "Dosis"}>Dosis</option>
-            <option value="Arvo" selected={settings.secondaryFontFamily === "Arvo"}>Arvo</option>
-            <option
-              value="Titillium Web"
-              selected={settings.secondaryFontFamily === "Titillium Web"}>Titillium Web</option
-            >
-            <option value="Mukta" selected={settings.secondaryFontFamily === "Mukta"}>Mukta</option>
-            <option value="Karla" selected={settings.secondaryFontFamily === "Karla"}>Karla</option>
-            <option value="Barlow" selected={settings.secondaryFontFamily === "Barlow"}
-              >Barlow</option
-            >
-            <option value="DM Sans" selected={settings.secondaryFontFamily === "DM Sans"}
-              >DM Sans</option
-            >
-            <option value="Manrope" selected={settings.secondaryFontFamily === "Manrope"}
-              >Manrope</option
-            >
-            <option
-              value="Space Grotesk"
-              selected={settings.secondaryFontFamily === "Space Grotesk"}>Space Grotesk</option
-            >
-            <option
-              value="Plus Jakarta Sans"
-              selected={settings.secondaryFontFamily === "Plus Jakarta Sans"}
-              >Plus Jakarta Sans</option
-            >
+            {getFontsForSelect().map((f) => (
+              <option
+                value={f.value}
+                selected={settings.secondaryFontFamily === f.value}
+                style={getOptionStyle(f.value)}
+              >
+                {f.handwritten ? `${f.label} ✒` : f.label}
+              </option>
+            ))}
           </select>
           <p class="mt-1 text-xs text-gray-500">
             Secondary font used as fallback or for specific elements (optional).
+          </p>
+        </div>
+        <div>
+          <label for="tertiary_font_family" class="mb-2 block text-sm font-medium">
+            Tertiary Font Family
+            {
+              isFromDatabase("tertiaryFontFamily") && (
+                <span
+                  class="ml-2 text-xs text-green-600 dark:text-green-400"
+                  title="Stored in database"
+                >
+                  💾
+                </span>
+              )
+            }
+          </label>
+          <select
+            id="tertiary_font_family"
+            name="tertiary_font_family"
+            class={globalInputClasses}
+          >
+            <option value="" selected={!settings.tertiaryFontFamily}>— None —</option>
+            {getFontsForSelect().map((f) => (
+              <option
+                value={f.value}
+                selected={settings.tertiaryFontFamily === f.value}
+                style={getOptionStyle(f.value)}
+              >
+                {f.handwritten ? `${f.label} ✒` : f.label}
+              </option>
+            ))}
+          </select>
+          <p class="mt-1 text-xs text-gray-500">
+            Accent font for headings, quotes, or handwritten style. Use with <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">font-tertiary</code> class.
           </p>
         </div>
       </div>
@@ -1264,93 +1131,104 @@ document.querySelectorAll('.my-element').forEach(el => {
   </div>
 </LayoutFullWidth>
 
+<div id="font-preload-urls" data-urls={JSON.stringify(getFontPreloadUrls())} class="hidden" aria-hidden="true" />
 <script>
-  function escapeHtml(s: string) {
+  (function preloadFontsForSelect() {
+    const el = document.getElementById("font-preload-urls");
+    if (!el) return;
+    try {
+      const urls = JSON.parse(el.getAttribute("data-urls") || "[]");
+      if (Array.isArray(urls) && urls.length > 0) {
+        urls.forEach((url) => {
+          if (document.querySelector(`link[href="${url}"]`)) return;
+          const link = document.createElement("link");
+          link.rel = "stylesheet";
+          link.href = url;
+          link.crossOrigin = "anonymous";
+          document.head.appendChild(link);
+        });
+      }
+    } catch (_) {}
+  })();
+
+  function escapeHtml(s) {
     const div = document.createElement("div");
     div.textContent = s;
     return div.innerHTML;
   }
 
-  const form = document.getElementById("settings-form") as HTMLFormElement;
-  const saveBtn = document.getElementById("save-settings-btn") as HTMLButtonElement;
+  const form = document.getElementById("settings-form");
+  const saveBtn = document.getElementById("save-settings-btn");
 
   // Sync color pickers with text inputs
-  const primaryColorPicker = document.getElementById("primary_color_picker") as HTMLInputElement;
-  const primaryColorInput = document.getElementById("primary_color") as HTMLInputElement;
-  const secondaryColorPicker = document.getElementById(
-    "secondary_color_picker"
-  ) as HTMLInputElement;
-  const secondaryColorInput = document.getElementById("secondary_color") as HTMLInputElement;
+  const primaryColorPicker = document.getElementById("primary_color_picker");
+  const primaryColorInput = document.getElementById("primary_color");
+  const secondaryColorPicker = document.getElementById("secondary_color_picker");
+  const secondaryColorInput = document.getElementById("secondary_color");
 
   primaryColorPicker?.addEventListener("input", (e) => {
-    primaryColorInput.value = (e.target as HTMLInputElement).value;
+    primaryColorInput.value = e.target.value;
   });
 
   primaryColorInput?.addEventListener("input", (e) => {
-    const value = (e.target as HTMLInputElement).value;
+    const value = e.target.value;
     if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
       primaryColorPicker.value = value;
     }
   });
 
   secondaryColorPicker?.addEventListener("input", (e) => {
-    secondaryColorInput.value = (e.target as HTMLInputElement).value;
+    secondaryColorInput.value = e.target.value;
   });
 
   secondaryColorInput?.addEventListener("input", (e) => {
-    const value = (e.target as HTMLInputElement).value;
+    const value = e.target.value;
     if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
       secondaryColorPicker.value = value;
     }
   });
 
-  const backgroundColorPicker = document.getElementById(
-    "background_color_picker"
-  ) as HTMLInputElement;
-  const backgroundColorInput = document.getElementById("background_color") as HTMLInputElement;
-  const backgroundColorDarkPicker = document.getElementById(
-    "background_color_dark_picker"
-  ) as HTMLInputElement;
-  const backgroundColorDarkInput = document.getElementById(
-    "background_color_dark"
-  ) as HTMLInputElement;
+  const backgroundColorPicker = document.getElementById("background_color_picker");
+  const backgroundColorInput = document.getElementById("background_color");
+  const backgroundColorDarkPicker = document.getElementById("background_color_dark_picker");
+  const backgroundColorDarkInput = document.getElementById("background_color_dark");
 
   backgroundColorPicker?.addEventListener("input", (e) => {
-    backgroundColorInput.value = (e.target as HTMLInputElement).value;
+    backgroundColorInput.value = e.target.value;
   });
 
   backgroundColorInput?.addEventListener("input", (e) => {
-    const value = (e.target as HTMLInputElement).value;
+    const value = e.target.value;
     if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
       backgroundColorPicker.value = value;
     }
   });
 
   backgroundColorDarkPicker?.addEventListener("input", (e) => {
-    backgroundColorDarkInput.value = (e.target as HTMLInputElement).value;
+    backgroundColorDarkInput.value = e.target.value;
   });
 
   backgroundColorDarkInput?.addEventListener("input", (e) => {
-    const value = (e.target as HTMLInputElement).value;
+    const value = e.target.value;
     if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
       backgroundColorDarkPicker.value = value;
     }
   });
 
   // Fix malformed SVG width (e.g. width="100% version="1.1")
-  function sanitizeSvg(svg: string): string {
+  function sanitizeSvg(svg) {
     if (!svg || !svg.includes("<svg")) return svg;
     return svg.replace(/width="100%\s*version="/gi, 'width="100%" version="');
   }
 
   // Live preview for logos and icons
-  function updatePreview(textareaId: string, previewSelector: string) {
-    const textarea = document.getElementById(textareaId) as HTMLTextAreaElement;
-    const preview = document.querySelector(previewSelector) as HTMLElement;
+  function updatePreview(textareaId, previewSelector) {
+    const textarea = document.getElementById(textareaId);
+    const preview = document.querySelector(previewSelector);
 
     if (textarea && preview) {
       textarea.addEventListener("input", (e) => {
-        const svgContent = (e.target as HTMLTextAreaElement).value.trim();
+        const svgContent = e.target.value.trim();
         if (svgContent && svgContent.startsWith("<svg")) {
           preview.innerHTML = svgContent;
           preview.querySelector("p")?.remove();
@@ -1363,19 +1241,14 @@ document.querySelectorAll('.my-element').forEach(el => {
   }
 
   // Set up live previews (uses sanitizeSvg above)
-  function updatePreviewBoth(
-    textareaId: string,
-    lightSelector: string,
-    darkSelector: string,
-    isIcon: boolean = false
-  ) {
-    const textarea = document.getElementById(textareaId) as HTMLTextAreaElement;
-    const lightPreview = document.querySelector(lightSelector) as HTMLElement;
-    const darkPreview = document.querySelector(darkSelector) as HTMLElement;
+  function updatePreviewBoth(textareaId, lightSelector, darkSelector, isIcon = false) {
+    const textarea = document.getElementById(textareaId);
+    const lightPreview = document.querySelector(lightSelector);
+    const darkPreview = document.querySelector(darkSelector);
 
     if (textarea && lightPreview && darkPreview) {
       textarea.addEventListener("input", (e) => {
-        let svgContent = (e.target as HTMLTextAreaElement).value.trim();
+        let svgContent = e.target.value.trim();
         if (svgContent && svgContent.startsWith("<svg")) {
           svgContent = sanitizeSvg(svgContent);
           // Determine size class based on whether it's an icon or logo
@@ -1423,11 +1296,11 @@ document.querySelectorAll('.my-element').forEach(el => {
   updatePreviewBoth("icon", "#icon-preview-light", "#icon-preview-dark", true);
 
   // Live preview for OG image
-  const ogImageInput = document.getElementById("og_image") as HTMLInputElement;
-  const ogImagePreview = document.getElementById("og-image-preview") as HTMLElement;
+  const ogImageInput = document.getElementById("og_image");
+  const ogImagePreview = document.getElementById("og-image-preview");
 
   ogImageInput?.addEventListener("input", (e) => {
-    const value = (e.target as HTMLInputElement).value.trim();
+    const value = e.target.value.trim();
     ogImagePreview.textContent = "";
     if (value) {
       const allowed =
@@ -1483,10 +1356,10 @@ document.querySelectorAll('.my-element').forEach(el => {
 
     // Collect form data
     const formData = new FormData(form);
-    const settings: Record<string, string> = {};
+    const settings = {};
 
     // Map form field names to database keys (all camelCase)
-    const fieldMapping: Record<string, string> = {
+    const fieldMapping = {
       companyName: "companyName",
       slogan: "slogan",
       tightSlogan: "tightSlogan",
@@ -1501,6 +1374,7 @@ document.querySelectorAll('.my-element').forEach(el => {
       background_color_dark: "backgroundColorDark",
       font_family: "fontFamily",
       secondary_font_family: "secondaryFontFamily",
+      tertiary_font_family: "tertiaryFontFamily",
       logo: "logo",
       logoClasses: "logoClasses",
       icon: "icon",
@@ -1567,6 +1441,12 @@ document.querySelectorAll('.my-element').forEach(el => {
       }
     }
 
+    // Always set tertiary font from DOM (ensures it saves even if FormData omits it)
+    const tertiaryEl = document.getElementById("tertiary_font_family");
+    if (tertiaryEl) {
+      settings.tertiaryFontFamily = tertiaryEl.value?.trim() ?? "";
+    }
+
     // Show validation errors
     if (validationErrors.length > 0) {
       const errorText = "Validation errors:\n" + validationErrors.join("\n");
@@ -1614,7 +1494,8 @@ document.querySelectorAll('.my-element').forEach(el => {
         settings.backgroundColor ||
         settings.backgroundColorDark ||
         settings.fontFamily ||
-        settings.secondaryFontFamily
+        settings.secondaryFontFamily ||
+        settings.tertiaryFontFamily
       ) {
         try {
           // Import and inject dynamic colors
@@ -1623,10 +1504,8 @@ document.querySelectorAll('.my-element').forEach(el => {
           // Get the new color values from the settings object we just saved
           const newPrimaryColor = settings.primaryColor || primaryColorInput?.value;
           const newSecondaryColor = settings.secondaryColor || secondaryColorInput?.value;
-          const fontFamilySelect = document.getElementById("font_family") as HTMLSelectElement;
-          const secondaryFontFamilySelect = document.getElementById(
-            "secondary_font_family"
-          ) as HTMLSelectElement;
+          const fontFamilySelect = document.getElementById("font_family");
+          const secondaryFontFamilySelect = document.getElementById("secondary_font_family");
           const newFontFamily = settings.fontFamily || fontFamilySelect?.value;
           const newSecondaryFontFamily =
             settings.secondaryFontFamily || secondaryFontFamilySelect?.value;
@@ -1640,7 +1519,7 @@ document.querySelectorAll('.my-element').forEach(el => {
           }
 
           // Inject background colors for .color-background (uses r,g,b format)
-          const rgbFromHex = (hex: string) => (window.hexToRgb ? window.hexToRgb(hex) : null);
+          const rgbFromHex = (hex) => (window.hexToRgb ? window.hexToRgb(hex) : null);
           const newBackgroundColor =
             settings.backgroundColor || backgroundColorInput?.value || "#ffffff";
           const newBackgroundColorDark =
@@ -1663,6 +1542,16 @@ document.querySelectorAll('.my-element').forEach(el => {
             );
             console.log("[settings] Secondary font family updated:", newSecondaryFontFamily);
           }
+          const tertiaryFontFamilySelect = document.getElementById("tertiary_font_family");
+          const newTertiaryFontFamily =
+            settings.tertiaryFontFamily ?? tertiaryFontFamilySelect?.value ?? "";
+          if (newTertiaryFontFamily) {
+            document.documentElement.style.setProperty(
+              "--font-family-tertiary",
+              newTertiaryFontFamily
+            );
+            console.log("[settings] Tertiary font family updated:", newTertiaryFontFamily);
+          }
 
           const updates = [];
           if (
@@ -1672,7 +1561,7 @@ document.querySelectorAll('.my-element').forEach(el => {
             settings.backgroundColorDark
           )
             updates.push("colors");
-          if (settings.fontFamily || settings.secondaryFontFamily) updates.push("fonts");
+          if (settings.fontFamily || settings.secondaryFontFamily || settings.tertiaryFontFamily) updates.push("fonts");
           if (updates.length > 0 && window.showSuccess) {
             window.showSuccess(
               "Settings Updated",
@@ -1725,7 +1614,7 @@ document.querySelectorAll('.my-element').forEach(el => {
       setTimeout(() => {
         window.location.reload();
       }, 2500);
-    } catch (error: any) {
+    } catch (error) {
       // Show error message
       const errorMsg = error.message || "An error occurred while saving settings.";
       if (window.showError) {

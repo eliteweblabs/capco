@@ -30,7 +30,11 @@ interface Props {
   secondaryTextClasses?: string;
   globalInputClasses?: string;
   backgroundImage?: string;
+  /** Min-height when has background (e.g. "80dvh") */
+  height?: string;
   backgroundOverlay?: boolean | string;
+  /** Alias for backgroundOverlay (shortcode: overlay="true") */
+  overlay?: boolean | string;
   overlayOpacity?: number | string;
   /** When set, uses adaptive video as background. Use base name (e.g. "uhd_30fps") for local /videos/, or full URL (e.g. Supabase) for remote. */
   backgroundVideoSource?: string;
@@ -73,6 +77,7 @@ const {
   secondaryTextClasses,
   globalInputClasses,
   backgroundImage,
+  height,
   backgroundVideoSource,
   backgroundVideoPoster = backgroundImage || "/hero.png",
   backgroundVideoAlt = "Hero background",
@@ -80,12 +85,13 @@ const {
 } = props;
 
 // Handle boolean/string conversion for shortcode compatibility
+const overlayProp = props.overlay ?? props.backgroundOverlay;
 const backgroundOverlay =
-  props.backgroundOverlay === "false" ? false : (props.backgroundOverlay ?? true);
+  overlayProp === "false" ? false : (overlayProp ?? true);
 const overlayOpacity =
   typeof props.overlayOpacity === "string"
     ? parseFloat(props.overlayOpacity)
-    : (props.overlayOpacity ?? 0.5);
+    : (props.overlayOpacity ?? 0.75);
 
 // Build button objects from either format
 const leftButton: ButtonProps | undefined =
@@ -112,16 +118,30 @@ const rightButton: ButtonProps | undefined =
 
 const hasButtons = leftButton || rightButton;
 const hasBackground = backgroundImage || backgroundVideoSource;
+/** Apply height when: (a) explicitly passed, or (b) has background and use default 80dvh */
+const heroMinHeight =
+  height != null && height !== ""
+    ? height
+    : hasBackground
+      ? "80dvh"
+      : undefined;
 
 ---
 
 <div
-  class={`col-span-12 py-8 md:py-12 w-max-w-7xl mx-auto relative overflow-hidden ${hasBackground ? "min-h-[400px] flex items-center" : ""}`}
+  class={`col-span-12 py-8 md:py-12 w-max-w-7xl mx-auto relative overflow-hidden ${heroMinHeight ? "flex flex-col items-center justify-center" : ""}`}
   data-component-name="Hero"
   {...(enableAos && { "data-aos": "fade", "data-aos-duration": "600" })}
-  style={backgroundImage && !backgroundVideoSource
-    ? `background-image: url('${backgroundImage}'); background-size: cover; background-position: center;`
-    : ""}
+  style={
+    [
+      backgroundImage && !backgroundVideoSource
+        ? `background-image: url('${backgroundImage}'); background-size: cover; background-position: center;`
+        : "",
+      heroMinHeight ? `min-height: ${heroMinHeight};` : "",
+    ]
+      .filter(Boolean)
+      .join(" ") || undefined
+  }
 >
   {/* Adaptive video background when backgroundVideoSource is set */}
   {
@@ -165,9 +185,8 @@ const hasBackground = backgroundImage || backgroundVideoSource;
           ...(titleRefreshProjectId && { "data-project-id": String(titleRefreshProjectId) }),
           ...(titleRefreshSuffix && { "data-refresh-suffix": titleRefreshSuffix }),
         }}
-      >
-        {title}
-      </h1>
+        set:html={title}
+      />
       {
         description && (
           <h2

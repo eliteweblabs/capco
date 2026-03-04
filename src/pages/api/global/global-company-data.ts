@@ -144,6 +144,7 @@ export const globalCompanyData = async () => {
     // Typography
     fontFamily: get("fontFamily", "FONT_FAMILY") || "Outfit Variable",
     secondaryFontFamily: get("secondaryFontFamily", "FONT_FAMILY_FALLBACK") || "sans-serif",
+    tertiaryFontFamily: get("tertiaryFontFamily") || "",
 
     // Analytics settings
     plausibleTrackingScript: get("plausibleTrackingScript", "PLAUSIBLE_TRACKING_SCRIPT") || "",

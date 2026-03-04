@@ -62,8 +62,8 @@ module.exports = {
         sans: ['var(--font-family, "Outfit Variable")', "var(--font-family-secondary, sans-serif)"],
         // #### Secondary font only (use with font-secondary class)
         secondary: ["var(--font-family-secondary, sans-serif)"],
-        // #### Body
-        // "serif": ['"Open Sans"', "serif"], // Otra fuente para el cuerpo
+        // #### Tertiary font (accent, handwritten style). Use font-tertiary. Falls back when empty.
+        tertiary: ['var(--font-family-tertiary, "")', "var(--font-family-secondary, sans-serif)"],
       },
 
       fontSize: {

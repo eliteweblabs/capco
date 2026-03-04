@@ -15,41 +15,66 @@ interface Props {
 }
 
 const {
-  globalIconButtonClasses = "inline-flex items-center rounded-full justify-center p-2 text-black dark:text-white hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-700 focus:outline-none",
+  globalIconButtonClasses = "inline-flex items-center rounded-full justify-center p-2 text-black dark:text-white hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent dark:disabled:hover:bg-transparent",
   tile = false,
   projectId = null,
 } = Astro.props;
 
 const tileClasses =
-  "flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50 p-4 text-center transition-colors hover:border-primary-300 hover:bg-primary-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-primary-600 dark:hover:bg-primary-950/30";
+  "flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50 p-4 text-center transition-colors hover:border-primary-300 hover:bg-primary-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-primary-600 dark:hover:bg-primary-950/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-gray-50 disabled:hover:border-gray-200 dark:disabled:hover:bg-gray-800 dark:disabled:hover:border-gray-700";
 const buttonClass = tile ? tileClasses : globalIconButtonClasses;
 const iconSize = tile ? "xl" : "md";
 ---
 
-<button
-  type="button"
-  id="check-in-btn"
-  title="Check in at location"
-  aria-label="Check in at location"
-  class={buttonClass}
-  data-state="checked_out"
-  data-project-id={projectId ?? undefined}
->
-  <span id="check-in-icon" class="check-in-icon" aria-hidden="true">
-    <SimpleIcon name="map-pin" size={iconSize} class="text-primary-500 dark:text-primary-400" />
-  </span>
-  <span id="check-out-icon" class="check-out-icon hidden" aria-hidden="true">
-    <SimpleIcon name="log-out" size={iconSize} class="text-primary-500 dark:text-primary-400" />
-  </span>
-  {
-    tile && (
-      <span id="check-in-label" class="text-sm font-medium text-gray-900 dark:text-white">
-        Check In
+{
+  projectId ? (
+    <button
+      type="button"
+      id="check-in-btn"
+      title="Check in at location"
+      aria-label="Check in at location"
+      class={buttonClass}
+      data-state="checked_out"
+      data-project-id={projectId ?? undefined}
+    >
+      <span id="check-in-icon" class="check-in-icon" aria-hidden="true">
+        <SimpleIcon name="map-pin" size={iconSize} class="text-primary-500 dark:text-primary-400" />
       </span>
-    )
-  }
-  <span class="sr-only">Check in at location</span>
-</button>
+      <span id="check-out-icon" class="check-out-icon hidden" aria-hidden="true">
+        <SimpleIcon name="log-out" size={iconSize} class="text-primary-500 dark:text-primary-400" />
+      </span>
+      {tile && (
+        <span id="check-in-label" class="text-sm font-medium text-gray-900 dark:text-white">
+          Check In
+        </span>
+      )}
+      <span class="sr-only">Check in at location</span>
+    </button>
+  ) : (
+    <button
+      type="button"
+      title="Check in on Project Page"
+      aria-label="Check in on Project Page"
+      class={buttonClass}
+      disabled={true}
+    >
+      <span
+        id="check-in-icon"
+        class="check-in-icon text-gray-400 dark:text-gray-500"
+        aria-hidden="true"
+      >
+        <SimpleIcon name="map-pin" size={iconSize} />
+      </span>
+
+      {tile && (
+        <span id="check-in-label" class="text-sm font-medium text-gray-900 dark:text-white">
+          Check in is on Project
+        </span>
+      )}
+      <span class="sr-only">Check in on Project Page</span>
+    </button>
+  )
+}
 
 <style>
   .check-out-icon.hidden {
@@ -80,7 +105,9 @@ const iconSize = tile ? "xl" : "md";
   function setState(state: "checked_in" | "checked_out") {
     try {
       sessionStorage.setItem(STORAGE_KEY, state);
-    } catch (_) {}
+    } catch {
+      return;
+    }
   }
 
   function getTimeEntryId(): number | null {
@@ -98,7 +125,9 @@ const iconSize = tile ? "xl" : "md";
     try {
       if (id == null) sessionStorage.removeItem(TIME_ENTRY_KEY);
       else sessionStorage.setItem(TIME_ENTRY_KEY, String(id));
-    } catch (_) {}
+    } catch {
+      return;
+    }
   }
 
   function updateButton(state: "checked_in" | "checked_out") {
@@ -191,7 +220,10 @@ const iconSize = tile ? "xl" : "md";
       const lng = pos.lng;
       const accuracy = pos.accuracy;
 
-      const notesEl = document.getElementById("check-in-notes") as HTMLInputElement | HTMLTextAreaElement | null;
+      const notesEl = document.getElementById("check-in-notes") as
+        | HTMLInputElement
+        | HTMLTextAreaElement
+        | null;
       const notes = notesEl?.value != null ? String(notesEl.value).trim() : null;
 
       const body: Record<string, unknown> = {

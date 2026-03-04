@@ -42,6 +42,11 @@ export const globalClasses = () => {
     globalAdminContainerClasses: "color-background rounded-lg shadow-md dark:shadow-gray-700",
     /** Card container: rounded-lg border + semantic background. Use for card/panel containers. */
     globalCardStyle: "rounded-lg border color-background",
+    /** Linear gradient transparent → color-background. Position: top | bottom | left | right (where the solid end sits). */
+    bgGradientToBackgroundTop: "bg-gradient-to-background-top",
+    bgGradientToBackgroundBottom: "bg-gradient-to-background-bottom",
+    bgGradientToBackgroundLeft: "bg-gradient-to-background-left",
+    bgGradientToBackgroundRight: "bg-gradient-to-background-right",
     tabContentClasses:
       "color-background relative mb-16 min-h-[calc(100dvh-24rem)] p-6 sm:p-8 md:p-10 lg:p-12 shadow-lg",
 

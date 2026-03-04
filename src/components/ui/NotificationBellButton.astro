@@ -4,6 +4,7 @@
  * Uses Flowbite popover: data-popover-target points to notifications-dropdown.
  * Renders nothing when currentUser is absent (user not logged in).
  */
+import Button from "../common/Button.astro";
 import SimpleIcon from "../common/SimpleIcon.astro";
 import NotificationsDropdown from "./NotificationsDropdown.astro";
 import { globalClasses } from "../../pages/api/global/global-classes";
@@ -20,15 +21,19 @@ const { currentUser, globalIconButtonClasses = "" } = Astro.props;
 
 {currentUser && (
 <>
-<button
+<Button
   type="button"
   id="notification-bell"
+  variant="icon"
+  iconOnly
   title="Notifications"
-  data-popover-toggle="notifications-dropdown"
-  data-popover-trigger="click"
-  data-popover-target="notifications-dropdown"
   class={`relative ${globalIconButtonClasses}`}
-  aria-label="View notifications"
+  dataAttributes={{
+    "data-popover-toggle": "notifications-dropdown",
+    "data-popover-trigger": "click",
+    "data-popover-target": "notifications-dropdown",
+  }}
+  ariaLabel="View notifications"
 >
   <span class="auth-icon-default">
     <SimpleIcon name="notification-bell" size="md" />
@@ -48,7 +53,7 @@ const { currentUser, globalIconButtonClasses = "" } = Astro.props;
     </svg>
   </span>
   <span class="sr-only">Notifications</span>
-</button>
+</Button>
 <NotificationsDropdown
   id="notifications"
   closeButton={false}

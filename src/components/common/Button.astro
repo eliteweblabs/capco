@@ -39,6 +39,7 @@ export interface Props {
   name?: string;
   value?: string;
   title?: string;
+  ariaLabel?: string;
   form?: string;
   onclick?: string;
   dataAttributes?: Record<string, string>;
@@ -85,6 +86,7 @@ const id = Astro.props.id || Astro.request.headers.get("x-button-id") || undefin
 const name = Astro.props.name || Astro.request.headers.get("x-button-name") || undefined;
 const value = Astro.props.value || Astro.request.headers.get("x-button-value") || undefined;
 const title = Astro.props.title || Astro.request.headers.get("x-button-title") || undefined;
+const ariaLabel = Astro.props.ariaLabel || Astro.request.headers.get("x-button-aria-label") || undefined;
 const form = Astro.props.form || Astro.request.headers.get("x-button-form") || undefined;
 const onclick = Astro.props.onclick || Astro.request.headers.get("x-button-onclick") || undefined;
 const buttonText = Astro.request.headers.get("x-button-text") || "";
@@ -153,6 +155,8 @@ const attributes = {
   ...(value && { value }),
   ...(form && { form }),
   ...(onclick && { onclick }),
+  ...(title && { title }),
+  ...(ariaLabel && { "aria-label": ariaLabel }),
   ...(disabled && !isLink && { disabled }),
   ...(isLink && { href, target }),
   ...dataAttrs,
@@ -166,7 +170,7 @@ const attributes = {
 
 {
   (isLink ? (
-        <a title={title} {...attributes} data-size={size}>
+        <a {...attributes} data-size={size}>
           {loading && (
             <svg class="-ml-1 mr-2 h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />

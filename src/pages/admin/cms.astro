@@ -404,10 +404,11 @@ try {
       if (formContainer && formPool) formPool.appendChild(formContainer);
       openTemplateSlotId = null;
     }
-    function openTemplateEditor(slotId) {
+    /** Opens the editor for a slot — optionally skip close (caller must have closed first) */
+    function openTemplateEditor(slotId, skipClose = false) {
       const slotEl = document.getElementById(`template-editor-slot-${slotId}`);
       if (!slotEl) return;
-      closeTemplateEditor();
+      if (!skipClose) closeTemplateEditor();
       if (formContainer) slotEl.appendChild(formContainer);
       const detailRow = getTemplateDetailRow(slotId);
       const triggerRow = getTemplateTriggerRow(slotId);
@@ -463,6 +464,7 @@ try {
         const slug = btn.getAttribute("data-slug");
         if (!slug) return;
         if (titleEl) titleEl.textContent = `Edit Page: ${slug}`;
+        closeTemplateEditor();
         const cached = templateFormCache[slug];
         if (cached) {
           const slugEl = document.getElementById("template-page-slug");
@@ -481,14 +483,14 @@ try {
             includeNavEl.checked = !!cached.includeInNavigation;
           setTemplateNavRoles(cached.nav_roles || ["any"]);
           if (navStyleEl && "value" in navStyleEl) navStyleEl.value = cached.nav_button_style || "";
-          openTemplateEditor(slug);
+          openTemplateEditor(slug, true);
           return;
         }
         try {
           const response = await fetch(`/api/cms/pages?slug=${encodeURIComponent(slug)}`);
           const data = await response.json();
           if (data.page) applyTemplatePageToForm(data.page);
-          openTemplateEditor(slug);
+          openTemplateEditor(slug, true);
         } catch (err) {
           console.error("Error loading template page:", err);
           if (window.showError) window.showError("Load Failed", "Failed to load page data", 0);
@@ -518,6 +520,7 @@ try {
           openTemplateEditor("template-create");
           return;
         }
+        closeTemplateEditor();
         const cached = templateFormCache[slotId];
         if (cached) {
           const slugEl = document.getElementById("template-page-slug");
@@ -536,14 +539,14 @@ try {
             includeNavEl.checked = !!cached.includeInNavigation;
           setTemplateNavRoles(cached.nav_roles || ["any"]);
           if (navStyleEl && "value" in navStyleEl) navStyleEl.value = cached.nav_button_style || "";
-          openTemplateEditor(slotId);
+          openTemplateEditor(slotId, true);
           return;
         }
         fetch(`/api/cms/pages?slug=${encodeURIComponent(slotId)}`)
           .then((r) => r.json())
           .then((data) => {
             if (data.page) applyTemplatePageToForm(data.page);
-            openTemplateEditor(slotId);
+            openTemplateEditor(slotId, true);
           })
           .catch((err) => {
             console.error(err);
