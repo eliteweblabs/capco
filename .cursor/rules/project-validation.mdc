@@ -1,0 +1,36 @@
+---
+description: Run full project validation (lint, check, format) to catch Problems-panel issues automatically
+alwaysApply: true
+---
+
+# Project Validation
+
+Run full validation to catch ESLint, TypeScript, Astro, and Prettier issues across the entire project.
+
+## When to Run
+
+1. **At session start** – Run `npm run validate` when beginning work to surface any existing problems.
+2. **After significant edits** – When you've modified multiple files or touched core components, run validation before declaring done.
+3. **Before large refactors** – Establish a clean baseline.
+
+## Commands
+
+| Command | What it runs |
+|---------|--------------|
+| `npm run validate` | `format:check` + `lint` + `check` (full suite) |
+| `npm run lint` | ESLint on `src/**/*.{js,ts,astro}` |
+| `npm run check` | `astro check` + `tsc --noEmit` |
+| `npm run format:check` | Prettier check |
+| `npm run lint:fix` | ESLint with auto-fix |
+
+## Automation
+
+- **On folder open**: A VS Code task runs `npm run validate` when the project folder is opened (requires `task.allowAutomaticTasks: on` in workspace settings).
+- **On save**: ESLint `fixAll` runs via `editor.codeActionsOnSave` for open files.
+
+## If Validation Fails
+
+1. Fix reported issues (or delegate to the user for non-automatable ones).
+2. Run `npm run lint:fix` for auto-fixable ESLint issues.
+3. Run `npm run format` to fix Prettier issues.
+4. Do not say "done" or "it's good" until validation passes or the user acknowledges remaining issues.
