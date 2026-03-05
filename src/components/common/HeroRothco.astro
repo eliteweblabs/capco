@@ -1,0 +1,350 @@
+---
+// Hero section component
+// Supports both direct Astro props AND flat shortcode props
+import SimpleIcon from "./SimpleIcon.astro";
+import Button from "./Button.astro";
+import HeroSplitTitle from "./HeroSplitTitle.astro";
+
+interface ButtonProps {
+  text: string;
+  href: string;
+  icon?: string;
+  variant?: "primary" | "secondary" | "outline";
+}
+
+interface Props {
+  title: string;
+  /** When set with titleRight, use HeroSplitTitle instead of raw title HTML */
+  titleLeft?: string;
+  /** When set with titleLeft, use HeroSplitTitle instead of raw title HTML */
+  titleRight?: string;
+  /** Middle character for HeroSplitTitle (default &) */
+  titleMiddle?: string;
+  /** Curved text above split title (e.g. "Delivered with Discipline") - only when titleLeft/titleRight used */
+  titleTagline?: string;
+  /** DB field name for refresh (e.g. "companyName"). Enables polling when combined with context. */
+  titleRefreshField?: string;
+  /** Raw value for change detection - must match API response format. */
+  titleRefreshValue?: string | null;
+  /** User ID for user-context polling (profiles table) */
+  titleRefreshUserId?: string;
+  /** Project ID for project-context polling */
+  titleRefreshProjectId?: string;
+  /** Suffix for display (e.g. "'s Profile") - appended to refreshed value */
+  titleRefreshSuffix?: string;
+  description: string;
+  /** Shorter slogan for <md screens; when set, tight shown on mobile and description on desktop */
+  tightSlogan?: string;
+  primaryTextClasses?: string;
+  secondaryTextClasses?: string;
+  globalInputClasses?: string;
+  backgroundImage?: string;
+  /** Min-height when has background (e.g. "80dvh") */
+  height?: string;
+  backgroundOverlay?: boolean | string;
+  /** Alias for backgroundOverlay (shortcode: overlay="true") */
+  overlay?: boolean | string;
+  overlayOpacity?: number | string;
+  /** When set, uses adaptive video as background. Use base name (e.g. "uhd_30fps") for local /videos/, or full URL (e.g. Supabase) for remote. */
+  backgroundVideoSource?: string;
+  backgroundVideoPoster?: string;
+  backgroundVideoAlt?: string;
+  // Object-based button props (for direct Astro usage)
+  leftButton?: ButtonProps;
+  rightButton?: ButtonProps;
+  // Flat shortcode props (for CMS shortcode usage)
+  leftButtonText?: string;
+  leftButtonHref?: string;
+  leftButtonIcon?: string;
+  leftButtonVariant?: string;
+  rightButtonText?: string;
+  rightButtonHref?: string;
+  rightButtonIcon?: string;
+  rightButtonVariant?: string;
+  /** When false, omit AOS attributes so hero is visible immediately (e.g. on /project where AOS init is skipped). */
+  enableAos?: boolean;
+}
+
+const props = Astro.props;
+
+// Default demo content
+const defaultTitle = "Welcome to Our Platform";
+const defaultDescription =
+  "Build amazing solutions with our comprehensive tools and dedicated support.";
+
+// Destructure with support for both formats
+const {
+  title = defaultTitle,
+  titleLeft,
+  titleRight,
+  titleMiddle = "&",
+  titleTagline,
+  titleRefreshField,
+  titleRefreshValue,
+  titleRefreshUserId,
+  titleRefreshProjectId,
+  titleRefreshSuffix,
+  description = defaultDescription,
+  tightSlogan,
+  primaryTextClasses,
+  secondaryTextClasses,
+  globalInputClasses,
+  backgroundImage,
+  height,
+  backgroundVideoSource,
+  backgroundVideoPoster = backgroundImage || "/hero.png",
+  backgroundVideoAlt = "Hero background",
+  enableAos = false,
+} = props;
+
+// Handle boolean/string conversion for shortcode compatibility
+const overlayProp = props.overlay ?? props.backgroundOverlay;
+const backgroundOverlay =
+  overlayProp === "false" ? false : (overlayProp ?? true);
+const overlayOpacity =
+  typeof props.overlayOpacity === "string"
+    ? parseFloat(props.overlayOpacity)
+    : (props.overlayOpacity ?? 0.75);
+
+// Build button objects from either format
+const leftButton: ButtonProps | undefined =
+  props.leftButton ||
+  (props.leftButtonText
+    ? {
+        text: props.leftButtonText,
+        href: props.leftButtonHref || "#",
+        icon: props.leftButtonIcon,
+        variant: (props.leftButtonVariant as "primary" | "secondary" | "outline") || "primary",
+      }
+    : undefined);
+
+const rightButton: ButtonProps | undefined =
+  props.rightButton ||
+  (props.rightButtonText
+    ? {
+        text: props.rightButtonText,
+        href: props.rightButtonHref || "#",
+        icon: props.rightButtonIcon,
+        variant: (props.rightButtonVariant as "primary" | "secondary" | "outline") || "secondary",
+      }
+    : undefined);
+
+const hasButtons = leftButton || rightButton;
+const hasBackground = backgroundImage || backgroundVideoSource;
+/** Apply height when: (a) explicitly passed, or (b) has background and use default 80dvh */
+const heroMinHeight =
+  height != null && height !== ""
+    ? height
+    : hasBackground
+      ? "80dvh"
+      : undefined;
+
+---
+
+<div
+  class={`col-span-12 py-8 md:py-12 w-max-w-7xl mx-auto relative overflow-hidden ${heroMinHeight ? "flex flex-col items-center justify-center" : ""}`}
+  data-component-name="Hero"
+  {...(enableAos && { "data-aos": "fade", "data-aos-duration": "600" })}
+  style={
+    [
+      backgroundImage && !backgroundVideoSource
+        ? `background-image: url('${backgroundImage}'); background-size: cover; background-position: center;`
+        : "",
+      heroMinHeight ? `min-height: ${heroMinHeight};` : "",
+    ]
+      .filter(Boolean)
+      .join(" ") || undefined
+  }
+>
+  {/* Adaptive video background when backgroundVideoSource is set */}
+  {
+    backgroundVideoSource && (
+      <div class="hero-adaptive-video-container absolute inset-0 h-full w-full">
+        <video
+          class="hero-adaptive-video absolute inset-0 h-full w-full object-cover"
+          data-video-source={backgroundVideoSource}
+          data-poster={backgroundVideoPoster}
+          data-alt={backgroundVideoAlt}
+          autoplay
+          muted
+          loop
+          playsinline
+          poster={backgroundVideoPoster}
+        >
+          <img
+            src={backgroundVideoPoster}
+            alt={backgroundVideoAlt}
+            class="absolute inset-0 h-full w-full object-cover"
+          />
+        </video>
+      </div>
+    )
+  }
+  {
+    (backgroundImage || backgroundVideoSource) && backgroundOverlay && (
+      <div class="absolute inset-0 bg-black" style={`opacity: ${overlayOpacity};`} />
+    )
+  }
+
+  <div class={`mx-auto max-w-7xl px-8 sm:px-10 md:px-12 lg:px-16 w-full${hasBackground ? "relative z-10" : ""}`}>
+    <div class="text-center">
+      <!-- Main Headline -->
+      <h1
+        class={`hero-title ${primaryTextClasses || ""} ${hasBackground ? "text-white" : ""}`}
+        {...titleRefreshField && {
+          "data-refresh": titleRefreshField,
+          "data-meta-value": titleRefreshValue ?? title ?? "",
+          ...(titleRefreshUserId && { "data-user-id": titleRefreshUserId }),
+          ...(titleRefreshProjectId && { "data-project-id": String(titleRefreshProjectId) }),
+          ...(titleRefreshSuffix && { "data-refresh-suffix": titleRefreshSuffix }),
+        }}
+      >
+        {titleLeft != null && titleRight != null ? (
+          <HeroSplitTitle
+            left={titleLeft}
+            right={titleRight}
+            middle={titleMiddle}
+            tagline={titleTagline}
+          />
+        ) : (
+          <span set:html={title} />
+        )}
+      </h1>
+      {
+        description && (
+          <h2
+            id="page-subtitle"
+            class={`mt-12 text-xl ${hasBackground ? "text-gray-200" : "text-black dark:text-white"}`}
+          >
+            {
+              tightSlogan && tightSlogan.trim()
+                ? (
+                    <>
+                      <span class="md:hidden" set:html={tightSlogan} />
+                      <span class="hidden md:inline" set:html={description} />
+                    </>
+                  )
+                : (
+                    <span set:html={description} />
+                  )
+            }
+          </h2>
+        )
+      }
+
+      {
+        hasButtons && (
+          <div class="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            {leftButton && (
+              <Button href={leftButton.href} variant={leftButton.variant} icon={leftButton.icon}>
+                {leftButton.text}
+              </Button>
+            )}
+            {rightButton && (
+              <Button href={rightButton.href} variant={rightButton.variant} icon={rightButton.icon}>
+                {rightButton.text}
+              </Button>
+            )}
+          </div>
+        )
+      }
+    </div>
+  </div>
+</div>
+
+
+{
+  backgroundVideoSource && (
+    <script is:inline>
+      (function () {
+        const initHeroAdaptiveVideo = async (videoEl) => {
+          if (videoEl.dataset.heroVideoInitialized === "true") return;
+          videoEl.dataset.heroVideoInitialized = "true";
+
+          const videoSource = videoEl.getAttribute("data-video-source") || "uhd_30fps";
+          const posterUrl = videoEl.getAttribute("data-poster") || "/hero.png";
+
+          const isFullUrl = videoSource.startsWith("http://") || videoSource.startsWith("https://");
+          const videoQualities = isFullUrl
+            ? { low: videoSource, medium: videoSource, high: videoSource, original: videoSource }
+            : {
+                low: `/videos/${videoSource}_low.mp4`,
+                medium: `/videos/${videoSource}_medium.mp4`,
+                high: `/videos/${videoSource}_high.mp4`,
+                original: `/videos/${videoSource}.mp4`,
+              };
+
+          let connectionSpeed = "unknown";
+          try {
+            if ("connection" in navigator) {
+              const conn = navigator.connection;
+              switch (conn.effectiveType) {
+                case "slow-2g":
+                case "2g":
+                  connectionSpeed = "slow";
+                  break;
+                case "3g":
+                  connectionSpeed = "medium";
+                  break;
+                case "4g":
+                  connectionSpeed = "fast";
+                  break;
+              }
+            } else {
+              const start = performance.now();
+              const r = await fetch("/hero.png", { method: "HEAD", cache: "no-cache" });
+              if (r.ok) {
+                const dur = performance.now() - start;
+                connectionSpeed = dur < 100 ? "fast" : dur < 500 ? "medium" : "slow";
+              }
+            }
+          } catch {
+            // Ignore errors
+          }
+
+          const isMobile =
+            (typeof window.isAnyMobile === "function" && window.isAnyMobile()) ||
+            window.innerWidth < 768;
+          let quality;
+          if (isMobile) {
+            quality =
+              connectionSpeed === "fast"
+                ? "medium"
+                : connectionSpeed === "medium"
+                  ? "low"
+                  : "low";
+          } else {
+            quality =
+              connectionSpeed === "fast"
+                ? "high"
+                : connectionSpeed === "medium"
+                  ? "medium"
+                  : connectionSpeed === "slow"
+                    ? "low"
+                    : "medium";
+          }
+
+          const src = videoQualities[quality];
+          if (!src) return;
+          const source = document.createElement("source");
+          source.src = src;
+          source.type = "video/mp4";
+          videoEl.innerHTML = "";
+          videoEl.appendChild(source);
+          const img = document.createElement("img");
+          img.src = posterUrl;
+          img.alt = videoEl.getAttribute("data-alt") || "Hero background";
+          img.className = "absolute inset-0 h-full w-full object-cover";
+          videoEl.appendChild(img);
+          videoEl.load();
+        };
+
+        document.addEventListener("DOMContentLoaded", () => {
+          document.querySelectorAll(".hero-adaptive-video").forEach((el) => {
+            initHeroAdaptiveVideo(el);
+          });
+        });
+      })();
+    </script>
+  )
+}

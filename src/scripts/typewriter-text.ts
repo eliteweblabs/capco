@@ -71,7 +71,7 @@ function initializeTypewriterInstance(element: HTMLElement, text: string): void 
 
   // Create TypeIt instance
   const instance = new TypeIt(element, {
-    speed: 5, // 2x faster (was 10ms per character)
+    speed: 2, // Fast typing (~2ms per character)
     cursor: true, // Show blinking cursor
     waitUntilVisible,
     html: true, // Enable HTML parsing for <br> tags
@@ -175,15 +175,15 @@ function initializeTypewriterInstance(element: HTMLElement, text: string): void 
           });
         }
 
-        // Add natural pauses after punctuation (halved for 2x faster typewriter)
+        // Add natural pauses (short for snappy typewriter)
         if (token.match(/[.,!?;:]/)) {
-          instance.pause(+Math.random() * 150); // ~0-150ms pause
+          instance.pause(+Math.random() * 60); // ~0-60ms after punctuation
         } else if (token === "<br>") {
-          instance.pause(Math.random() * 200); // ~0-200ms pause for line breaks
+          instance.pause(Math.random() * 80); // ~0-80ms for line breaks
         } else if (tokenIndex < tokens.length - 1 && tokens[tokenIndex + 1] !== "<br>") {
-          // Small pause between words (human hesitation)
-          if (Math.random() > 0.5) {
-            instance.pause(25 + Math.random() * 50);
+          // Brief pause between words (occasional)
+          if (Math.random() > 0.7) {
+            instance.pause(15 + Math.random() * 25);
           }
         }
       });
