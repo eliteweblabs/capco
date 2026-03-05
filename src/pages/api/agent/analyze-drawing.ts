@@ -16,14 +16,31 @@ import { supabaseAdmin } from "../../../lib/supabase-admin";
 interface AnalyzeDrawingRequest {
   imageUrls: string[];
   projectId?: number;
+  scale?: string;
 }
 
-const DRAWING_ANALYSIS_PROMPT = `Analyze these fire protection system drawings/diagrams.
+function buildDrawingAnalysisPrompt(scale?: string): string {
+  const scaleSection =
+    scale && scale.trim()
+      ? `
+
+**IMPORTANT - DRAWING SCALE:** The user has specified this scale: "${scale.trim()}"
+
+You MUST use this scale when reporting pipe lengths:
+- PREFER dimensions that are explicitly labeled on the drawing over visual estimation. Use only labeled values when available.
+- Convert labeled dimensions to real-world feet using the scale. Examples: 1" = 10'-0" means 1 inch on paper = 10 feet; 1:100 = 1 unit = 100 units real.
+- Report all pipe lengths in real-world feet (e.g. "45 ft", "12.5 ft"). Include "ft" in every length value.
+- Do NOT guess or estimate lengths. If no dimension is labeled, omit that segment or set confidence to "low" and note "not labeled".
+- If scale is NTS (not to scale), report lengths as drawn and note "scale uncertain" in notes.`
+      : "";
+
+  return `Analyze these fire protection system drawings/diagrams.
+${scaleSection}
 
 Extract and identify the following, based on standard NFPA/fire protection conventions:
 
 1. **Pipe lengths by diameter** – Line width often indicates pipe size (thicker = larger diameter).
-   Look for: 2" pipe, 1-1/2" pipe, 1" pipe, etc. Estimate or note lengths where visible.
+   Look for: 2" pipe, 1-1/2" pipe, 1" pipe, etc. Use ONLY dimensions explicitly labeled on the drawing. Convert to real-world feet using the scale. Do not estimate.
 
 2. **Sprinkler heads** – Standard sprinkler symbols (typically circles with cross or droplet iconography).
    Count and note locations if labeled.
@@ -38,21 +55,41 @@ Consider:
 - **Color** = fire lines often red; domestic/cold gray
 - **Symbols** = NFPA 170, NFPA 13/13R/13D symbol standards
 
+**SPATIAL POSITIONS (required):** For each floor, you MUST provide positions so the drawing can be recreated as a schematic. Use normalized coordinates 0–100 (percentage of image width/height; origin top-left, x=right, y=down).
+- **pipeSegments:** each segment MUST have "path": [[x1,y1],[x2,y2],...] — the polyline tracing that pipe run across the drawing. One segment can have 2+ points (e.g. main feed with bends). Use the approximate centerline of each pipe.
+- **sprinklerHeads:** MUST have "positions": [[x,y],[x,y],...] — one [x,y] per sprinkler head, at the symbol center.
+- **smokeAlarms:** MUST have "positions": [[x,y],...] — one [x,y] per smoke alarm.
+- **otherEquipment:** each item MUST have "positions": [[x,y],...] — one [x,y] per unit of that type.
+- **aspectRatio:** each floor MUST have "aspectRatio": number (e.g. 1.4 for 8.5x11) — width/height of the drawing as shown.
+
 Return a structured JSON object with this exact structure (no markdown, no code block wrapper):
 
 {
   "summary": "Brief 1-2 sentence overview of what the drawing shows",
-  "pipeSegments": [
-    { "diameter": "2\"", "length": "45 ft", "notes": "main feed", "confidence": "high|medium|low" }
+  "floors": [
+    {
+      "name": "Basement",
+      "pageIndex": 0,
+      "aspectRatio": 1.4,
+      "pipeSegments": [{ "diameter": "2\\"", "length": "45 ft", "notes": "main feed", "path": [[10,50],[40,50],[40,30]], "confidence": "high|medium|low" }],
+      "sprinklerHeads": { "count": 12, "positions": [[20,20],[35,20],[50,20],...], "locations": [], "confidence": "high|medium|low" },
+      "smokeAlarms": { "count": 4, "positions": [[15,80],[85,80],...], "locations": [], "confidence": "high|medium|low" },
+      "otherEquipment": [{ "type": "pull station", "count": 2, "positions": [[5,50],[95,50]], "notes": "..." }]
+    }
   ],
-  "sprinklerHeads": { "count": 12, "locations": ["..."] or [], "confidence": "high|medium|low" },
-  "smokeAlarms": { "count": 4, "locations": ["..."] or [], "confidence": "high|medium|low" },
-  "otherEquipment": [{ "type": "pull station", "count": 2, "notes": "..." }],
-  "uncertainties": ["Any elements you couldn't confidently identify"]
+  "pipeSegments": [],
+  "sprinklerHeads": { "count": 0, "positions": [], "locations": [], "confidence": "low" },
+  "smokeAlarms": { "count": 0, "positions": [], "locations": [], "confidence": "low" },
+  "otherEquipment": [],
+  "uncertainties": []
 }
 
+**IMPORTANT - floors array:** When multiple images/pages are provided, return one floor object per image. Use pageIndex 0, 1, 2... and name each (e.g. "Basement", "1st Floor", "2nd Floor"). When only one image, return a single floor with name "Plan" or the floor name if visible. Put all equipment counts, pipe segments, and their positions in the floor object, not at top level.
+
+**Consistency:** Be conservative. Only include items you can clearly identify. Use the knowledge base context if provided—it may contain user corrections or project-specific guidance.
 If the image is not a fire protection drawing (e.g., floor plan without sprinklers), say so in summary and return empty arrays.
 Return ONLY valid JSON.`;
+}
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
@@ -76,7 +113,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const body: AnalyzeDrawingRequest = await request.json();
-    const { imageUrls, projectId } = body;
+    const { imageUrls, projectId, scale } = body;
 
     if (!imageUrls || !Array.isArray(imageUrls) || imageUrls.length === 0) {
       return new Response(
@@ -106,11 +143,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       projectId ? `project ${projectId}` : ""
     );
 
+    const prompt = buildDrawingAnalysisPrompt(scale);
+
     const agent = new UnifiedFireProtectionAgent(apiKey);
     const response = await agent.processQuery({
-      message: DRAWING_ANALYSIS_PROMPT,
+      message: prompt,
       images: urls,
-      context: { projectId: projectId ?? undefined },
+      context: {
+        projectId: projectId ?? undefined,
+        temperature: 0, // Reduce randomness for consistent, reproducible results
+      },
     });
 
     // Try to parse JSON from the response

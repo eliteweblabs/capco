@@ -28,6 +28,27 @@ const { projectId } = Astro.props;
     sprinkler heads, smoke alarms, and other equipment based on line width, color, and NFPA symbols.
   </p>
 
+  <!-- Editable Scale -->
+  <div class="mb-4">
+    <label for="drawing-scale" class={globalFormLabel}>Drawing Scale</label>
+    <input
+      id="drawing-scale"
+      type="text"
+      placeholder='e.g. 1" = 10&apos;-0" or 1:100'
+      value='1" = 10&apos;-0"'
+      class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+      maxlength="80"
+    />
+    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+      Enter the scale shown on the drawing so lengths are converted to real-world units. Add general
+      guidance at
+      <a href="/ai-agent/knowledge" class="text-primary-600 hover:underline dark:text-primary-400"
+        >AI Agent › Knowledge</a
+      >
+      (category: drawing_analysis).
+    </p>
+  </div>
+
   <!-- Dropzone -->
   <div
     id="drawing-dropzone"
@@ -58,6 +79,44 @@ const { projectId } = Astro.props;
   <div id="drawing-results" class="hidden">
     <h3 class="mb-3 text-lg font-semibold text-gray-900 dark:text-white">Analysis Results</h3>
     <div id="drawing-results-content" class="space-y-4"></div>
+
+    <!-- Help the AI learn -->
+    <details
+      class="mt-6 rounded-lg border border-gray-200 dark:border-gray-700"
+      id="drawing-correction-details"
+    >
+      <summary
+        class="cursor-pointer px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800"
+      >
+        Help the AI learn — submit a correction
+      </summary>
+      <div class="border-t border-gray-200 p-4 dark:border-gray-700">
+        <p class="mb-3 text-xs text-gray-500 dark:text-gray-400">
+          If the analysis was wrong, describe the correction. It will be saved to the AI knowledge
+          base and used in future runs.
+        </p>
+        <input
+          id="correction-title"
+          type="text"
+          placeholder="Title (e.g. Pipe length correction for scale 1&quot;=10')"
+          class="mb-2 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+        />
+        <textarea
+          id="correction-content"
+          rows="3"
+          placeholder='e.g. For drawings at 1" = 10&apos;-0", the 2" main feed is 45 ft (labeled 4.5" on the drawing), not 20 ft.'
+          class="mb-2 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+        ></textarea>
+        <button
+          type="button"
+          id="correction-submit"
+          class="rounded-md bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700"
+        >
+          Save to knowledge base
+        </button>
+        <span id="correction-status" class="ml-2 text-sm"></span>
+      </div>
+    </details>
   </div>
 </div>
 
@@ -172,59 +231,200 @@ const { projectId } = Astro.props;
     return data.url || data.publicUrl;
   }
 
-  function renderAnalysis(parsed) {
+  function esc(s) {
+    if (s == null) return "";
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function normalizeFloors(parsed) {
+    if (!parsed) return [];
+    const floors = parsed.floors;
+    if (Array.isArray(floors) && floors.length > 0) return floors;
+    return [
+      {
+        name: "Plan",
+        pageIndex: 0,
+        pipeSegments: parsed.pipeSegments || [],
+        sprinklerHeads: parsed.sprinklerHeads || { count: 0, locations: [] },
+        smokeAlarms: parsed.smokeAlarms || { count: 0, locations: [] },
+        otherEquipment: parsed.otherEquipment || [],
+      },
+    ];
+  }
+
+  const PIPE_COLORS = ["#dc2626", "#ea580c", "#2563eb", "#059669", "#7c3aed"];
+  const SPRINKLER_COLOR = "#059669";
+  const SMOKE_COLOR = "#7c3aed";
+  const OTHER_COLOR = "#6b7280";
+
+  function hasPositions(floor) {
+    const pipes = floor.pipeSegments || [];
+    const hasPipePaths = pipes.some((p) => Array.isArray(p.path) && p.path.length >= 2);
+    const sprinklerPos = floor.sprinklerHeads?.positions;
+    const smokePos = floor.smokeAlarms?.positions;
+    const otherPos = floor.otherEquipment?.some((e) => Array.isArray(e.positions) && e.positions.length > 0);
+    return hasPipePaths || (Array.isArray(sprinklerPos) && sprinklerPos.length > 0) || (Array.isArray(smokePos) && smokePos.length > 0) || otherPos;
+  }
+
+  function strokeWidthForDiameter(d) {
+    const s = String(d || "");
+    if (s.indexOf("2") >= 0 && s.indexOf("1/2") < 0) return 3;
+    if (s.indexOf("1") >= 0) return 2;
+    return 2.5;
+  }
+
+  function renderFloorSvg(floor) {
+    const pipes = floor.pipeSegments || [];
+    const sprinklers = floor.sprinklerHeads || {};
+    const smoke = floor.smokeAlarms || {};
+    const other = floor.otherEquipment || [];
+    const sprinklerCount = sprinklers.count ?? sprinklers.locations?.length ?? sprinklers.positions?.length ?? 0;
+    const smokeCount = smoke.count ?? smoke.locations?.length ?? smoke.positions?.length ?? 0;
+
+    const aspectRatio = Math.max(0.5, Math.min(3, Number(floor.aspectRatio) || 1.4));
+    const vbW = 100;
+    const vbH = 100;
+
+    if (!hasPositions(floor)) {
+      return renderFloorSvgFallback(floor);
+    }
+
+    let schematicParts = "";
+
+    pipes.forEach((p, i) => {
+      const path = p.path;
+      if (!Array.isArray(path) || path.length < 2) return;
+      const color = PIPE_COLORS[i % PIPE_COLORS.length];
+      const strokeW = strokeWidthForDiameter(p.diameter);
+      const tip = `${esc(p.diameter)} — ${esc(p.length)}${p.notes ? " (" + esc(p.notes) + ")" : ""}`;
+      const d = path.map((pt, idx) => (idx === 0 ? "M" : "L") + pt[0] + "," + pt[1]).join(" ");
+      schematicParts += `<path d="${d}" fill="none" stroke="${color}" stroke-width="${strokeW}" stroke-linecap="round" stroke-linejoin="round" cursor="help" title="${tip}"/>`;
+    });
+
+    const sprinklerPositions = sprinklers.positions || [];
+    sprinklerPositions.forEach((pt, idx) => {
+      const tip = sprinklerPositions.length > 1 ? `Sprinkler ${idx + 1} of ${sprinklerPositions.length}` : "Sprinkler head";
+      const x = pt[0];
+      const y = pt[1];
+      schematicParts += `<g cursor="help" title="${tip}" transform="translate(${x},${y})"><circle r="2.5" fill="none" stroke="${SPRINKLER_COLOR}" stroke-width="1"/><path d="M-2.5 0 L2.5 0 M0 -2.5 L0 2.5" stroke="${SPRINKLER_COLOR}" stroke-width="0.8"/></g>`;
+    });
+
+    const smokePositions = smoke.positions || [];
+    smokePositions.forEach((pt, idx) => {
+      const tip = smokePositions.length > 1 ? `Smoke alarm ${idx + 1} of ${smokePositions.length}` : "Smoke alarm";
+      const x = pt[0];
+      const y = pt[1];
+      schematicParts += `<g cursor="help" title="${tip}" transform="translate(${x},${y})"><rect x="-2" y="-1.5" width="4" height="3" rx="0.3" fill="none" stroke="${SMOKE_COLOR}" stroke-width="0.8"/></g>`;
+    });
+
+    other.forEach((e) => {
+      const positions = e.positions || [];
+      const cnt = e.count ?? 1;
+      positions.forEach((pt, idx) => {
+        const tip = `${esc(e.type)}${positions.length > 1 ? ` ${idx + 1} of ${positions.length}` : ""}${e.notes ? " — " + esc(e.notes) : ""}`;
+        const x = pt[0];
+        const y = pt[1];
+        schematicParts += `<g cursor="help" title="${tip}" transform="translate(${x},${y})"><rect x="-1.5" y="-1.5" width="3" height="3" rx="0.3" fill="${OTHER_COLOR}"/></g>`;
+      });
+    });
+
+    const legendItems = [];
+    pipes.forEach((p, i) => {
+      const color = PIPE_COLORS[i % PIPE_COLORS.length];
+      const tip = `${esc(p.diameter)} — ${esc(p.length)}${p.notes ? " (" + esc(p.notes) + ")" : ""}`;
+      legendItems.push(`<g cursor="help" title="${tip}"><line x1="0" y1="0" x2="12" y2="0" stroke="${color}" stroke-width="2" stroke-linecap="round"/><text x="16" y="3.5" font-size="5" fill="currentColor">${esc(p.diameter)}</text></g>`);
+    });
+    if (sprinklerCount > 0) {
+      legendItems.push(`<g cursor="help" title="Sprinkler heads: ${sprinklerCount}"><circle r="1.8" fill="none" stroke="${SPRINKLER_COLOR}" stroke-width="0.8"/><path d="M-1.8 0 L1.8 0 M0 -1.8 L0 1.8" stroke="${SPRINKLER_COLOR}" stroke-width="0.5"/><text x="4" y="3" font-size="5" fill="currentColor">×${sprinklerCount}</text></g>`);
+    }
+    if (smokeCount > 0) {
+      legendItems.push(`<g cursor="help" title="Smoke alarms: ${smokeCount}"><rect x="-2" y="-1.2" width="3" height="2.2" rx="0.3" fill="none" stroke="${SMOKE_COLOR}" stroke-width="0.5"/><text x="2.5" y="2.5" font-size="5" fill="currentColor">×${smokeCount}</text></g>`);
+    }
+    other.forEach((e) => {
+      const cnt = e.count ?? 1;
+      const tip = `${esc(e.type)}: ${cnt}${e.notes ? " — " + esc(e.notes) : ""}`;
+      legendItems.push(`<g cursor="help" title="${tip}"><rect x="-1.2" y="-1.2" width="2.4" height="2.4" rx="0.2" fill="${OTHER_COLOR}"/><text x="2" y="2.5" font-size="5" fill="currentColor">${esc(e.type)}</text></g>`);
+    });
+
+    const legendDy = 6;
+    let ly = 92;
+    let lx = 2;
+    let legendSvg = "";
+    legendItems.forEach((item) => {
+      legendSvg += `<g transform="translate(${lx},${ly})">${item}</g>`;
+      lx += 22;
+      if (lx > 70) {
+        lx = 2;
+        ly += legendDy;
+      }
+    });
+
+    return `<div class="rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900 overflow-hidden">
+      <div class="flex items-center justify-between border-b border-gray-200 px-4 py-2 dark:border-gray-700">
+        <h4 class="text-sm font-semibold text-gray-900 dark:text-white">${esc(floor.name)}</h4>
+      </div>
+      <div class="p-4">
+        <div class="rounded border border-gray-200 dark:border-gray-600 overflow-hidden bg-white dark:bg-gray-800" style="aspect-ratio: ${aspectRatio}">
+          <svg width="100%" height="100%" viewBox="0 0 ${vbW} ${vbH}" class="floor-results-svg text-gray-700 dark:text-gray-300" preserveAspectRatio="xMidYMid meet">
+            <rect x="0" y="0" width="100" height="100" fill="#fafafa" class="dark:fill-gray-900"/>
+            ${schematicParts}
+            <g fill="currentColor" class="text-gray-600 dark:text-gray-400" opacity="0.9">
+              <rect x="0" y="88" width="98" height="12" rx="2" fill="currentColor" opacity="0.08"/>
+              <text x="4" y="91" font-size="4" font-weight="600">Legend</text>
+              ${legendSvg}
+            </g>
+          </svg>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function renderFloorSvgFallback(floor) {
+    const pipes = floor.pipeSegments || [];
+    const sprinklers = floor.sprinklerHeads || {};
+    const smoke = floor.smokeAlarms || {};
+    const other = floor.otherEquipment || [];
+    const sprinklerCount = sprinklers.count ?? sprinklers.locations?.length ?? 0;
+    const smokeCount = smoke.count ?? smoke.locations?.length ?? 0;
+    const noData = pipes.length === 0 && sprinklerCount === 0 && smokeCount === 0 && other.length === 0;
+    if (noData) return "";
+    const msg = "Position data not available. Re-analyze the drawing to generate a schematic view.";
+    let list = "";
+    if (pipes.length > 0) list += `<li>Pipes: ${pipes.length} segment(s)</li>`;
+    if (sprinklerCount > 0) list += `<li>Sprinklers: ${sprinklerCount}</li>`;
+    if (smokeCount > 0) list += `<li>Smoke alarms: ${smokeCount}</li>`;
+    if (other.length > 0) list += `<li>Other: ${other.map((e) => esc(e.type) + " ×" + (e.count ?? 1)).join(", ")}</li>`;
+    return `<div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-900/20"><h4 class="text-sm font-semibold text-amber-800 dark:text-amber-200">${esc(floor.name)}</h4><p class="mt-1 text-sm text-amber-700 dark:text-amber-300">${msg}</p><ul class="mt-2 list-disc list-inside text-sm text-amber-600 dark:text-amber-400">${list}</ul></div>`;
+  }
+
+  function renderAnalysis(parsed, scaleUsed) {
     if (!parsed) return '<p class="text-gray-500 dark:text-gray-400">Raw response only.</p>';
 
+    const floors = normalizeFloors(parsed);
     let html = "";
+    if (scaleUsed) {
+      html += `<div class="mb-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-200"><strong>Scale used:</strong> ${esc(scaleUsed)}</div>`;
+    }
     if (parsed.summary) {
       html += `<div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900"><p class="text-sm font-medium text-gray-700 dark:text-gray-300">Summary</p><p class="mt-1 text-gray-600 dark:text-gray-400">${String(parsed.summary)}</p></div>`;
     }
 
-    if (
-      parsed.pipeSegments &&
-      Array.isArray(parsed.pipeSegments) &&
-      parsed.pipeSegments.length > 0
-    ) {
-      html += `<div class="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"><table class="min-w-full text-sm"><thead class="bg-gray-100 dark:bg-gray-800"><tr><th class="px-4 py-2 text-left">Diameter</th><th class="px-4 py-2 text-left">Length</th><th class="px-4 py-2 text-left">Notes</th></tr></thead><tbody>`;
-      parsed.pipeSegments.forEach((row) => {
-        html += `<tr class="border-t border-gray-200 dark:border-gray-700"><td class="px-4 py-2">${row.diameter ?? "-"}</td><td class="px-4 py-2">${row.length ?? "-"}</td><td class="px-4 py-2 text-gray-600 dark:text-gray-400">${row.notes ?? ""}</td></tr>`;
-      });
-      html += "</tbody></table></div>";
-    }
-
-    if (
-      parsed.sprinklerHeads &&
-      (parsed.sprinklerHeads.count ?? parsed.sprinklerHeads.locations?.length)
-    ) {
-      const s = parsed.sprinklerHeads;
-      html += `<div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900"><p class="text-sm font-medium text-gray-700 dark:text-gray-300">Sprinkler Heads</p><p class="mt-1 text-gray-600 dark:text-gray-400">Count: ${s.count ?? s.locations?.length ?? 0}${s.locations?.length ? ` — ${s.locations.join(", ")}` : ""}</p></div>`;
-    }
-
-    if (parsed.smokeAlarms && (parsed.smokeAlarms.count ?? parsed.smokeAlarms.locations?.length)) {
-      const s = parsed.smokeAlarms;
-      html += `<div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900"><p class="text-sm font-medium text-gray-700 dark:text-gray-300">Smoke Alarms</p><p class="mt-1 text-gray-600 dark:text-gray-400">Count: ${s.count ?? s.locations?.length ?? 0}${s.locations?.length ? ` — ${s.locations.join(", ")}` : ""}</p></div>`;
-    }
-
-    if (
-      parsed.otherEquipment &&
-      Array.isArray(parsed.otherEquipment) &&
-      parsed.otherEquipment.length > 0
-    ) {
-      html += `<div class="rounded-lg border border-gray-200 p-4 dark:border-gray-700"><p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Other Equipment</p><ul class="list-disc list-inside text-sm text-gray-600 dark:text-gray-400">`;
-      parsed.otherEquipment.forEach((e) => {
-        html += `<li>${e.type ?? "unknown"}: ${e.count ?? 1}${e.notes ? ` — ${e.notes}` : ""}</li>`;
-      });
-      html += "</ul></div>";
-    }
+    floors.forEach((floor) => {
+      html += renderFloorSvg(floor);
+    });
 
     if (
       parsed.uncertainties &&
       Array.isArray(parsed.uncertainties) &&
       parsed.uncertainties.length > 0
     ) {
-      html += `<div class="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20"><p class="text-sm font-medium text-amber-800 dark:text-amber-200">Uncertainties</p><ul class="mt-1 list-disc list-inside text-sm text-amber-700 dark:text-amber-300">`;
+      html += `<div class="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20 mt-4"><p class="text-sm font-medium text-amber-800 dark:text-amber-200">Uncertainties</p><ul class="mt-1 list-disc list-inside text-sm text-amber-700 dark:text-amber-300">`;
       parsed.uncertainties.forEach((u) => {
-        html += `<li>${u}</li>`;
+        html += `<li>${esc(u)}</li>`;
       });
       html += "</ul></div>";
     }
@@ -273,6 +473,9 @@ const { projectId } = Astro.props;
 
       showStatus("Analyzing with AI...");
 
+      const scaleInput = document.getElementById("drawing-scale");
+      const scale = scaleInput?.value?.trim() || '1" = 10\'-0"';
+
       const res = await fetch("/api/agent/analyze-drawing", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -280,6 +483,7 @@ const { projectId } = Astro.props;
         body: JSON.stringify({
           imageUrls,
           projectId: projectId || undefined,
+          scale,
         }),
       });
 
@@ -294,7 +498,7 @@ const { projectId } = Astro.props;
       const parsed = data.analysis?.parsed;
       const raw = data.analysis?.rawResponse;
       const html =
-        renderAnalysis(parsed) +
+        renderAnalysis(parsed, scale) +
         (raw && !parsed
           ? `<details class="mt-4"><summary class="cursor-pointer text-sm text-gray-500">Raw response</summary><pre class="mt-2 overflow-x-auto rounded bg-gray-100 p-3 text-xs dark:bg-gray-800">${raw.replace(/</g, "&lt;")}</pre></details>`
           : "");
@@ -324,5 +528,51 @@ const { projectId } = Astro.props;
     dropzone.classList.remove("border-primary-500", "bg-primary-50/50");
     const f = e.dataTransfer?.files?.[0];
     if (f) processFile(f);
+  });
+
+  // Save correction to knowledge base
+  document.getElementById("correction-submit")?.addEventListener("click", async () => {
+    const titleEl = document.getElementById("correction-title");
+    const contentEl = document.getElementById("correction-content");
+    const statusEl = document.getElementById("correction-status");
+
+    const title = titleEl?.value?.trim();
+    const content = contentEl?.value?.trim();
+
+    if (!title || !content) {
+      if (statusEl) statusEl.textContent = "Please enter both title and correction.";
+      return;
+    }
+
+    const btn = document.getElementById("correction-submit");
+    if (btn) btn.disabled = true;
+    if (statusEl) statusEl.textContent = "Saving...";
+
+    try {
+      const res = await fetch("/api/agent/knowledge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          title,
+          content,
+          category: "drawing_analysis",
+          priority: 5,
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || data.message || "Failed to save");
+      }
+
+      if (statusEl) statusEl.textContent = "Saved. Future analyses will use this.";
+      titleEl.value = "";
+      contentEl.value = "";
+    } catch (err) {
+      if (statusEl) statusEl.textContent = err?.message || "Error saving";
+    } finally {
+      if (btn) btn.disabled = false;
+    }
   });
 </script>

@@ -213,7 +213,7 @@ const hasActions = actionsRenderer || (actionsComponent && actionsGetProps);
 
 const createSlotId = getCreateSlotId();
 const colspan =
-  columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + (showSelectColumn ? 1 : 0) + 1; // +1 for detail row spanning
+  columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + (showSelectColumn ? 1 : 0);
 
 /** Resizable script only resizes columns with numeric width; sticky columns get data-col-sticky and are skipped */
 const getColWidth = (col: (typeof columns)[0]) => (typeof col.width === "number" ? col.width : 16);
@@ -252,7 +252,7 @@ const isStickyCol = (col: (typeof columns)[0]) =>
         <tr>
           {
             draggable && (
-              <th class={dataTableDragThClasses} aria-label="Drag to reorder">
+              <th class={dataTableDragThClasses} aria-label="Drag to reorder" data-col-drag>
                 <SimpleIcon name="grip-dots" class="h-5 w-5" />
               </th>
             )
@@ -300,6 +300,7 @@ const isStickyCol = (col: (typeof columns)[0]) =>
               <th
                 scope="col"
                 class={`${dataTableActionsThClasses} ${actionsColumnSticky ? dataTableThStickyRightClasses : ""}`}
+                data-col-actions
               >
                 {actionsHeader?.label ?? "Actions"}
               </th>

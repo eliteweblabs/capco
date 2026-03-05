@@ -88,21 +88,16 @@ function initResizableColumns() {
       }
     });
 
-    // Give any header without data-col-id (e.g. Actions) a share of remaining width so it lays out inside the table
-    const ACTIONS_MIN_PCT = 10;
-    const allTh = Array.from(thead.querySelectorAll<HTMLElement>("th"));
-    const totalDataPct = headers.reduce(
-      (sum, th) => sum + (parseFloat(th.style.width || "0") || 0),
-      0
-    );
-    const remainingPct = Math.max(ACTIONS_MIN_PCT, 100 - totalDataPct);
-    allTh.forEach((th) => {
-      if (!th.getAttribute("data-col-id")) {
-        const w = Math.min(MAX_PCT, remainingPct);
-        th.style.width = `${w}%`;
-        th.style.minWidth = `${w}%`;
-        th.style.maxWidth = `${w}%`;
-      }
+    // Fixed-width columns: drag and actions use rem so they don't get squeezed by % data columns
+    thead.querySelectorAll<HTMLElement>("th[data-col-drag]").forEach((th) => {
+      th.style.width = "2.5rem";
+      th.style.minWidth = "2.5rem";
+      th.style.maxWidth = "2.5rem";
+    });
+    thead.querySelectorAll<HTMLElement>("th[data-col-actions]").forEach((th) => {
+      th.style.width = "6rem";
+      th.style.minWidth = "6rem";
+      th.style.maxWidth = "6rem";
     });
 
     headers.forEach((th, index) => {

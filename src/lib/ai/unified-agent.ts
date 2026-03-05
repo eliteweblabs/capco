@@ -91,11 +91,21 @@ export class UnifiedFireProtectionAgent {
     });
 
     try {
+      const inferenceOptions: Record<string, unknown> = {};
+      if (
+        typeof context?.temperature === "number" &&
+        context.temperature >= 0 &&
+        context.temperature <= 1
+      ) {
+        inferenceOptions.temperature = context.temperature;
+      }
+
       const response = await this.client.messages.create({
         model: this.model,
         max_tokens: 4096,
         system: systemPrompt,
         messages: messages,
+        ...inferenceOptions,
       });
 
       console.log("[---UNIFIED-AGENT] API call successful:", {

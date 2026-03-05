@@ -77,9 +77,9 @@ export const globalClasses = () => {
       "font-secondary sticky top-0 z-10 text-uppercase color-background select-none text-xs font-semibold uppercase tracking-wide",
     dataTableThClasses:
       "font-secondary color-border-primary border-r border-gray-200 px-4 py-3 font-semibold dark:border-gray-700",
-    /** Same as dataTableThClasses + border-l + color-background so Actions column is clearly part of the table */
+    /** Same as dataTableThClasses + border-l + color-background so Actions column is clearly part of the table. min-w ensures two icon buttons fit. */
     dataTableActionsThClasses:
-      "font-secondary color-background color-border-primary border-l border-r border-gray-200 px-4 py-3 font-semibold dark:border-gray-700",
+      "font-secondary color-background color-border-primary border-l border-r border-gray-200 px-4 py-3 font-semibold dark:border-gray-700 w-24 min-w-24",
     dataTableTbodyClasses:
       "divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900",
     dataTableEmptyCellClasses: "font-secondary px-4 py-8 text-sm text-gray-500 dark:text-gray-400",
