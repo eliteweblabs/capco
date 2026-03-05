@@ -24,6 +24,8 @@ const cache = new Map<string, any>();
 const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
 let siteConfigCacheTimestamp = 0;
 
+const CONTENT_DEBUG = process.env.CONTENT_DEBUG === "1" || process.env.CONTENT_DEBUG === "true";
+
 /** Clear site config cache (call when global settings are updated) */
 export function clearSiteConfigCache(): void {
   cache.delete("site-config");
@@ -301,8 +303,12 @@ export async function getSiteConfig(): Promise<SiteConfig> {
         configUrl.startsWith("file://");
       if (isUrl) {
         const res = await fetch(configUrl);
-        if (res.ok) envConfigJson = await res.text();
-        else console.warn("⚠️ [CONTENT] SITE_CONFIG_URL fetch failed:", res.status);
+        if (res.ok) {
+          envConfigJson = await res.text();
+          console.log("📋 [CONTENT] Site config loaded from SITE_CONFIG_URL:", configUrl.substring(0, 60) + (configUrl.length > 60 ? "…" : ""));
+        } else {
+          console.warn("⚠️ [CONTENT] SITE_CONFIG_URL fetch failed:", res.status, configUrl);
+        }
       } else {
         // Treat as filesystem path (relative to cwd or absolute)
         const filePath = configUrl.startsWith("/") ? configUrl : join(process.cwd(), configUrl);
@@ -320,6 +326,9 @@ export async function getSiteConfig(): Promise<SiteConfig> {
   // 1b. SITE_CONFIG or SITE_CONFIG_JSON (single var, <32KB on Railway)
   if (!envConfigJson) {
     envConfigJson = process.env.SITE_CONFIG || process.env.SITE_CONFIG_JSON || null;
+    if (envConfigJson) {
+      console.log("📋 [CONTENT] Site config loaded from SITE_CONFIG or SITE_CONFIG_JSON env");
+    }
   }
 
   // 1c. SITE_CONFIG_1, SITE_CONFIG_2, ... (chunked for Railway's 32KB limit)
@@ -330,7 +339,10 @@ export async function getSiteConfig(): Promise<SiteConfig> {
       if (!chunk) break;
       chunks.push(chunk);
     }
-    if (chunks.length > 0) envConfigJson = chunks.join("");
+    if (chunks.length > 0) {
+      envConfigJson = chunks.join("");
+      console.log("📋 [CONTENT] Site config loaded from SITE_CONFIG_1..N env (", chunks.length, "chunks)");
+    }
   }
 
   // 1d. config-[company-name].json (primary: independent site settings). Fallback: config.json
@@ -367,11 +379,18 @@ export async function getSiteConfig(): Promise<SiteConfig> {
       if (existsSync(p)) {
         try {
           envConfigJson = readFileSync(p, "utf-8");
+          console.log("📋 [CONTENT] Site config loaded from file:", p);
+          if (CONTENT_DEBUG) {
+            console.log("📋 [CONTENT] Config candidates checked:", candidates);
+          }
           break;
         } catch {
           /* ignore */
         }
       }
+    }
+    if (!envConfigJson && CONTENT_DEBUG) {
+      console.log("📋 [CONTENT] No config file found. Candidates:", candidates);
     }
   }
 
@@ -390,12 +409,14 @@ export async function getSiteConfig(): Promise<SiteConfig> {
         const fileContent = readFileSync(configPath, "utf-8");
         const jsonConfig = JSON.parse(fileContent);
         mergeJsonConfig(config, jsonConfig);
+        console.log("📋 [CONTENT] Site config loaded from site-config.json");
       } catch (error) {
         console.warn("⚠️ [CONTENT] Error reading site-config.json, using defaults:", error);
       }
     } else {
       console.warn(
-        "⚠️ [CONTENT] No SITE_CONFIG env var and no site-config.json. Using minimal defaults."
+        "⚠️ [CONTENT] No SITE_CONFIG env, no config-*.json in public/data, and no site-config.json. Using minimal defaults. " +
+          "Set SITE_CONFIG_JSON or add public/data/config-{company-slug}.json for form config."
       );
     }
   }
@@ -582,9 +603,20 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
           content: filterContent(rawContent),
         };
         cache.set(cacheKey, pageContent);
-        // console.log(`✅ [CONTENT] Loaded ${slug} from database (CMS)`, {
-        //   contentLength: dbPage.content?.length,
-        // });
+        console.log("📄 [CONTENT] Page loaded from database (cmsPages):", slug, {
+          template: normalizedTemplate,
+          contentLength: (pageContent.content || "").length,
+          hasContactForm: (pageContent.content || "").includes("<ContactForm"),
+        });
+        if (slug === "contact" && !(pageContent.content || "").includes("<ContactForm")) {
+          console.warn(
+            "⚠️ [CONTENT] Contact page from CMS lacks <ContactForm /> shortcode. Injecting default form."
+          );
+          const defaultContact = await getDefaultPageContent("contact");
+          if (defaultContact?.content?.includes("<ContactForm")) {
+            pageContent.content = defaultContact.content;
+          }
+        }
         return pageContent;
       } else if (error) {
         const msg = typeof error?.message === "string" ? error.message : String(error);
@@ -634,7 +666,7 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
         content: filterContent(parsed.content || ""),
       };
       cache.set(cacheKey, pageContent);
-      // console.log(`✅ [CONTENT] Loaded ${slug} from environment variable (JSON)`);
+      console.log("📄 [CONTENT] Page loaded from env PAGE_*_JSON:", slug);
       return pageContent;
     } catch (error) {
       console.warn(`⚠️ [CONTENT] Error parsing PAGE_${slugUpper}_JSON:`, error);
@@ -653,7 +685,7 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
       content: filterContent(envContent),
     };
     cache.set(cacheKey, pageContent);
-    // console.log(`✅ [CONTENT] Loaded ${slug} from environment variables`);
+    console.log("📄 [CONTENT] Page loaded from env PAGE_*_CONTENT:", slug);
     return pageContent;
   }
 
@@ -671,17 +703,31 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
         description: data.description != null ? filterDescription(String(data.description)) : "",
       };
       cache.set(cacheKey, pageContent);
-      // console.log(`✅ [CONTENT] Loaded ${slug} from persistent volume`);
+      console.log("📄 [CONTENT] Page loaded from volume:", slug, volumeContentPath);
+      if (slug === "contact" && !(pageContent.content || "").includes("<ContactForm")) {
+        console.warn(
+          "⚠️ [CONTENT] Contact page from volume lacks <ContactForm />. Injecting default form."
+        );
+        const defaultContact = await getDefaultPageContent("contact");
+        if (defaultContact?.content?.includes("<ContactForm")) {
+          pageContent.content = defaultContact.content;
+        }
+      }
       return pageContent;
     } catch (error) {
       console.warn(`⚠️ [CONTENT] Error reading from volume:`, error);
     }
+  } else if (slug === "contact" && CONTENT_DEBUG) {
+    console.log("📄 [CONTENT] Volume check: path exists?", existsSync(volumePath), "file exists?", existsSync(volumeContentPath));
   }
 
   // 3. Fallback to default content (no backup markdown from git - pages come from CMS/DB, env, or volume only)
   const defaultContent = await getDefaultPageContent(slug);
   if (defaultContent) {
-    // console.log(`ℹ️ [CONTENT] Using default content for: ${slug}`);
+    console.log("📄 [CONTENT] Page loaded from defaults:", slug, {
+      template: defaultContent.template,
+      hasContactForm: (defaultContent.content || "").includes("<ContactForm"),
+    });
     cache.set(cacheKey, defaultContent);
     return defaultContent;
   }

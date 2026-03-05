@@ -56,10 +56,14 @@ const Layout = layouts[template as keyof typeof layouts] || LayoutDefault;
 // Parse component shortcodes from markdown
 const components = parseComponentShortcodes(normalizedContent);
 
-console.log(
-  "[MarkdownPage] Found components:",
-  components.map((c) => c.name)
-);
+if (slug === "contact" && !components.some((c) => c.name === "ContactForm")) {
+  console.warn(
+    "[MarkdownPage] Contact page has no <ContactForm /> shortcode. Content length:",
+    (normalizedContent || "").length,
+    "Preview:",
+    (normalizedContent || "").substring(0, 80)
+  );
+}
 
 // Fetch shared data once when components need it (avoids duplicate queries)
 const needsFeaturedProjects = components.some((c) => c.name === "DynamicProjectsMap");
@@ -161,7 +165,12 @@ const componentModules = await Promise.all(
     });
 
     if (!matchingPath) {
-      console.warn(`[MarkdownPage] ❌ Component not found: ${name}`);
+      console.warn(`[MarkdownPage] ❌ Component not found: ${name} (slug: ${slug})`);
+      if (slug === "contact" && name === "ContactForm") {
+        console.warn(
+          "[MarkdownPage] ContactForm is required for /contact. Ensure page content includes <ContactForm />."
+        );
+      }
       return null;
     }
 
