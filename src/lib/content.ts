@@ -345,8 +345,9 @@ export async function getSiteConfig(): Promise<SiteConfig> {
     }
   }
 
-  // 1d. config-[company-name].json (primary: independent site settings). Fallback: config.json
-  // Order: config-${globalCompanyName}.json, config-${RAILWAY_PROJECT_NAME}.json, config.json
+  // 1d. config-${slug(RAILWAY_PROJECT_NAME)}.json (primary on Railway). config-${companyName}.json, config.json
+  // On Railway, RAILWAY_PROJECT_NAME is set — use it first so each deployment loads its own config.
+  // Local: RAILWAY_PROJECT_NAME often unset — use company from DB, then config.json.
   if (!envConfigJson) {
     const slugify = (s: string) =>
       s
@@ -363,16 +364,17 @@ export async function getSiteConfig(): Promise<SiteConfig> {
     const dataDir = join(process.cwd(), "public", "data");
     const distDataDir = join(process.cwd(), "dist", "client", "data");
     const candidates: string[] = [];
-    // Primary: config-[company-name].json (independent per-site settings)
-    if (companySlug) {
-      candidates.push(join(dataDir, `config-${companySlug}.json`));
-      candidates.push(join(distDataDir, `config-${companySlug}.json`));
-    }
-    if (railwaySlug && railwaySlug !== companySlug) {
+    // Primary on Railway: config-${RAILWAY_PROJECT_NAME}.json (ensures each deployment gets its config)
+    if (railwaySlug) {
       candidates.push(join(dataDir, `config-${railwaySlug}.json`));
       candidates.push(join(distDataDir, `config-${railwaySlug}.json`));
     }
-    // Fallback: config.json (local dev or when no company-specific file exists)
+    // Fallback: config-${companyName}.json (local dev when no RAILWAY_PROJECT_NAME)
+    if (companySlug && companySlug !== railwaySlug) {
+      candidates.push(join(dataDir, `config-${companySlug}.json`));
+      candidates.push(join(distDataDir, `config-${companySlug}.json`));
+    }
+    // Final fallback: config.json (local dev)
     candidates.push(join(dataDir, "config.json"));
     candidates.push(join(distDataDir, "config.json"));
     for (const p of candidates) {
@@ -438,12 +440,8 @@ export async function getSiteConfig(): Promise<SiteConfig> {
     const distDataDir = join(process.cwd(), "dist", "client", "data");
     const dirs = [dataDir, distDataDir];
     const fallbackCandidates: string[] = [];
-    if (companySlug) {
-      fallbackCandidates.push(`config-${companySlug}.json`);
-    }
-    if (railwaySlug && railwaySlug !== companySlug) {
-      fallbackCandidates.push(`config-${railwaySlug}.json`);
-    }
+    if (railwaySlug) fallbackCandidates.push(`config-${railwaySlug}.json`);
+    if (companySlug && companySlug !== railwaySlug) fallbackCandidates.push(`config-${companySlug}.json`);
     fallbackCandidates.push("config.json");
     for (const dir of dirs) {
       for (const name of fallbackCandidates) {

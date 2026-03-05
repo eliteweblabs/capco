@@ -5,11 +5,13 @@
 ## Config file resolution
 
 1. **Env / URL** – `SITE_CONFIG`, `SITE_CONFIG_JSON`, `SITE_CONFIG_1/2/...`, or `SITE_CONFIG_URL` (if set).
-2. **File (when no env config)** – In order (primary = `config-[company-name].json`):
-   - `config-${globalCompanyName}.json` (from DB `companyName`, slugified)
-   - `config-${RAILWAY_PROJECT_NAME}.json` (slugified)
+2. **File (when no env config)** – In order:
+   - `config-${slug(RAILWAY_PROJECT_NAME)}.json` (primary on Railway — each deployment loads its own config)
+   - `config-${slug(globalCompanyName)}.json` (from DB, for local when RAILWAY_PROJECT_NAME unset)
    - `config.json` (fallback for local dev)
    - Searched in both `public/data/` and `dist/client/data/`
+
+**Railway:** Ensure `RAILWAY_PROJECT_NAME` is set in Railway Variables to match your config filename (e.g. `Rothco Built, LLC` → `config-rothco-built-llc.json`).
 3. **Fallback** – `site-config.json` in project root (local dev).
 
 Company/project names are slugified: lowercased, non-alphanumeric → `-`, e.g. `"Rothco Built"` → `config-rothco-built.json`, `"CAPCO Design Group"` → `config-capco-design-group.json`.
