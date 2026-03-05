@@ -44,6 +44,29 @@ module.exports = {
     "translate-x-0",
     "-translate-x-full",
     "transition-transform",
+    // CMS text sizes (classes in DB/CMS content aren't seen by content scanner)
+    {
+      pattern: /^text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl)$/,
+      variants: ["sm", "md", "lg", "xl"],
+    },
+    // Arbitrary text sizes for CMS (e.g. text-[4rem], md:text-[6rem])
+    {
+      pattern: /^text-\[[\d.]+(rem|em|px)\]$/,
+      variants: ["sm", "md", "lg", "xl"],
+    },
+    // CMS hero/title content (classes in DB aren't seen by content scanner)
+    "md:text-left",
+    "md:text-right",
+    "md:text-center",
+    "md:flex",
+    "md:flex-row",
+    "md:w-[40%]",
+    "md:w-[20%]",
+    "md:col-span-5",
+    "md:col-span-2",
+    "col-span-12",
+    "grid-cols-12",
+    "flex-col",
     // Layout classes (including conditional centerContent in App.astro)
     "overscroll-y-contain",
     "flex",
@@ -64,6 +87,8 @@ module.exports = {
         secondary: ["var(--font-family-secondary, sans-serif)"],
         // #### Tertiary font (accent, handwritten style). Use font-tertiary. Falls back when empty.
         tertiary: ['var(--font-family-tertiary, "")', "var(--font-family-secondary, sans-serif)"],
+        // #### Serif font. Use font-serif class.
+        serif: ['var(--font-family-serif, "Noto Serif Variable")', "serif"],
       },
 
       fontSize: {

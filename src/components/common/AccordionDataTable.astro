@@ -171,7 +171,9 @@ const {
 
 /** When headers is provided, derive columns and options from it; otherwise use props. */
 const selectHeader = headers?.find((h) => h.key === "select" || h.actions?.includes("select"));
-const actionsHeader = headers?.find((h) => h.key === "actions" || h.actions?.includes("edit") || h.actions?.includes("delete"));
+const actionsHeader = headers?.find(
+  (h) => h.key === "actions" || h.actions?.includes("edit") || h.actions?.includes("delete")
+);
 const dataHeaders = headers?.filter((h) => h.key !== "select" && h.key !== "actions") ?? [];
 
 const columns: ColumnConfig<any>[] =
@@ -188,10 +190,12 @@ const columns: ColumnConfig<any>[] =
       }))
     : []);
 
-const getItemId = getItemIdProp ?? ((item: any) => (item?.id != null ? String(item.id) : String(item)));
+const getItemId =
+  getItemIdProp ?? ((item: any) => (item?.id != null ? String(item.id) : String(item)));
 const showSelectColumn = headers ? !!selectHeader : showSelectColumnProp;
 const selectHeaderLabel = headers && selectHeader ? selectHeader.label : selectHeaderLabelProp;
-const actionsColumnSticky = headers && actionsHeader ? actionsHeader.width === "sticky-right" : actionsColumnStickyProp;
+const actionsColumnSticky =
+  headers && actionsHeader ? actionsHeader.width === "sticky-right" : actionsColumnStickyProp;
 
 const toDataAttrs = (obj: Record<string, string>) =>
   Object.fromEntries(
@@ -212,8 +216,7 @@ const colspan =
   columns.length + (draggable ? 1 : 0) + (hasActions ? 1 : 0) + (showSelectColumn ? 1 : 0) + 1; // +1 for detail row spanning
 
 /** Resizable script only resizes columns with numeric width; sticky columns get data-col-sticky and are skipped */
-const getColWidth = (col: (typeof columns)[0]) =>
-  typeof col.width === "number" ? col.width : 16;
+const getColWidth = (col: (typeof columns)[0]) => (typeof col.width === "number" ? col.width : 16);
 const isStickyCol = (col: (typeof columns)[0]) =>
   col.width === "sticky-left" || col.width === "sticky-right";
 ---

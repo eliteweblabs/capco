@@ -205,3 +205,5 @@ document.addEventListener("click", (e) => {
   const tableId = btn.getAttribute("data-table-id");
   if (tableId) clearCachedColumnWidths(tableId);
 });
+
+export {};

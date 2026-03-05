@@ -3,6 +3,7 @@
 // Supports both direct Astro props AND flat shortcode props
 import SimpleIcon from "./SimpleIcon.astro";
 import Button from "./Button.astro";
+import HeroSplitTitle from "./HeroSplitTitle.astro";
 
 interface ButtonProps {
   text: string;
@@ -13,6 +14,14 @@ interface ButtonProps {
 
 interface Props {
   title: string;
+  /** When set with titleRight, use HeroSplitTitle instead of raw title HTML */
+  titleLeft?: string;
+  /** When set with titleLeft, use HeroSplitTitle instead of raw title HTML */
+  titleRight?: string;
+  /** Middle character for HeroSplitTitle (default &) */
+  titleMiddle?: string;
+  /** Curved text above split title (e.g. "Delivered with Discipline") - only when titleLeft/titleRight used */
+  titleTagline?: string;
   /** DB field name for refresh (e.g. "companyName"). Enables polling when combined with context. */
   titleRefreshField?: string;
   /** Raw value for change detection - must match API response format. */
@@ -66,6 +75,10 @@ const defaultDescription =
 // Destructure with support for both formats
 const {
   title = defaultTitle,
+  titleLeft,
+  titleRight,
+  titleMiddle = "&",
+  titleTagline,
   titleRefreshField,
   titleRefreshValue,
   titleRefreshUserId,
@@ -173,11 +186,11 @@ const heroMinHeight =
     )
   }
 
-  <div class={`mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 ${hasBackground ? "relative z-10" : ""}`}>
+  <div class={`mx-auto max-w-7xl px-8 sm:px-10 md:px-12 lg:px-16 w-full${hasBackground ? "relative z-10" : ""}`}>
     <div class="text-center">
       <!-- Main Headline -->
       <h1
-        class={`${primaryTextClasses || ""} md:text-6xl sm:text-3xl text-2xl font-bold ${hasBackground ? "text-white" : ""}`}
+        class={`hero-title ${primaryTextClasses || ""} ${hasBackground ? "text-white" : ""}`}
         {...titleRefreshField && {
           "data-refresh": titleRefreshField,
           "data-meta-value": titleRefreshValue ?? title ?? "",
@@ -185,13 +198,23 @@ const heroMinHeight =
           ...(titleRefreshProjectId && { "data-project-id": String(titleRefreshProjectId) }),
           ...(titleRefreshSuffix && { "data-refresh-suffix": titleRefreshSuffix }),
         }}
-        set:html={title}
-      />
+      >
+        {titleLeft != null && titleRight != null ? (
+          <HeroSplitTitle
+            left={titleLeft}
+            right={titleRight}
+            middle={titleMiddle}
+            tagline={titleTagline}
+          />
+        ) : (
+          <span set:html={title} />
+        )}
+      </h1>
       {
         description && (
           <h2
             id="page-subtitle"
-            class={`mt-6 text-xl ${hasBackground ? "text-gray-200" : "text-black dark:text-white"}`}
+            class={`mt-12 text-xl ${hasBackground ? "text-gray-200" : "text-black dark:text-white"}`}
           >
             {
               tightSlogan && tightSlogan.trim()
@@ -228,6 +251,7 @@ const heroMinHeight =
     </div>
   </div>
 </div>
+
 
 {
   backgroundVideoSource && (
@@ -274,7 +298,9 @@ const heroMinHeight =
                 connectionSpeed = dur < 100 ? "fast" : dur < 500 ? "medium" : "slow";
               }
             }
-          } catch (_) {}
+          } catch {
+            // Ignore errors
+          }
 
           const isMobile =
             (typeof window.isAnyMobile === "function" && window.isAnyMobile()) ||

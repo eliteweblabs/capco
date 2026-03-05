@@ -48,6 +48,7 @@ export async function getFormConfig(formId: string): Promise<MultiStepFormConfig
     if (key) json = (config as any)[key] ?? null;
   }
   if (!json) return null;
+  if (!Array.isArray(json.steps) || json.steps.length === 0) return null;
   const merged = mergeFormButtonDefaults(config, json);
   const normalized = normalizeFormConfig({ ...json, buttonDefaults: merged }) as MultiStepFormConfig;
   return injectFormAction(normalized) as MultiStepFormConfig;
@@ -219,7 +220,40 @@ export async function getMepFormConfig(
   }
   const config = await getSiteConfig();
   const json = (config as any).mepForm;
-  const base = json || {};
+  const base = json && Array.isArray(json.steps) && json.steps.length > 0
+    ? json
+    : {
+        formId: "multi-step-mep-form",
+        layout: "multi-step" as const,
+        steps: [
+          {
+            title: "Contact Information",
+            fields: [
+              { id: "email", name: "email", type: "email" as const, label: "Email", required: true },
+              { id: "firstName", name: "firstName", type: "text" as const, label: "First Name", required: true },
+              { id: "lastName", name: "lastName", type: "text" as const, label: "Last Name", required: true },
+              { id: "phone", name: "phone", type: "text" as const, label: "Phone" },
+            ],
+            buttons: [{ type: "next" as const, label: "Next" }],
+          },
+          {
+            title: "Project Details",
+            fields: [
+              {
+                id: "projectDescription",
+                name: "projectDescription",
+                type: "textarea" as const,
+                label: "Project Description",
+                required: true,
+              },
+            ],
+            buttons: [
+              { type: "prev" as const, label: "Back" },
+              { type: "submit" as const, label: "Submit" },
+            ],
+          },
+        ],
+      };
   const vars = {
     globalCompanyName: globalCompanyName || "Our Company",
     virtualAssistantName: virtualAssistantName || "Leah",

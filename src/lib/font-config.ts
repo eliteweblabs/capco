@@ -23,6 +23,7 @@ const systemFonts: FontOption[] = [
 /** Standard body/heading fonts */
 const standardFonts: FontOption[] = [
   { value: "Outfit Variable", label: "Outfit Variable", googleUrl: null },
+  { value: "Noto Serif Variable", label: "Noto Serif Variable", googleUrl: null },
   { value: "Roboto", label: "Roboto", googleUrl: "https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" },
   { value: "Open Sans", label: "Open Sans", googleUrl: "https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" },
   { value: "Lato", label: "Lato", googleUrl: "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap" },

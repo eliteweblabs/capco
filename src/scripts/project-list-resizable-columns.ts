@@ -185,3 +185,5 @@ if (typeof window !== "undefined") {
 }
 
 document.addEventListener("DOMContentLoaded", initResizableColumns);
+
+export {};

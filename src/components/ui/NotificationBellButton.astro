@@ -19,46 +19,48 @@ interface Props {
 const { currentUser, globalIconButtonClasses = "" } = Astro.props;
 ---
 
-{currentUser && (
-<>
-<Button
-  type="button"
-  id="notification-bell"
-  variant="icon"
-  iconOnly
-  title="Notifications"
-  class={`relative ${globalIconButtonClasses}`}
-  dataAttributes={{
-    "data-popover-toggle": "notifications-dropdown",
-    "data-popover-trigger": "click",
-    "data-popover-target": "notifications-dropdown",
-  }}
-  ariaLabel="View notifications"
->
-  <span class="auth-icon-default">
-    <SimpleIcon name="notification-bell" size="md" />
-  </span>
-  <span
-    class={globalDropdownClose}
-    aria-hidden="true"
-    style="opacity: 0; pointer-events: none;"
-  >
-    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        d="M6 18L18 6M6 6l12 12"
+{
+  currentUser && (
+    <>
+      <Button
+        type="button"
+        id="notification-bell"
+        variant="anchor"
+        iconOnly
+        title="Notifications"
+        class={`relative ${globalIconButtonClasses}`}
+        dataAttributes={{
+          "data-popover-toggle": "notifications-dropdown",
+          "data-popover-trigger": "click",
+          "data-popover-target": "notifications-dropdown",
+        }}
+        ariaLabel="View notifications"
+      >
+        <span class="auth-icon-default">
+          <SimpleIcon name="notification-bell" size="md" />
+        </span>
+        <span
+          class={globalDropdownClose}
+          aria-hidden="true"
+          style="opacity: 0; pointer-events: none;"
+        >
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </span>
+        <span class="sr-only">Notifications</span>
+      </Button>
+      <NotificationsDropdown
+        id="notifications"
+        closeButton={false}
+        globalIconButtonClasses={globalIconButtonClasses}
+        {currentUser}
       />
-    </svg>
-  </span>
-  <span class="sr-only">Notifications</span>
-</Button>
-<NotificationsDropdown
-  id="notifications"
-  closeButton={false}
-  globalIconButtonClasses={globalIconButtonClasses}
-  {currentUser}
-/>
-</>
-)}
+    </>
+  )
+}

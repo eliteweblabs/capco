@@ -1,0 +1,74 @@
+---
+/**
+ * HeroSplitTitle - Split hero headline with left | middle | right layout.
+ * md: 5-2-5 grid cols. Below md: stacked full width.
+ *
+ * @example
+ * <HeroSplitTitle left="General Contracting" right="Federal Construction" tagline="Delivered with Discipline" />
+ */
+interface Props {
+  left: string;
+  right: string;
+  /** Middle character (default &) */
+  middle?: string;
+  /** Curved text above the split (renders in arch SVG) */
+  tagline?: string;
+  /** Description/subtitle below the split (supports HTML) - for standalone use */
+  description?: string;
+  /** Extra classes on the wrapper */
+  class?: string;
+}
+
+const { left, right, middle = "&", tagline, description, class: className = "" } = Astro.props;
+const archId = `hero-arch-${Math.random().toString(36).slice(2, 10)}`;
+---
+
+<span class={`hero-split-title flex flex-col items-center gap-0 w-full ${className}`}>
+  {
+    tagline && tagline.trim() && (
+      <span class="hero-split-title-tagline w-full text-center font-tertiary text-secondary-500">
+        <svg class="w-full" viewBox="0 0 400 80" aria-hidden="true">
+          <defs>
+            <path id={archId} d="M0,80s190-78,400,0" />
+          </defs>
+          <text fill="currentColor" font-size="48" text-anchor="middle">
+            <textPath href={`#${archId}`} startOffset="50%">
+              {tagline}
+            </textPath>
+          </text>
+        </svg>
+      </span>
+    )
+  }
+  <span class="hero-split-title-grid grid w-full grid-cols-12 gap-0 px-8 font-bold">
+    <span
+      class="hero-split-title-left col-span-12 mb-4 block text-center md:col-span-5 md:mb-0 md:text-right"
+      data-animate="fade-down-subtle"
+    >
+      {left}
+    </span>
+    <span
+      class="hero-split-title-middle relative col-span-12 flex shrink-0 items-center justify-center md:col-span-2"
+    >
+      <span
+        class="hero-split-title-amp pointer-events-none absolute inset-0 flex items-center justify-center font-tertiary text-[6rem] text-secondary-500 md:flex md:text-[8rem] lg:text-[10rem]"
+      >
+        {middle}
+      </span>
+    </span>
+    <span
+      class="hero-split-title-right col-span-12 block text-center md:col-span-5 md:text-left"
+      data-animate="fade-up-subtle"
+    >
+      {right}
+    </span>
+  </span>
+  {
+    description && description.trim() && (
+      <p
+        class="hero-split-title-description mt-6 text-xl text-gray-600 dark:text-gray-300"
+        set:html={description}
+      />
+    )
+  }
+</span>

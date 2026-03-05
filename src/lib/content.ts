@@ -262,7 +262,29 @@ export async function getSiteConfig(): Promise<SiteConfig> {
         },
       ],
     },
-    mepForm: {},
+    mepForm: {
+      formId: "multi-step-mep-form",
+      layout: "multi-step",
+      steps: [
+        {
+          title: "Contact Information",
+          fields: [
+            { id: "email", name: "email", type: "email", label: "Email", required: true },
+            { id: "firstName", name: "firstName", type: "text", label: "First Name", required: true },
+            { id: "lastName", name: "lastName", type: "text", label: "Last Name", required: true },
+            { id: "phone", name: "phone", type: "text", label: "Phone" },
+          ],
+          buttons: [{ type: "next" as const, label: "Next" }],
+        },
+        {
+          title: "Project Details",
+          fields: [
+            { id: "projectDescription", name: "projectDescription", type: "textarea", label: "Project Description", required: true },
+          ],
+          buttons: [{ type: "prev" as const, label: "Back" }, { type: "submit" as const, label: "Submit" }],
+        },
+      ],
+    },
     reviewForm: {},
   };
 
