@@ -36,10 +36,10 @@ export const GET: APIRoute = async ({ cookies }) => {
 
   if (error) {
     console.error("[CONTACT-FORM-LEADS] List error:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   return new Response(JSON.stringify({ submissions: data || [] }), {
@@ -67,17 +67,14 @@ export const DELETE: APIRoute = async ({ cookies, request }) => {
     });
   }
 
-  const { error } = await supabaseAdmin
-    .from("contactSubmissions")
-    .delete()
-    .eq("id", id);
+  const { error } = await supabaseAdmin.from("contactSubmissions").delete().eq("id", id);
 
   if (error) {
     console.error("[CONTACT-FORM-LEADS] Delete error:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   return new Response(JSON.stringify({ success: true }), {

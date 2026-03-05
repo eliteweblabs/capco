@@ -50,7 +50,8 @@ const responsiveClass = !currentUser ? "md:hidden" : "";
 
 <script>
   import { BREAKPOINTS } from "../../lib/ux-utils";
-  if (typeof window !== "undefined" && (window as any).__jsOrderLog) (window as any).__jsOrderLog("ToggleSidebar (module)");
+  if (typeof window !== "undefined" && (window as any).__jsOrderLog)
+    (window as any).__jsOrderLog("ToggleSidebar (module)");
 
   /** AbortController to remove previous listeners when re-initing (SPA navigations). */
   let sidebarAbortController: AbortController | null = null;
@@ -255,7 +256,11 @@ const responsiveClass = !currentUser ? "md:hidden" : "";
     document.addEventListener(
       "click",
       (e) => {
-        if (isMobile() && !sidebar.classList.contains("-translate-x-full") && isOutsideSidebar(e.target)) {
+        if (
+          isMobile() &&
+          !sidebar.classList.contains("-translate-x-full") &&
+          isOutsideSidebar(e.target)
+        ) {
           hideSidebarMobile();
         }
       },
@@ -280,7 +285,8 @@ const responsiveClass = !currentUser ? "md:hidden" : "";
     document.addEventListener(
       "touchend",
       (e) => {
-        if (!tapOutsideTarget || !isMobile() || sidebar.classList.contains("-translate-x-full")) return;
+        if (!tapOutsideTarget || !isMobile() || sidebar.classList.contains("-translate-x-full"))
+          return;
         const deltaY = Math.abs((e.changedTouches[0]?.clientY ?? 0) - tapOutsideStartY);
         if (deltaY < 10 && isOutsideSidebar(tapOutsideTarget)) {
           hideSidebarMobile();
@@ -412,90 +418,114 @@ const responsiveClass = !currentUser ? "md:hidden" : "";
 
 <!-- Prod fallback: bundled script above is empty in production (Astro 5). This inline runs only in prod so toggle stays in this component. -->
 <script is:inline define:vars={{ isProd: import.meta.env.PROD }}>
-  if (isProd) (function () {
-    if (window.__jsOrderLog) window.__jsOrderLog("ToggleSidebar prod fallback (inline)");
-    function updateIcons(isExpanded) {
-      var menuIcons = document.querySelectorAll(".sidebar-toggle-menu-icon");
-      var closeIcons = document.querySelectorAll(".sidebar-toggle-close-icon");
-      if (isExpanded) {
-        menuIcons.forEach(function (el) {
-          el.classList.remove("opacity-100", "rotate-0", "scale-100");
-          el.classList.add("opacity-0", "rotate-90", "scale-0");
-        });
-        closeIcons.forEach(function (el) {
-          el.classList.remove("opacity-0", "-rotate-90", "scale-0");
-          el.classList.add("opacity-100", "rotate-0", "scale-100");
-        });
-      } else {
-        menuIcons.forEach(function (el) {
-          el.classList.remove("opacity-0", "rotate-90", "scale-0");
-          el.classList.add("opacity-100", "rotate-0", "scale-100");
-        });
-        closeIcons.forEach(function (el) {
-          el.classList.remove("opacity-100", "rotate-0", "scale-100");
-          el.classList.add("opacity-0", "-rotate-90", "scale-0");
-        });
+  if (isProd)
+    (function () {
+      if (window.__jsOrderLog) window.__jsOrderLog("ToggleSidebar prod fallback (inline)");
+      function updateIcons(isExpanded) {
+        var menuIcons = document.querySelectorAll(".sidebar-toggle-menu-icon");
+        var closeIcons = document.querySelectorAll(".sidebar-toggle-close-icon");
+        if (isExpanded) {
+          menuIcons.forEach(function (el) {
+            el.classList.remove("opacity-100", "rotate-0", "scale-100");
+            el.classList.add("opacity-0", "rotate-90", "scale-0");
+          });
+          closeIcons.forEach(function (el) {
+            el.classList.remove("opacity-0", "-rotate-90", "scale-0");
+            el.classList.add("opacity-100", "rotate-0", "scale-100");
+          });
+        } else {
+          menuIcons.forEach(function (el) {
+            el.classList.remove("opacity-0", "rotate-90", "scale-0");
+            el.classList.add("opacity-100", "rotate-0", "scale-100");
+          });
+          closeIcons.forEach(function (el) {
+            el.classList.remove("opacity-100", "rotate-0", "scale-100");
+            el.classList.add("opacity-0", "-rotate-90", "scale-0");
+          });
+        }
       }
-    }
-    function initSidebar() {
-      var btns = document.querySelectorAll("[data-sidebar-toggle-button]");
-      var sidebar = document.getElementById("sidebar");
-      var main = document.getElementById("main-content");
-      if (!btns.length || !sidebar) return;
-      if (btns[0].dataset.sidebarInited === "1") return;
-      btns[0].dataset.sidebarInited = "1";
-      var md = (typeof window !== "undefined" && window.BREAKPOINTS?.MD) || 768;
-      var isMobile = function () { return window.innerWidth < md; };
-      function hideSidebar() {
-        sidebar.classList.add("-translate-x-full");
-        sidebar.classList.remove("translate-x-0");
-        document.body.style.overflow = "";
-        if (main) main.classList.remove("overflow-hidden", "pointer-events-none");
-        updateIcons(false);
-      }
-      function isOutside(el) {
-        return el && !sidebar.contains(el) && !Array.prototype.some.call(btns, function (b) { return b.contains(el); });
-      }
-      btns.forEach(function (btn) {
-        btn.addEventListener("click", function () {
-          if (isMobile()) {
-            var hidden = sidebar.classList.contains("-translate-x-full");
-            if (hidden) {
-              sidebar.classList.remove("-translate-x-full");
-              sidebar.classList.add("translate-x-0");
-              document.body.style.overflow = "hidden";
-              if (main) main.classList.add("overflow-hidden", "pointer-events-none");
-              updateIcons(true);
-            } else {
-              hideSidebar();
+      function initSidebar() {
+        var btns = document.querySelectorAll("[data-sidebar-toggle-button]");
+        var sidebar = document.getElementById("sidebar");
+        var main = document.getElementById("main-content");
+        if (!btns.length || !sidebar) return;
+        if (btns[0].dataset.sidebarInited === "1") return;
+        btns[0].dataset.sidebarInited = "1";
+        var md = (typeof window !== "undefined" && window.BREAKPOINTS?.MD) || 768;
+        var isMobile = function () {
+          return window.innerWidth < md;
+        };
+        function hideSidebar() {
+          sidebar.classList.add("-translate-x-full");
+          sidebar.classList.remove("translate-x-0");
+          document.body.style.overflow = "";
+          if (main) main.classList.remove("overflow-hidden", "pointer-events-none");
+          updateIcons(false);
+        }
+        function isOutside(el) {
+          return (
+            el &&
+            !sidebar.contains(el) &&
+            !Array.prototype.some.call(btns, function (b) {
+              return b.contains(el);
+            })
+          );
+        }
+        btns.forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            if (isMobile()) {
+              var hidden = sidebar.classList.contains("-translate-x-full");
+              if (hidden) {
+                sidebar.classList.remove("-translate-x-full");
+                sidebar.classList.add("translate-x-0");
+                document.body.style.overflow = "hidden";
+                if (main) main.classList.add("overflow-hidden", "pointer-events-none");
+                updateIcons(true);
+              } else {
+                hideSidebar();
+              }
             }
-          }
+          });
         });
-      });
-      document.addEventListener("click", function (e) {
-        if (isMobile() && !sidebar.classList.contains("-translate-x-full") && isOutside(e.target)) hideSidebar();
-      });
-      var tapTarget = null, tapY = 0;
-      document.addEventListener("touchstart", function (e) {
-        if (isMobile() && !sidebar.classList.contains("-translate-x-full")) {
-          tapTarget = e.target;
-          tapY = e.touches[0] ? e.touches[0].clientY : 0;
-        } else tapTarget = null;
-      }, { passive: true });
-      document.addEventListener("touchend", function (e) {
-        if (!tapTarget || !isMobile() || sidebar.classList.contains("-translate-x-full")) return;
-        if (Math.abs((e.changedTouches[0] ? e.changedTouches[0].clientY : 0) - tapY) < 10 && isOutside(tapTarget)) hideSidebar();
-        tapTarget = null;
-      }, { passive: true });
-      if (isMobile()) {
-        sidebar.classList.add("-translate-x-full");
-        updateIcons(false);
+        document.addEventListener("click", function (e) {
+          if (isMobile() && !sidebar.classList.contains("-translate-x-full") && isOutside(e.target))
+            hideSidebar();
+        });
+        var tapTarget = null,
+          tapY = 0;
+        document.addEventListener(
+          "touchstart",
+          function (e) {
+            if (isMobile() && !sidebar.classList.contains("-translate-x-full")) {
+              tapTarget = e.target;
+              tapY = e.touches[0] ? e.touches[0].clientY : 0;
+            } else tapTarget = null;
+          },
+          { passive: true }
+        );
+        document.addEventListener(
+          "touchend",
+          function (e) {
+            if (!tapTarget || !isMobile() || sidebar.classList.contains("-translate-x-full"))
+              return;
+            if (
+              Math.abs((e.changedTouches[0] ? e.changedTouches[0].clientY : 0) - tapY) < 10 &&
+              isOutside(tapTarget)
+            )
+              hideSidebar();
+            tapTarget = null;
+          },
+          { passive: true }
+        );
+        if (isMobile()) {
+          sidebar.classList.add("-translate-x-full");
+          updateIcons(false);
+        }
       }
-    }
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", initSidebar);
-    } else {
-      initSidebar();
-    }
-  })();
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initSidebar);
+      } else {
+        initSidebar();
+      }
+    })();
 </script>

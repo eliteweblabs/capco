@@ -79,10 +79,7 @@ export function getValidSuperAdminFromCookie(cookies: CookieAdapter, userId: str
 /**
  * Set SuperAdmin cookie (server-side). Call from API route.
  */
-export function setSuperAdminCookie(
-  cookies: CookieAdapter,
-  payload: SuperAdminPayload
-): void {
+export function setSuperAdminCookie(cookies: CookieAdapter, payload: SuperAdminPayload): void {
   const value = JSON.stringify(payload);
   const isProd = import.meta.env?.PROD ?? process.env?.NODE_ENV === "production";
   cookies.set(COOKIE_NAME, value, {

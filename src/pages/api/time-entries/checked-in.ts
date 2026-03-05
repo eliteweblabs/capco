@@ -66,10 +66,10 @@ export const GET: APIRoute = async ({ cookies }): Promise<Response> => {
       .order("startedAt", { ascending: false });
 
     if (entriesError || !entries?.length) {
-      return new Response(
-        JSON.stringify({ users: [] }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ users: [] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const userIds = [...new Set(entries.map((e) => e.userId))];
@@ -78,9 +78,7 @@ export const GET: APIRoute = async ({ cookies }): Promise<Response> => {
       .select("id, name, firstName, lastName")
       .in("id", userIds);
 
-    const profileMap = new Map(
-      (profiles ?? []).map((p) => [p.id, authorDisplay(p)])
-    );
+    const profileMap = new Map((profiles ?? []).map((p) => [p.id, authorDisplay(p)]));
 
     const timeEntryIds = entries.map((e) => e.id);
     const { data: pings } = await supabaseAdmin
@@ -120,15 +118,15 @@ export const GET: APIRoute = async ({ cookies }): Promise<Response> => {
       })
     );
 
-    return new Response(
-      JSON.stringify({ users }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ users }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (error) {
     console.error("❌ [TIME-ENTRIES-CHECKED-IN] Error:", error);
-    return new Response(
-      JSON.stringify({ users: [] }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ users: [] }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };

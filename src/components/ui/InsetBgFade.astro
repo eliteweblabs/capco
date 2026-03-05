@@ -111,18 +111,20 @@ const useScrollMode = scrollMode === true || scrollMode === "true";
           const scrollTop =
             scrollEl === document.documentElement ? window.scrollY : scrollEl.scrollTop;
           const progress = Math.max(0, Math.min(1, scrollTop / maxScroll));
-          const idx = Math.min(
-            layers.length - 1,
-            Math.floor(progress * layers.length)
-          );
+          const idx = Math.min(layers.length - 1, Math.floor(progress * layers.length));
           layers.forEach((l, i) => {
             l.style.opacity = i === idx ? "1" : "0";
           });
         };
         updateFromScroll();
         scrollEl.addEventListener("scroll", updateFromScroll, { passive: true });
-        scrollEl.addEventListener("scrollend", updateFromScroll); /* catch momentum scroll end on mobile */
-        scrollEl.addEventListener("touchend", updateFromScroll, { passive: true }); /* iOS: update after touch lift */
+        scrollEl.addEventListener(
+          "scrollend",
+          updateFromScroll
+        ); /* catch momentum scroll end on mobile */
+        scrollEl.addEventListener("touchend", updateFromScroll, {
+          passive: true,
+        }); /* iOS: update after touch lift */
         window.addEventListener("resize", updateFromScroll);
       } else {
         const intervalMs = parseInt(container.getAttribute("data-interval") ?? "4000", 10);

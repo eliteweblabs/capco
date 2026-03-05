@@ -171,157 +171,162 @@ const containerClasses = getContainerWrapperClasses(maxWidth);
   ]}
 >
   <div class:list={containerClasses}>
-  {
-    error ? (
-      <div class="py-16 text-center">
-        <div class="dark:bg-primary-900/30 mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary-100">
-          <SimpleIcon name="alert-circle" class="text-primary-600 dark:text-primary-400" />
+    {
+      error ? (
+        <div class="py-16 text-center">
+          <div class="dark:bg-primary-900/30 mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary-100">
+            <SimpleIcon name="alert-circle" class="text-primary-600 dark:text-primary-400" />
+          </div>
+          <h2 class="mb-4 text-2xl font-bold text-gray-900 dark:text-white">No Projects Found</h2>
+          <p class="mb-6 text-gray-800 dark:text-gray-200">{error}</p>
+          <Button
+            onclick="window.location.reload()"
+            variant="danger"
+            icon="refresh"
+            iconPosition="left"
+          >
+            Try Again
+          </Button>
         </div>
-        <h2 class="mb-4 text-2xl font-bold text-gray-900 dark:text-white">No Projects Found</h2>
-        <p class="mb-6 text-gray-800 dark:text-gray-200">{error}</p>
-        <Button
-          onclick="window.location.reload()"
-          variant="danger"
-          icon="refresh"
-          iconPosition="left"
-        >
-          Try Again
-        </Button>
-      </div>
-    ) : featuredProjects.length === 0 ? (
-      <div class="py-16 text-center">
-        <div class="dark:bg-primary-900/30 mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary-100">
-          <SimpleIcon name="building" class="h-8 w-8 text-primary-600 dark:text-primary-400" />
+      ) : featuredProjects.length === 0 ? (
+        <div class="py-16 text-center">
+          <div class="dark:bg-primary-900/30 mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary-100">
+            <SimpleIcon name="building" class="h-8 w-8 text-primary-600 dark:text-primary-400" />
+          </div>
+          <h2 class="mb-4 text-2xl font-bold text-gray-900 dark:text-white">
+            No Featured Projects Yet
+          </h2>
+          <p class="mb-6 text-gray-600 dark:text-gray-300">
+            We're working on exciting fire protection projects. Check back soon!
+          </p>
+          <Button href="/" variant="primary" icon="home" iconPosition="left">
+            Back to Home
+          </Button>
         </div>
-        <h2 class="mb-4 text-2xl font-bold text-gray-900 dark:text-white">
-          No Featured Projects Yet
-        </h2>
-        <p class="mb-6 text-gray-600 dark:text-gray-300">
-          We're working on exciting fire protection projects. Check back soon!
-        </p>
-        <Button href="/" variant="primary" icon="home" iconPosition="left">
-          Back to Home
-        </Button>
-      </div>
-    ) : (
-      <div class="projects-container projects-container-social">
-        <GridFilter
-          filters={categories}
-          itemSelector=".project-item"
-          dataAttribute="data-category"
-          multiSelect={true}
-          masonry={false}
-          itemsContainer=".projects-container-social"
-        />
+      ) : (
+        <div class="projects-container projects-container-social">
+          <GridFilter
+            filters={categories}
+            itemSelector=".project-item"
+            dataAttribute="data-category"
+            multiSelect={true}
+            masonry={false}
+            itemsContainer=".projects-container-social"
+          />
 
-        <div id="projects-grid-social" class="social-cards-columns gap-4">
-          {featuredProjects.map((project) => {
-            const likes = getRandomLikes(project.id);
-            const comments = getPlaceholderComments(project.id);
-            const commentCount = comments.length;
+          <div id="projects-grid-social" class="social-cards-columns gap-4">
+            {featuredProjects.map((project) => {
+              const likes = getRandomLikes(project.id);
+              const comments = getPlaceholderComments(project.id);
+              const commentCount = comments.length;
 
-            return (
-              <article
-                class="project-item social-card mb-4 break-inside-avoid overflow-hidden rounded-2xl bg-white shadow-lg transition-shadow duration-300 hover:shadow-xl dark:bg-slate-800"
-                data-category={project.isNewConstruction ? "New Construction" : "Renovation"}
-              >
-                <div class="flex items-center gap-3 p-4 pb-0">
-                  <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700">
-                    <SimpleIcon
-                      name="building"
-                      class="h-5 w-5 text-slate-600 dark:text-slate-300"
-                    />
-                  </div>
-                  <div class="min-w-0 flex-1">
-                    <p class="truncate font-semibold text-gray-900 dark:text-white">
-                      {project.address}
-                    </p>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">
-                      {formatDate(project.completedAt)}
-                    </p>
-                  </div>
-                </div>
-
-                <div class="px-4 pt-2">
-                  <h3 class="font-semibold text-gray-900 dark:text-white">
-                    {project.title || project.address}
-                  </h3>
-                </div>
-
-                {project.featuredImageUrl ? (
-                  <div class="relative mx-4 mt-3 aspect-[4/3] overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-700">
-                    <img
-                      src={project.featuredImageUrl}
-                      alt={`Featured image for ${project.address}`}
-                      class="h-full w-full object-cover"
-                      loading="lazy"
-                      referrerpolicy="strict-origin-when-cross-origin"
-                      crossorigin="anonymous"
-                    />
-                  </div>
-                ) : (
-                  <div class="mx-4 mt-3 flex aspect-[4/3] items-center justify-center rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600">
-                    <SimpleIcon name="image" class="h-12 w-12 text-slate-400 dark:text-slate-500" />
-                  </div>
-                )}
-
-                <div class="px-4 pt-4">
-                  <p class="line-clamp-3 text-sm text-gray-600 dark:text-gray-300">
-                    {project.description ||
-                      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."}
-                  </p>
-                </div>
-
-                <div class="flex items-center gap-4 border-b border-gray-100 px-4 pb-2 pt-3 dark:border-slate-700">
-                  <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                    <SimpleIcon name="heart" class="h-5 w-5" />
-                    <span class="text-sm font-medium">{likes}</span>
-                  </div>
-                  <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                    <SimpleIcon name="message-circle" class="h-5 w-5" />
-                    <span class="text-sm font-medium">{commentCount} comments</span>
-                  </div>
-                </div>
-
-                <div class="space-y-3 px-4 py-3">
-                  {comments.map((c) => (
-                    <div class="flex gap-3">
-                      <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-medium text-gray-700 dark:bg-slate-600 dark:text-gray-300">
-                        {c.author.charAt(0)}
-                      </div>
-                      <div class="min-w-0 flex-1">
-                        <div class="flex flex-wrap items-baseline gap-2">
-                          <span class="text-sm font-semibold text-gray-900 dark:text-white">
-                            {c.author}
-                          </span>
-                          <span class="text-xs text-gray-500 dark:text-gray-400">{c.timeAgo}</span>
-                        </div>
-                        <p class="mt-0.5 text-sm text-gray-600 dark:text-gray-300">{c.text}</p>
-                        {c.replyCount > 0 && (
-                          <button
-                            type="button"
-                            class="mt-1 text-xs font-medium text-primary-600 hover:underline dark:text-primary-400"
-                          >
-                            Reply
-                          </button>
-                        )}
-                      </div>
+              return (
+                <article
+                  class="project-item social-card mb-4 break-inside-avoid overflow-hidden rounded-2xl bg-white shadow-lg transition-shadow duration-300 hover:shadow-xl dark:bg-slate-800"
+                  data-category={project.isNewConstruction ? "New Construction" : "Renovation"}
+                >
+                  <div class="flex items-center gap-3 p-4 pb-0">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700">
+                      <SimpleIcon
+                        name="building"
+                        class="h-5 w-5 text-slate-600 dark:text-slate-300"
+                      />
                     </div>
-                  ))}
-                  <button
-                    type="button"
-                    class="text-sm font-medium text-primary-600 hover:underline dark:text-primary-400"
-                  >
-                    Show more comments
-                  </button>
-                </div>
-              </article>
-            );
-          })}
+                    <div class="min-w-0 flex-1">
+                      <p class="truncate font-semibold text-gray-900 dark:text-white">
+                        {project.address}
+                      </p>
+                      <p class="text-sm text-gray-500 dark:text-gray-400">
+                        {formatDate(project.completedAt)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div class="px-4 pt-2">
+                    <h3 class="font-semibold text-gray-900 dark:text-white">
+                      {project.title || project.address}
+                    </h3>
+                  </div>
+
+                  {project.featuredImageUrl ? (
+                    <div class="relative mx-4 mt-3 aspect-[4/3] overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-700">
+                      <img
+                        src={project.featuredImageUrl}
+                        alt={`Featured image for ${project.address}`}
+                        class="h-full w-full object-cover"
+                        loading="lazy"
+                        referrerpolicy="strict-origin-when-cross-origin"
+                        crossorigin="anonymous"
+                      />
+                    </div>
+                  ) : (
+                    <div class="mx-4 mt-3 flex aspect-[4/3] items-center justify-center rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600">
+                      <SimpleIcon
+                        name="image"
+                        class="h-12 w-12 text-slate-400 dark:text-slate-500"
+                      />
+                    </div>
+                  )}
+
+                  <div class="px-4 pt-4">
+                    <p class="line-clamp-3 text-sm text-gray-600 dark:text-gray-300">
+                      {project.description ||
+                        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."}
+                    </p>
+                  </div>
+
+                  <div class="flex items-center gap-4 border-b border-gray-100 px-4 pb-2 pt-3 dark:border-slate-700">
+                    <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                      <SimpleIcon name="heart" class="h-5 w-5" />
+                      <span class="text-sm font-medium">{likes}</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                      <SimpleIcon name="message-circle" class="h-5 w-5" />
+                      <span class="text-sm font-medium">{commentCount} comments</span>
+                    </div>
+                  </div>
+
+                  <div class="space-y-3 px-4 py-3">
+                    {comments.map((c) => (
+                      <div class="flex gap-3">
+                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-medium text-gray-700 dark:bg-slate-600 dark:text-gray-300">
+                          {c.author.charAt(0)}
+                        </div>
+                        <div class="min-w-0 flex-1">
+                          <div class="flex flex-wrap items-baseline gap-2">
+                            <span class="text-sm font-semibold text-gray-900 dark:text-white">
+                              {c.author}
+                            </span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">
+                              {c.timeAgo}
+                            </span>
+                          </div>
+                          <p class="mt-0.5 text-sm text-gray-600 dark:text-gray-300">{c.text}</p>
+                          {c.replyCount > 0 && (
+                            <button
+                              type="button"
+                              class="mt-1 text-xs font-medium text-primary-600 hover:underline dark:text-primary-400"
+                            >
+                              Reply
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      class="text-sm font-medium text-primary-600 hover:underline dark:text-primary-400"
+                    >
+                      Show more comments
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
         </div>
-      </div>
-    )
-  }
+      )
+    }
   </div>
 </section>
 

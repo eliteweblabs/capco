@@ -35,7 +35,13 @@ function generateDummyMetrics() {
     entryCount: [15, 12, 8, 5][i] ?? 6,
   }));
 
-  const hoursPerUserPerProject: Array<{ userId: string; userName: string; projectId: number; project: string; totalHours: number }> = [];
+  const hoursPerUserPerProject: Array<{
+    userId: string;
+    userName: string;
+    projectId: number;
+    project: string;
+    totalHours: number;
+  }> = [];
   users.forEach((u, ui) => {
     projects.forEach((p, pi) => {
       const h = [8.2, 6.1, 4.2, 2.5, 9.1, 7.0, 5.5, 3.2, 7.2, 5.1, 3.1, 2.4][ui * 4 + pi] ?? 3;
@@ -139,7 +145,9 @@ export const GET: APIRoute = async ({ request, cookies }): Promise<Response> => 
       });
     }
 
-    const projectIds = [...new Set(list.map((e) => e.projectId).filter((id): id is number => id != null))];
+    const projectIds = [
+      ...new Set(list.map((e) => e.projectId).filter((id): id is number => id != null)),
+    ];
     const userIds = [...new Set(list.map((e) => e.userId))];
 
     let profileMap = new Map<string, string>();
@@ -180,12 +188,16 @@ export const GET: APIRoute = async ({ request, cookies }): Promise<Response> => 
       userProjectHours.set(upKey, (userProjectHours.get(upKey) ?? 0) + hours);
     }
 
-    const hoursPerProject = Array.from(projectHours.entries()).map(([projectId, { hours, count }]) => ({
-      projectId,
-      project: projectId ? (projectMap.get(projectId) ?? `#${projectId}`) : "General / No Project",
-      totalHours: Math.round(hours * 100) / 100,
-      entryCount: count,
-    }));
+    const hoursPerProject = Array.from(projectHours.entries()).map(
+      ([projectId, { hours, count }]) => ({
+        projectId,
+        project: projectId
+          ? (projectMap.get(projectId) ?? `#${projectId}`)
+          : "General / No Project",
+        totalHours: Math.round(hours * 100) / 100,
+        entryCount: count,
+      })
+    );
 
     const hoursPerUserPerProject: Array<{
       userId: string;
@@ -201,7 +213,9 @@ export const GET: APIRoute = async ({ request, cookies }): Promise<Response> => 
         userId,
         userName: profileMap.get(userId) ?? "—",
         projectId,
-        project: projectId ? (projectMap.get(projectId) ?? `#${projectId}`) : "General / No Project",
+        project: projectId
+          ? (projectMap.get(projectId) ?? `#${projectId}`)
+          : "General / No Project",
         totalHours: Math.round(totalHours * 100) / 100,
       });
     }
@@ -224,7 +238,10 @@ export const GET: APIRoute = async ({ request, cookies }): Promise<Response> => 
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([month, { hours, count }]) => ({
         month,
-        label: new Date(month + "-01").toLocaleDateString("en-US", { month: "short", year: "numeric" }),
+        label: new Date(month + "-01").toLocaleDateString("en-US", {
+          month: "short",
+          year: "numeric",
+        }),
         totalHours: Math.round(hours * 100) / 100,
         entryCount: count,
       }));

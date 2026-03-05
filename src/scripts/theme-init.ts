@@ -17,7 +17,8 @@
     console.log("[TRACE " + (window as any).__traceNum + "] " + m);
   };
   window.addEventListener("error", (e) => {
-    if ((window as any).__traceLog) (window as any).__traceLog("ERROR: " + (e.message || String(e)));
+    if ((window as any).__traceLog)
+      (window as any).__traceLog("ERROR: " + (e.message || String(e)));
   });
   window.addEventListener("unhandledrejection", (e) => {
     const msg = (e.reason && (e.reason.message || String(e.reason))) || "unknown";

@@ -81,9 +81,7 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
       },
     };
 
-    const role = getValidSuperAdminFromCookie(cookies, customUser.id)
-      ? "SuperAdmin"
-      : "Client";
+    const role = getValidSuperAdminFromCookie(cookies, customUser.id) ? "SuperAdmin" : "Client";
     return {
       isAuth: true,
       session: { user: customUser },

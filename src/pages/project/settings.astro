@@ -154,7 +154,13 @@ if (supabaseAdmin) {
             </p>
           </div>
           <div>
-            <FormActionButton action="submit" label="Save Defaults" icon="save" type="button" id="save-defaults-btn" />
+            <FormActionButton
+              action="submit"
+              label="Save Defaults"
+              icon="save"
+              type="button"
+              id="save-defaults-btn"
+            />
           </div>
         </div>
       </div>
@@ -174,12 +180,24 @@ if (supabaseAdmin) {
             id: t.id,
             title: t.title || "—",
             messagePreview: t.message ? String(t.message).slice(0, 60) + "…" : "—",
-            meta: [t.enabled === false && "Disabled", t.internal && "Internal", t.markCompleted && "Auto-complete"].filter(Boolean).join(", ") || "—",
+            meta:
+              [
+                t.enabled === false && "Disabled",
+                t.internal && "Internal",
+                t.markCompleted && "Auto-complete",
+              ]
+                .filter(Boolean)
+                .join(", ") || "—",
             order: String(t.orderIndex ?? 0),
           }))}
           columns={[
             { id: "title", accessorKey: "title", header: "Title", meta: { width: 25 } },
-            { id: "messagePreview", accessorKey: "messagePreview", header: "Message", meta: { width: 45 } },
+            {
+              id: "messagePreview",
+              accessorKey: "messagePreview",
+              header: "Message",
+              meta: { width: 45 },
+            },
             { id: "meta", accessorKey: "meta", header: "Meta", meta: { width: 15 } },
             { id: "order", accessorKey: "order", header: "Order", meta: { width: 10 } },
           ]}
@@ -252,12 +270,24 @@ if (supabaseAdmin) {
             id: t.id,
             title: t.title || "—",
             messagePreview: t.message ? String(t.message).slice(0, 60) + "…" : "—",
-            meta: [t.enabled === false && "Disabled", t.internal && "Internal", t.markCompleted && "Auto-complete"].filter(Boolean).join(", ") || "—",
+            meta:
+              [
+                t.enabled === false && "Disabled",
+                t.internal && "Internal",
+                t.markCompleted && "Auto-complete",
+              ]
+                .filter(Boolean)
+                .join(", ") || "—",
             order: String(t.orderIndex ?? 0),
           }))}
           columns={[
             { id: "title", accessorKey: "title", header: "Title", meta: { width: 25 } },
-            { id: "messagePreview", accessorKey: "messagePreview", header: "Message", meta: { width: 45 } },
+            {
+              id: "messagePreview",
+              accessorKey: "messagePreview",
+              header: "Message",
+              meta: { width: 45 },
+            },
             { id: "meta", accessorKey: "meta", header: "Meta", meta: { width: 15 } },
             { id: "order", accessorKey: "order", header: "Order", meta: { width: 10 } },
           ]}
@@ -283,7 +313,10 @@ if (supabaseAdmin) {
           detailRowIdPrefix="discussion"
           emptyMessage='Use "Add Discussion Item" above to create your first template.'
           getTriggerDataAttrs={(t) => ({ templateSlot: String(t.id), templateType: "discussion" })}
-          getDetailRowDataAttrs={(t) => ({ templateSlot: String(t.id), templateType: "discussion" })}
+          getDetailRowDataAttrs={(t) => ({
+            templateSlot: String(t.id),
+            templateType: "discussion",
+          })}
           createRowDataAttrs={{ templateSlot: "create", templateType: "discussion" }}
           createButtonId="add-discussion-btn"
           columns={[
@@ -480,7 +513,8 @@ if (supabaseAdmin) {
         const enabledInp = document.getElementById("template-enabled");
         if (idInp) idInp.value = String(template.id);
         if (titleInp) titleInp.value = template.title || "";
-        if (messageInp && messageInp instanceof HTMLTextAreaElement) messageInp.value = template.message || "";
+        if (messageInp && messageInp instanceof HTMLTextAreaElement)
+          messageInp.value = template.message || "";
         if (orderInp) orderInp.value = String(template.orderIndex ?? 0);
         if (internalInp) internalInp.checked = !!template.internal;
         if (completedInp) completedInp.checked = !!template.markCompleted;
@@ -536,10 +570,16 @@ if (supabaseAdmin) {
             const err = await res.json().catch(() => ({}));
             throw new Error(err.error || "Failed to save defaults");
           }
-          if (window.showSuccess) window.showSuccess("Defaults Saved", "Project defaults updated successfully", 4000);
+          if (window.showSuccess)
+            window.showSuccess("Defaults Saved", "Project defaults updated successfully", 4000);
         } catch (err) {
           console.error("Error saving defaults:", err);
-          if (window.showError) window.showError("Save Failed", err instanceof Error ? err.message : "Failed to save defaults", 0);
+          if (window.showError)
+            window.showError(
+              "Save Failed",
+              err instanceof Error ? err.message : "Failed to save defaults",
+              0
+            );
         }
       });
 
@@ -566,7 +606,8 @@ if (supabaseAdmin) {
         const title = fd.get("title");
         const message = fd.get("message");
         if (!type || !title || !message) {
-          if (window.showError) window.showError("Validation Error", "Please fill in title and message", 0);
+          if (window.showError)
+            window.showError("Validation Error", "Please fill in title and message", 0);
           return;
         }
         const idVal = fd.get("id");
@@ -601,7 +642,12 @@ if (supabaseAdmin) {
           location.reload();
         } catch (err) {
           console.error("Error saving template:", err);
-          if (window.showError) window.showError("Save Failed", err instanceof Error ? err.message : "Failed to save template", 0);
+          if (window.showError)
+            window.showError(
+              "Save Failed",
+              err instanceof Error ? err.message : "Failed to save template",
+              0
+            );
         }
       });
 
@@ -620,7 +666,12 @@ if (supabaseAdmin) {
       document.querySelectorAll("tr.template-accordion-trigger").forEach((triggerRow) => {
         triggerRow.addEventListener("click", (e) => {
           const tgt = e.target instanceof Element ? e.target : null;
-          if (tgt?.closest(".edit-template-btn, .delete-confirm-btn, .delete-confirm-wrapper, .accordion-drag-handle")) return;
+          if (
+            tgt?.closest(
+              ".edit-template-btn, .delete-confirm-btn, .delete-confirm-wrapper, .accordion-drag-handle"
+            )
+          )
+            return;
           const slotId = triggerRow.getAttribute("data-template-slot");
           const type = triggerRow.getAttribute("data-template-type");
           if (!slotId || !type) return;
@@ -638,7 +689,8 @@ if (supabaseAdmin) {
       });
 
       window.handleTemplateDeleted = async () => {
-        if (window.showSuccess) window.showSuccess("Template Deleted", "Template deleted successfully", 4000);
+        if (window.showSuccess)
+          window.showSuccess("Template Deleted", "Template deleted successfully", 4000);
         location.reload();
       };
     });
@@ -658,5 +710,4 @@ if (supabaseAdmin) {
       }
     }
   </script>
-
 </LayoutDefault>

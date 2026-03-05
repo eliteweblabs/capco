@@ -151,7 +151,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
     const { data: recentDuplicate } = await supabaseAdmin
       .from("files")
-      .select("id, fileName, filePath, fileSize, fileType, title, comments, isPrivate, projectId, uploadedAt, bucketName")
+      .select(
+        "id, fileName, filePath, fileSize, fileType, title, comments, isPrivate, projectId, uploadedAt, bucketName"
+      )
       .eq("projectId", parseInt(projectId as string))
       .eq("fileName", file.name)
       .eq("targetLocation", targetDirectory)
@@ -162,7 +164,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .maybeSingle();
 
     if (recentDuplicate && recentDuplicate.fileSize === file.size) {
-      console.log(`📁 [FILES-UPLOAD] Duplicate detected (recent upload), returning existing: ${recentDuplicate.id}`);
+      console.log(
+        `📁 [FILES-UPLOAD] Duplicate detected (recent upload), returning existing: ${recentDuplicate.id}`
+      );
       const dupBucket = recentDuplicate.bucketName || bucketName || "project-media";
       const { data: urlData } = supabaseAdmin.storage
         .from(dupBucket)

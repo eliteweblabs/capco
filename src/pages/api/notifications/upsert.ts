@@ -71,7 +71,12 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
 
     // Handle marking notifications as viewed (archive = mark as viewed)
     if (body.notificationIds && Array.isArray(body.notificationIds)) {
-      console.log("🔔 [NOTIFICATIONS-UPSERT] Mark as viewed: notificationIds =", body.notificationIds, "viewed =", body.viewed ?? true);
+      console.log(
+        "🔔 [NOTIFICATIONS-UPSERT] Mark as viewed: notificationIds =",
+        body.notificationIds,
+        "viewed =",
+        body.viewed ?? true
+      );
       const { data, error } = await supabaseAdmin
         .from("notifications")
         .update({ viewed: body.viewed ?? true })
@@ -88,7 +93,10 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       }
 
       console.log(
-        "🔔 [NOTIFICATIONS-UPSERT] Marked", data?.length || 0, "notifications as", body.viewed ? "viewed" : "unviewed"
+        "🔔 [NOTIFICATIONS-UPSERT] Marked",
+        data?.length || 0,
+        "notifications as",
+        body.viewed ? "viewed" : "unviewed"
       );
 
       return new Response(

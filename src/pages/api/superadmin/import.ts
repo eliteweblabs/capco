@@ -15,10 +15,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     const { isAuth, currentUser } = await checkAuth(cookies);
     if (!isAuth || !currentUser?.id) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Authentication required" }),
-        { status: 401, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: false, error: "Authentication required" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const body = await request.json().catch(() => ({}));
@@ -30,18 +30,18 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       try {
         payload = JSON.parse(body.token) as SuperAdminPayload;
       } catch {
-        return new Response(
-          JSON.stringify({ success: false, error: "Invalid token format" }),
-          { status: 400, headers: { "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ success: false, error: "Invalid token format" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
       }
     }
 
     if (!payload?.userId || !payload?.exp || !payload?.sig) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Invalid payload" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: false, error: "Invalid payload" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     if (payload.userId !== currentUser.id) {
@@ -55,23 +55,23 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     if (!verifySuperAdminPayload(payload)) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Invalid or expired token" }),
-        { status: 403, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: false, error: "Invalid or expired token" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     setSuperAdminCookie(cookies, payload);
 
-    return new Response(
-      JSON.stringify({ success: true, message: "SuperAdmin imported" }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ success: true, message: "SuperAdmin imported" }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (e) {
     console.error("[superadmin/import]", e);
-    return new Response(
-      JSON.stringify({ success: false, error: "Server error" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ success: false, error: "Server error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };

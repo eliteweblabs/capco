@@ -202,9 +202,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Clear cache after successful update
     if (allSuccess) {
       try {
-        const { clearSettingsCache } = await import(
-          "../../../pages/api/global/global-company-data"
-        );
+        const { clearSettingsCache } =
+          await import("../../../pages/api/global/global-company-data");
         clearSettingsCache();
       } catch (error) {
         console.warn("[settings/update] Failed to clear cache:", error);

@@ -50,382 +50,305 @@ const initialData = rawInitialData ?? {};
 const id = fid(field.id);
 const value = initialData[field.name] ?? field.value ?? "";
 const isMultistep = context === "multistep";
-
 ---
 
-{field.type === "hidden" ? (
-  <input type="hidden" name={field.name} value={typeof value === "string" ? value : ""} />
-) : field.type === "component" && field.component === "ProfileAvatar" ? (
-  <>
-    {showLabel && field.label && (
-      <label for={id} class={labelClass}>
-        {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
-      </label>
-    )}
-    <ProfileAvatarBlock
-      idPrefix={initialData._avatarIdPrefix ?? ""}
-      avatarUrl={initialData.avatarUrl ?? initialData.avatar ?? ""}
-      label={field.label}
-    />
-  </>
-) : field.type === "component" && field.component === "PhoneAndSMS" ? (
-  <>
-    {showLabel && field.label && (
-      <label for={id} class={labelClass}>
-        {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
-      </label>
-    )}
-    <PhoneAndSMS
-      id={id}
-      name={field.name}
-      value={initialData[field.name] ?? initialData.phone ?? ""}
-      placeholder={field.placeholder}
-      required={field.required}
-      showSMS={field.componentProps?.showSMS ?? true}
-      smsChecked={initialData.smsAlerts ?? false}
-      selectedCarrier={initialData.mobileCarrier ?? ""}
-      globalInputClasses={field.icon ? `${inputClasses} ${field.iconPosition === "left" ? iconLeftPadding : iconRightPadding}` : inputClasses}
-    />
-  </>
-) : field.type === "component" && field.component === "Select" ? (
-  <>
-    {showLabel && field.label && (
-      <label for={id} class={labelClass}>
-        {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
-      </label>
-    )}
-    <select id={id} name={field.name} required={field.required} class={inputClasses}>
-      <option value="">{field.placeholder || "Select..."}</option>
-      {(field.options || []).map((o: { value: string; label: string }) => (
-        <option value={o.value} selected={o.value === value}>
-          {o.label}
-        </option>
-      ))}
-    </select>
-  </>
-) : field.type === "component" && field.component === "SlotMachineModalStaff" ? (
-  <SlotMachineModalStaff
-    id={id}
-    name={field.name}
-    title={field.label || "Select an option"}
-    options={mobileCarrierOptions}
-    selectedValue=""
-    globalInputClasses={inputClasses}
-    {...field.componentProps}
-  />
-) : field.type === "component" && field.component === "SlideToggle" ? (
-  <div class={isMultistep ? "flex items-center justify-center py-8" : ""} tabindex="-1">
-    <SlideToggle
-      id={id}
-      name={field.name}
-      {...field.componentProps}
-      label={field.label ?? (field.componentProps as any)?.label ?? ""}
-      checked={
-        initialData[field.name] !== undefined && initialData[field.name] !== null
-          ? initialData[field.name] === true ||
-            initialData[field.name] === "true" ||
-            initialData[field.name] === 1 ||
-            initialData[field.name] === "1"
-          : (field.componentProps as any)?.checked ?? false
-      }
-    />
-  </div>
-) : field.type === "component" && field.component === "InlineAddressSearch" ? (
-  <InlineAddressSearch
-    id={id}
-    name={field.name}
-    globalInputClasses={inputClasses}
-    {...field.componentProps}
-  />
-) : field.type === "component" && field.component === "UnitSlider" ? (
-  <UnitSlider
-    name={field.name}
-    label={field.label || field.name}
-    value={(() => { const n = Number(field.value); return Number.isFinite(n) ? n : 1; })()}
-    required={field.required}
-    min={field.min}
-    max={field.max}
-    step={field.step}
-    dataScrap={field.dataScrap}
-    {...field.componentProps}
-  />
-) : field.type === "component" && field.component === "ToggleButton" ? (
-  <div class="multi-step-toggle-group flex flex-wrap gap-3" tabindex="-1">
-    {field.options?.map((option) => (
-      <ToggleButton
-        value={option.value}
-        group={field.name}
-        type={field.toggleType || "radio"}
-        class={field.classes}
-      >
-        {option.label}
-      </ToggleButton>
-    ))}
-  </div>
-) : field.type === "component" && field.component === "FileUpload" ? (
-  <FileUpload
-    name={field.name}
-    label={field.label}
-    required={field.required}
-    accept={field.accept}
-    multiple={field.multiple}
-    maxFiles={field.maxFiles}
-    maxSize={field.maxSize}
-    {...field.componentProps}
-  />
-) : field.type === "range" ? (
-  <UnitSlider
-    name={field.name}
-    label={field.label || field.name}
-    value={(() => { const v = Number(field.value); const m = Number(field.min); return Number.isFinite(v) ? v : Number.isFinite(m) ? m : 0; })()}
-    required={field.required}
-    min={field.min ?? 0}
-    max={field.max ?? 100}
-    step={field.step ?? 1}
-    dataScrap={field.dataScrap}
-  />
-) : field.type === "textarea" ? (
-  <>
-    {showLabel && field.label && (
-      <label for={id} class={labelClass}>
-        {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
-      </label>
-    )}
-    <textarea
-      id={id}
-      name={field.name}
-      placeholder={field.placeholder}
-      required={field.required}
-      rows={field.rows ?? 4}
-      minlength={field.minlength ?? 10}
-      maxlength={field.maxlength ?? 500}
-      autocomplete={field.autocomplete}
-      class={`${inputClasses} ${field.classes ?? ""}`.trim()}
-      data-error={field.errorMessage}
-      data-validate={field.validate}
-      data-validate-message={field.validateMessage}
-      data-scrap={field.dataScrap ? "true" : undefined}
-    >
-      {typeof value === "string" ? value : ""}
-    </textarea>
-  </>
-) : field.type === "date" ? (
-  <>
-    {showLabel && field.label && (
-      <label for={id} class={labelClass}>
-        {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
-      </label>
-    )}
-    <input
-    type="date"
-    id={id}
-    name={field.name}
-    required={field.required}
-    value={typeof field.value === "string" ? field.value : typeof value === "string" ? value : ""}
-    autofocus={field.autofocus}
-    class={inputClasses}
-    data-error={field.errorMessage}
-    data-validate={field.validate}
-    data-validate-message={field.validateMessage}
-    data-scrap={field.dataScrap ? "true" : undefined}
-  />
-  </>
-) : field.type === "time" ? (
-  <>
-    {showLabel && field.label && (
-      <label for={id} class={labelClass}>
-        {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
-      </label>
-    )}
-    <input
-    type="time"
-    id={id}
-    name={field.name}
-    required={field.required}
-    value={typeof field.value === "string" ? field.value : typeof value === "string" ? value : ""}
-    autofocus={field.autofocus}
-    class={inputClasses}
-    data-error={field.errorMessage}
-    data-validate={field.validate}
-    data-validate-message={field.validateMessage}
-    data-scrap={field.dataScrap ? "true" : undefined}
-  />
-  </>
-) : field.type === "signature" ? (
-  <>
-    {showLabel && field.label && (
-      <label for={id} class={labelClass}>
-        {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
-      </label>
-    )}
-    <SignaturePadField
-    id={id}
-    name={field.name}
-    label={field.label}
-    required={field.required}
-    width={field.componentProps?.width ?? 400}
-    height={field.componentProps?.height ?? 200}
-  />
-  </>
-) : field.type === "button-group" ? (
-  (() => {
-    const raw = initialData[field.name] ?? field.value ?? "";
-    const selectedValues: string[] = Array.isArray(raw)
-      ? raw
-      : typeof raw === "string"
-        ? (() => {
-            try {
-              const p = JSON.parse(raw);
-              return Array.isArray(p) ? p : [raw];
-            } catch {
-              return raw ? raw.split(",").map((s: string) => s.trim()).filter(Boolean) : [];
-            }
-          })()
-        : [];
-    const toggleType = field.toggleType ?? "radio";
-    const groupButtons = (field.buttons ?? []).map((button: FormButtonConfig) => {
-      const btnConfig = getButtonConfig(
-        button,
-        buttonDefaults[button.type as keyof typeof buttonDefaults]
-      );
-      const optionValue = button.dataValue ?? btnConfig.label ?? "";
-      const optionLabel = btnConfig.label ?? button.dataValue ?? "";
-      return {
-        label: optionLabel ?? optionValue,
-        dataValue: optionValue,
-        classes: btnConfig.classes,
-        labelHtml: optionLabel || undefined,
-      };
-    });
-    return (
-      <ToggleButtonGroup
-        name={field.name}
-        buttons={groupButtons}
-        toggleType={toggleType}
-        initialValues={selectedValues}
-        tabindex="-1"
+{
+  field.type === "hidden" ? (
+    <input type="hidden" name={field.name} value={typeof value === "string" ? value : ""} />
+  ) : field.type === "component" && field.component === "ProfileAvatar" ? (
+    <>
+      {showLabel && field.label && (
+        <label for={id} class={labelClass}>
+          {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
+        </label>
+      )}
+      <ProfileAvatarBlock
+        idPrefix={initialData._avatarIdPrefix ?? ""}
+        avatarUrl={initialData.avatarUrl ?? initialData.avatar ?? ""}
+        label={field.label}
       />
-    );
-  })()
-) : field.animatedPlaceholders && field.animatedPlaceholders.length > 0 && isMultistep ? (
-  <div
-    class:list={[
-      "relative h-full text-black dark:text-white",
-      field.icon ? "input-with-icon" : "",
-      field.iconPosition === "right" ? "icon-right" : "icon-left",
-    ]}
-    tabindex="-1"
-  >
-    {field.icon && (
-      <span
-        class="input-icon-absolute pointer-events-none inline-flex items-center justify-center opacity-50 transition-opacity duration-300"
-        style={field.iconPosition === "right" ? "right:1rem;left:auto" : "left:1rem;right:auto"}
+    </>
+  ) : field.type === "component" && field.component === "PhoneAndSMS" ? (
+    <>
+      {showLabel && field.label && (
+        <label for={id} class={labelClass}>
+          {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
+        </label>
+      )}
+      <PhoneAndSMS
+        id={id}
+        name={field.name}
+        value={initialData[field.name] ?? initialData.phone ?? ""}
+        placeholder={field.placeholder}
+        required={field.required}
+        showSMS={field.componentProps?.showSMS ?? true}
+        smsChecked={initialData.smsAlerts ?? false}
+        selectedCarrier={initialData.mobileCarrier ?? ""}
+        globalInputClasses={
+          field.icon
+            ? `${inputClasses} ${field.iconPosition === "left" ? iconLeftPadding : iconRightPadding}`
+            : inputClasses
+        }
+      />
+    </>
+  ) : field.type === "component" && field.component === "Select" ? (
+    <>
+      {showLabel && field.label && (
+        <label for={id} class={labelClass}>
+          {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
+        </label>
+      )}
+      <select id={id} name={field.name} required={field.required} class={inputClasses}>
+        <option value="">{field.placeholder || "Select..."}</option>
+        {(field.options || []).map((o: { value: string; label: string }) => (
+          <option value={o.value} selected={o.value === value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </>
+  ) : field.type === "component" && field.component === "SlotMachineModalStaff" ? (
+    <SlotMachineModalStaff
+      id={id}
+      name={field.name}
+      title={field.label || "Select an option"}
+      options={mobileCarrierOptions}
+      selectedValue=""
+      globalInputClasses={inputClasses}
+      {...field.componentProps}
+    />
+  ) : field.type === "component" && field.component === "SlideToggle" ? (
+    <div class={isMultistep ? "flex items-center justify-center py-8" : ""} tabindex="-1">
+      <SlideToggle
+        id={id}
+        name={field.name}
+        {...field.componentProps}
+        label={field.label ?? (field.componentProps as any)?.label ?? ""}
+        checked={
+          initialData[field.name] !== undefined && initialData[field.name] !== null
+            ? initialData[field.name] === true ||
+              initialData[field.name] === "true" ||
+              initialData[field.name] === 1 ||
+              initialData[field.name] === "1"
+            : ((field.componentProps as any)?.checked ?? false)
+        }
+      />
+    </div>
+  ) : field.type === "component" && field.component === "InlineAddressSearch" ? (
+    <InlineAddressSearch
+      id={id}
+      name={field.name}
+      globalInputClasses={inputClasses}
+      {...field.componentProps}
+    />
+  ) : field.type === "component" && field.component === "UnitSlider" ? (
+    <UnitSlider
+      name={field.name}
+      label={field.label || field.name}
+      value={(() => {
+        const n = Number(field.value);
+        return Number.isFinite(n) ? n : 1;
+      })()}
+      required={field.required}
+      min={field.min}
+      max={field.max}
+      step={field.step}
+      dataScrap={field.dataScrap}
+      {...field.componentProps}
+    />
+  ) : field.type === "component" && field.component === "ToggleButton" ? (
+    <div class="multi-step-toggle-group flex flex-wrap gap-3" tabindex="-1">
+      {field.options?.map((option) => (
+        <ToggleButton
+          value={option.value}
+          group={field.name}
+          type={field.toggleType || "radio"}
+          class={field.classes}
+        >
+          {option.label}
+        </ToggleButton>
+      ))}
+    </div>
+  ) : field.type === "component" && field.component === "FileUpload" ? (
+    <FileUpload
+      name={field.name}
+      label={field.label}
+      required={field.required}
+      accept={field.accept}
+      multiple={field.multiple}
+      maxFiles={field.maxFiles}
+      maxSize={field.maxSize}
+      {...field.componentProps}
+    />
+  ) : field.type === "range" ? (
+    <UnitSlider
+      name={field.name}
+      label={field.label || field.name}
+      value={(() => {
+        const v = Number(field.value);
+        const m = Number(field.min);
+        return Number.isFinite(v) ? v : Number.isFinite(m) ? m : 0;
+      })()}
+      required={field.required}
+      min={field.min ?? 0}
+      max={field.max ?? 100}
+      step={field.step ?? 1}
+      dataScrap={field.dataScrap}
+    />
+  ) : field.type === "textarea" ? (
+    <>
+      {showLabel && field.label && (
+        <label for={id} class={labelClass}>
+          {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
+        </label>
+      )}
+      <textarea
+        id={id}
+        name={field.name}
+        placeholder={field.placeholder}
+        required={field.required}
+        rows={field.rows ?? 4}
+        minlength={field.minlength ?? 10}
+        maxlength={field.maxlength ?? 500}
+        autocomplete={field.autocomplete}
+        class={`${inputClasses} ${field.classes ?? ""}`.trim()}
+        data-error={field.errorMessage}
+        data-validate={field.validate}
+        data-validate-message={field.validateMessage}
+        data-scrap={field.dataScrap ? "true" : undefined}
       >
-        <SimpleIcon name={field.icon} size="sm" class="text-gray-500 dark:text-gray-400" />
-      </span>
-    )}
-    <input
-      type={field.type as "text" | "email" | "tel" | "password" | "number"}
-      id={id}
-      name={field.name}
-      placeholder=""
-      required={field.required}
-      autocomplete={field.autocomplete}
-      minlength={field.type !== "number" ? (field.minlength ?? 2) : undefined}
-      maxlength={field.type !== "number" ? (field.maxlength ?? 50) : undefined}
-      min={field.type === "number" ? field.min : undefined}
-      max={field.type === "number" ? field.max : undefined}
-      step={field.type === "number" ? field.step : undefined}
-      autofocus={field.autofocus}
-      class:list={[
-        inputClasses,
-        field.icon && field.iconPosition === "right" ? iconRightPadding : "",
-        field.icon && field.iconPosition !== "right" ? iconLeftPadding : "",
-      ]}
-      data-error={field.errorMessage}
-      data-validate={field.validate}
-      data-validate-message={field.validateMessage}
-      data-has-animated-placeholder="true"
-      data-original-placeholder={field.placeholder}
-      data-animated-placeholders={JSON.stringify(field.animatedPlaceholders)}
-      data-scrap={field.dataScrap ? "true" : undefined}
-    />
-    <span
-      class:list={[
-        "animated-placeholder pointer-events-none absolute left-0 top-[calc(0.125rem-2px)] flex h-full w-full items-center",
-        field.animatedPlaceholderAlignment === "left"
-          ? `justify-start ${field.icon && field.iconPosition === "left" ? "" : iconLeftPadding}`
-          : field.animatedPlaceholderAlignment === "right"
-            ? `justify-end ${field.icon && field.iconPosition === "right" ? "" : iconRightPadding}`
-            : "justify-center",
-        field.icon && field.iconPosition === "right" ? iconRightPadding : "",
-        field.icon && field.iconPosition !== "right" ? iconLeftPadding : "",
-      ]}
-      data-for={id}
-      tabindex="-1"
-    >
-      {field.placeholder}
-    </span>
-  </div>
-) : field.icon && isMultistep ? (
-  <div
-    class:list={[
-      "input-with-icon relative h-full",
-      field.iconPosition === "right" ? "icon-right" : "icon-left",
-    ]}
-    tabindex="-1"
-  >
-    <span
-      class="input-icon-absolute pointer-events-none inline-flex items-center justify-center opacity-50 transition-opacity duration-300"
-      style={field.iconPosition === "right" ? "right:1rem;left:auto" : "left:1rem;right:auto"}
-    >
-      <SimpleIcon name={field.icon} size="sm" class="text-gray-500 dark:text-gray-400" />
-    </span>
-    <input
-      type={field.type as "text" | "email" | "tel" | "password" | "number" | "hidden"}
-      id={id}
-      name={field.name}
-      placeholder={field.placeholder}
-      required={field.required}
-      autocomplete={field.autocomplete}
-      minlength={field.type !== "number" && field.type !== "hidden" ? (field.minlength ?? 2) : undefined}
-      maxlength={field.type !== "number" && field.type !== "hidden" ? (field.maxlength ?? 50) : undefined}
-      min={field.type === "number" ? field.min : undefined}
-      max={field.type === "number" ? field.max : undefined}
-      step={field.type === "number" ? field.step : undefined}
-      autofocus={field.autofocus}
-      class:list={[inputClasses, field.iconPosition === "right" ? iconRightPadding : iconLeftPadding]}
-      data-error={field.errorMessage}
-      data-validate={field.validate}
-      data-validate-message={field.validateMessage}
-      data-scrap={field.dataScrap ? "true" : undefined}
-    />
-  </div>
-) : field.icon && !isMultistep ? (
-  <>
-    {showLabel && field.label && (
-      <label for={id} class={labelClass}>
-        {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
-      </label>
-    )}
+        {typeof value === "string" ? value : ""}
+      </textarea>
+    </>
+  ) : field.type === "date" ? (
+    <>
+      {showLabel && field.label && (
+        <label for={id} class={labelClass}>
+          {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
+        </label>
+      )}
+      <input
+        type="date"
+        id={id}
+        name={field.name}
+        required={field.required}
+        value={
+          typeof field.value === "string" ? field.value : typeof value === "string" ? value : ""
+        }
+        autofocus={field.autofocus}
+        class={inputClasses}
+        data-error={field.errorMessage}
+        data-validate={field.validate}
+        data-validate-message={field.validateMessage}
+        data-scrap={field.dataScrap ? "true" : undefined}
+      />
+    </>
+  ) : field.type === "time" ? (
+    <>
+      {showLabel && field.label && (
+        <label for={id} class={labelClass}>
+          {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
+        </label>
+      )}
+      <input
+        type="time"
+        id={id}
+        name={field.name}
+        required={field.required}
+        value={
+          typeof field.value === "string" ? field.value : typeof value === "string" ? value : ""
+        }
+        autofocus={field.autofocus}
+        class={inputClasses}
+        data-error={field.errorMessage}
+        data-validate={field.validate}
+        data-validate-message={field.validateMessage}
+        data-scrap={field.dataScrap ? "true" : undefined}
+      />
+    </>
+  ) : field.type === "signature" ? (
+    <>
+      {showLabel && field.label && (
+        <label for={id} class={labelClass}>
+          {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
+        </label>
+      )}
+      <SignaturePadField
+        id={id}
+        name={field.name}
+        label={field.label}
+        required={field.required}
+        width={field.componentProps?.width ?? 400}
+        height={field.componentProps?.height ?? 200}
+      />
+    </>
+  ) : field.type === "button-group" ? (
+    (() => {
+      const raw = initialData[field.name] ?? field.value ?? "";
+      const selectedValues: string[] = Array.isArray(raw)
+        ? raw
+        : typeof raw === "string"
+          ? (() => {
+              try {
+                const p = JSON.parse(raw);
+                return Array.isArray(p) ? p : [raw];
+              } catch {
+                return raw
+                  ? raw
+                      .split(",")
+                      .map((s: string) => s.trim())
+                      .filter(Boolean)
+                  : [];
+              }
+            })()
+          : [];
+      const toggleType = field.toggleType ?? "radio";
+      const groupButtons = (field.buttons ?? []).map((button: FormButtonConfig) => {
+        const btnConfig = getButtonConfig(
+          button,
+          buttonDefaults[button.type as keyof typeof buttonDefaults]
+        );
+        const optionValue = button.dataValue ?? btnConfig.label ?? "";
+        const optionLabel = btnConfig.label ?? button.dataValue ?? "";
+        return {
+          label: optionLabel ?? optionValue,
+          dataValue: optionValue,
+          classes: btnConfig.classes,
+          labelHtml: optionLabel || undefined,
+        };
+      });
+      return (
+        <ToggleButtonGroup
+          name={field.name}
+          buttons={groupButtons}
+          toggleType={toggleType}
+          initialValues={selectedValues}
+          tabindex="-1"
+        />
+      );
+    })()
+  ) : field.animatedPlaceholders && field.animatedPlaceholders.length > 0 && isMultistep ? (
     <div
       class:list={[
-        "input-with-icon relative",
+        "relative h-full text-black dark:text-white",
+        field.icon ? "input-with-icon" : "",
         field.iconPosition === "right" ? "icon-right" : "icon-left",
       ]}
+      tabindex="-1"
     >
-      <span
-        class="input-icon-absolute pointer-events-none inline-flex items-center justify-center opacity-50 transition-opacity duration-300"
-        style={field.iconPosition === "right" ? "right:1rem;left:auto" : "left:1rem;right:auto"}
-      >
-        <SimpleIcon name={field.icon} size="sm" class="text-gray-500 dark:text-gray-400" />
-      </span>
+      {field.icon && (
+        <span
+          class="input-icon-absolute pointer-events-none inline-flex items-center justify-center opacity-50 transition-opacity duration-300"
+          style={field.iconPosition === "right" ? "right:1rem;left:auto" : "left:1rem;right:auto"}
+        >
+          <SimpleIcon name={field.icon} size="sm" class="text-gray-500 dark:text-gray-400" />
+        </span>
+      )}
       <input
         type={field.type as "text" | "email" | "tel" | "password" | "number"}
         id={id}
         name={field.name}
-        value={typeof value === "string" || typeof value === "number" ? String(value) : undefined}
-        placeholder={field.placeholder}
+        placeholder=""
         required={field.required}
         autocomplete={field.autocomplete}
         minlength={field.type !== "number" ? (field.minlength ?? 2) : undefined}
@@ -434,42 +357,154 @@ const isMultistep = context === "multistep";
         max={field.type === "number" ? field.max : undefined}
         step={field.type === "number" ? field.step : undefined}
         autofocus={field.autofocus}
-        readonly={(field.componentProps as any)?.readonly}
-        class:list={[inputClasses, field.iconPosition === "right" ? iconRightPadding : iconLeftPadding]}
+        class:list={[
+          inputClasses,
+          field.icon && field.iconPosition === "right" ? iconRightPadding : "",
+          field.icon && field.iconPosition !== "right" ? iconLeftPadding : "",
+        ]}
+        data-error={field.errorMessage}
+        data-validate={field.validate}
+        data-validate-message={field.validateMessage}
+        data-has-animated-placeholder="true"
+        data-original-placeholder={field.placeholder}
+        data-animated-placeholders={JSON.stringify(field.animatedPlaceholders)}
+        data-scrap={field.dataScrap ? "true" : undefined}
+      />
+      <span
+        class:list={[
+          "animated-placeholder pointer-events-none absolute left-0 top-[calc(0.125rem-2px)] flex h-full w-full items-center",
+          field.animatedPlaceholderAlignment === "left"
+            ? `justify-start ${field.icon && field.iconPosition === "left" ? "" : iconLeftPadding}`
+            : field.animatedPlaceholderAlignment === "right"
+              ? `justify-end ${field.icon && field.iconPosition === "right" ? "" : iconRightPadding}`
+              : "justify-center",
+          field.icon && field.iconPosition === "right" ? iconRightPadding : "",
+          field.icon && field.iconPosition !== "right" ? iconLeftPadding : "",
+        ]}
+        data-for={id}
+        tabindex="-1"
+      >
+        {field.placeholder}
+      </span>
+    </div>
+  ) : field.icon && isMultistep ? (
+    <div
+      class:list={[
+        "input-with-icon relative h-full",
+        field.iconPosition === "right" ? "icon-right" : "icon-left",
+      ]}
+      tabindex="-1"
+    >
+      <span
+        class="input-icon-absolute pointer-events-none inline-flex items-center justify-center opacity-50 transition-opacity duration-300"
+        style={field.iconPosition === "right" ? "right:1rem;left:auto" : "left:1rem;right:auto"}
+      >
+        <SimpleIcon name={field.icon} size="sm" class="text-gray-500 dark:text-gray-400" />
+      </span>
+      <input
+        type={field.type as "text" | "email" | "tel" | "password" | "number" | "hidden"}
+        id={id}
+        name={field.name}
+        placeholder={field.placeholder}
+        required={field.required}
+        autocomplete={field.autocomplete}
+        minlength={
+          field.type !== "number" && field.type !== "hidden" ? (field.minlength ?? 2) : undefined
+        }
+        maxlength={
+          field.type !== "number" && field.type !== "hidden" ? (field.maxlength ?? 50) : undefined
+        }
+        min={field.type === "number" ? field.min : undefined}
+        max={field.type === "number" ? field.max : undefined}
+        step={field.type === "number" ? field.step : undefined}
+        autofocus={field.autofocus}
+        class:list={[
+          inputClasses,
+          field.iconPosition === "right" ? iconRightPadding : iconLeftPadding,
+        ]}
         data-error={field.errorMessage}
         data-validate={field.validate}
         data-validate-message={field.validateMessage}
         data-scrap={field.dataScrap ? "true" : undefined}
       />
     </div>
-  </>
-) : (
-  <>
-    {showLabel && field.label && (
-      <label for={id} class={labelClass}>
-        {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
-      </label>
-    )}
-    <input
-      type={field.type as "text" | "email" | "tel" | "password" | "number" | "hidden"}
-      id={id}
-      name={field.name}
-      placeholder={field.placeholder}
-      required={field.required}
-      value={typeof value === "string" || typeof value === "number" ? String(value) : undefined}
-      autocomplete={field.autocomplete}
-      minlength={field.type !== "number" && field.type !== "hidden" ? (field.minlength ?? 2) : undefined}
-      maxlength={field.type !== "number" && field.type !== "hidden" ? (field.maxlength ?? 50) : undefined}
-      min={field.type === "number" ? field.min : undefined}
-      max={field.type === "number" ? field.max : undefined}
-      step={field.type === "number" ? field.step : undefined}
-      autofocus={field.autofocus}
-      readonly={(field.componentProps as any)?.readonly}
-      class={inputClasses}
-      data-error={field.errorMessage}
-      data-validate={field.validate}
-      data-validate-message={field.validateMessage}
-      data-scrap={field.dataScrap ? "true" : undefined}
-    />
-  </>
-)}
+  ) : field.icon && !isMultistep ? (
+    <>
+      {showLabel && field.label && (
+        <label for={id} class={labelClass}>
+          {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
+        </label>
+      )}
+      <div
+        class:list={[
+          "input-with-icon relative",
+          field.iconPosition === "right" ? "icon-right" : "icon-left",
+        ]}
+      >
+        <span
+          class="input-icon-absolute pointer-events-none inline-flex items-center justify-center opacity-50 transition-opacity duration-300"
+          style={field.iconPosition === "right" ? "right:1rem;left:auto" : "left:1rem;right:auto"}
+        >
+          <SimpleIcon name={field.icon} size="sm" class="text-gray-500 dark:text-gray-400" />
+        </span>
+        <input
+          type={field.type as "text" | "email" | "tel" | "password" | "number"}
+          id={id}
+          name={field.name}
+          value={typeof value === "string" || typeof value === "number" ? String(value) : undefined}
+          placeholder={field.placeholder}
+          required={field.required}
+          autocomplete={field.autocomplete}
+          minlength={field.type !== "number" ? (field.minlength ?? 2) : undefined}
+          maxlength={field.type !== "number" ? (field.maxlength ?? 50) : undefined}
+          min={field.type === "number" ? field.min : undefined}
+          max={field.type === "number" ? field.max : undefined}
+          step={field.type === "number" ? field.step : undefined}
+          autofocus={field.autofocus}
+          readonly={(field.componentProps as any)?.readonly}
+          class:list={[
+            inputClasses,
+            field.iconPosition === "right" ? iconRightPadding : iconLeftPadding,
+          ]}
+          data-error={field.errorMessage}
+          data-validate={field.validate}
+          data-validate-message={field.validateMessage}
+          data-scrap={field.dataScrap ? "true" : undefined}
+        />
+      </div>
+    </>
+  ) : (
+    <>
+      {showLabel && field.label && (
+        <label for={id} class={labelClass}>
+          {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
+        </label>
+      )}
+      <input
+        type={field.type as "text" | "email" | "tel" | "password" | "number" | "hidden"}
+        id={id}
+        name={field.name}
+        placeholder={field.placeholder}
+        required={field.required}
+        value={typeof value === "string" || typeof value === "number" ? String(value) : undefined}
+        autocomplete={field.autocomplete}
+        minlength={
+          field.type !== "number" && field.type !== "hidden" ? (field.minlength ?? 2) : undefined
+        }
+        maxlength={
+          field.type !== "number" && field.type !== "hidden" ? (field.maxlength ?? 50) : undefined
+        }
+        min={field.type === "number" ? field.min : undefined}
+        max={field.type === "number" ? field.max : undefined}
+        step={field.type === "number" ? field.step : undefined}
+        autofocus={field.autofocus}
+        readonly={(field.componentProps as any)?.readonly}
+        class={inputClasses}
+        data-error={field.errorMessage}
+        data-validate={field.validate}
+        data-validate-message={field.validateMessage}
+        data-scrap={field.dataScrap ? "true" : undefined}
+      />
+    </>
+  )
+}

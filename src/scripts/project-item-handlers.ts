@@ -3,7 +3,8 @@
  * These functions are shared across all project items on the dashboard
  */
 
-if (typeof window !== "undefined" && (window as any).__jsOrderLog) (window as any).__jsOrderLog("project-item-handlers");
+if (typeof window !== "undefined" && (window as any).__jsOrderLog)
+  (window as any).__jsOrderLog("project-item-handlers");
 
 /**
  * Generic function to update any project field
@@ -133,7 +134,9 @@ if (typeof window !== "undefined" && (window as any).__jsOrderLog) (window as an
       nextHour.setHours(nextHour.getHours() + 1);
     }
     currentDate = nextHour.toISOString();
-    console.log(`🕐 [ADJUST] No current date for project ${projectId}; using next hour: ${currentDate}`);
+    console.log(
+      `🕐 [ADJUST] No current date for project ${projectId}; using next hour: ${currentDate}`
+    );
   }
 
   // Validate the date before parsing

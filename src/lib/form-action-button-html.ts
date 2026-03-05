@@ -15,8 +15,7 @@ const ACTION_LABELS: Record<FormActionType, string> = {
 
 /** Icon SVGs (from icon-data) - inline for use in HTML strings */
 const ICONS: Record<string, string> = {
-  plus:
-    '<svg class="mr-2 inline-block h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>',
+  plus: '<svg class="mr-2 inline-block h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>',
   check:
     '<svg class="mr-2 inline-block h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>',
   x: '<svg class="mr-2 inline-block h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18"></path><path d="M6 6l12 12"></path></svg>',
@@ -35,7 +34,10 @@ export function getFormActionButtonHTML(
   } = {}
 ): string {
   const defaults = GLOBAL_BUTTON_DEFAULTS[action] as Record<string, unknown> | undefined;
-  const variant = (opts as Record<string, unknown>).variant ?? defaults?.variant ?? (action === "submit" ? "primary" : "outline");
+  const variant =
+    (opts as Record<string, unknown>).variant ??
+    defaults?.variant ??
+    (action === "submit" ? "primary" : "outline");
   const size = opts.size ?? (defaults?.size as string) ?? "md";
   const btnType = opts.type ?? (action === "submit" ? "submit" : "button");
   const label = opts.label ?? (defaults?.label as string) ?? ACTION_LABELS[action];

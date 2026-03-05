@@ -43,7 +43,8 @@ const tanstackLeads = submissions.map((s: any) => ({
   name: [s.firstName, s.lastName].filter(Boolean).join(" ").trim() || "—",
   contact: s.email || s.phone || "—",
   company: s.company || "—",
-  messagePreview: (s.message ?? "").length > 60 ? `${String(s.message).slice(0, 60)}…` : (s.message || "—"),
+  messagePreview:
+    (s.message ?? "").length > 60 ? `${String(s.message).slice(0, 60)}…` : s.message || "—",
   date: s.submittedAt ? new Date(s.submittedAt).toLocaleDateString() : "—",
 }));
 ---
@@ -82,7 +83,12 @@ const tanstackLeads = submissions.map((s: any) => ({
           { id: "name", accessorKey: "name", header: "Name", meta: { width: 16 } },
           { id: "contact", accessorKey: "contact", header: "Contact", meta: { width: 22 } },
           { id: "company", accessorKey: "company", header: "Company", meta: { width: 14 } },
-          { id: "messagePreview", accessorKey: "messagePreview", header: "Message", meta: { width: 28 } },
+          {
+            id: "messagePreview",
+            accessorKey: "messagePreview",
+            header: "Message",
+            meta: { width: 28 },
+          },
           { id: "date", accessorKey: "date", header: "Date", meta: { width: 12 } },
         ]}
         getRowIdKey="id"

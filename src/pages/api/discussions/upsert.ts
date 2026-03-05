@@ -278,10 +278,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         // Get admin and staff emails using reusable API
         const baseUrl = getApiBaseUrl(request);
-        const adminAndStaffResponse = await fetch(`${baseUrl}/api/users/get?role=Admin&role=Staff`, {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        });
+        const adminAndStaffResponse = await fetch(
+          `${baseUrl}/api/users/get?role=Admin&role=Staff`,
+          {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          }
+        );
 
         let adminStaffEmails = [];
         let adminStaffUserIds = [];

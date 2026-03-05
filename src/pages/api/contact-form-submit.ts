@@ -120,7 +120,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       // If table doesn't exist, provide setup instructions
       if (error.code === "42P01") {
         console.error("[CONTACT-FORM-SUBMIT] ❌ Table 'contactSubmissions' does not exist!");
-        console.error("[CONTACT-FORM-SUBMIT] 📋 Quick Setup - Run this SQL in Supabase SQL Editor:");
+        console.error(
+          "[CONTACT-FORM-SUBMIT] 📋 Quick Setup - Run this SQL in Supabase SQL Editor:"
+        );
         console.error(`
 CREATE TABLE "contactSubmissions" (
   id SERIAL PRIMARY KEY,
@@ -221,7 +223,10 @@ CREATE INDEX "idx_contactSubmissions_submittedAt" ON "contactSubmissions"("submi
             .insert(notifications);
 
           if (notifError) {
-            console.error("[CONTACT-FORM-SUBMIT] ⚠️ In-app notification insert failed:", notifError);
+            console.error(
+              "[CONTACT-FORM-SUBMIT] ⚠️ In-app notification insert failed:",
+              notifError
+            );
           } else {
             console.log(
               `[CONTACT-FORM-SUBMIT] ✅ In-app notifications sent to ${adminIds.length} Admin user(s)`

@@ -28,13 +28,19 @@ export type UserLike = {
  * Maps Supabase user shape to form field names (fullName, email, phone, firstName, lastName, isAuthenticated).
  * Also checks profile when user_metadata is sparse.
  */
-export function buildFormInitialDataFromUser(user: UserLike | null | undefined): Record<string, any> {
+export function buildFormInitialDataFromUser(
+  user: UserLike | null | undefined
+): Record<string, any> {
   if (!user) return { isAuthenticated: false };
 
   const meta = user.user_metadata || {};
   const profile = user.profile || {};
   const firstName =
-    meta.firstName || profile.firstName || meta.full_name?.split(" ")[0] || profile.name?.split(" ")[0] || "";
+    meta.firstName ||
+    profile.firstName ||
+    meta.full_name?.split(" ")[0] ||
+    profile.name?.split(" ")[0] ||
+    "";
   const lastName =
     meta.lastName ||
     profile.lastName ||

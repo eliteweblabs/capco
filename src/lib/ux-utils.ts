@@ -714,10 +714,7 @@ export function lockBodyScroll(): void {
     // Prevent zoom on double tap
     const viewport = document.querySelector('meta[name="viewport"]');
     if (viewport) {
-      viewport.setAttribute(
-        "content",
-        "width=device-width, initial-scale=1.0"
-      );
+      viewport.setAttribute("content", "width=device-width, initial-scale=1.0");
     }
   }
 

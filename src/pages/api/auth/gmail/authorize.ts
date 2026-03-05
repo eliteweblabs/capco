@@ -37,11 +37,7 @@ export const GET: APIRoute = async ({ cookies, redirect, url }) => {
       clientIdPreview: clientId?.substring(0, 20) + "...",
     });
 
-    const oauth2Client = new google.auth.OAuth2(
-      clientId,
-      clientSecret,
-      callbackUrl
-    );
+    const oauth2Client = new google.auth.OAuth2(clientId, clientSecret, callbackUrl);
 
     const authUrl = oauth2Client.generateAuthUrl({
       access_type: "offline",

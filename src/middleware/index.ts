@@ -37,7 +37,7 @@ const authCallbackRoutes = ["/api/auth/callback(|/)", "/api/auth/verify", "/auth
 
 /** Paths that are safe to cache (hashed static assets). Skip no-cache for these. */
 const STATIC_CACHE_PATTERNS = [
-  /^\/_astro\//,           /* Astro built JS/CSS (content-hashed) */
+  /^\/_astro\// /* Astro built JS/CSS (content-hashed) */,
   /\.(js|css|woff2?|ttf|ico|png|jpg|jpeg|gif|webp|svg)(\?|$)/,
 ];
 

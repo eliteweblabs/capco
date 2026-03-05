@@ -43,8 +43,16 @@ export const blockRegistry: Record<string, BlockDefinition> = {
     name: "CTABlock",
     description: "Call-to-action section with title, description, and buttons",
     props: {
-      maxWidth: { type: "string", default: "full", description: "Container max width: sm, md, lg, xl, 2xl, full" },
-      padding: { type: "string", default: "medium", description: "Section padding: none, small, medium, large" },
+      maxWidth: {
+        type: "string",
+        default: "full",
+        description: "Container max width: sm, md, lg, xl, 2xl, full",
+      },
+      padding: {
+        type: "string",
+        default: "medium",
+        description: "Section padding: none, small, medium, large",
+      },
       title: { type: "string", required: true, description: "Main headline" },
       description: { type: "string", description: "Supporting text" },
       variant: {
@@ -71,8 +79,16 @@ export const blockRegistry: Record<string, BlockDefinition> = {
       description: { type: "string", description: "Section description" },
       columns: { type: "number", default: 3, description: "Number of columns (2, 3, 4)" },
       variant: { type: "string", default: "cards", description: "Style: cards, icons, minimal" },
-      maxWidth: { type: "string", default: "full", description: "Container max width: sm, md, lg, xl, 2xl, full" },
-      padding: { type: "string", default: "medium", description: "Section padding: none, small, medium, large" },
+      maxWidth: {
+        type: "string",
+        default: "full",
+        description: "Container max width: sm, md, lg, xl, 2xl, full",
+      },
+      padding: {
+        type: "string",
+        default: "medium",
+        description: "Section padding: none, small, medium, large",
+      },
       // Features are passed as JSON string for CMS
       features: {
         type: "string",
@@ -193,9 +209,21 @@ export const blockRegistry: Record<string, BlockDefinition> = {
     name: "CountUpBlock",
     description: "Animated odometer-style statistics (title left, stats right)",
     props: {
-      maxWidth: { type: "string", default: "full", description: "Container max width: sm, md, lg, xl, 2xl, full" },
-      padding: { type: "string", default: "medium", description: "Section padding: none, small, medium, large" },
-      title: { type: "string", default: "Rothco Built by the Numbers...", description: "Section title" },
+      maxWidth: {
+        type: "string",
+        default: "full",
+        description: "Container max width: sm, md, lg, xl, 2xl, full",
+      },
+      padding: {
+        type: "string",
+        default: "medium",
+        description: "Section padding: none, small, medium, large",
+      },
+      title: {
+        type: "string",
+        default: "Rothco Built by the Numbers...",
+        description: "Section title",
+      },
       stat1Value: { type: "string", description: "First stat value (e.g. 2.5M)" },
       stat1Label: { type: "string", description: "First stat label" },
       stat1Color: { type: "string", description: "Color: pink, cyan, orange, blue, green, purple" },
@@ -271,7 +299,8 @@ export const blockRegistry: Record<string, BlockDefinition> = {
       marqueeReduceMotion: {
         type: "string",
         default: "respect",
-        description: "Override prefers-reduced-motion for marquee on devices with Reduce Motion (use 'override' to test)",
+        description:
+          "Override prefers-reduced-motion for marquee on devices with Reduce Motion (use 'override' to test)",
       },
       logos: { type: "string", description: "JSON array of logos [{src, alt, href}]" },
       wrapperClass: {
@@ -419,8 +448,14 @@ export const blockRegistry: Record<string, BlockDefinition> = {
         description: "Layout: grid, carousel, minimal",
       },
       columns: { type: "number", default: 3, description: "Grid columns (1-3)" },
-      reviews: { type: "string", description: "JSON array of reviews [{text, author, rating, date, avatar}]" },
-      placeId: { type: "string", description: "Google Place ID for live fetch (requires GOOGLE_MAPS_API_KEY)" },
+      reviews: {
+        type: "string",
+        description: "JSON array of reviews [{text, author, rating, date, avatar}]",
+      },
+      placeId: {
+        type: "string",
+        description: "Google Place ID for live fetch (requires GOOGLE_MAPS_API_KEY)",
+      },
       ...animationProps,
     },
   },

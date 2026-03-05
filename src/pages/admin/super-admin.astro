@@ -52,11 +52,13 @@ const isSuperAdmin = currentRole === "SuperAdmin";
     <div class={`space-y-6 ${globalCardStyle} p-6`}>
       <p class="text-sm text-gray-600 dark:text-gray-400">
         Current role: <strong>{currentRole}</strong>
-        {isSuperAdmin && (
-          <span class="ml-2 rounded bg-amber-100 px-2 py-0.5 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
-            Active
-          </span>
-        )}
+        {
+          isSuperAdmin && (
+            <span class="ml-2 rounded bg-amber-100 px-2 py-0.5 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+              Active
+            </span>
+          )
+        }
       </p>
 
       <section class="border-b border-gray-200 pb-6 dark:border-gray-700">
@@ -64,7 +66,10 @@ const isSuperAdmin = currentRole === "SuperAdmin";
         <p class="mb-3 text-sm text-gray-600 dark:text-gray-400">
           Enter the SuperAdmin passphrase (SUPERADMIN_SECRET) to activate for this browser.
         </p>
-        <form id="superadmin-activate" class={`${globalFormClasses} flex flex-wrap items-end gap-3`}>
+        <form
+          id="superadmin-activate"
+          class={`${globalFormClasses} flex flex-wrap items-end gap-3`}
+        >
           <label for="superadmin-passphrase" class="sr-only">Passphrase</label>
           <input
             id="superadmin-passphrase"
@@ -83,9 +88,7 @@ const isSuperAdmin = currentRole === "SuperAdmin";
         <p class="mb-3 text-sm text-gray-600 dark:text-gray-400">
           Clear the SuperAdmin cookie. You will keep your normal Admin/Staff/Client role.
         </p>
-        <Button id="superadmin-deactivate" variant="secondary" size="sm">
-          Deactivate
-        </Button>
+        <Button id="superadmin-deactivate" variant="secondary" size="sm"> Deactivate </Button>
       </section>
 
       <section class="border-b border-gray-200 pb-6 dark:border-gray-700">
@@ -94,13 +97,11 @@ const isSuperAdmin = currentRole === "SuperAdmin";
           Download a token you can save and re-import later (e.g. on another device or after
           clearing cookies).
         </p>
-        <Button id="superadmin-export" variant="outline" size="sm">
-          Export token
-        </Button>
+        <Button id="superadmin-export" variant="outline" size="sm"> Export token </Button>
         <pre
           id="superadmin-export-output"
-          class="mt-3 hidden max-h-40 overflow-auto rounded border border-gray-200 bg-gray-50 p-3 text-xs dark:border-gray-600 dark:bg-gray-900"
-        ></pre>
+          class="mt-3 hidden max-h-40 overflow-auto rounded border border-gray-200 bg-gray-50 p-3 text-xs dark:border-gray-600 dark:bg-gray-900">
+        </pre>
       </section>
 
       <section>
@@ -131,8 +132,14 @@ const isSuperAdmin = currentRole === "SuperAdmin";
 
     function showMessage(text: string, isError: boolean) {
       messageEl.classList.remove("hidden");
-      messageEl.classList.toggle("border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20", !isError);
-      messageEl.classList.toggle("border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20", isError);
+      messageEl.classList.toggle(
+        "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20",
+        !isError
+      );
+      messageEl.classList.toggle(
+        "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20",
+        isError
+      );
       const p = messageEl.querySelector("p");
       if (p) p.textContent = text;
     }
@@ -144,7 +151,8 @@ const isSuperAdmin = currentRole === "SuperAdmin";
     document.getElementById("superadmin-activate")?.addEventListener("submit", async (e) => {
       e.preventDefault();
       const form = e.target as HTMLFormElement;
-      const passphrase = (form.querySelector('[name="passphrase"]') as HTMLInputElement)?.value ?? "";
+      const passphrase =
+        (form.querySelector('[name="passphrase"]') as HTMLInputElement)?.value ?? "";
       try {
         const res = await fetch("/api/superadmin/activate", {
           method: "POST",
@@ -198,7 +206,8 @@ const isSuperAdmin = currentRole === "SuperAdmin";
     document.getElementById("superadmin-import")?.addEventListener("submit", async (e) => {
       e.preventDefault();
       const form = e.target as HTMLFormElement;
-      const token = (form.querySelector('[name="token"]') as HTMLTextAreaElement)?.value?.trim() ?? "";
+      const token =
+        (form.querySelector('[name="token"]') as HTMLTextAreaElement)?.value?.trim() ?? "";
       if (!token) {
         showMessage("Paste a token first", true);
         return;

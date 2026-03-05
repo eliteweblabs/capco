@@ -52,12 +52,11 @@ const wrapperAttrs = hasWrapper
   ? {
       class: field.type === "hidden" ? "" : wrapperClass,
       "data-conditional-field": field.conditional?.field,
-      "data-conditional-value":
-        field.conditional
-          ? Array.isArray(field.conditional.value)
-            ? field.conditional.value.join(",")
-            : field.conditional.value
-          : undefined,
+      "data-conditional-value": field.conditional
+        ? Array.isArray(field.conditional.value)
+          ? field.conditional.value.join(",")
+          : field.conditional.value
+        : undefined,
       style: field.conditional ? "display: none;" : undefined,
       tabindex: "-1",
     }
@@ -77,10 +76,13 @@ const contentProps = {
 };
 ---
 
-{hasValidField && (hasWrapper ? (
-  <div {...wrapperAttrs}>
-    <FormFieldContent {...contentProps} />
-  </div>
-) : (
-  <FormFieldContent {...contentProps} />
-))}
+{
+  hasValidField &&
+    (hasWrapper ? (
+      <div {...wrapperAttrs}>
+        <FormFieldContent {...contentProps} />
+      </div>
+    ) : (
+      <FormFieldContent {...contentProps} />
+    ))
+}

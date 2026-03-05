@@ -93,7 +93,10 @@ function initResizableColumns() {
     const colId = th.getAttribute("data-col-id");
     if (!colId) return;
     if (th.getAttribute("data-col-fit-content") === "true") return;
-    const w = savedWidths[colId] ?? (parseFloat(th.getAttribute("data-col-default-width") || "0") || (DEFAULT_WIDTHS[colId] ?? 10));
+    const w =
+      savedWidths[colId] ??
+      (parseFloat(th.getAttribute("data-col-default-width") || "0") ||
+        (DEFAULT_WIDTHS[colId] ?? 10));
     savedWidths[colId] = applyWidthToTh(th, w);
   });
 
@@ -105,7 +108,10 @@ function initResizableColumns() {
 
     // Find next resizable column (skip fit-content cols)
     let nextIdx = index + 1;
-    while (nextIdx < headers.length && headers[nextIdx].getAttribute("data-col-fit-content") === "true") {
+    while (
+      nextIdx < headers.length &&
+      headers[nextIdx].getAttribute("data-col-fit-content") === "true"
+    ) {
       nextIdx++;
     }
     const nextTh = headers[nextIdx] as HTMLElement | undefined;

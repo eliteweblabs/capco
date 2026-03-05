@@ -109,7 +109,12 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     }
 
     const { data: notifications, error } = result as { data: any; error: any };
-    console.log("🔔 [NOTIFICATIONS-GET] Query result: count =", (notifications || []).length, "error =", error?.message ?? null);
+    console.log(
+      "🔔 [NOTIFICATIONS-GET] Query result: count =",
+      (notifications || []).length,
+      "error =",
+      error?.message ?? null
+    );
 
     if (error) {
       console.error("❌ [NOTIFICATIONS] Error fetching notifications:", error);
@@ -199,7 +204,12 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       unreadCount = 0;
     }
 
-    console.log("🔔 [NOTIFICATIONS-GET] Success: returning", (notifications || []).length, "notifications, unreadCount =", unreadCount);
+    console.log(
+      "🔔 [NOTIFICATIONS-GET] Success: returning",
+      (notifications || []).length,
+      "notifications, unreadCount =",
+      unreadCount
+    );
     return new Response(
       JSON.stringify({
         success: true,

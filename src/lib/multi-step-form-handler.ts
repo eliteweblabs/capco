@@ -133,8 +133,12 @@ export function createMultiStepFormHandler(
     if (firstInput?.value?.trim()) return { firstName: firstInput.value.trim(), lastName: "" };
     if (lastInput?.value?.trim()) return { firstName: "", lastName: lastInput.value.trim() };
     // Fallback: initialData (e.g. logged-in user who skipped name step)
-    const initFirst = (initialData.firstName ?? initialData.user_metadata?.firstName ?? "").toString().trim();
-    const initLast = (initialData.lastName ?? initialData.user_metadata?.lastName ?? "").toString().trim();
+    const initFirst = (initialData.firstName ?? initialData.user_metadata?.firstName ?? "")
+      .toString()
+      .trim();
+    const initLast = (initialData.lastName ?? initialData.user_metadata?.lastName ?? "")
+      .toString()
+      .trim();
     const initFull = (initialData.fullName ?? "").toString().trim();
     if (initFirst || initLast) return { firstName: initFirst, lastName: initLast };
     if (initFull) return parseFullNameToFirstAndLast(initFull);
@@ -445,16 +449,20 @@ export function createMultiStepFormHandler(
       const activeBefore = document.activeElement as HTMLElement;
       const smsChoiceButtons = targetStep.querySelectorAll("button.sms-choice");
       if (smsChoiceButtons.length > 0) {
-        const yesButton = targetStep.querySelector(
-          'button[data-sms-value="true"]'
-        ) as HTMLElement;
+        const yesButton = targetStep.querySelector('button[data-sms-value="true"]') as HTMLElement;
         if (yesButton) {
           yesButton.focus();
           scrollFormToCursor(yesButton);
           console.log("[MULTISTEP-FOCUS] doFocus: focused sms yes button", {
             stepNumber,
-            activeBefore: activeBefore?.tagName + "#" + (activeBefore?.id || (activeBefore as HTMLInputElement)?.name),
-            activeAfter: document.activeElement?.tagName + "#" + (document.activeElement?.id || (document.activeElement as HTMLInputElement)?.name),
+            activeBefore:
+              activeBefore?.tagName +
+              "#" +
+              (activeBefore?.id || (activeBefore as HTMLInputElement)?.name),
+            activeAfter:
+              document.activeElement?.tagName +
+              "#" +
+              (document.activeElement?.id || (document.activeElement as HTMLInputElement)?.name),
           });
         } else {
           console.log("[MULTISTEP-FOCUS] doFocus: no sms yes button found in step", stepNumber);
@@ -470,8 +478,14 @@ export function createMultiStepFormHandler(
             stepNumber,
             inputId: firstInput.id,
             inputName: (firstInput as HTMLInputElement).name,
-            activeBefore: activeBefore?.tagName + "#" + (activeBefore?.id || (activeBefore as HTMLInputElement)?.name),
-            activeAfter: document.activeElement?.tagName + "#" + (document.activeElement?.id || (document.activeElement as HTMLInputElement)?.name),
+            activeBefore:
+              activeBefore?.tagName +
+              "#" +
+              (activeBefore?.id || (activeBefore as HTMLInputElement)?.name),
+            activeAfter:
+              document.activeElement?.tagName +
+              "#" +
+              (document.activeElement?.id || (document.activeElement as HTMLInputElement)?.name),
           });
         } else {
           console.log("[MULTISTEP-FOCUS] doFocus: no first input found in step", stepNumber, {
@@ -482,7 +496,13 @@ export function createMultiStepFormHandler(
     };
     const hasTypewriter = targetStep.classList.contains("has-typewriter");
     const focusDelayMs = hasTypewriter ? 900 : 400; // typewriter: after cascade; else soon
-    console.log("[MULTISTEP-FOCUS] scheduling doFocus in", focusDelayMs, "ms for step", stepNumber, { hasTypewriter });
+    console.log(
+      "[MULTISTEP-FOCUS] scheduling doFocus in",
+      focusDelayMs,
+      "ms for step",
+      stepNumber,
+      { hasTypewriter }
+    );
     setTimeout(doFocus, focusDelayMs);
   }
 
@@ -865,15 +885,11 @@ export function createMultiStepFormHandler(
       const updateSmsButtonDest = () => {
         if (!smsNextBtn) return;
         const skipDest = smsNextBtn.getAttribute("data-skip");
-        const validDest =
-          options.formConfig?.steps?.find(
-            (s: any) => s.stepNumber === parseInt(smsStep?.getAttribute("data-step") || "0")
-          )?.buttons?.find((b: any) => b.type === "next")?.dataNext;
+        const validDest = options.formConfig?.steps
+          ?.find((s: any) => s.stepNumber === parseInt(smsStep?.getAttribute("data-step") || "0"))
+          ?.buttons?.find((b: any) => b.type === "next")?.dataNext;
         if (validDest != null && skipDest != null) {
-          smsNextBtn.setAttribute(
-            "data-next",
-            smsCheckbox.checked ? String(validDest) : skipDest
-          );
+          smsNextBtn.setAttribute("data-next", smsCheckbox.checked ? String(validDest) : skipDest);
         }
       };
       smsCheckbox.addEventListener("change", updateSmsButtonDest);
@@ -1299,7 +1315,10 @@ export function createMultiStepFormHandler(
           skipDest != null &&
           defaultLabel != null &&
           buttonTextEl &&
-          buttonTextEl.textContent?.trim().toLowerCase().startsWith(defaultLabel.trim().toLowerCase());
+          buttonTextEl.textContent
+            ?.trim()
+            .toLowerCase()
+            .startsWith(defaultLabel.trim().toLowerCase());
 
         let nextStep: number;
         if (isShowingSkip) {
@@ -1650,7 +1669,8 @@ export function createMultiStepFormHandler(
 
       if (conditionalNextButton && validDest != null) {
         const phoneValue = (phoneInputs[0] as HTMLInputElement)?.value?.trim() || "";
-        const isValid = phoneValue && phoneValue.replace(/\D/g, "").length >= 10 && validatePhone(phoneValue);
+        const isValid =
+          phoneValue && phoneValue.replace(/\D/g, "").length >= 10 && validatePhone(phoneValue);
         if (isValid) {
           conditionalNextButton.setAttribute("data-next", String(validDest));
         }
@@ -1861,11 +1881,7 @@ function showInlineValidationError(formId: string, message: string): void {
   const container = document.getElementById(`${formId}-response-alert`);
   if (!container) return;
   const escaped = (s: string) =>
-    s
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   container.className =
     "w-full p-2 mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800";
   container.innerHTML = `
@@ -1886,8 +1902,7 @@ async function validateFormContainer(container: HTMLElement, formConfig?: any): 
     const inputEl = input as HTMLInputElement | HTMLTextAreaElement;
     if (!inputEl.checkValidity()) {
       inputEl.classList.add("touched");
-      const errorMsg =
-        inputEl.getAttribute("data-error") || "Please fill in this field correctly";
+      const errorMsg = inputEl.getAttribute("data-error") || "Please fill in this field correctly";
       if (useInline && formId) showInlineValidationError(formId, errorMsg);
       else if ((window as any).showNotice) {
         (window as any).showNotice("error", "Validation Error", errorMsg, 3000);

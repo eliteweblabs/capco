@@ -92,9 +92,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     }
 
     const canDelete =
-      profile?.role === "Admin" ||
-      profile?.role === "Staff" ||
-      profile?.role === "SuperAdmin";
+      profile?.role === "Admin" || profile?.role === "Staff" || profile?.role === "SuperAdmin";
 
     // console.log("User role:", profile?.role);
     // console.log("Is admin:", canDelete);

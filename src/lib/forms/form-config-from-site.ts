@@ -22,7 +22,9 @@ const FORM_ACTION_MAP: Record<string, string> = {
   "nfpa25-wet-pipe-itm-form": "/api/nfpa25/wet-pipe-itm",
 };
 
-function injectFormAction<T extends { formId?: string; formAction?: string }>(config: T): T & { formAction: string } {
+function injectFormAction<T extends { formId?: string; formAction?: string }>(
+  config: T
+): T & { formAction: string } {
   const formId = config?.formId;
   const action = formId ? FORM_ACTION_MAP[formId] : undefined;
   return { ...config, formAction: action ?? config.formAction ?? "" };
@@ -50,7 +52,10 @@ export async function getFormConfig(formId: string): Promise<MultiStepFormConfig
   if (!json) return null;
   if (!Array.isArray(json.steps) || json.steps.length === 0) return null;
   const merged = mergeFormButtonDefaults(config, json);
-  const normalized = normalizeFormConfig({ ...json, buttonDefaults: merged }) as MultiStepFormConfig;
+  const normalized = normalizeFormConfig({
+    ...json,
+    buttonDefaults: merged,
+  }) as MultiStepFormConfig;
   return injectFormAction(normalized) as MultiStepFormConfig;
 }
 
@@ -109,7 +114,10 @@ export async function getRegisterFormConfig(): Promise<MultiStepFormConfig> {
     );
   }
   const merged = mergeFormButtonDefaults(config, json);
-  const normalized = normalizeFormConfig({ ...json, buttonDefaults: merged }) as MultiStepFormConfig;
+  const normalized = normalizeFormConfig({
+    ...json,
+    buttonDefaults: merged,
+  }) as MultiStepFormConfig;
   return injectFormAction(normalized) as MultiStepFormConfig;
 }
 
@@ -124,7 +132,10 @@ export async function getLoginFormConfig(): Promise<MultiStepFormConfig> {
     );
   }
   const merged = mergeFormButtonDefaults(config, json);
-  const normalized = normalizeFormConfig({ ...json, buttonDefaults: merged }) as MultiStepFormConfig;
+  const normalized = normalizeFormConfig({
+    ...json,
+    buttonDefaults: merged,
+  }) as MultiStepFormConfig;
   return injectFormAction(normalized) as MultiStepFormConfig;
 }
 
@@ -186,14 +197,17 @@ export async function getProjectFormConfig(
   return injectFormAction(out) as MultiStepFormConfig;
 }
 
-export async function getReviewFormConfig(
-  globalCompanyName: string
-): Promise<MultiStepFormConfig> {
+export async function getReviewFormConfig(globalCompanyName: string): Promise<MultiStepFormConfig> {
   const fromForms = await getFormConfig("review-form");
   if (fromForms) {
     const vars = { globalCompanyName: globalCompanyName || "Our Company" };
-    const result = replacePlaceholders(JSON.parse(JSON.stringify(fromForms)), vars) as MultiStepFormConfig;
-    return injectFormAction(normalizeFormConfig(result) as MultiStepFormConfig) as MultiStepFormConfig;
+    const result = replacePlaceholders(
+      JSON.parse(JSON.stringify(fromForms)),
+      vars
+    ) as MultiStepFormConfig;
+    return injectFormAction(
+      normalizeFormConfig(result) as MultiStepFormConfig
+    ) as MultiStepFormConfig;
   }
   const config = await getSiteConfig();
   const json = (config as any).reviewForm;
@@ -201,7 +215,9 @@ export async function getReviewFormConfig(
   const vars = { globalCompanyName: globalCompanyName || "Our Company" };
   const result = replacePlaceholders(JSON.parse(JSON.stringify(base)), vars) as MultiStepFormConfig;
   result.buttonDefaults = mergeFormButtonDefaults(config, result);
-  return injectFormAction(normalizeFormConfig(result) as MultiStepFormConfig) as MultiStepFormConfig;
+  return injectFormAction(
+    normalizeFormConfig(result) as MultiStepFormConfig
+  ) as MultiStepFormConfig;
 }
 
 export async function getMepFormConfig(
@@ -215,45 +231,69 @@ export async function getMepFormConfig(
       virtualAssistantName: virtualAssistantName || "Leah",
       assistantName: virtualAssistantName || "Leah",
     };
-    const result = replacePlaceholders(JSON.parse(JSON.stringify(fromForms)), vars) as MultiStepFormConfig;
-    return injectFormAction(normalizeFormConfig(result) as MultiStepFormConfig) as MultiStepFormConfig;
+    const result = replacePlaceholders(
+      JSON.parse(JSON.stringify(fromForms)),
+      vars
+    ) as MultiStepFormConfig;
+    return injectFormAction(
+      normalizeFormConfig(result) as MultiStepFormConfig
+    ) as MultiStepFormConfig;
   }
   const config = await getSiteConfig();
   const json = (config as any).mepForm;
-  const base = json && Array.isArray(json.steps) && json.steps.length > 0
-    ? json
-    : {
-        formId: "multi-step-mep-form",
-        layout: "multi-step" as const,
-        steps: [
-          {
-            title: "Contact Information",
-            fields: [
-              { id: "email", name: "email", type: "email" as const, label: "Email", required: true },
-              { id: "firstName", name: "firstName", type: "text" as const, label: "First Name", required: true },
-              { id: "lastName", name: "lastName", type: "text" as const, label: "Last Name", required: true },
-              { id: "phone", name: "phone", type: "text" as const, label: "Phone" },
-            ],
-            buttons: [{ type: "next" as const, label: "Next" }],
-          },
-          {
-            title: "Project Details",
-            fields: [
-              {
-                id: "projectDescription",
-                name: "projectDescription",
-                type: "textarea" as const,
-                label: "Project Description",
-                required: true,
-              },
-            ],
-            buttons: [
-              { type: "prev" as const, label: "Back" },
-              { type: "submit" as const, label: "Submit" },
-            ],
-          },
-        ],
-      };
+  const base =
+    json && Array.isArray(json.steps) && json.steps.length > 0
+      ? json
+      : {
+          formId: "multi-step-mep-form",
+          layout: "multi-step" as const,
+          steps: [
+            {
+              title: "Contact Information",
+              fields: [
+                {
+                  id: "email",
+                  name: "email",
+                  type: "email" as const,
+                  label: "Email",
+                  required: true,
+                },
+                {
+                  id: "firstName",
+                  name: "firstName",
+                  type: "text" as const,
+                  label: "First Name",
+                  required: true,
+                },
+                {
+                  id: "lastName",
+                  name: "lastName",
+                  type: "text" as const,
+                  label: "Last Name",
+                  required: true,
+                },
+                { id: "phone", name: "phone", type: "text" as const, label: "Phone" },
+              ],
+              buttons: [{ type: "next" as const, label: "Next" }],
+            },
+            {
+              title: "Project Details",
+              fields: [
+                {
+                  id: "projectDescription",
+                  name: "projectDescription",
+                  type: "textarea" as const,
+                  label: "Project Description",
+                  required: true,
+                },
+              ],
+              buttons: [
+                { type: "prev" as const, label: "Back" },
+                { type: "submit" as const, label: "Submit" },
+              ],
+            },
+          ],
+        };
   const vars = {
     globalCompanyName: globalCompanyName || "Our Company",
     virtualAssistantName: virtualAssistantName || "Leah",
@@ -261,7 +301,9 @@ export async function getMepFormConfig(
   };
   const result = replacePlaceholders(JSON.parse(JSON.stringify(base)), vars) as MultiStepFormConfig;
   result.buttonDefaults = mergeFormButtonDefaults(config, result);
-  return injectFormAction(normalizeFormConfig(result) as MultiStepFormConfig) as MultiStepFormConfig;
+  return injectFormAction(
+    normalizeFormConfig(result) as MultiStepFormConfig
+  ) as MultiStepFormConfig;
 }
 
 /** Map FormElementConfig to FormFieldConfig for StandardForm */

@@ -103,9 +103,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Auto-authenticate to Campfire for Staff and Admin users
     let campfireAuthSuccess = false;
     try {
-      const { shouldAutoAuthCampfire, authenticateCampfire } = await import(
-        "../../../lib/campfire-auth"
-      );
+      const { shouldAutoAuthCampfire, authenticateCampfire } =
+        await import("../../../lib/campfire-auth");
 
       // Get user profile to check role
       const { data: profile } = await supabase

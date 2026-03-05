@@ -52,7 +52,12 @@ const {
 
 // Icon: use /api/favicon.svg so we always get transformed icon (primary color + padding for apple-touch)
 let iconSrc: string;
-if (globalCompanyIcon && typeof globalCompanyIcon === "string" && !globalCompanyIcon.includes("<svg") && !globalCompanyIcon.includes("<?xml")) {
+if (
+  globalCompanyIcon &&
+  typeof globalCompanyIcon === "string" &&
+  !globalCompanyIcon.includes("<svg") &&
+  !globalCompanyIcon.includes("<?xml")
+) {
   iconSrc = globalCompanyIcon;
 } else {
   iconSrc = "/api/favicon.svg";
@@ -65,7 +70,9 @@ const appleTouchIconSrc = iconSrc.startsWith("data:")
     ? iconSrc
     : "/apple-touch-icon.png";
 
-const iconType: "image/svg+xml" | "image/png" = iconSrc.includes(".png") ? "image/png" : "image/svg+xml";
+const iconType: "image/svg+xml" | "image/png" = iconSrc.includes(".png")
+  ? "image/png"
+  : "image/svg+xml";
 
 // OG image: project featured image when on project page, else CMS
 const ogImageSrc = project?.featuredImageData?.publicUrl || ogImage || "";
@@ -133,16 +140,18 @@ const ogImageAlt = globalCompanyName + " - " + safeDescription;
 <meta property="og:title" content={titleWithBrand} />
 <meta property="og:description" content={safeDescription} />
 <meta property="og:locale" content="en_US" />
-{ogImageSrc && (
-  <>
-    <meta property="og:image" content={ogImageSrc} />
-    <meta property="og:image:secure_url" content={ogImageSrc} />
-    <meta property="og:image:type" content={ogImageType} />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content={ogImageAlt} />
-  </>
-)}
+{
+  ogImageSrc && (
+    <>
+      <meta property="og:image" content={ogImageSrc} />
+      <meta property="og:image:secure_url" content={ogImageSrc} />
+      <meta property="og:image:type" content={ogImageType} />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta property="og:image:alt" content={ogImageAlt} />
+    </>
+  )
+}
 
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image" />
@@ -169,16 +178,16 @@ const ogImageAlt = globalCompanyName + " - " + safeDescription;
 <link rel="mask-icon" href={iconSrc} color={primaryColor || "#825BDD"} />
 
 <!-- Custom CSS from CMS -->
-{customCss?.trim() && (
-  <style is:inline set:html={customCss} data-source="cms-custom-css" />
-)}
+{customCss?.trim() && <style is:inline set:html={customCss} data-source="cms-custom-css" />}
 
-{includeDynamicColorsAndFonts && (
-  <DynamicColorsAndFonts
-    primaryColor={primaryColor || "#825BDD"}
-    secondaryColor={secondaryColor || "#0ea5e9"}
-    fontFamily={fontFamily || "Outfit Variable"}
-    secondaryFontFamily={secondaryFontFamily || "sans-serif"}
-    tertiaryFontFamily={tertiaryFontFamily || ""}
-  />
-)}
+{
+  includeDynamicColorsAndFonts && (
+    <DynamicColorsAndFonts
+      primaryColor={primaryColor || "#825BDD"}
+      secondaryColor={secondaryColor || "#0ea5e9"}
+      fontFamily={fontFamily || "Outfit Variable"}
+      secondaryFontFamily={secondaryFontFamily || "sans-serif"}
+      tertiaryFontFamily={tertiaryFontFamily || ""}
+    />
+  )
+}

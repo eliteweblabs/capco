@@ -28,7 +28,8 @@
  * - fade: Simple fade only
  */
 
-if (typeof window !== "undefined" && (window as any).__jsOrderLog) (window as any).__jsOrderLog("scroll-animations");
+if (typeof window !== "undefined" && (window as any).__jsOrderLog)
+  (window as any).__jsOrderLog("scroll-animations");
 
 interface ScrollAnimationOptions {
   /** Threshold for triggering (0-1, default 0.1) */
@@ -60,8 +61,7 @@ class ScrollAnimations {
     const main = document.querySelector("main");
     if (!main || main.getAttribute("data-animate-main") === "false") return;
 
-    const selector =
-      "p, h1, h2, h3, h4, h5, h6, li, img, blockquote, figcaption, b, i";
+    const selector = "p, h1, h2, h3, h4, h5, h6, li, img, blockquote, figcaption, b, i";
     const elements = main.querySelectorAll(selector);
 
     elements.forEach((el) => {

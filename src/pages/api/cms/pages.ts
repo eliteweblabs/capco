@@ -66,7 +66,9 @@ export const GET: APIRoute = async ({ request, url }) => {
         // Column doesn't exist, use slug ordering instead
         let fallbackQuery = supabaseAdmin.from("cmsPages").select("*");
         if (clientId) {
-          fallbackQuery = fallbackQuery.or(`clientId.is.null,clientId.eq.${quoteClientIdForPostgrest(clientId)}`);
+          fallbackQuery = fallbackQuery.or(
+            `clientId.is.null,clientId.eq.${quoteClientIdForPostgrest(clientId)}`
+          );
         }
         const fallbackResult = await fallbackQuery.order("slug");
         data = fallbackResult.data;
@@ -298,7 +300,9 @@ export const DELETE: APIRoute = async ({ request, url }) => {
 
     if (clientId) {
       // Delete BOTH global and client-specific pages with this slug
-      deleteQuery = deleteQuery.or(`clientId.is.null,clientId.eq.${quoteClientIdForPostgrest(clientId)}`);
+      deleteQuery = deleteQuery.or(
+        `clientId.is.null,clientId.eq.${quoteClientIdForPostgrest(clientId)}`
+      );
     }
     // If no clientId set, delete all pages with this slug (no filter)
 

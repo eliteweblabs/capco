@@ -488,10 +488,7 @@ export async function replacePlaceholders(
   // Replace GLOBAL_COMPANY_TIGHT_SLOGAN placeholders (shorter slogan for <md screens; fallback to slogan if empty)
   const tightSloganValue =
     companyData.globalCompanyTightSlogan?.trim() || companyData.globalCompanySlogan || "";
-  result = result.replace(
-    /\{\{\s*GLOBAL_COMPANY_TIGHT_SLOGAN\s*\}\}/g,
-    tightSloganValue
-  );
+  result = result.replace(/\{\{\s*GLOBAL_COMPANY_TIGHT_SLOGAN\s*\}\}/g, tightSloganValue);
 
   // Replace GLOBAL_COMPANY_PHONE placeholders
   const globalCompanyPhone = companyData.globalCompanyPhone;

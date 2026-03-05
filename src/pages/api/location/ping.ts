@@ -42,15 +42,11 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     const body: PingRequest = await request.json();
     const { timeEntryId, lat, lng, accuracy, projectId } = body;
 
-    if (
-      typeof timeEntryId !== "number" ||
-      typeof lat !== "number" ||
-      typeof lng !== "number"
-    ) {
-      return new Response(
-        JSON.stringify({ error: "timeEntryId, lat, and lng are required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+    if (typeof timeEntryId !== "number" || typeof lat !== "number" || typeof lng !== "number") {
+      return new Response(JSON.stringify({ error: "timeEntryId, lat, and lng are required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Verify this time entry belongs to the current user and is still active
@@ -63,10 +59,10 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       .single();
 
     if (entryError || !entry) {
-      return new Response(
-        JSON.stringify({ error: "Invalid or ended time entry" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Invalid or ended time entry" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const { error: insertError } = await supabaseAdmin.from("locationPings").insert({

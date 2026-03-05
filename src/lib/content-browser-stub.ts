@@ -12,7 +12,16 @@ export function quoteClientIdForPostgrest(clientId: string): string {
 export function clearSiteConfigCache(): void {}
 
 export interface SiteConfig {
-  site: { name: string; slogan: string; description: string; url: string; email: string; phone: string; address: string; year: string };
+  site: {
+    name: string;
+    slogan: string;
+    description: string;
+    url: string;
+    email: string;
+    phone: string;
+    address: string;
+    year: string;
+  };
   branding: Record<string, unknown>;
   navigation: Record<string, unknown>;
   features: Record<string, unknown>;

@@ -63,7 +63,10 @@ const timeEntryCancelBtnHtml = getFormActionButtonHTML("cancel", {
     <div class="p-6 sm:p-8">
       <div class="mb-6 flex flex-wrap items-end gap-4">
         <div>
-          <label for="time-entries-from" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">From</label>
+          <label
+            for="time-entries-from"
+            class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">From</label
+          >
           <input
             id="time-entries-from"
             type="date"
@@ -73,7 +76,10 @@ const timeEntryCancelBtnHtml = getFormActionButtonHTML("cancel", {
           />
         </div>
         <div>
-          <label for="time-entries-to" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">To</label>
+          <label
+            for="time-entries-to"
+            class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">To</label
+          >
           <input
             id="time-entries-to"
             type="date"
@@ -82,15 +88,10 @@ const timeEntryCancelBtnHtml = getFormActionButtonHTML("cancel", {
             data-time-entries-filter="to"
           />
         </div>
-        <Button id="time-entries-apply" variant="primary" data-action="apply">
-          Apply
-        </Button>
+        <Button id="time-entries-apply" variant="primary" data-action="apply"> Apply </Button>
       </div>
 
-      <div
-        id="time-entries-table-wrap"
-        class={`overflow-hidden ${globalCardStyle}`}
-      >
+      <div id="time-entries-table-wrap" class={`overflow-hidden ${globalCardStyle}`}>
         <div id="time-entries-placeholder" class="p-8 text-center text-gray-500 dark:text-gray-400">
           Loading…
         </div>
@@ -98,13 +99,37 @@ const timeEntryCancelBtnHtml = getFormActionButtonHTML("cancel", {
           <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-700">
             <thead class="bg-gray-50 dark:bg-gray-800">
               <tr>
-                <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">Author</th>
-                <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">Project</th>
-                <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">Start</th>
-                <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">End</th>
-                <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">Duration</th>
-                <th scope="col" class="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">Notes</th>
-                <th scope="col" class="w-24 px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">Edit</th>
+                <th
+                  scope="col"
+                  class="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">Author</th
+                >
+                <th
+                  scope="col"
+                  class="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white"
+                  >Project</th
+                >
+                <th
+                  scope="col"
+                  class="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">Start</th
+                >
+                <th
+                  scope="col"
+                  class="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">End</th
+                >
+                <th
+                  scope="col"
+                  class="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white"
+                  >Duration</th
+                >
+                <th
+                  scope="col"
+                  class="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">Notes</th
+                >
+                <th
+                  scope="col"
+                  class="w-24 px-4 py-3 text-left font-semibold text-gray-900 dark:text-white"
+                  >Edit</th
+                >
               </tr>
             </thead>
             <tbody id="time-entries-tbody" class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -116,7 +141,14 @@ const timeEntryCancelBtnHtml = getFormActionButtonHTML("cancel", {
   </div>
 </LayoutFullWidth>
 
-<script define:vars={{ globalFormClasses, globalInputClasses, timeEntrySubmitBtnHtml, timeEntryCancelBtnHtml }}>
+<script
+  define:vars={{
+    globalFormClasses,
+    globalInputClasses,
+    timeEntrySubmitBtnHtml,
+    timeEntryCancelBtnHtml,
+  }}
+>
   const placeholderEl = document.getElementById("time-entries-placeholder");
   const tableWrapEl = document.getElementById("time-entries-table");
   const tbodyEl = document.getElementById("time-entries-tbody");
@@ -163,7 +195,8 @@ const timeEntryCancelBtnHtml = getFormActionButtonHTML("cancel", {
   }
 
   async function fetchEntries() {
-    const from = fromEl?.value || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const from =
+      fromEl?.value || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     const to = toEl?.value || new Date().toISOString().slice(0, 10);
     const url = `/api/time-entries?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
     const res = await fetch(url);
@@ -191,7 +224,9 @@ const timeEntryCancelBtnHtml = getFormActionButtonHTML("cancel", {
     const editBtn = tr.querySelector(".time-entry-edit-btn");
     editBtn?.addEventListener("click", (e) => {
       e.stopPropagation();
-      window.dispatchEvent(new CustomEvent("time-entries-toggle-edit", { detail: { id: entry.id } }));
+      window.dispatchEvent(
+        new CustomEvent("time-entries-toggle-edit", { detail: { id: entry.id } })
+      );
     });
 
     return tr;

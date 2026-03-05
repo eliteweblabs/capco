@@ -126,7 +126,12 @@ export const GET: APIRoute = async ({ request, cookies }): Promise<Response> => 
     template = template.replace("{{BUTTON_TEXT}}", preset.buttonText);
     template = template.replace("{{BUTTON_LINK}}", preset.buttonLink);
 
-    const html = await replacePlaceholders(template, { project: preset.project || {} }, false, request);
+    const html = await replacePlaceholders(
+      template,
+      { project: preset.project || {} },
+      false,
+      request
+    );
 
     return new Response(html, {
       status: 200,

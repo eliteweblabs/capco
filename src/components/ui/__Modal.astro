@@ -62,29 +62,30 @@ const mobileOnlyClass = mobileOnly ? "md:hidden" : "";
 const contentZIndex = typeof zIndex === "number" ? zIndex + 1 : parseInt(String(zIndex)) + 1;
 ---
 
-{!useGlobalOverlay && (
-  <>
-    {/* Backdrop (only when not using global overlay) */}
-    <div
-    {id}
-    class:list={[
-      "fixed inset-0 hidden bg-black height-100dvh",
-      blurClass,
-      mobileOnlyClass,
-      backdropClasses,
-    ]}
-    style={`background-color: rgba(0, 0, 0, 0.${opacity}); z-index: ${zIndex};`}
-    data-modal-backdrop
-  >
-  </div>
-  </>
-)}
+{
+  !useGlobalOverlay && (
+    <>
+      {/* Backdrop (only when not using global overlay) */}
+      <div
+        {id}
+        class:list={[
+          "height-100dvh fixed inset-0 hidden bg-black",
+          blurClass,
+          mobileOnlyClass,
+          backdropClasses,
+        ]}
+        style={`background-color: rgba(0, 0, 0, 0.${opacity}); z-index: ${zIndex};`}
+        data-modal-backdrop
+      />
+    </>
+  )
+}
 
 <!-- Content wrapper -->
 <div
   id={`${id}-content`}
   class:list={[
-    "hidden fixed inset-0 overflow-y-auto h-full w-full pointer-events-none",
+    "pointer-events-none fixed inset-0 hidden h-full w-full overflow-y-auto",
     contentClasses,
   ]}
   style={`z-index: ${contentZIndex};`}

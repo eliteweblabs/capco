@@ -11,20 +11,20 @@ export const GET: APIRoute = async ({ cookies }) => {
   try {
     const { isAuth, currentUser } = await checkAuth(cookies);
     if (!isAuth || !currentUser?.id) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Authentication required" }),
-        { status: 401, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: false, error: "Authentication required" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const hasCookie = getValidSuperAdminFromCookie(cookies, currentUser.id);
     const payload = createSuperAdminToken(currentUser.id);
 
     if (!payload) {
-      return new Response(
-        JSON.stringify({ success: false, error: "SuperAdmin not configured" }),
-        { status: 503, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: false, error: "SuperAdmin not configured" }), {
+        status: 503,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     return new Response(
@@ -40,9 +40,9 @@ export const GET: APIRoute = async ({ cookies }) => {
     );
   } catch (e) {
     console.error("[superadmin/export]", e);
-    return new Response(
-      JSON.stringify({ success: false, error: "Server error" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ success: false, error: "Server error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };

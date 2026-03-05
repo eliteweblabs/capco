@@ -25,57 +25,59 @@ const iconOutId = idPrefix ? idPrefix + "page-size-icon-out" : "page-size-icon-o
 import SimpleIcon from "../common/SimpleIcon.astro";
 ---
 
-{variant === "tile" && (
-  <button
-    type="button"
-    id={bid}
-    data-page-size-toggle
-    data-id-prefix={idPrefix}
-    title="Toggle larger page elements"
-    class="dark:hover:bg-primary-950/30 relative flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50 p-4 text-center transition-colors hover:border-primary-300 hover:bg-primary-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-primary-600"
-    aria-pressed="false"
-  >
-    <span id={iconInId}>
-      <SimpleIcon name="zoom-in" size="xl" class="text-primary-500 dark:text-primary-400" />
-    </span>
-    <span id={iconOutId} class="hidden">
-      <SimpleIcon name="zoom-out" size="xl" class="text-primary-500 dark:text-primary-400" />
-    </span>
-    <span id={labelId} class="text-sm font-medium text-gray-900 dark:text-white">
-      Larger
-    </span>
-  </button>
-)}
-
-{variant === "inline" && (
-  <div class={`flex items-center justify-between ${globalCardStyle} p-4`}>
-    <div>
-      <p class="text-sm font-medium text-gray-900 dark:text-white">
-        Larger page elements
-      </p>
-      <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-        Better readability on mobile; scales buttons and text
-      </p>
-    </div>
+{
+  variant === "tile" && (
     <button
       type="button"
       id={bid}
       data-page-size-toggle
       data-id-prefix={idPrefix}
       title="Toggle larger page elements"
-      class="color-background inline-flex items-center rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 dark:border-gray-600 dark:text-white dark:hover:bg-gray-600"
+      class="dark:hover:bg-primary-950/30 relative flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50 p-4 text-center transition-colors hover:border-primary-300 hover:bg-primary-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-primary-600"
       aria-pressed="false"
     >
-      <span id={iconInId} class="mr-2">
-        <SimpleIcon name="zoom-in" size="sm" />
+      <span id={iconInId}>
+        <SimpleIcon name="zoom-in" size="xl" class="text-primary-500 dark:text-primary-400" />
       </span>
-      <span id={iconOutId} class="mr-2 hidden">
-        <SimpleIcon name="zoom-out" size="sm" />
+      <span id={iconOutId} class="hidden">
+        <SimpleIcon name="zoom-out" size="xl" class="text-primary-500 dark:text-primary-400" />
       </span>
-      <span id={labelId}>Larger page elements</span>
+      <span id={labelId} class="text-sm font-medium text-gray-900 dark:text-white">
+        Larger
+      </span>
     </button>
-  </div>
-)}
+  )
+}
+
+{
+  variant === "inline" && (
+    <div class={`flex items-center justify-between ${globalCardStyle} p-4`}>
+      <div>
+        <p class="text-sm font-medium text-gray-900 dark:text-white">Larger page elements</p>
+        <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+          Better readability on mobile; scales buttons and text
+        </p>
+      </div>
+      <button
+        type="button"
+        id={bid}
+        data-page-size-toggle
+        data-id-prefix={idPrefix}
+        title="Toggle larger page elements"
+        class="color-background inline-flex items-center rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 dark:border-gray-600 dark:text-white dark:hover:bg-gray-600"
+        aria-pressed="false"
+      >
+        <span id={iconInId} class="mr-2">
+          <SimpleIcon name="zoom-in" size="sm" />
+        </span>
+        <span id={iconOutId} class="mr-2 hidden">
+          <SimpleIcon name="zoom-out" size="sm" />
+        </span>
+        <span id={labelId}>Larger page elements</span>
+      </button>
+    </div>
+  )
+}
 
 <script is:inline>
   (function () {
@@ -86,7 +88,11 @@ import SimpleIcon from "../common/SimpleIcon.astro";
     }
     function setPageSize(value) {
       document.documentElement.setAttribute("data-page-size", value);
-      try { localStorage.setItem(PAGE_SIZE_KEY, value); } catch (_) { /* ignore */ }
+      try {
+        localStorage.setItem(PAGE_SIZE_KEY, value);
+      } catch (_) {
+        /* ignore */
+      }
     }
     function togglePageSize() {
       var next = getPageSize() === "large" ? "normal" : "large";
@@ -114,7 +120,12 @@ import SimpleIcon from "../common/SimpleIcon.astro";
       btn.setAttribute("data-page-size-wired", "true");
       var p = btn.getAttribute("data-id-prefix") || "";
       var ids = p
-        ? { buttonId: p + "page-size-toggle", labelId: p + "page-size-toggle-label", iconInId: p + "page-size-icon-in", iconOutId: p + "page-size-icon-out" }
+        ? {
+            buttonId: p + "page-size-toggle",
+            labelId: p + "page-size-toggle-label",
+            iconInId: p + "page-size-icon-in",
+            iconOutId: p + "page-size-icon-out",
+          }
         : {};
       updatePageSizeToggleUI(ids);
       btn.addEventListener("click", function () {

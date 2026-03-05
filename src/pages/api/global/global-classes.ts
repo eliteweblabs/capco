@@ -16,6 +16,8 @@ export const globalClasses = () => {
       "font-secondary w-full h-full bg-transparent border-0 py-2.5 px-4 text-xl sm:text-2xl md:text-3xl lg:text-4xl text-left text-gray-900 placeholder:text-gray-500 focus:outline-none transition-colors duration-200 dark:text-white dark:placeholder:text-gray-400",
     primaryTextClasses: "font-secondary text-gray-900 dark:text-gray-100",
     secondaryTextClasses: "font-secondary text-gray-800 dark:text-gray-200",
+    /** H2/block section title: text-3xl font-bold tracking-tight, responsive sm:text-4xl. Use for block headings, hero titles. */
+    globalTextH2: "text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl",
     /** H3/section heading: text-lg font-semibold. Use for card titles, section headings, modal titles. */
     globalTextH3: "font-secondary text-lg font-semibold text-gray-900 dark:text-white",
     /** Muted/tertiary text - highly repetitive. Use for descriptions, helper text, labels. */
@@ -25,7 +27,8 @@ export const globalClasses = () => {
     /** Lighter muted text (gray-500) - for subtle descriptions, placeholders. */
     mutedAltTextClasses: "font-secondary text-gray-500 dark:text-gray-400",
     /** Form label: mb-2 block text-sm font-medium. Use for <label> elements. */
-    globalFormLabel: "font-secondary mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300",
+    globalFormLabel:
+      "font-secondary mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300",
     /** Inline code: rounded bg-gray-100 px-1. Use for <code> in prose. */
     globalCodeInline: "font-secondary rounded bg-gray-100 px-1 dark:bg-gray-800",
     /** Extra-small muted text (xs, gray-500). Use for captions, metadata, timestamps. */

@@ -46,7 +46,11 @@ export function getIcon(name: string, config: IconConfig = {}): string {
   if (svgTagMatch) {
     const [, leading, attrs] = svgTagMatch;
     if (/class\s*=\s*["'][^"']*["']/.test(attrs)) {
-      result = result.replace(/^(\s*)<svg([^>]*)>/, (_, l, a) => l + '<svg' + a.replace(/class\s*=\s*["'][^"']*["']/, `class="${classes}"`) + '>');
+      result = result.replace(
+        /^(\s*)<svg([^>]*)>/,
+        (_, l, a) =>
+          l + "<svg" + a.replace(/class\s*=\s*["'][^"']*["']/, `class="${classes}"`) + ">"
+      );
     } else {
       result = result.replace(/^(\s*)<svg([^>]*)>/, `$1<svg class="${classes}"$2>`);
     }

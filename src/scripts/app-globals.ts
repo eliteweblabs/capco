@@ -44,7 +44,8 @@ if (typeof window !== "undefined") {
 
 // No modals in this project; showModal/hideModal/removeModal stay as no-op stubs above.
 
-if (typeof window !== "undefined" && (window as any).__traceLog) (window as any).__traceLog("app-globals.ts running");
+if (typeof window !== "undefined" && (window as any).__traceLog)
+  (window as any).__traceLog("app-globals.ts running");
 
 declare global {
   interface Window {
@@ -132,10 +133,7 @@ declare global {
     hexToRgb?: (hex: string) => string;
     formatFileSize?: (bytes: number | null | undefined) => string;
     getFileIcon?: (fileType: string | null | undefined, fileName?: string | null) => string;
-    getFileIconSvg?: (
-      fileType: string | null | undefined,
-      size?: "sm" | "md" | "lg"
-    ) => string;
+    getFileIconSvg?: (fileType: string | null | undefined, size?: "sm" | "md" | "lg") => string;
     formatDate?: (
       date: string | Date | null | undefined,
       options?: { format?: "long" | "medium" | "short" }
@@ -1665,8 +1663,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         syncIcons(!isDark);
         document.cookie = "theme=" + newTheme + "; path=/; max-age=31536000; SameSite=Lax";
-        if (typeof (window as any).currentTheme !== "undefined") (window as any).currentTheme = newTheme;
-        if (typeof (window as any).updateThemeSync === "function") (window as any).updateThemeSync();
+        if (typeof (window as any).currentTheme !== "undefined")
+          (window as any).currentTheme = newTheme;
+        if (typeof (window as any).updateThemeSync === "function")
+          (window as any).updateThemeSync();
       });
     }
 
@@ -1685,17 +1685,24 @@ document.addEventListener("DOMContentLoaded", () => {
       const applyOverscrollScale = () => {
         const p = getOverscrollPercent();
         const inRange = p >= 0 && p <= 100;
-        if (wasInRange && !inRange) console.log("overscroll started", Math.round(p * 10) / 10 + "%");
+        if (wasInRange && !inRange)
+          console.log("overscroll started", Math.round(p * 10) / 10 + "%");
         wasInRange = inRange;
         const scale = scaleFromPercent(p);
-        if (overscrollScaleEls.length === 0) overscrollScaleEls = Array.from(document.querySelectorAll(".overscroll-scale"));
-        overscrollScaleEls.forEach((el) => { el.style.transform = "scale(" + scale + ")"; });
+        if (overscrollScaleEls.length === 0)
+          overscrollScaleEls = Array.from(document.querySelectorAll(".overscroll-scale"));
+        overscrollScaleEls.forEach((el) => {
+          el.style.transform = "scale(" + scale + ")";
+        });
       };
       let ticking = false;
       const onScrollOrWheel = () => {
         if (ticking) return;
         ticking = true;
-        requestAnimationFrame(() => { applyOverscrollScale(); ticking = false; });
+        requestAnimationFrame(() => {
+          applyOverscrollScale();
+          ticking = false;
+        });
       };
       const scrollTarget = document.getElementById("reveal-scroll") || window;
       scrollTarget.addEventListener("scroll", onScrollOrWheel, { passive: true });

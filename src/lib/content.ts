@@ -229,7 +229,13 @@ export async function getSiteConfig(): Promise<SiteConfig> {
           title: "Sign in",
           fields: [
             { id: "email", name: "email", type: "email", label: "Email", required: true },
-            { id: "password", name: "password", type: "password", label: "Password", required: true },
+            {
+              id: "password",
+              name: "password",
+              type: "password",
+              label: "Password",
+              required: true,
+            },
           ],
           buttons: [{ type: "submit" as const, label: "Sign in" }],
         },
@@ -243,7 +249,13 @@ export async function getSiteConfig(): Promise<SiteConfig> {
           title: "Create account",
           fields: [
             { id: "email", name: "email", type: "email", label: "Email", required: true },
-            { id: "password", name: "password", type: "password", label: "Password", required: true },
+            {
+              id: "password",
+              name: "password",
+              type: "password",
+              label: "Password",
+              required: true,
+            },
           ],
           buttons: [{ type: "submit" as const, label: "Create account" }],
         },
@@ -272,7 +284,13 @@ export async function getSiteConfig(): Promise<SiteConfig> {
           title: "Contact Information",
           fields: [
             { id: "email", name: "email", type: "email", label: "Email", required: true },
-            { id: "firstName", name: "firstName", type: "text", label: "First Name", required: true },
+            {
+              id: "firstName",
+              name: "firstName",
+              type: "text",
+              label: "First Name",
+              required: true,
+            },
             { id: "lastName", name: "lastName", type: "text", label: "Last Name", required: true },
             { id: "phone", name: "phone", type: "text", label: "Phone" },
           ],
@@ -281,9 +299,18 @@ export async function getSiteConfig(): Promise<SiteConfig> {
         {
           title: "Project Details",
           fields: [
-            { id: "projectDescription", name: "projectDescription", type: "textarea", label: "Project Description", required: true },
+            {
+              id: "projectDescription",
+              name: "projectDescription",
+              type: "textarea",
+              label: "Project Description",
+              required: true,
+            },
           ],
-          buttons: [{ type: "prev" as const, label: "Back" }, { type: "submit" as const, label: "Submit" }],
+          buttons: [
+            { type: "prev" as const, label: "Back" },
+            { type: "submit" as const, label: "Submit" },
+          ],
         },
       ],
     },
@@ -305,7 +332,10 @@ export async function getSiteConfig(): Promise<SiteConfig> {
         const res = await fetch(configUrl);
         if (res.ok) {
           envConfigJson = await res.text();
-          console.log("📋 [CONTENT] Site config loaded from SITE_CONFIG_URL:", configUrl.substring(0, 60) + (configUrl.length > 60 ? "…" : ""));
+          console.log(
+            "📋 [CONTENT] Site config loaded from SITE_CONFIG_URL:",
+            configUrl.substring(0, 60) + (configUrl.length > 60 ? "…" : "")
+          );
         } else {
           console.warn("⚠️ [CONTENT] SITE_CONFIG_URL fetch failed:", res.status, configUrl);
         }
@@ -341,7 +371,11 @@ export async function getSiteConfig(): Promise<SiteConfig> {
     }
     if (chunks.length > 0) {
       envConfigJson = chunks.join("");
-      console.log("📋 [CONTENT] Site config loaded from SITE_CONFIG_1..N env (", chunks.length, "chunks)");
+      console.log(
+        "📋 [CONTENT] Site config loaded from SITE_CONFIG_1..N env (",
+        chunks.length,
+        "chunks)"
+      );
     }
   }
 
@@ -424,7 +458,10 @@ export async function getSiteConfig(): Promise<SiteConfig> {
   }
 
   // Fallback: if projectListColumns still missing (e.g. env config without it), load from config-[company-name].json or config.json
-  if (!Array.isArray((config as any).projectListColumns) || (config as any).projectListColumns.length === 0) {
+  if (
+    !Array.isArray((config as any).projectListColumns) ||
+    (config as any).projectListColumns.length === 0
+  ) {
     const slugify = (s: string) =>
       s
         .toLowerCase()
@@ -441,7 +478,8 @@ export async function getSiteConfig(): Promise<SiteConfig> {
     const dirs = [dataDir, distDataDir];
     const fallbackCandidates: string[] = [];
     if (railwaySlug) fallbackCandidates.push(`config-${railwaySlug}.json`);
-    if (companySlug && companySlug !== railwaySlug) fallbackCandidates.push(`config-${companySlug}.json`);
+    if (companySlug && companySlug !== railwaySlug)
+      fallbackCandidates.push(`config-${companySlug}.json`);
     fallbackCandidates.push("config.json");
     for (const dir of dirs) {
       for (const name of fallbackCandidates) {
@@ -449,7 +487,10 @@ export async function getSiteConfig(): Promise<SiteConfig> {
         if (existsSync(p)) {
           try {
             const dataConfig = JSON.parse(readFileSync(p, "utf-8"));
-            if (Array.isArray(dataConfig.projectListColumns) && dataConfig.projectListColumns.length > 0) {
+            if (
+              Array.isArray(dataConfig.projectListColumns) &&
+              dataConfig.projectListColumns.length > 0
+            ) {
               (config as any).projectListColumns = dataConfig.projectListColumns;
               break;
             }
@@ -458,7 +499,11 @@ export async function getSiteConfig(): Promise<SiteConfig> {
           }
         }
       }
-      if (Array.isArray((config as any).projectListColumns) && (config as any).projectListColumns.length > 0) break;
+      if (
+        Array.isArray((config as any).projectListColumns) &&
+        (config as any).projectListColumns.length > 0
+      )
+        break;
     }
   }
 
@@ -676,9 +721,7 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
   if (envContent) {
     const pageContent: PageContent = {
       title: filterTitle(process.env[`PAGE_${slugUpper}_TITLE`] || slug),
-      description: filterDescription(
-        process.env[`PAGE_${slugUpper}_DESCRIPTION`] || ""
-      ),
+      description: filterDescription(process.env[`PAGE_${slugUpper}_DESCRIPTION`] || ""),
       template: (process.env[`PAGE_${slugUpper}_TEMPLATE`] as any) || "default",
       content: filterContent(envContent),
     };
@@ -716,7 +759,12 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
       console.warn(`⚠️ [CONTENT] Error reading from volume:`, error);
     }
   } else if (slug === "contact" && CONTENT_DEBUG) {
-    console.log("📄 [CONTENT] Volume check: path exists?", existsSync(volumePath), "file exists?", existsSync(volumeContentPath));
+    console.log(
+      "📄 [CONTENT] Volume check: path exists?",
+      existsSync(volumePath),
+      "file exists?",
+      existsSync(volumeContentPath)
+    );
   }
 
   // 3. Fallback to default content (no backup markdown from git - pages come from CMS/DB, env, or volume only)

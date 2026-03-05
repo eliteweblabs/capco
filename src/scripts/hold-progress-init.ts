@@ -4,7 +4,8 @@
  * Uses CSS var --hold-progress (0–1) and a child .hold-progress for the bar.
  * On complete: buttons trigger click; others dispatch "holdcomplete" for listeners.
  */
-if (typeof window !== "undefined" && (window as any).__jsOrderLog) (window as any).__jsOrderLog("hold-progress-init");
+if (typeof window !== "undefined" && (window as any).__jsOrderLog)
+  (window as any).__jsOrderLog("hold-progress-init");
 function initHoldProgress() {
   const isTouchDevice = () => window.matchMedia("(hover: none)").matches;
   if (!isTouchDevice()) return;
@@ -14,7 +15,11 @@ function initHoldProgress() {
   function initElement(el: HTMLElement) {
     if (el.getAttribute("data-hold-inited") === "true") return;
     const form = el.closest("form");
-    if (form && (form.getAttribute("id") === "login-form" || (form.action || "").includes("signin"))) return;
+    if (
+      form &&
+      (form.getAttribute("id") === "login-form" || (form.action || "").includes("signin"))
+    )
+      return;
     el.setAttribute("data-hold-inited", "true");
 
     const holdMs = parseInt(el.getAttribute("data-hold") ?? "3000", 10) || 3000;
@@ -61,16 +66,20 @@ function initHoldProgress() {
     };
 
     if (triggerClick) {
-      el.addEventListener("click", (e) => {
-        if (el.getAttribute("data-hold-allowed") !== "true") {
-          e.preventDefault();
-          e.stopPropagation();
-          const form = el.closest("form");
-          if (form && (window as any).showMultiStepFormValidationErrors) {
-            (window as any).showMultiStepFormValidationErrors(form);
+      el.addEventListener(
+        "click",
+        (e) => {
+          if (el.getAttribute("data-hold-allowed") !== "true") {
+            e.preventDefault();
+            e.stopPropagation();
+            const form = el.closest("form");
+            if (form && (window as any).showMultiStepFormValidationErrors) {
+              (window as any).showMultiStepFormValidationErrors(form);
+            }
           }
-        }
-      }, true);
+        },
+        true
+      );
     }
 
     el.addEventListener("touchstart", startHold, { passive: true });

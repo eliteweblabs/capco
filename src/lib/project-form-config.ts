@@ -182,7 +182,10 @@ function unifiedToFormElements(pf: any): FormElementConfig[] {
       } else if (field.component === "GoogleAddressAutocomplete" || field.id === "address-input") {
         el.elementType = "component";
         el.id = "address-input";
-        el.component = field.component === "GoogleAddressAutocomplete" ? "GoogleAddressAutocomplete" : "GoogleAddressAutocomplete";
+        el.component =
+          field.component === "GoogleAddressAutocomplete"
+            ? "GoogleAddressAutocomplete"
+            : "GoogleAddressAutocomplete";
       } else if (field.component === "SlideToggle") {
         el.elementType = "checkbox";
       } else {

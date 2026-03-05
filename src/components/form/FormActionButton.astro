@@ -10,10 +10,7 @@
  *   <FormActionButton action="cancel" id="cancel-btn" />
  */
 import Button from "../common/Button.astro";
-import {
-  GLOBAL_BUTTON_DEFAULTS,
-  type FormButtonConfig,
-} from "../../lib/multi-step-form-config";
+import { GLOBAL_BUTTON_DEFAULTS, type FormButtonConfig } from "../../lib/multi-step-form-config";
 
 export type FormActionType = "submit" | "cancel" | "next" | "prev" | "skip" | "new";
 
@@ -66,7 +63,9 @@ const {
   fullWidth = false,
 } = Astro.props;
 
-type ActionDefaults = Partial<Pick<FormButtonConfig, "variant" | "size" | "icon" | "iconPosition" | "label">>;
+type ActionDefaults = Partial<
+  Pick<FormButtonConfig, "variant" | "size" | "icon" | "iconPosition" | "label">
+>;
 const defaults: ActionDefaults =
   GLOBAL_BUTTON_DEFAULTS[action as keyof typeof GLOBAL_BUTTON_DEFAULTS] ?? {};
 
@@ -76,9 +75,7 @@ const icon = iconOverride ?? defaults.icon;
 const iconPosition = iconPositionOverride ?? defaults.iconPosition ?? "left";
 const defaultLabel = defaults.label ?? ACTION_LABELS[action];
 // type: submit action → type="submit" by default; others (including new) → type="button"
-const btnType =
-  typeOverride ??
-  (action === "submit" ? ("submit" as const) : ("button" as const));
+const btnType = typeOverride ?? (action === "submit" ? ("submit" as const) : ("button" as const));
 ---
 
 <Button

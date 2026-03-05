@@ -21,20 +21,28 @@ const aspectRatio = width / height;
 ---
 
 <div class="signature-pad-field-container mb-4">
-  {label && (
-    <label for={id} class={globalFormLabel}>
-      {label} {required && <span class="text-red-500">*</span>}
-    </label>
-  )}
-  <div class="signature-container relative" data-max-width={width} data-max-height={height} data-aspect-ratio={aspectRatio}>
+  {
+    label && (
+      <label for={id} class={globalFormLabel}>
+        {label} {required && <span class="text-red-500">*</span>}
+      </label>
+    )
+  }
+  <div
+    class="signature-container relative"
+    data-max-width={width}
+    data-max-height={height}
+    data-aspect-ratio={aspectRatio}
+  >
     <canvas
       {id}
       class="signature-pad-field-canvas block w-full cursor-crosshair rounded-lg border-2 border-dashed border-gray-300 bg-gray-100 dark:border-gray-600 dark:bg-gray-800"
       data-max-width={width}
       data-max-height={height}
-      data-aspect-ratio={aspectRatio}
-    />
-    <div class="signature-placeholder pointer-events-none absolute inset-0 flex items-center justify-center">
+      data-aspect-ratio={aspectRatio}></canvas>
+    <div
+      class="signature-placeholder pointer-events-none absolute inset-0 flex items-center justify-center"
+    >
       <span class="text-sm text-gray-400 dark:text-gray-500">Sign here...</span>
     </div>
     <div class="mt-2 flex justify-end">
@@ -57,7 +65,8 @@ const aspectRatio = width / height;
       if ((window as any).SignaturePad) return (window as any).SignaturePad;
       return new Promise((resolve, reject) => {
         const script = document.createElement("script");
-        script.src = "https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js";
+        script.src =
+          "https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js";
         script.async = true;
         script.onload = () => resolve((window as any).SignaturePad);
         script.onerror = () => reject(new Error("Failed to load SignaturePad"));
@@ -127,10 +136,14 @@ const aspectRatio = width / height;
         pad.addEventListener("endStroke", () => {
           if (!pad.isEmpty()) {
             hiddenInput.value = pad.toDataURL("image/png");
-            document.dispatchEvent(new CustomEvent("signatureUpdated", { detail: { isEmpty: false } }));
+            document.dispatchEvent(
+              new CustomEvent("signatureUpdated", { detail: { isEmpty: false } })
+            );
           } else {
             hiddenInput.value = "";
-            document.dispatchEvent(new CustomEvent("signatureUpdated", { detail: { isEmpty: true } }));
+            document.dispatchEvent(
+              new CustomEvent("signatureUpdated", { detail: { isEmpty: true } })
+            );
           }
         });
 

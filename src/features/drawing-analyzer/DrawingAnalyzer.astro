@@ -1,0 +1,328 @@
+---
+/**
+ * Fire Protection Drawing Analyzer
+ *
+ * Uploads PDF or image files, converts PDF pages to images client-side,
+ * then sends to AI agent (Claude Vision) to recognize pipe lengths, sprinkler heads,
+ * smoke alarms, etc. based on line width, color, and NFPA symbol conventions.
+ */
+import { globalClasses } from "../../pages/api/global/global-classes";
+import SimpleIcon from "../../components/common/SimpleIcon.astro";
+
+const { globalCardStyle, globalTextH3, globalSectionHeaderBar, globalFormLabel } = globalClasses();
+
+export interface Props {
+  projectId?: number;
+}
+const { projectId } = Astro.props;
+---
+
+<div
+  class="drawing-analyzer rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
+>
+  <div class={globalSectionHeaderBar}>
+    <h2 class={globalTextH3}>Drawing Analyzer</h2>
+  </div>
+  <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+    Upload a fire protection drawing (PDF or image). The AI will detect pipe lengths by diameter,
+    sprinkler heads, smoke alarms, and other equipment based on line width, color, and NFPA symbols.
+  </p>
+
+  <!-- Dropzone -->
+  <div
+    id="drawing-dropzone"
+    class="mb-6 flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-8 transition-colors hover:border-primary-400 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-900 dark:hover:border-primary-500"
+  >
+    <SimpleIcon name="image" class="mb-3 h-12 w-12 text-gray-400" />
+    <p class="mb-1 font-medium text-gray-700 dark:text-gray-300">
+      Drop PDF or image here, or click to browse
+    </p>
+    <p class="text-xs text-gray-500 dark:text-gray-400">PDF, PNG, JPG, GIF, WebP (max 10MB)</p>
+    <input
+      id="drawing-file-input"
+      type="file"
+      accept=".pdf,image/png,image/jpeg,image/jpg,image/gif,image/webp"
+      class="hidden"
+    />
+  </div>
+
+  <!-- Status -->
+  <div
+    id="drawing-status"
+    class="mb-4 hidden rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm dark:border-gray-700 dark:bg-gray-900"
+  >
+    <span id="drawing-status-text"></span>
+  </div>
+
+  <!-- Results -->
+  <div id="drawing-results" class="hidden">
+    <h3 class="mb-3 text-lg font-semibold text-gray-900 dark:text-white">Analysis Results</h3>
+    <div id="drawing-results-content" class="space-y-4"></div>
+  </div>
+</div>
+
+<script src="/js/pdf.min.js" defer></script>
+<script define:vars={{ projectId: projectId ?? null }}>
+  const dropzone = document.getElementById("drawing-dropzone");
+  const fileInput = document.getElementById("drawing-file-input");
+  const statusEl = document.getElementById("drawing-status");
+  const statusText = document.getElementById("drawing-status-text");
+  const resultsEl = document.getElementById("drawing-results");
+  const resultsContent = document.getElementById("drawing-results-content");
+
+  function showStatus(text, type = "info") {
+    if (!statusEl || !statusText) return;
+    statusEl.classList.remove("hidden");
+    statusEl.className = "mb-4 rounded-lg border p-3 text-sm";
+    if (type === "error") {
+      statusEl.classList.add(
+        "border-red-200",
+        "bg-red-50",
+        "text-red-800",
+        "dark:border-red-800",
+        "dark:bg-red-900/20",
+        "dark:text-red-200"
+      );
+    } else if (type === "success") {
+      statusEl.classList.add(
+        "border-green-200",
+        "bg-green-50",
+        "text-green-800",
+        "dark:border-green-800",
+        "dark:bg-green-900/20",
+        "dark:text-green-200"
+      );
+    } else {
+      statusEl.classList.add(
+        "border-gray-200",
+        "bg-gray-50",
+        "text-gray-700",
+        "dark:border-gray-700",
+        "dark:bg-gray-900",
+        "dark:text-gray-300"
+      );
+    }
+    statusText.textContent = text;
+  }
+
+  function hideStatus() {
+    statusEl?.classList.add("hidden");
+  }
+
+  function showResults(html) {
+    if (!resultsEl || !resultsContent) return;
+    resultsContent.innerHTML = html;
+    resultsEl.classList.remove("hidden");
+  }
+
+  function ensurePdfJs() {
+    return new Promise((resolve) => {
+      if (typeof window !== "undefined" && window.pdfjsLib) {
+        resolve(window.pdfjsLib);
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = "/js/pdf.min.js";
+      script.onload = () => {
+        setTimeout(() => resolve(window.pdfjsLib), 100);
+      };
+      document.head.appendChild(script);
+    });
+  }
+
+  async function pdfPagesToBlobs(file) {
+    const pdfjsLib = await ensurePdfJs();
+    const arrayBuffer = await file.arrayBuffer();
+    const typedarray = new Uint8Array(arrayBuffer);
+    const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
+    const numPages = pdf.numPages;
+    const blobs = [];
+
+    for (let i = 1; i <= numPages; i++) {
+      const page = await pdf.getPage(i);
+      const viewport = page.getViewport({ scale: 2.0 });
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      const blob = await new Promise((res) => canvas.toBlob(res, "image/png"));
+      blobs.push(blob);
+    }
+    return blobs;
+  }
+
+  async function uploadImage(blob, name) {
+    const file = new File([blob], name, { type: "image/png" });
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("folder", "drawing-analyzer");
+
+    const res = await fetch("/api/agent/upload-image", {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || err.message || "Upload failed");
+    }
+    const data = await res.json();
+    return data.url || data.publicUrl;
+  }
+
+  function renderAnalysis(parsed) {
+    if (!parsed) return '<p class="text-gray-500 dark:text-gray-400">Raw response only.</p>';
+
+    let html = "";
+    if (parsed.summary) {
+      html += `<div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900"><p class="text-sm font-medium text-gray-700 dark:text-gray-300">Summary</p><p class="mt-1 text-gray-600 dark:text-gray-400">${String(parsed.summary)}</p></div>`;
+    }
+
+    if (
+      parsed.pipeSegments &&
+      Array.isArray(parsed.pipeSegments) &&
+      parsed.pipeSegments.length > 0
+    ) {
+      html += `<div class="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"><table class="min-w-full text-sm"><thead class="bg-gray-100 dark:bg-gray-800"><tr><th class="px-4 py-2 text-left">Diameter</th><th class="px-4 py-2 text-left">Length</th><th class="px-4 py-2 text-left">Notes</th></tr></thead><tbody>`;
+      parsed.pipeSegments.forEach((row) => {
+        html += `<tr class="border-t border-gray-200 dark:border-gray-700"><td class="px-4 py-2">${row.diameter ?? "-"}</td><td class="px-4 py-2">${row.length ?? "-"}</td><td class="px-4 py-2 text-gray-600 dark:text-gray-400">${row.notes ?? ""}</td></tr>`;
+      });
+      html += "</tbody></table></div>";
+    }
+
+    if (
+      parsed.sprinklerHeads &&
+      (parsed.sprinklerHeads.count ?? parsed.sprinklerHeads.locations?.length)
+    ) {
+      const s = parsed.sprinklerHeads;
+      html += `<div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900"><p class="text-sm font-medium text-gray-700 dark:text-gray-300">Sprinkler Heads</p><p class="mt-1 text-gray-600 dark:text-gray-400">Count: ${s.count ?? s.locations?.length ?? 0}${s.locations?.length ? ` — ${s.locations.join(", ")}` : ""}</p></div>`;
+    }
+
+    if (parsed.smokeAlarms && (parsed.smokeAlarms.count ?? parsed.smokeAlarms.locations?.length)) {
+      const s = parsed.smokeAlarms;
+      html += `<div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900"><p class="text-sm font-medium text-gray-700 dark:text-gray-300">Smoke Alarms</p><p class="mt-1 text-gray-600 dark:text-gray-400">Count: ${s.count ?? s.locations?.length ?? 0}${s.locations?.length ? ` — ${s.locations.join(", ")}` : ""}</p></div>`;
+    }
+
+    if (
+      parsed.otherEquipment &&
+      Array.isArray(parsed.otherEquipment) &&
+      parsed.otherEquipment.length > 0
+    ) {
+      html += `<div class="rounded-lg border border-gray-200 p-4 dark:border-gray-700"><p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Other Equipment</p><ul class="list-disc list-inside text-sm text-gray-600 dark:text-gray-400">`;
+      parsed.otherEquipment.forEach((e) => {
+        html += `<li>${e.type ?? "unknown"}: ${e.count ?? 1}${e.notes ? ` — ${e.notes}` : ""}</li>`;
+      });
+      html += "</ul></div>";
+    }
+
+    if (
+      parsed.uncertainties &&
+      Array.isArray(parsed.uncertainties) &&
+      parsed.uncertainties.length > 0
+    ) {
+      html += `<div class="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20"><p class="text-sm font-medium text-amber-800 dark:text-amber-200">Uncertainties</p><ul class="mt-1 list-disc list-inside text-sm text-amber-700 dark:text-amber-300">`;
+      parsed.uncertainties.forEach((u) => {
+        html += `<li>${u}</li>`;
+      });
+      html += "</ul></div>";
+    }
+
+    return html || '<p class="text-gray-500 dark:text-gray-400">No structured data extracted.</p>';
+  }
+
+  async function processFile(file) {
+    hideStatus();
+    if (resultsEl) resultsEl.classList.add("hidden");
+
+    if (file.size > 10 * 1024 * 1024) {
+      showStatus("File too large. Maximum 10MB.", "error");
+      return;
+    }
+
+    const isPdf = file.type === "application/pdf";
+    const isImage = file.type.startsWith("image/");
+
+    if (!isPdf && !isImage) {
+      showStatus("Please upload a PDF or image file.", "error");
+      return;
+    }
+
+    let imageUrls = [];
+
+    try {
+      if (isPdf) {
+        showStatus("Converting PDF pages to images...");
+        const blobs = await pdfPagesToBlobs(file);
+        showStatus(`Uploading ${blobs.length} page(s)...`);
+        for (let i = 0; i < blobs.length; i++) {
+          const url = await uploadImage(blobs[i], `page-${i + 1}.png`);
+          imageUrls.push(url);
+        }
+      } else {
+        showStatus("Uploading image...");
+        const url = await uploadImage(file, file.name);
+        imageUrls.push(url);
+      }
+
+      if (imageUrls.length === 0) {
+        showStatus("No images to analyze.", "error");
+        return;
+      }
+
+      showStatus("Analyzing with AI...");
+
+      const res = await fetch("/api/agent/analyze-drawing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          imageUrls,
+          projectId: projectId || undefined,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        showStatus(data.error || data.message || "Analysis failed", "error");
+        return;
+      }
+
+      showStatus("Analysis complete.", "success");
+      const parsed = data.analysis?.parsed;
+      const raw = data.analysis?.rawResponse;
+      const html =
+        renderAnalysis(parsed) +
+        (raw && !parsed
+          ? `<details class="mt-4"><summary class="cursor-pointer text-sm text-gray-500">Raw response</summary><pre class="mt-2 overflow-x-auto rounded bg-gray-100 p-3 text-xs dark:bg-gray-800">${raw.replace(/</g, "&lt;")}</pre></details>`
+          : "");
+      showResults(html);
+    } catch (err) {
+      console.error("Drawing analyzer error:", err);
+      showStatus(err?.message || "An error occurred", "error");
+    }
+  }
+
+  dropzone?.addEventListener("click", () => fileInput?.click());
+  fileInput?.addEventListener("change", (e) => {
+    const f = e.target?.files?.[0];
+    if (f) processFile(f);
+    e.target.value = "";
+  });
+
+  dropzone?.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dropzone.classList.add("border-primary-500", "bg-primary-50/50");
+  });
+  dropzone?.addEventListener("dragleave", () => {
+    dropzone.classList.remove("border-primary-500", "bg-primary-50/50");
+  });
+  dropzone?.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropzone.classList.remove("border-primary-500", "bg-primary-50/50");
+    const f = e.dataTransfer?.files?.[0];
+    if (f) processFile(f);
+  });
+</script>

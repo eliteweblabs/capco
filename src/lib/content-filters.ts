@@ -28,13 +28,9 @@ export function decodeHtmlEntities(str: string): string {
     out = out.split(entity).join(char);
   }
   // Numeric decimal: &#123;
-  out = out.replace(/&#(\d+);/g, (_, code) =>
-    String.fromCharCode(parseInt(code, 10))
-  );
+  out = out.replace(/&#(\d+);/g, (_, code) => String.fromCharCode(parseInt(code, 10)));
   // Numeric hex: &#x1F; or &#x1f;
-  out = out.replace(/&#x([0-9a-fA-F]+);/g, (_, code) =>
-    String.fromCharCode(parseInt(code, 16))
-  );
+  out = out.replace(/&#x([0-9a-fA-F]+);/g, (_, code) => String.fromCharCode(parseInt(code, 16)));
   return out;
 }
 
@@ -60,7 +56,15 @@ export function filterContent(str: string): string {
 }
 
 /** Keys that are short labels (title-style) */
-const TITLE_KEYS = new Set(["title", "label", "heading", "subtitle", "eyebrow", "name", "question"]);
+const TITLE_KEYS = new Set([
+  "title",
+  "label",
+  "heading",
+  "subtitle",
+  "eyebrow",
+  "name",
+  "question",
+]);
 /** Keys that are descriptions */
 const DESC_KEYS = new Set(["description"]);
 /** Keys that are body/long content */

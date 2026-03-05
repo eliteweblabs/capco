@@ -97,7 +97,7 @@ export const buttonVariantClasses: Record<string, string> = {
   disabled:
     "rounded-full bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-60 dark:bg-gray-800 dark:text-gray-500 dark:border-gray-700 disabled",
   selected:
-    "rounded-full bg-primary-500 text-white border-2 border-primary-500 dark:bg-primary-500 dark:border-primary-500",
+    "rounded-full bg-primary-500 text-white border-2 border-primary-500 dark:bg-primary-500 dark:border-primary-500 [@media(hover:hover)]:hover:scale-101 [@media(hover:hover)]:hover:-translate-y-0.5 [@media(hover:hover)]:hover:bg-primary-600 dark:[@media(hover:hover)]:hover:bg-primary-600",
   anchor:
     "text-gray-800 dark:text-gray-200 [@media(hover:hover)]:hover:text-primary dark:[@media(hover:hover)]:hover:text-primary-dark outline-none focus:outline-none border-none focus:ring-0 focus:ring-offset-0 [@media(hover:hover)]:hover:shadow-none opacity-100 transition-all duration-200",
   tab: "tab-button sliding-tabs-item text-gray-700 dark:text-gray-300 hover:text-gray-1000 dark:hover:text-gray-100 active:text-primary-500 dark:active:text-primary-400 trasition-all transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1)",

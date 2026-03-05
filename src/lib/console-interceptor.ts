@@ -180,9 +180,7 @@ export function setupConsoleInterceptor(): void {
   }
 
   // Development only
-  console.log(
-    `🔍 [CONSOLE-INTERCEPTOR] ${isServer ? "Server" : "Client"}-side environment check:`
-  );
+  console.log(`🔍 [CONSOLE-INTERCEPTOR] ${isServer ? "Server" : "Client"}-side environment check:`);
   console.log("  - import.meta.env.PROD:", import.meta.env.PROD);
   console.log("  - process.env.NODE_ENV:", process.env.NODE_ENV);
   console.log("  - isProduction:", isProduction);

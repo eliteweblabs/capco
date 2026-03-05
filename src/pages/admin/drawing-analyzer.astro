@@ -1,0 +1,39 @@
+---
+/**
+ * Fire Protection Drawing Analyzer
+ * Upload PDF/image and extract pipe lengths, sprinkler heads, smoke alarms via AI vision
+ */
+import { checkAuth } from "../../lib/auth";
+import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
+import DrawingAnalyzer from "../../features/drawing-analyzer/DrawingAnalyzer.astro";
+import { globalClasses } from "../api/global/global-classes";
+
+const { currentUser, session } = await checkAuth(Astro.cookies);
+const currentRole = currentUser?.profile?.role;
+const { primaryTextClasses, secondaryTextClasses } = globalClasses();
+
+if (!currentUser || !session) {
+  return Astro.redirect("/auth/login");
+}
+if (currentRole !== "Admin") {
+  return Astro.redirect("/dashboard");
+}
+---
+
+<LayoutFullWidth
+  title="Drawing Analyzer"
+  classList="p-4"
+  description="Analyze fire protection drawings to extract pipe lengths, sprinkler heads, smoke alarms"
+>
+  <div class="px-4 py-8">
+    <div class="mb-8">
+      <h1 class={`mb-2 text-3xl font-bold ${primaryTextClasses}`}>Drawing Analyzer</h1>
+      <p class={`${secondaryTextClasses} text-gray-600 dark:text-gray-400`}>
+        Upload fire protection plans (PDF or image). The AI recognizes pipe lengths by diameter,
+        sprinkler heads, smoke alarms, and other equipment from line width, color, and NFPA symbols.
+      </p>
+    </div>
+
+    <DrawingAnalyzer />
+  </div>
+</LayoutFullWidth>

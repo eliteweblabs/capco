@@ -65,7 +65,10 @@ export const GET: APIRoute = async ({ request, cookies }): Promise<Response> => 
     }
 
     const url = new URL(request.url);
-    const minutes = Math.min(60, Math.max(5, parseInt(url.searchParams.get("minutes") ?? "15", 10)));
+    const minutes = Math.min(
+      60,
+      Math.max(5, parseInt(url.searchParams.get("minutes") ?? "15", 10))
+    );
 
     const cutoff = new Date(Date.now() - minutes * 60 * 1000).toISOString();
 
@@ -85,10 +88,10 @@ export const GET: APIRoute = async ({ request, cookies }): Promise<Response> => 
 
     const userIds = [...new Set((pings ?? []).map((p) => p.userId))];
     if (userIds.length === 0) {
-      return new Response(
-        JSON.stringify({ users: [] }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ users: [] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const { data: profiles, error: profilesError } = await supabaseAdmin
@@ -106,7 +109,9 @@ export const GET: APIRoute = async ({ request, cookies }): Promise<Response> => 
       ])
     );
 
-    const timeEntryIds = [...new Set((pings ?? []).map((p) => p.timeEntryId).filter((id): id is number => id != null))];
+    const timeEntryIds = [
+      ...new Set((pings ?? []).map((p) => p.timeEntryId).filter((id): id is number => id != null)),
+    ];
     let timeEntryMap = new Map<number, { startedAt: string; projectId: number | null }>();
     if (timeEntryIds.length > 0) {
       const { data: entries } = await supabaseAdmin
@@ -114,10 +119,17 @@ export const GET: APIRoute = async ({ request, cookies }): Promise<Response> => 
         .select("id, startedAt, projectId")
         .in("id", timeEntryIds)
         .is("endedAt", null);
-      timeEntryMap = new Map((entries ?? []).map((e) => [e.id, { startedAt: e.startedAt, projectId: e.projectId ?? null }]));
+      timeEntryMap = new Map(
+        (entries ?? []).map((e) => [
+          e.id,
+          { startedAt: e.startedAt, projectId: e.projectId ?? null },
+        ])
+      );
     }
 
-    const projectIds = [...new Set((pings ?? []).map((p) => p.projectId).filter((id): id is number => id != null))];
+    const projectIds = [
+      ...new Set((pings ?? []).map((p) => p.projectId).filter((id): id is number => id != null)),
+    ];
     let projectMap = new Map<number, { title: string; address: string | null }>();
     if (projectIds.length > 0) {
       const { data: projects } = await supabaseAdmin
@@ -125,7 +137,10 @@ export const GET: APIRoute = async ({ request, cookies }): Promise<Response> => 
         .select("id, title, address")
         .in("id", projectIds);
       projectMap = new Map(
-        (projects ?? []).map((p) => [p.id, { title: p.title || p.address || `Project #${p.id}`, address: p.address ?? null }])
+        (projects ?? []).map((p) => [
+          p.id,
+          { title: p.title || p.address || `Project #${p.id}`, address: p.address ?? null },
+        ])
       );
     }
 
@@ -170,10 +185,10 @@ export const GET: APIRoute = async ({ request, cookies }): Promise<Response> => 
       })
     );
 
-    return new Response(
-      JSON.stringify({ users, minutes, cutoff }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ users, minutes, cutoff }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (error) {
     console.error("❌ [LOCATION-LIVE] Error:", error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {

@@ -10,11 +10,27 @@ if (!currentUser || !session || currentUser?.profile?.role !== "Admin") {
   return Astro.redirect("/auth/login");
 }
 const { primaryTextClasses, mutedTextClasses, globalCardStyle } = globalClasses();
-const buttonVariants = ["primary", "secondary", "success", "warning", "danger", "outline", "ghost", "link", "anchor", "selected", "tab"] as const;
+const buttonVariants = [
+  "primary",
+  "secondary",
+  "success",
+  "warning",
+  "danger",
+  "outline",
+  "ghost",
+  "link",
+  "anchor",
+  "selected",
+  "tab",
+] as const;
 const buttonSizes = ["xs", "sm", "md", "lg", "xl"] as const;
 ---
 
-<LayoutFullWidth title="Buttons" description="Button variants, sizes, DeleteConfirmButton." classList="p-4">
+<LayoutFullWidth
+  title="Buttons"
+  description="Button variants, sizes, DeleteConfirmButton."
+  classList="p-4"
+>
   <div class="px-4 py-8">
     <h1 class={`mb-2 text-3xl font-bold ${primaryTextClasses}`}>Buttons</h1>
     <p class={`mb-6 ${mutedTextClasses}`}>All button variants, sizes, and states.</p>
@@ -23,33 +39,47 @@ const buttonSizes = ["xs", "sm", "md", "lg", "xl"] as const;
       <div>
         <h2 class="mb-4 text-xl font-semibold">Variants</h2>
         <div class="space-y-4">
-          {buttonVariants.map((v) => (
-            <div class="flex flex-wrap items-center gap-3">
-              <Button variant={v}>Button</Button>
-              <Button variant={v} icon="bx-check" iconPosition="left">With icon</Button>
-              <Button variant={v} loading={true}>Loading</Button>
-              <Button variant={v} disabled={true}>Disabled</Button>
-            </div>
-          ))}
+          {
+            buttonVariants.map((v) => (
+              <div class="flex flex-wrap items-center gap-3">
+                <Button variant={v}>Button</Button>
+                <Button variant={v} icon="bx-check" iconPosition="left">
+                  With icon
+                </Button>
+                <Button variant={v} loading={true}>
+                  Loading
+                </Button>
+                <Button variant={v} disabled={true}>
+                  Disabled
+                </Button>
+              </div>
+            ))
+          }
         </div>
       </div>
       <div>
         <h2 class="mb-4 text-xl font-semibold">Sizes</h2>
         <div class="flex flex-wrap items-center gap-3">
-          {buttonSizes.map((size) => (
-            <Button variant="primary" size={size}>{size}</Button>
-          ))}
+          {
+            buttonSizes.map((size) => (
+              <Button variant="primary" size={size}>
+                {size}
+              </Button>
+            ))
+          }
         </div>
       </div>
       <div>
         <h2 class="mb-4 text-xl font-semibold">DeleteConfirmButton</h2>
         <div class="flex flex-wrap items-center gap-6">
-          {buttonSizes.map((size) => (
-            <span class="flex items-center gap-2">
-              <DeleteConfirmButton id={`btn-demo-${size}`} size={size} />
-              <span class="text-xs text-gray-500">{size}</span>
-            </span>
-          ))}
+          {
+            buttonSizes.map((size) => (
+              <span class="flex items-center gap-2">
+                <DeleteConfirmButton id={`btn-demo-${size}`} size={size} />
+                <span class="text-xs text-gray-500">{size}</span>
+              </span>
+            ))
+          }
         </div>
       </div>
     </div>

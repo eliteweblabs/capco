@@ -103,9 +103,7 @@ export const GET: APIRoute = async ({ request, cookies }): Promise<Response> => 
         .from("profiles")
         .select("id, name, firstName, lastName")
         .in("id", userIds);
-      profileMap = new Map(
-        (profiles ?? []).map((p) => [p.id, { name: authorDisplay(p) }])
-      );
+      profileMap = new Map((profiles ?? []).map((p) => [p.id, { name: authorDisplay(p) }]));
     }
 
     let projectMap = new Map<number, { title: string }>();
@@ -128,7 +126,8 @@ export const GET: APIRoute = async ({ request, cookies }): Promise<Response> => 
         userId: e.userId,
         author: profileMap.get(e.userId)?.name ?? "—",
         projectId: e.projectId ?? null,
-        project: e.projectId != null ? projectMap.get(e.projectId)?.title ?? `#${e.projectId}` : "—",
+        project:
+          e.projectId != null ? (projectMap.get(e.projectId)?.title ?? `#${e.projectId}`) : "—",
         start: e.startedAt,
         end: e.endedAt ?? null,
         notes: e.notes ?? null,
@@ -138,10 +137,10 @@ export const GET: APIRoute = async ({ request, cookies }): Promise<Response> => 
       };
     });
 
-    return new Response(
-      JSON.stringify({ entries: list }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ entries: list }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (error) {
     console.error("❌ [TIME-ENTRIES] Error:", error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {

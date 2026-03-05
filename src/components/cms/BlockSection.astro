@@ -39,48 +39,50 @@ const colSpanClasses: Record<number, string> = {
 const getSpanClass = (span: number) => colSpanClasses[span] ?? "lg:col-span-12";
 ---
 
-{hasItems ? (
-  <div class="block-section-wrapper flex w-full flex-col gap-0">
-    {items.map((item) => {
-      const w = item.width ?? sectionWidth;
-      const isContained = w === "contained";
-      return (
-        <div
-          class:list={[
-            "block-section w-full",
-            isContained && "mx-auto max-w-7xl px-4 sm:px-6 lg:px-8",
-          ]}
-        >
-          <div class="grid grid-cols-1 lg:grid-cols-12">
-            <div class="col-span-1 lg:col-span-12">
-              <BlockRenderer type={item.block.type as any} props={item.block.props ?? {}} />
+{
+  hasItems ? (
+    <div class="block-section-wrapper flex w-full flex-col gap-0">
+      {items.map((item) => {
+        const w = item.width ?? sectionWidth;
+        const isContained = w === "contained";
+        return (
+          <div
+            class:list={[
+              "block-section w-full",
+              isContained && "mx-auto max-w-7xl px-4 sm:px-6 lg:px-8",
+            ]}
+          >
+            <div class="grid grid-cols-1 lg:grid-cols-12">
+              <div class="col-span-1 lg:col-span-12">
+                <BlockRenderer type={item.block.type as any} props={item.block.props ?? {}} />
+              </div>
             </div>
           </div>
-        </div>
-      );
-    })}
-  </div>
-) : (
-  <div
-    class:list={[
-      "block-section w-full",
-      sectionWidth === "contained" && "mx-auto max-w-7xl px-4 sm:px-6 lg:px-8",
-    ]}
-  >
-    {singleBlock ? (
-      <div class="grid grid-cols-1 lg:grid-cols-12">
-        <div class="col-span-1 lg:col-span-12">
-          <BlockRenderer type={singleBlock.type as any} props={singleBlock.props ?? {}} />
-        </div>
-      </div>
-    ) : hasMultiColumn ? (
-      <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-8">
-        {blocks.map((block, i) => (
-          <div class={`col-span-1 ${getSpanClass(columns[i] ?? 12)}`}>
-            <BlockRenderer type={block.type as any} props={block.props ?? {}} />
+        );
+      })}
+    </div>
+  ) : (
+    <div
+      class:list={[
+        "block-section w-full",
+        sectionWidth === "contained" && "mx-auto max-w-7xl px-4 sm:px-6 lg:px-8",
+      ]}
+    >
+      {singleBlock ? (
+        <div class="grid grid-cols-1 lg:grid-cols-12">
+          <div class="col-span-1 lg:col-span-12">
+            <BlockRenderer type={singleBlock.type as any} props={singleBlock.props ?? {}} />
           </div>
-        ))}
-      </div>
-    ) : null}
-  </div>
-)}
+        </div>
+      ) : hasMultiColumn ? (
+        <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-8">
+          {blocks.map((block, i) => (
+            <div class={`col-span-1 ${getSpanClass(columns[i] ?? 12)}`}>
+              <BlockRenderer type={block.type as any} props={block.props ?? {}} />
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  )
+}

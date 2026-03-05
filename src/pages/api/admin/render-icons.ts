@@ -24,10 +24,10 @@ export const POST: APIRoute = async ({ cookies }) => {
     }
 
     if (!supabaseAdmin) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Database not configured" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: false, error: "Database not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const { data: rows } = await supabaseAdmin
@@ -74,7 +74,10 @@ export const POST: APIRoute = async ({ cookies }) => {
         type: "image/png",
         url: "/favicon.png",
       });
-      await sharp(svgBuffer).resize(APPLE_TOUCH_SIZE, APPLE_TOUCH_SIZE).png().toFile(appleTouchPath);
+      await sharp(svgBuffer)
+        .resize(APPLE_TOUCH_SIZE, APPLE_TOUCH_SIZE)
+        .png()
+        .toFile(appleTouchPath);
       files.push({
         path: "/apple-touch-icon.png",
         size: `${APPLE_TOUCH_SIZE}x${APPLE_TOUCH_SIZE}`,
@@ -87,7 +90,9 @@ export const POST: APIRoute = async ({ cookies }) => {
         JSON.stringify({
           success: false,
           error: err instanceof Error ? err.message : "Failed to generate PNG",
-          files: [{ path: "/favicon.svg", size: "any", type: "image/svg+xml", url: "/favicon.svg" }],
+          files: [
+            { path: "/favicon.svg", size: "any", type: "image/svg+xml", url: "/favicon.svg" },
+          ],
         }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );

@@ -113,7 +113,10 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       if (insertEntryError) {
         console.error("❌ [CHECK-IN] Error creating time entry:", insertEntryError);
         return new Response(
-          JSON.stringify({ error: "Failed to start time entry", details: insertEntryError.message }),
+          JSON.stringify({
+            error: "Failed to start time entry",
+            details: insertEntryError.message,
+          }),
           { status: 500, headers: { "Content-Type": "application/json" } }
         );
       }

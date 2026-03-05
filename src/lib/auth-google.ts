@@ -73,7 +73,11 @@ export async function startGoogleSignIn(redirectDestination?: string): Promise<v
 
     if (!data?.url) {
       if ((window as any).showNotice) {
-        (window as any).showNotice("error", "Sign In Error", "Could not start Google sign-in. Please try again.");
+        (window as any).showNotice(
+          "error",
+          "Sign In Error",
+          "Could not start Google sign-in. Please try again."
+        );
       }
       return;
     }
@@ -106,7 +110,8 @@ export function handleLoginPageQueryParams(): void {
       no_code: "No authorization code received from provider.",
       session_exchange_failed: "Failed to complete authentication. Please try again.",
       session_expired: message || "Your session has expired. Please sign in again.",
-      cookie_set_failed: "Failed to set authentication cookies. Please check your browser settings.",
+      cookie_set_failed:
+        "Failed to set authentication cookies. Please check your browser settings.",
       unexpected_error: "An unexpected error occurred. Please try again.",
     };
     (window as any).showNotice({

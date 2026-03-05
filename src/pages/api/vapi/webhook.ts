@@ -802,9 +802,8 @@ async function handleToolCalls(
         }
 
         try {
-          const { readEmail, markAsRead, extractName, formatDateForVoice } = await import(
-            "../../../lib/gmail"
-          );
+          const { readEmail, markAsRead, extractName, formatDateForVoice } =
+            await import("../../../lib/gmail");
           const email = await readEmail(userId, args.emailId);
 
           // Mark as read after fetching

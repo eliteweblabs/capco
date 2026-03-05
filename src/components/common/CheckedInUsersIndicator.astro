@@ -33,21 +33,21 @@ const showCheckedIn = currentRole === "Admin";
       const container = document.getElementById("checked-in-users-list");
       if (!container) return;
 
-    async function fetchCheckedIn() {
-      try {
-        const res = await fetch("/api/time-entries/checked-in", { credentials: "include" });
-        const data = await res.json();
-        return data.users || [];
-      } catch {
-        return [];
+      async function fetchCheckedIn() {
+        try {
+          const res = await fetch("/api/time-entries/checked-in", { credentials: "include" });
+          const data = await res.json();
+          return data.users || [];
+        } catch {
+          return [];
+        }
       }
-    }
 
-    function render(users) {
-      container.innerHTML = "";
-      if (users.length === 0) return;
+      function render(users) {
+        container.innerHTML = "";
+        if (users.length === 0) return;
 
-      users.forEach((u) => {
+        users.forEach((u) => {
         const tooltipParts = [u.name, u.durationFormatted];
         if (u.address) tooltipParts.push(u.address);
         else if (u.location) tooltipParts.push(u.location);
@@ -65,19 +65,22 @@ const showCheckedIn = currentRole === "Admin";
 
         wrapper.appendChild(btn);
         container.appendChild(wrapper);
-      });
-    }
+        });
+      }
 
-    async function load() {
-      const users = await fetchCheckedIn();
-      render(users);
-    }
+      async function load() {
+        const users = await fetchCheckedIn();
+        render(users);
+      }
 
-    load();
-    setInterval(load, 30000);
+      load();
+      setInterval(load, 30000);
     }
-    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
-    else init();
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", init);
+    } else {
+      init();
+    }
   })();
 </script>
 </>

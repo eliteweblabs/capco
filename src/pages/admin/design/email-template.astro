@@ -12,12 +12,21 @@ if (!currentUser || !session || currentUser?.profile?.role !== "Admin") {
   return Astro.redirect("/auth/login");
 }
 
-const { primaryTextClasses, mutedTextClasses, globalFormLabel, globalInputClasses } = globalClasses();
+const { primaryTextClasses, mutedTextClasses, globalFormLabel, globalInputClasses } =
+  globalClasses();
 
 const useCases = [
-  { value: "projectUpdate", label: "Project Status Update", desc: "Notification when project status changes" },
+  {
+    value: "projectUpdate",
+    label: "Project Status Update",
+    desc: "Notification when project status changes",
+  },
   { value: "magicLink", label: "Magic Link / Login", desc: "Access dashboard link" },
-  { value: "contactFormAdmin", label: "Contact Form (Admin)", desc: "New lead notification to admin" },
+  {
+    value: "contactFormAdmin",
+    label: "Contact Form (Admin)",
+    desc: "New lead notification to admin",
+  },
   { value: "confirmSignup", label: "Confirm Signup", desc: "Email verification" },
   { value: "projectCreated", label: "Project Created", desc: "New project confirmation to client" },
   { value: "minimal", label: "Minimal", desc: "Simple notification with minimal content" },
@@ -32,23 +41,16 @@ const useCases = [
   <div class="px-4 py-8">
     <h1 class={`mb-2 text-3xl font-bold ${primaryTextClasses}`}>Email Template Preview</h1>
     <p class={`mb-6 ${mutedTextClasses}`}>
-      Preview <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">src/templates/email/template.html</code> with
-      different use cases. Uses your current company branding from Settings.
+      Preview <code class="rounded bg-gray-100 px-1 dark:bg-gray-800"
+        >src/templates/email/template.html</code
+      > with different use cases. Uses your current company branding from Settings.
     </p>
 
     <div class="mb-4 flex flex-wrap items-end gap-4">
       <div>
         <label for="useCase" class={globalFormLabel}>Use case</label>
-        <select
-          id="useCase"
-          name="useCase"
-          class={globalInputClasses}
-        >
-          {
-            useCases.map((uc) => (
-              <option value={uc.value}>{uc.label}</option>
-            ))
-          }
+        <select id="useCase" name="useCase" class={globalInputClasses}>
+          {useCases.map((uc) => <option value={uc.value}>{uc.label}</option>)}
         </select>
       </div>
       <p id="useCaseDesc" class={`text-sm ${mutedTextClasses}`}>
@@ -57,7 +59,9 @@ const useCases = [
     </div>
 
     <p class={`mb-2 text-xs ${mutedTextClasses}`}>
-      Dark mode styling follows your system preference (template uses <code>prefers-color-scheme: dark</code>).
+      Dark mode styling follows your system preference (template uses <code
+        >prefers-color-scheme: dark</code
+      >).
     </p>
 
     <div class="rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
@@ -65,8 +69,7 @@ const useCases = [
         id="emailPreview"
         title="Email template preview"
         class="h-[min(80vh,800px)] w-full rounded-lg border-0"
-        src={`/api/admin/email-preview?useCase=projectUpdate`}
-      />
+        src={`/api/admin/email-preview?useCase=projectUpdate`}></iframe>
     </div>
   </div>
 </LayoutFullWidth>

@@ -148,14 +148,10 @@ const canCheckIn =
       }
 
       var navbar = document.getElementById("main-navbar");
-      if (navbar && !navbar.hasAttribute("data-navbar-modal-bound")) {
-        navbar.setAttribute("data-navbar-modal-bound", "true");
-        function isMobile() {
-          return window.innerWidth < 768;
-        }
+      if (navbar) {
         var modalRafId = 0;
         var observer = new MutationObserver(function () {
-          if (!isMobile()) return;
+          if (!(window.isMobile && window.isMobile())) return;
           if (modalRafId) return;
           modalRafId = requestAnimationFrame(function () {
             modalRafId = 0;
@@ -176,7 +172,7 @@ const canCheckIn =
           childList: true,
         });
         window.addEventListener("resize", function () {
-          if (!isMobile() && navbar.style.opacity === "0") {
+          if (!(window.isMobile && window.isMobile()) && navbar.style.opacity === "0") {
             navbar.style.opacity = "1";
             navbar.style.pointerEvents = "auto";
           }
@@ -189,7 +185,7 @@ const canCheckIn =
   })();
 </script>
 <style>
-  /* z-100 only at top of page; z-50 when scrolled */
+  /* z-100 only at top of page; z-50 when scrolled (mobile) – lets modals/dropdowns sit above navbar when scrolled */
 
   /* Light drop shadow when page has scrolled (animated via transition-shadow on nav) */
   #main-navbar.navbar-scrolled {
@@ -197,6 +193,13 @@ const canCheckIn =
   }
   :global(.dark) #main-navbar.navbar-scrolled {
     box-shadow: 0 4px 6px -1px rgba(255, 255, 255, 0.05);
+  }
+
+  /* Mobile: lower z-index when scrolled so modals/dropdowns can appear above navbar */
+  @media (max-width: 767px) {
+    #main-navbar.navbar-scrolled {
+      z-index: 50;
+    }
   }
 
   :global(#navbar-default a svg) {

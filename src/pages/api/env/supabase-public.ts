@@ -13,10 +13,7 @@ export async function GET() {
     typeof process !== "undefined"
       ? (process.env.PUBLIC_SUPABASE_PUBLISHABLE ?? "")
       : (import.meta.env?.PUBLIC_SUPABASE_PUBLISHABLE ?? "");
-  return new Response(
-    JSON.stringify({ url: url || "", key: key || "" }),
-    {
-      headers: { "Content-Type": "application/json" },
-    }
-  );
+  return new Response(JSON.stringify({ url: url || "", key: key || "" }), {
+    headers: { "Content-Type": "application/json" },
+  });
 }

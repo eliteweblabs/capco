@@ -998,8 +998,7 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
     ) as NodeListOf<HTMLInputElement>;
 
     const shouldInitPlaceholders =
-      animatedInputs.length > 0 &&
-      !(globalThis as any).__animatedPlaceholderInited;
+      animatedInputs.length > 0 && !(globalThis as any).__animatedPlaceholderInited;
     if (shouldInitPlaceholders) {
       (globalThis as any).__animatedPlaceholderInited = true;
     }
@@ -1007,338 +1006,341 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
     if (shouldInitPlaceholders) {
       // Store placeholder data for each field
       const placeholderData = new Map<
-      string,
-      { index: number; values: string[]; syncGroup?: string }
-    >();
+        string,
+        { index: number; values: string[]; syncGroup?: string }
+      >();
 
-    // Initialize placeholder data for each input
-    animatedInputs.forEach((input) => {
-      const placeholders = input.getAttribute("data-animated-placeholders");
-      const fieldId = input.id;
+      // Initialize placeholder data for each input
+      animatedInputs.forEach((input) => {
+        const placeholders = input.getAttribute("data-animated-placeholders");
+        const fieldId = input.id;
 
-      // console.log(
-      //   `[ANIMATED-PLACEHOLDER] 🔍 Checking input: ${fieldId}, has value: ${!!input.value}, value length: ${input.value?.length || 0}`
-      // );
+        // console.log(
+        //   `[ANIMATED-PLACEHOLDER] 🔍 Checking input: ${fieldId}, has value: ${!!input.value}, value length: ${input.value?.length || 0}`
+        // );
 
-      if (placeholders) {
-        try {
-          const values = JSON.parse(placeholders);
+        if (placeholders) {
+          try {
+            const values = JSON.parse(placeholders);
 
-          // Note: Sync groups have been removed - all fields now use staggered delays
-          // Previously firstName and lastName were synced, but this prevented the stagger effect
+            // Note: Sync groups have been removed - all fields now use staggered delays
+            // Previously firstName and lastName were synced, but this prevented the stagger effect
 
-          placeholderData.set(fieldId, { index: 0, values, syncGroup: undefined });
-          // console.log(
-          //   `[ANIMATED-PLACEHOLDER] ✅ Initialized ${fieldId} with ${values.length} placeholders`
-          // );
-        } catch (e) {
-          console.error(
-            `[ANIMATED-PLACEHOLDER] ❌ Failed to parse placeholders for ${fieldId}:`,
-            e
-          );
+            placeholderData.set(fieldId, { index: 0, values, syncGroup: undefined });
+            // console.log(
+            //   `[ANIMATED-PLACEHOLDER] ✅ Initialized ${fieldId} with ${values.length} placeholders`
+            // );
+          } catch (e) {
+            console.error(
+              `[ANIMATED-PLACEHOLDER] ❌ Failed to parse placeholders for ${fieldId}:`,
+              e
+            );
+          }
         }
-      }
-    });
+      });
 
-    // Hide placeholder spans when input has value
-    animatedInputs.forEach((input) => {
-      const span = document.querySelector(
-        `.animated-placeholder[data-for="${input.id}"]`
-      ) as HTMLElement;
-      if (span) {
-        // console.log(`[ANIMATED-PLACEHOLDER] 🎬 Setting up detection for ${input.id}`);
+      // Hide placeholder spans when input has value
+      animatedInputs.forEach((input) => {
+        const span = document.querySelector(
+          `.animated-placeholder[data-for="${input.id}"]`
+        ) as HTMLElement;
+        if (span) {
+          // console.log(`[ANIMATED-PLACEHOLDER] 🎬 Setting up detection for ${input.id}`);
 
-        // Helper function to check and hide/show placeholder
-        // Hide only when: has value or autofilled. Show when empty so animation plays until data is entered.
-        const checkAndHidePlaceholder = () => {
+          // Helper function to check and hide/show placeholder
+          // Hide only when: has value or autofilled. Show when empty so animation plays until data is entered.
+          const checkAndHidePlaceholder = () => {
+            const hasValue = input.value && input.value.length > 0;
+
+            let isAutofilled = false;
+            try {
+              isAutofilled = input.matches(":-webkit-autofill") || input.matches(":autofill");
+            } catch (e) {
+              console.log(
+                `[ANIMATED-PLACEHOLDER] ⚠️ Could not check autofill pseudo-class for ${input.id}`
+              );
+            }
+
+            if (hasValue || isAutofilled) {
+              span.style.display = "none";
+            } else {
+              span.style.display = "flex";
+            }
+          };
+
+          input.addEventListener("focus", () => {
+            checkAndHidePlaceholder();
+          });
+          input.addEventListener("blur", () => {
+            checkAndHidePlaceholder();
+          });
+
+          // Listen for manual input changes
+          input.addEventListener("input", () => {
+            // console.log(`[ANIMATED-PLACEHOLDER] 📝 Input event fired for ${input.id}`);
+            checkAndHidePlaceholder();
+          });
+
+          // Listen for change events (fired by browser autofill in some cases)
+          input.addEventListener("change", () => {
+            // console.log(`[ANIMATED-PLACEHOLDER] 🔄 Change event fired for ${input.id}`);
+            checkAndHidePlaceholder();
+          });
+
+          // Listen for autofill detection via CSS animation
+          input.addEventListener("animationstart", (e: AnimationEvent) => {
+            // console.log(
+            //   `[ANIMATED-PLACEHOLDER] 🎨 Animation started: ${e.animationName} for ${input.id}`
+            // );
+            if (e.animationName === "onAutoFillStart") {
+              console.log(
+                `[ANIMATED-PLACEHOLDER] 🎯 Autofill CSS animation detected for ${input.id}`
+              );
+              checkAndHidePlaceholder();
+            }
+          });
+
+          // Watch for attribute changes (some browsers add data attributes on autofill)
+          const observer = new MutationObserver(() => {
+            // console.log(`[ANIMATED-PLACEHOLDER] 🔬 Mutation observed for ${input.id}`);
+            checkAndHidePlaceholder();
+          });
+          observer.observe(input, {
+            attributes: true,
+            attributeFilter: ["value", "data-value"],
+          });
+
+          // Check initial value immediately
+          checkAndHidePlaceholder();
+
+          // Delayed checks for autofill (fallback for browsers that don't support animation detection)
+          // Browser autofill can happen at various times, so we check multiple times
+          setTimeout(() => {
+            // console.log(`[ANIMATED-PLACEHOLDER] ⏱️ Delayed check (100ms) for ${input.id}`);
+            checkAndHidePlaceholder();
+          }, 100);
+          setTimeout(() => {
+            // console.log(`[ANIMATED-PLACEHOLDER] ⏱️ Delayed check (500ms) for ${input.id}`);
+            checkAndHidePlaceholder();
+          }, 500);
+          setTimeout(() => {
+            // console.log(`[ANIMATED-PLACEHOLDER] ⏱️ Delayed check (1000ms) for ${input.id}`);
+            checkAndHidePlaceholder();
+          }, 1000);
+          setTimeout(() => {
+            // console.log(`[ANIMATED-PLACEHOLDER] ⏱️ Delayed check (1500ms) for ${input.id}`);
+            checkAndHidePlaceholder();
+          }, 1500);
+          setTimeout(() => {
+            // console.log(`[ANIMATED-PLACEHOLDER] ⏱️ Delayed check (2500ms) for ${input.id}`);
+            checkAndHidePlaceholder();
+          }, 2500);
+        }
+      });
+
+      function rotatePlaceholders() {
+        animatedInputs.forEach((input, index) => {
+          const span = document.querySelector(
+            `.animated-placeholder[data-for="${input.id}"]`
+          ) as HTMLElement;
+          const fieldId = input.id;
+          const data = placeholderData.get(fieldId);
+
+          // Check both value and autofill state
           const hasValue = input.value && input.value.length > 0;
 
           let isAutofilled = false;
           try {
             isAutofilled = input.matches(":-webkit-autofill") || input.matches(":autofill");
           } catch (e) {
-            console.log(
-              `[ANIMATED-PLACEHOLDER] ⚠️ Could not check autofill pseudo-class for ${input.id}`
-            );
+            // Ignore
           }
 
-          if (hasValue || isAutofilled) {
-            span.style.display = "none";
-          } else {
-            span.style.display = "flex";
-          }
-        };
-
-        input.addEventListener("focus", () => {
-          checkAndHidePlaceholder();
-        });
-        input.addEventListener("blur", () => {
-          checkAndHidePlaceholder();
-        });
-
-        // Listen for manual input changes
-        input.addEventListener("input", () => {
-          // console.log(`[ANIMATED-PLACEHOLDER] 📝 Input event fired for ${input.id}`);
-          checkAndHidePlaceholder();
-        });
-
-        // Listen for change events (fired by browser autofill in some cases)
-        input.addEventListener("change", () => {
-          // console.log(`[ANIMATED-PLACEHOLDER] 🔄 Change event fired for ${input.id}`);
-          checkAndHidePlaceholder();
-        });
-
-        // Listen for autofill detection via CSS animation
-        input.addEventListener("animationstart", (e: AnimationEvent) => {
           // console.log(
-          //   `[ANIMATED-PLACEHOLDER] 🎨 Animation started: ${e.animationName} for ${input.id}`
+          //   `[ANIMATED-PLACEHOLDER] 🔄 Rotate check ${input.id}: hasValue=${hasValue}, isAutofilled=${isAutofilled}, span.display=${span?.style.display}`
           // );
-          if (e.animationName === "onAutoFillStart") {
-            console.log(
-              `[ANIMATED-PLACEHOLDER] 🎯 Autofill CSS animation detected for ${input.id}`
+
+          if (span && data && !hasValue && !isAutofilled && span.style.display !== "none") {
+            // Scope to this input's form (contact form vs login form when both on page)
+            const form = input.closest("form");
+            const activeStep = form?.querySelector(".step-content.active");
+            const isInActiveStep = activeStep?.contains(input);
+
+            if (!isInActiveStep) return;
+
+            // Find the index of this input within the active step
+            const activeStepInputs = Array.from(
+              activeStep!.querySelectorAll('input[data-has-animated-placeholder="true"]')
             );
-            checkAndHidePlaceholder();
-          }
-        });
+            const stepIndex = activeStepInputs.indexOf(input);
 
-        // Watch for attribute changes (some browsers add data attributes on autofill)
-        const observer = new MutationObserver(() => {
-          // console.log(`[ANIMATED-PLACEHOLDER] 🔬 Mutation observed for ${input.id}`);
-          checkAndHidePlaceholder();
-        });
-        observer.observe(input, {
-          attributes: true,
-          attributeFilter: ["value", "data-value"],
-        });
-
-        // Check initial value immediately
-        checkAndHidePlaceholder();
-
-        // Delayed checks for autofill (fallback for browsers that don't support animation detection)
-        // Browser autofill can happen at various times, so we check multiple times
-        setTimeout(() => {
-          // console.log(`[ANIMATED-PLACEHOLDER] ⏱️ Delayed check (100ms) for ${input.id}`);
-          checkAndHidePlaceholder();
-        }, 100);
-        setTimeout(() => {
-          // console.log(`[ANIMATED-PLACEHOLDER] ⏱️ Delayed check (500ms) for ${input.id}`);
-          checkAndHidePlaceholder();
-        }, 500);
-        setTimeout(() => {
-          // console.log(`[ANIMATED-PLACEHOLDER] ⏱️ Delayed check (1000ms) for ${input.id}`);
-          checkAndHidePlaceholder();
-        }, 1000);
-        setTimeout(() => {
-          // console.log(`[ANIMATED-PLACEHOLDER] ⏱️ Delayed check (1500ms) for ${input.id}`);
-          checkAndHidePlaceholder();
-        }, 1500);
-        setTimeout(() => {
-          // console.log(`[ANIMATED-PLACEHOLDER] ⏱️ Delayed check (2500ms) for ${input.id}`);
-          checkAndHidePlaceholder();
-        }, 2500);
-      }
-    });
-
-    function rotatePlaceholders() {
-      animatedInputs.forEach((input, index) => {
-        const span = document.querySelector(
-          `.animated-placeholder[data-for="${input.id}"]`
-        ) as HTMLElement;
-        const fieldId = input.id;
-        const data = placeholderData.get(fieldId);
-
-        // Check both value and autofill state
-        const hasValue = input.value && input.value.length > 0;
-
-        let isAutofilled = false;
-        try {
-          isAutofilled = input.matches(":-webkit-autofill") || input.matches(":autofill");
-        } catch (e) {
-          // Ignore
-        }
-
-        // console.log(
-        //   `[ANIMATED-PLACEHOLDER] 🔄 Rotate check ${input.id}: hasValue=${hasValue}, isAutofilled=${isAutofilled}, span.display=${span?.style.display}`
-        // );
-
-        if (span && data && !hasValue && !isAutofilled && span.style.display !== "none") {
-          // Scope to this input's form (contact form vs login form when both on page)
-          const form = input.closest("form");
-          const activeStep = form?.querySelector(".step-content.active");
-          const isInActiveStep = activeStep?.contains(input);
-
-          if (!isInActiveStep) return;
-
-          // Find the index of this input within the active step
-          const activeStepInputs = Array.from(
-            activeStep!.querySelectorAll('input[data-has-animated-placeholder="true"]')
-          );
-          const stepIndex = activeStepInputs.indexOf(input);
-
-          // ⚠️ PROTECTED CODE - DO NOT REMOVE ⚠️
-          // This stagger delay creates a cascading animation effect for successive placeholders.
-          // See: .cursor/rules/multistep-form-placeholder-stagger.md
-          // See: markdowns/animated-placeholder-stagger-delay.md
-          // Stagger delay: 200ms per field for smooth cascade effect
-          const staggerDelay = stepIndex * 200;
-
-          setTimeout(() => {
-            // Only rotate if visible
-            span.style.animation = "slideOutDownPlaceholder 400ms ease-out forwards";
+            // ⚠️ PROTECTED CODE - DO NOT REMOVE ⚠️
+            // This stagger delay creates a cascading animation effect for successive placeholders.
+            // See: .cursor/rules/multistep-form-placeholder-stagger.md
+            // See: markdowns/animated-placeholder-stagger-delay.md
+            // Stagger delay: 200ms per field for smooth cascade effect
+            const staggerDelay = stepIndex * 200;
 
             setTimeout(() => {
-              data.index = (data.index + 1) % data.values.length;
-              span.textContent = data.values[data.index];
-              span.style.animation = "slideInUpPlaceholder 400ms ease-out forwards";
-            }, 400);
-          }, staggerDelay);
-        }
-      });
-    }
+              // Only rotate if visible
+              span.style.animation = "slideOutDownPlaceholder 400ms ease-out forwards";
 
-    // Reset and restart placeholder animation
-    function resetPlaceholderAnimation() {
-      // console.log(`[ANIMATED-PLACEHOLDER] 🔄 Resetting placeholder animation`);
-
-      animatedInputs.forEach((input) => {
-        const span = document.querySelector(
-          `.animated-placeholder[data-for="${input.id}"]`
-        ) as HTMLElement;
-        const fieldId = input.id;
-        const data = placeholderData.get(fieldId);
-
-        // Check both value and autofill state
-        const hasValue = input.value && input.value.length > 0;
-
-        let isAutofilled = false;
-        try {
-          isAutofilled = input.matches(":-webkit-autofill") || input.matches(":autofill");
-        } catch (e) {
-          // Ignore
-        }
-
-        // Skip if input has a value (from autofill or manual entry)
-        if (hasValue || isAutofilled) {
-          if (span) {
-            span.style.display = "none";
+              setTimeout(() => {
+                data.index = (data.index + 1) % data.values.length;
+                span.textContent = data.values[data.index];
+                span.style.animation = "slideInUpPlaceholder 400ms ease-out forwards";
+              }, 400);
+            }, staggerDelay);
           }
-          // console.log(
-          //   `[ANIMATED-PLACEHOLDER] ⏭️ Skipping reset for ${input.id} (has value: ${hasValue}, autofilled: ${isAutofilled})`
-          // );
-          return;
-        }
+        });
+      }
 
-        if (span && data) {
-          // Scope to this input's form (contact form vs login form when both on page)
-          const form = input.closest("form");
-          const activeStep = form?.querySelector(".step-content.active");
-          const isInActiveStep = activeStep?.contains(input);
+      // Reset and restart placeholder animation
+      function resetPlaceholderAnimation() {
+        // console.log(`[ANIMATED-PLACEHOLDER] 🔄 Resetting placeholder animation`);
 
-          if (!isInActiveStep) {
-            // Not in active step, just reset without animation
-            data.index = 0;
-            span.textContent = data.values[0];
+        animatedInputs.forEach((input) => {
+          const span = document.querySelector(
+            `.animated-placeholder[data-for="${input.id}"]`
+          ) as HTMLElement;
+          const fieldId = input.id;
+          const data = placeholderData.get(fieldId);
+
+          // Check both value and autofill state
+          const hasValue = input.value && input.value.length > 0;
+
+          let isAutofilled = false;
+          try {
+            isAutofilled = input.matches(":-webkit-autofill") || input.matches(":autofill");
+          } catch (e) {
+            // Ignore
+          }
+
+          // Skip if input has a value (from autofill or manual entry)
+          if (hasValue || isAutofilled) {
+            if (span) {
+              span.style.display = "none";
+            }
+            // console.log(
+            //   `[ANIMATED-PLACEHOLDER] ⏭️ Skipping reset for ${input.id} (has value: ${hasValue}, autofilled: ${isAutofilled})`
+            // );
             return;
           }
 
-          // Find the index of this input within the active step for stagger delay
-          const activeStepInputs = Array.from(
-            activeStep!.querySelectorAll('input[data-has-animated-placeholder="true"]')
-          );
-          const stepIndex = activeStepInputs.indexOf(input);
+          if (span && data) {
+            // Scope to this input's form (contact form vs login form when both on page)
+            const form = input.closest("form");
+            const activeStep = form?.querySelector(".step-content.active");
+            const isInActiveStep = activeStep?.contains(input);
 
-          // Apply stagger delay for reset animation too (200ms per field)
-          const staggerDelay = stepIndex * 200;
-
-          setTimeout(() => {
-            data.index = 0;
-            span.textContent = data.values[0];
-            span.style.animation = "slideInDownPlaceholder 400ms ease-out forwards";
-          }, staggerDelay);
-        }
-      });
-    }
-
-    // Store interval ID so we can clear it
-    let placeholderInterval: ReturnType<typeof setInterval> | null = null;
-
-    // Start placeholder rotation
-    function startPlaceholderRotation() {
-      // console.log(`[ANIMATED-PLACEHOLDER] 🚀 Starting placeholder rotation`);
-
-      // Clear any existing interval
-      if (placeholderInterval) {
-        clearInterval(placeholderInterval);
-      }
-
-      // Check all inputs for values one more time before starting animation
-      // This catches browser autofill that may have completed
-      animatedInputs.forEach((input) => {
-        const span = document.querySelector(
-          `.animated-placeholder[data-for="${input.id}"]`
-        ) as HTMLElement;
-        const hasValue = input.value && input.value.length > 0;
-
-        let isAutofilled = false;
-        try {
-          isAutofilled = input.matches(":-webkit-autofill") || input.matches(":autofill");
-        } catch (e) {
-          // Ignore
-        }
-
-        // console.log(
-        //   `[ANIMATED-PLACEHOLDER] 🎬 Pre-animation check for ${input.id}: hasValue=${hasValue}, isAutofilled=${isAutofilled}`
-        // );
-
-        if (span && (hasValue || isAutofilled)) {
-          span.style.display = "none";
-          // console.log(
-          //   `[ANIMATED-PLACEHOLDER] ✅ Pre-animation: hiding placeholder for ${input.id} (has value: ${hasValue}, autofilled: ${isAutofilled})`
-          // );
-        }
-      });
-
-      // Reset to first placeholder
-      resetPlaceholderAnimation();
-
-      // Start new interval
-      placeholderInterval = setInterval(rotatePlaceholders, 2000);
-      // console.log(`[ANIMATED-PLACEHOLDER] ⏰ Rotation interval started (2000ms)`);
-    }
-
-    // Rotate placeholders every 2 seconds. Defer start so it runs after form handler
-    // has set .step-content.active (initializeMultiStepForm runs later in this same callback).
-    if (animatedInputs.length > 0) {
-      setTimeout(() => startPlaceholderRotation(), 0);
-
-      // Watch for step changes and restart animation
-      const stepObserver = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          if (mutation.type === "attributes" && mutation.attributeName === "class") {
-            const target = mutation.target as HTMLElement;
-            if (target.classList.contains("active") && target.classList.contains("step-content")) {
-              // Check if this step has animated placeholders
-              const hasPlaceholders = target.querySelector(
-                '[data-has-animated-placeholder="true"]'
-              );
-              if (hasPlaceholders) {
-                // console.log("[PLACEHOLDER] Restarting placeholder animation for active step");
-                startPlaceholderRotation();
-              }
+            if (!isInActiveStep) {
+              // Not in active step, just reset without animation
+              data.index = 0;
+              span.textContent = data.values[0];
+              return;
             }
+
+            // Find the index of this input within the active step for stagger delay
+            const activeStepInputs = Array.from(
+              activeStep!.querySelectorAll('input[data-has-animated-placeholder="true"]')
+            );
+            const stepIndex = activeStepInputs.indexOf(input);
+
+            // Apply stagger delay for reset animation too (200ms per field)
+            const staggerDelay = stepIndex * 200;
+
+            setTimeout(() => {
+              data.index = 0;
+              span.textContent = data.values[0];
+              span.style.animation = "slideInDownPlaceholder 400ms ease-out forwards";
+            }, staggerDelay);
           }
         });
-      });
+      }
 
-      // Observe all step-content elements
-      const steps = document.querySelectorAll(".step-content");
-      steps.forEach((step) => {
-        stepObserver.observe(step, {
-          attributes: true,
-          attributeFilter: ["class"],
+      // Store interval ID so we can clear it
+      let placeholderInterval: ReturnType<typeof setInterval> | null = null;
+
+      // Start placeholder rotation
+      function startPlaceholderRotation() {
+        // console.log(`[ANIMATED-PLACEHOLDER] 🚀 Starting placeholder rotation`);
+
+        // Clear any existing interval
+        if (placeholderInterval) {
+          clearInterval(placeholderInterval);
+        }
+
+        // Check all inputs for values one more time before starting animation
+        // This catches browser autofill that may have completed
+        animatedInputs.forEach((input) => {
+          const span = document.querySelector(
+            `.animated-placeholder[data-for="${input.id}"]`
+          ) as HTMLElement;
+          const hasValue = input.value && input.value.length > 0;
+
+          let isAutofilled = false;
+          try {
+            isAutofilled = input.matches(":-webkit-autofill") || input.matches(":autofill");
+          } catch (e) {
+            // Ignore
+          }
+
+          // console.log(
+          //   `[ANIMATED-PLACEHOLDER] 🎬 Pre-animation check for ${input.id}: hasValue=${hasValue}, isAutofilled=${isAutofilled}`
+          // );
+
+          if (span && (hasValue || isAutofilled)) {
+            span.style.display = "none";
+            // console.log(
+            //   `[ANIMATED-PLACEHOLDER] ✅ Pre-animation: hiding placeholder for ${input.id} (has value: ${hasValue}, autofilled: ${isAutofilled})`
+            // );
+          }
         });
-      });
-    }
+
+        // Reset to first placeholder
+        resetPlaceholderAnimation();
+
+        // Start new interval
+        placeholderInterval = setInterval(rotatePlaceholders, 2000);
+        // console.log(`[ANIMATED-PLACEHOLDER] ⏰ Rotation interval started (2000ms)`);
+      }
+
+      // Rotate placeholders every 2 seconds. Defer start so it runs after form handler
+      // has set .step-content.active (initializeMultiStepForm runs later in this same callback).
+      if (animatedInputs.length > 0) {
+        setTimeout(() => startPlaceholderRotation(), 0);
+
+        // Watch for step changes and restart animation
+        const stepObserver = new MutationObserver((mutations) => {
+          mutations.forEach((mutation) => {
+            if (mutation.type === "attributes" && mutation.attributeName === "class") {
+              const target = mutation.target as HTMLElement;
+              if (
+                target.classList.contains("active") &&
+                target.classList.contains("step-content")
+              ) {
+                // Check if this step has animated placeholders
+                const hasPlaceholders = target.querySelector(
+                  '[data-has-animated-placeholder="true"]'
+                );
+                if (hasPlaceholders) {
+                  // console.log("[PLACEHOLDER] Restarting placeholder animation for active step");
+                  startPlaceholderRotation();
+                }
+              }
+            }
+          });
+        });
+
+        // Observe all step-content elements
+        const steps = document.querySelectorAll(".step-content");
+        steps.forEach((step) => {
+          stepObserver.observe(step, {
+            attributes: true,
+            attributeFilter: ["class"],
+          });
+        });
+      }
     }
 
     // Add focus/blur shadow animation to all form inputs using event delegation

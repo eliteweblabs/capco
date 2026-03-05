@@ -12,7 +12,7 @@ export const POST: APIRoute = async ({ request }) => {
     const formData = await request.formData();
     const data: Record<string, string> = {};
     formData.forEach((value, key) => {
-      data[key] = typeof value === "string" ? value : (value as File).name ?? "";
+      data[key] = typeof value === "string" ? value : ((value as File).name ?? "");
     });
 
     // TODO: persist to Supabase (e.g. nfpa25_submissions or projects), generate PDF, or email

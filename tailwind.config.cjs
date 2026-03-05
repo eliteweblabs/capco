@@ -60,6 +60,12 @@ module.exports = {
     "md:text-center",
     "md:flex",
     "md:flex-row",
+    // Responsive display utilities for CMS (inline-flex, flex, block, etc. with sm/md/lg/xl)
+    {
+      pattern:
+        /^(flex|inline-flex|block|inline-block|inline|grid|hidden)$/,
+      variants: ["sm", "md", "lg", "xl"],
+    },
     "md:w-[40%]",
     "md:w-[20%]",
     "md:col-span-5",
@@ -67,6 +73,11 @@ module.exports = {
     "col-span-12",
     "grid-cols-12",
     "flex-col",
+    // Arbitrary bottom values (CMS)
+    "bottom-[1.5rem]",
+    "md:bottom-[3rem]",
+    "-bottom-[1.5rem]",
+    "md:-bottom-[3rem]",
     // Layout classes (including conditional centerContent in App.astro)
     "overscroll-y-contain",
     "flex",

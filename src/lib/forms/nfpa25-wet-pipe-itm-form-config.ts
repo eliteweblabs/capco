@@ -3,7 +3,11 @@
  * The live form is managed in config.json under forms["nfpa25-wet-pipe-itm"].
  * This file is kept for reference / type structure; the page loads via getFormConfig("nfpa25-wet-pipe-itm").
  */
-import type { FormFieldConfig, FormStepConfig, MultiStepFormConfig } from "../multi-step-form-config";
+import type {
+  FormFieldConfig,
+  FormStepConfig,
+  MultiStepFormConfig,
+} from "../multi-step-form-config";
 import { normalizeFormConfig } from "../multi-step-form-config";
 
 const YNA_BUTTONS = [
@@ -66,11 +70,28 @@ export const nfpa25WetPipeItmFormConfig: MultiStepFormConfig = normalizeFormConf
       subtitle: "Wet Pipe Sprinkler Systems — ITM",
       fieldLayout: "grid",
       fields: [
-        { id: "propertyName", name: "propertyName", type: "text", placeholder: "Property Name", required: true },
-        { id: "inspector", name: "inspector", type: "text", placeholder: "Inspector", required: true },
+        {
+          id: "propertyName",
+          name: "propertyName",
+          type: "text",
+          placeholder: "Property Name",
+          required: true,
+        },
+        {
+          id: "inspector",
+          name: "inspector",
+          type: "text",
+          placeholder: "Inspector",
+          required: true,
+        },
         addressField("propertyAddress", "propertyAddress", "Property Address"),
         { id: "contractNo", name: "contractNo", type: "text", placeholder: "Contract No." },
-        { id: "propertyPhone", name: "propertyPhone", type: "tel", placeholder: "Property Phone Number" },
+        {
+          id: "propertyPhone",
+          name: "propertyPhone",
+          type: "tel",
+          placeholder: "Property Phone Number",
+        },
         { id: "date", name: "date", type: "date", label: "Date", required: true },
       ],
       buttons: [{ type: "next", label: "Next", dataNext: 2 }],
@@ -207,11 +228,27 @@ export const nfpa25WetPipeItmFormConfig: MultiStepFormConfig = normalizeFormConf
       fieldLayout: "grid",
       fields: [
         { id: "comments", name: "comments", type: "textarea", placeholder: "Comments", rows: 4 },
-        { id: "signature", name: "signature", type: "signature", label: "Signature", required: false },
+        {
+          id: "signature",
+          name: "signature",
+          type: "signature",
+          label: "Signature",
+          required: false,
+        },
         { id: "signatureDate", name: "signatureDate", type: "date", label: "Date" },
-        { id: "contractorName", name: "contractorName", type: "text", placeholder: "Contractor Name" },
+        {
+          id: "contractorName",
+          name: "contractorName",
+          type: "text",
+          placeholder: "Contractor Name",
+        },
         addressField("contractorAddress", "contractorAddress", "Contractor Address"),
-        { id: "licenseCertNo", name: "licenseCertNo", type: "text", placeholder: "License/Certification No." },
+        {
+          id: "licenseCertNo",
+          name: "licenseCertNo",
+          type: "text",
+          placeholder: "License/Certification No.",
+        },
       ],
       buttons: [
         { type: "prev", label: "Back", dataPrev: 9 },

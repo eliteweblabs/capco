@@ -109,25 +109,25 @@ export const GET: APIRoute = async ({ url, cookies }) => {
         if (projectsError) {
           console.warn("⚠️ [GLOBAL-COMPANY-DATA] projects fetch:", projectsError.message);
         } else if (projects) {
-        const totalProjects = projects?.length || 0;
-        const projectsByStatus =
-          projects?.reduce((acc: Record<string, number>, project: any) => {
-            acc[project.status] = (acc[project.status] || 0) + 1;
-            return acc;
-          }, {}) || {};
+          const totalProjects = projects?.length || 0;
+          const projectsByStatus =
+            projects?.reduce((acc: Record<string, number>, project: any) => {
+              acc[project.status] = (acc[project.status] || 0) + 1;
+              return acc;
+            }, {}) || {};
 
-        const recentProjects =
-          projects?.filter((project: any) => {
-            const createdAt = new Date(project.createdAt);
-            const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-            return createdAt >= thirtyDaysAgo;
-          }).length || 0;
+          const recentProjects =
+            projects?.filter((project: any) => {
+              const createdAt = new Date(project.createdAt);
+              const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+              return createdAt >= thirtyDaysAgo;
+            }).length || 0;
 
-        companyData.projects = {
-          total: totalProjects,
-          recent: recentProjects,
-          byStatus: projectsByStatus,
-        };
+          companyData.projects = {
+            total: totalProjects,
+            recent: recentProjects,
+            byStatus: projectsByStatus,
+          };
         }
       } catch (e) {
         console.warn("⚠️ [GLOBAL-COMPANY-DATA] projects fetch failed:", e);
@@ -151,8 +151,9 @@ export const GET: APIRoute = async ({ url, cookies }) => {
               return acc;
             }, {}) || {};
 
-          const uniqueCompanies = new Set(users.map((user: any) => user.companyName).filter(Boolean))
-            .size;
+          const uniqueCompanies = new Set(
+            users.map((user: any) => user.companyName).filter(Boolean)
+          ).size;
 
           companyData.users = {
             total: totalUsers,

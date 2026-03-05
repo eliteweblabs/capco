@@ -112,9 +112,7 @@ export async function getBlockPageContent(slug: string): Promise<BlockPageConten
       .eq("isActive", true);
 
     if (clientId) {
-      query = query.or(
-        `clientId.is.null,clientId.eq.${quoteClientIdForPostgrest(clientId)}`
-      );
+      query = query.or(`clientId.is.null,clientId.eq.${quoteClientIdForPostgrest(clientId)}`);
     }
 
     const { data: row, error } = await query

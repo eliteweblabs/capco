@@ -2,11 +2,7 @@
  * TanStack Data Table init — renders table with sorting, icon/tooltip in headers, optional expand/drag.
  * Does NOT replace AccordionDataTable or ProjectList; use alongside.
  */
-import {
-  createTable,
-  getCoreRowModel,
-  getSortedRowModel,
-} from "@tanstack/table-core";
+import { createTable, getCoreRowModel, getSortedRowModel } from "@tanstack/table-core";
 import { getIcon } from "../lib/simple-icons";
 
 export interface TanStackColumnMeta {
@@ -42,19 +38,25 @@ export interface TanStackTableConfig<T = unknown> {
 }
 
 const DEFAULT_CLASSES = {
-  tableClasses: "w-full max-w-full table-fixed divide-gray-200 text-center text-sm dark:divide-gray-700",
-  theadClasses: "sticky top-0 z-10 text-uppercase color-background select-none text-xs font-semibold uppercase tracking-wide",
-  thClasses: "color-border-primary border-r border-gray-200 px-4 py-3 font-semibold dark:border-gray-700",
+  tableClasses:
+    "w-full max-w-full table-fixed divide-gray-200 text-center text-sm dark:divide-gray-700",
+  theadClasses:
+    "sticky top-0 z-10 text-uppercase color-background select-none text-xs font-semibold uppercase tracking-wide",
+  thClasses:
+    "color-border-primary border-r border-gray-200 px-4 py-3 font-semibold dark:border-gray-700",
   tbodyClasses: "divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900",
   tdClasses: "px-4 py-2 text-sm text-gray-900 dark:text-white",
   emptyCellClasses: "px-4 py-8 text-sm text-gray-500 dark:text-gray-400",
-  triggerRowClasses: "select-none border-b border-gray-200 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700",
+  triggerRowClasses:
+    "select-none border-b border-gray-200 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700",
   detailTdClasses: "bg-gray-50 p-0 dark:bg-gray-800/50",
   slotMinHeightClasses: "min-h-[120px]",
   dragThClasses: "w-10 px-2 py-3 color-border-primary border-r",
   dragTdClasses: "w-10 px-2 py-3 align-middle text-gray-400 dark:text-gray-500",
-  stickyLeft: "sticky left-0 z-[1] bg-white dark:bg-gray-900 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_4px_-2px_rgba(0,0,0,0.3)]",
-  stickyRight: "sticky right-0 z-[1] bg-white dark:bg-gray-900 shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.1)] dark:shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.3)]",
+  stickyLeft:
+    "sticky left-0 z-[1] bg-white dark:bg-gray-900 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_4px_-2px_rgba(0,0,0,0.3)]",
+  stickyRight:
+    "sticky right-0 z-[1] bg-white dark:bg-gray-900 shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.1)] dark:shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.3)]",
 };
 
 function renderIcon(name: string, size = 16): string {
@@ -107,7 +109,10 @@ export function initTanStackDataTable<T extends Record<string, unknown>>(
 
   const expanded = new Set<string>();
 
-  let tableState: { sorting: { id: string; desc: boolean }[]; columnPinning?: { left: string[]; right: string[] } } = {
+  let tableState: {
+    sorting: { id: string; desc: boolean }[];
+    columnPinning?: { left: string[]; right: string[] };
+  } = {
     sorting: [],
     columnPinning: { left: [], right: [] },
   };
@@ -188,7 +193,9 @@ export function initTanStackDataTable<T extends Record<string, unknown>>(
         }
         const parts: string[] = [];
         if (meta?.icon) {
-          parts.push(`<span class="inline-block align-middle mr-1">${renderIcon(meta.icon, 14)}</span>`);
+          parts.push(
+            `<span class="inline-block align-middle mr-1">${renderIcon(meta.icon, 14)}</span>`
+          );
         }
         parts.push(String(header.column.columnDef.header));
         const sortDir = header.column.getIsSorted?.();
@@ -318,7 +325,8 @@ export function initTanStackDataTable<T extends Record<string, unknown>>(
   }
 
   function setupReorderHandlers(tbodyEl: HTMLTableSectionElement, hasDetailRows: boolean) {
-    const cb = (typeof window !== "undefined" && (window as unknown as Record<string, unknown>)[reorderCallback!]) as
+    const cb = (typeof window !== "undefined" &&
+      (window as unknown as Record<string, unknown>)[reorderCallback!]) as
       | ((order: { id: string | null; displayOrder: number }[]) => void | Promise<void>)
       | undefined;
     if (typeof cb !== "function") return;

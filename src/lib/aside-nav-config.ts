@@ -84,13 +84,16 @@ export async function getAsideNav(userRole?: string): Promise<AsideNavRenderItem
 }
 
 /** Design index page links: same source as aside nav (config asideNav design.children). */
-export async function getDesignPageLinks(userRole?: string): Promise<Array<{ label: string; href: string }>> {
+export async function getDesignPageLinks(
+  userRole?: string
+): Promise<Array<{ label: string; href: string }>> {
   const config = await getSiteConfig();
   const asideNav = (config.navigation as any)?.aside ?? (config as any).asideNav;
   if (!Array.isArray(asideNav)) return [];
 
   const designItem = asideNav.find(
-    (item: any) => item && typeof item === "object" && (item.id === "design" || item.label === "Design")
+    (item: any) =>
+      item && typeof item === "object" && (item.id === "design" || item.label === "Design")
   );
   const children = designItem?.children;
   if (!Array.isArray(children) || children.length === 0) return [];

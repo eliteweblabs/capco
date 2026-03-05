@@ -44,10 +44,10 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (!supabaseUrl || !supabaseKey) {
       console.error("[REVIEWS] Supabase not configured");
-      return new Response(
-        JSON.stringify({ success: false, error: "Server configuration error" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: false, error: "Server configuration error" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -72,15 +72,16 @@ export const POST: APIRoute = async ({ request }) => {
         return new Response(
           JSON.stringify({
             success: false,
-            error: "Reviews system not configured. Run sql-queriers/create-review-submissions-table.sql in Supabase.",
+            error:
+              "Reviews system not configured. Run sql-queriers/create-review-submissions-table.sql in Supabase.",
           }),
           { status: 500, headers: { "Content-Type": "application/json" } }
         );
       }
-      return new Response(
-        JSON.stringify({ success: false, error: "Failed to save review" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: false, error: "Failed to save review" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     return new Response(
@@ -93,9 +94,9 @@ export const POST: APIRoute = async ({ request }) => {
     );
   } catch (err) {
     console.error("[REVIEWS] Submit error:", err);
-    return new Response(
-      JSON.stringify({ success: false, error: "An error occurred" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ success: false, error: "An error occurred" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };

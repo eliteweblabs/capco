@@ -130,10 +130,7 @@ const renderedIconFiles = iconFileCandidates.filter((c) =>
 /** Fix malformed SVG width attribute (e.g. width="100% version="1.1" from bad edit/replace) */
 function sanitizeSvgForDisplay(svg: string): string {
   if (!svg || !svg.includes("<svg")) return svg;
-  return svg.replace(
-    /width="100%\s*version="/gi,
-    'width="100%" version="'
-  );
+  return svg.replace(/width="100%\s*version="/gi, 'width="100%" version="');
 }
 
 const displayIcon = sanitizeSvgForDisplay(settings.icon);
@@ -484,8 +481,8 @@ const displayLogo = sanitizeSvgForDisplay(settings.logo);
         class="mb-4 rounded border border-yellow-200 bg-yellow-50 p-3 dark:border-yellow-800 dark:bg-yellow-900/20"
       >
         <p class="text-xs text-yellow-800 dark:text-yellow-200">
-          <strong>⚠️ Advanced:</strong> Only use trusted scripts. Malicious code can compromise your
-          site. JS runs globally on every page.
+          <strong>⚠️ Advanced:</strong> Only use trusted scripts. Malicious code can compromise your site.
+          JS runs globally on every page.
         </p>
       </div>
       <div class="grid grid-cols-1 gap-4">
@@ -517,8 +514,8 @@ document.querySelectorAll('.my-element').forEach(el => {
 });`}>{settings.customJs}</textarea
           >
           <p class="mt-1 text-xs text-gray-500">
-            Enter JavaScript code. Do not wrap in <code>&lt;script&gt;</code> tags. Changes take
-            effect immediately after saving.
+            Enter JavaScript code. Do not wrap in <code>&lt;script&gt;</code> tags. Changes take effect
+            immediately after saving.
           </p>
         </div>
       </div>
@@ -585,15 +582,17 @@ document.querySelectorAll('.my-element').forEach(el => {
             }
           </label>
           <select id="font_family" name="font_family" class={globalInputClasses}>
-            {getPrimaryFonts().map((f) => (
-              <option
-                value={f.value}
-                selected={settings.fontFamily === f.value}
-                style={getOptionStyle(f.value)}
-              >
-                {f.handwritten ? `${f.label} ✒` : f.label}
-              </option>
-            ))}
+            {
+              getPrimaryFonts().map((f) => (
+                <option
+                  value={f.value}
+                  selected={settings.fontFamily === f.value}
+                  style={getOptionStyle(f.value)}
+                >
+                  {f.handwritten ? `${f.label} ✒` : f.label}
+                </option>
+              ))
+            }
           </select>
           <p class="mt-1 text-xs text-gray-500">
             Primary font used throughout the site (headings, body text, UI elements).
@@ -618,15 +617,17 @@ document.querySelectorAll('.my-element').forEach(el => {
             name="secondary_font_family"
             class={globalInputClasses}
           >
-            {getFontsForSelect().map((f) => (
-              <option
-                value={f.value}
-                selected={settings.secondaryFontFamily === f.value}
-                style={getOptionStyle(f.value)}
-              >
-                {f.handwritten ? `${f.label} ✒` : f.label}
-              </option>
-            ))}
+            {
+              getFontsForSelect().map((f) => (
+                <option
+                  value={f.value}
+                  selected={settings.secondaryFontFamily === f.value}
+                  style={getOptionStyle(f.value)}
+                >
+                  {f.handwritten ? `${f.label} ✒` : f.label}
+                </option>
+              ))
+            }
           </select>
           <p class="mt-1 text-xs text-gray-500">
             Secondary font used as fallback or for specific elements (optional).
@@ -646,24 +647,24 @@ document.querySelectorAll('.my-element').forEach(el => {
               )
             }
           </label>
-          <select
-            id="tertiary_font_family"
-            name="tertiary_font_family"
-            class={globalInputClasses}
-          >
+          <select id="tertiary_font_family" name="tertiary_font_family" class={globalInputClasses}>
             <option value="" selected={!settings.tertiaryFontFamily}>— None —</option>
-            {getFontsForSelect().map((f) => (
-              <option
-                value={f.value}
-                selected={settings.tertiaryFontFamily === f.value}
-                style={getOptionStyle(f.value)}
-              >
-                {f.handwritten ? `${f.label} ✒` : f.label}
-              </option>
-            ))}
+            {
+              getFontsForSelect().map((f) => (
+                <option
+                  value={f.value}
+                  selected={settings.tertiaryFontFamily === f.value}
+                  style={getOptionStyle(f.value)}
+                >
+                  {f.handwritten ? `${f.label} ✒` : f.label}
+                </option>
+              ))
+            }
           </select>
           <p class="mt-1 text-xs text-gray-500">
-            Accent font for headings, quotes, or handwritten style. Use with <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">font-tertiary</code> class.
+            Accent font for headings, quotes, or handwritten style. Use with <code
+              class="rounded bg-gray-100 px-1 dark:bg-gray-800">font-tertiary</code
+            > class.
           </p>
         </div>
       </div>
@@ -1124,14 +1125,25 @@ document.querySelectorAll('.my-element').forEach(el => {
         </a>
         <div class="flex gap-3">
           <Button type="button" variant="primary" id="reset-form-btn"> Reset </Button>
-          <FormActionButton action="submit" label="Save Settings" variant="secondary" id="save-settings-btn" />
+          <FormActionButton
+            action="submit"
+            label="Save Settings"
+            variant="secondary"
+            id="save-settings-btn"
+          />
         </div>
       </div>
     </form>
   </div>
 </LayoutFullWidth>
 
-<div id="font-preload-urls" data-urls={JSON.stringify(getFontPreloadUrls())} class="hidden" aria-hidden="true" />
+<div
+  id="font-preload-urls"
+  data-urls={JSON.stringify(getFontPreloadUrls())}
+  class="hidden"
+  aria-hidden="true"
+>
+</div>
 <script>
   (function preloadFontsForSelect() {
     const el = document.getElementById("font-preload-urls");
@@ -1561,7 +1573,8 @@ document.querySelectorAll('.my-element').forEach(el => {
             settings.backgroundColorDark
           )
             updates.push("colors");
-          if (settings.fontFamily || settings.secondaryFontFamily || settings.tertiaryFontFamily) updates.push("fonts");
+          if (settings.fontFamily || settings.secondaryFontFamily || settings.tertiaryFontFamily)
+            updates.push("fonts");
           if (updates.length > 0 && window.showSuccess) {
             window.showSuccess(
               "Settings Updated",

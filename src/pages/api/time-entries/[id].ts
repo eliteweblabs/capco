@@ -60,7 +60,9 @@ export const PATCH: APIRoute = async ({ params, request, cookies }): Promise<Res
     }
 
     const updatePayload: Record<string, unknown> = { updatedAt: new Date().toISOString() };
-    if (notes !== undefined) updatePayload.notes = notes == null || String(notes).trim() === "" ? null : String(notes).trim();
+    if (notes !== undefined)
+      updatePayload.notes =
+        notes == null || String(notes).trim() === "" ? null : String(notes).trim();
     if (startedAt !== undefined) {
       const d = new Date(startedAt);
       if (!Number.isNaN(d.getTime())) updatePayload.startedAt = d.toISOString();
