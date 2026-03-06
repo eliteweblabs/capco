@@ -1457,26 +1457,16 @@ const { currentUser } = await checkAuth(Astro.cookies);
     console.log("🔧 [NodesCapco] Initializing NodesCapco component...");
     console.log("🔧 [NodesCapco] Document ready state:", document.readyState);
 
-    // Check if elements exist
     const canvas = document.getElementById("node-canvas");
     const svg = document.getElementById("connections-svg");
     console.log("🔧 [NodesCapco] Canvas exists:", !!canvas);
     console.log("🔧 [NodesCapco] SVG exists:", !!svg);
-
     if (!canvas || !svg) return;
 
-    // Dynamically import the custom icon system
     try {
       console.log("🔧 [ICON] Loading custom icon system...");
       await import("../lib/simple-icons.ts");
-      console.log("🔧 [ICON] Custom icon system loaded successfully");
-      console.log("🔧 [ICON] SimpleIcons available:", !!window.SimpleIcons);
-      if (window.SimpleIcons) {
-        console.log(
-          "🔧 [ICON] Available icons:",
-          Object.keys(window.SimpleIcons.SIMPLE_ICONS || {})
-        );
-      }
+      console.log("🔧 [ICON] Custom icon system loaded");
     } catch (error) {
       console.warn("Failed to load custom icon system:", error);
     }
@@ -1489,12 +1479,10 @@ const { currentUser } = await checkAuth(Astro.cookies);
     // nodeEditor.startContinuousNodeAddition(3000);
   }
 
-  // Initialize immediately if DOM is already loaded (e.g., from CMS content)
   if (document.readyState === "loading") {
     console.log("🔧 [NodesCapco] DOM still loading, waiting for DOMContentLoaded...");
     document.addEventListener("DOMContentLoaded", initNodeEditor);
   } else {
-    // DOM already loaded - initialize immediately
     console.log("🔧 [NodesCapco] DOM already loaded, initializing immediately...");
     initNodeEditor();
   }

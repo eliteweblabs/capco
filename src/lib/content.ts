@@ -574,7 +574,9 @@ async function getDefaultPageContent(slug: string): Promise<PageContent | null> 
  * - PAGE_{SLUG}_JSON - Full JSON object (overrides individual vars)
  */
 export async function getPageContent(slug: string): Promise<PageContent | null> {
-  const cacheKey = `page-${slug}`;
+  // Normalize homepage slug for cache: "home" and "/" share the same cache entry
+  const cacheSlug = slug === "home" || slug === "/" ? "/" : slug;
+  const cacheKey = `page-${cacheSlug}`;
   const slugUpper = slug.toUpperCase().replace(/-/g, "_");
 
   // Skip cache in development for live updates
@@ -593,8 +595,9 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
     try {
       const clientId = process.env.RAILWAY_PROJECT_NAME || null;
 
-      // Normalize slug: "/" and "home" are equivalent for the home page
-      const normalizedSlug = slug === "home" || slug === "/" ? ["home", "/"] : [slug];
+      // Homepage: prefer slug="/" (canonical). Query both for backward compat.
+      const isHome = slug === "home" || slug === "/";
+      const normalizedSlug = isHome ? ["/", "home"] : [slug];
 
       let query = supabaseAdmin
         .from("cmsPages")
@@ -602,14 +605,14 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
         .in("slug", normalizedSlug)
         .eq("isActive", true);
 
-      // Filter by clientId: show global (null) or matching clientId
       if (clientId) {
         query = query.or(`clientId.is.null,clientId.eq.${quoteClientIdForPostgrest(clientId)}`);
       }
-      // If no clientId set, show all pages (no filter)
 
+      // Client-specific first; then prefer slug="/" over "home" (alphabetically "/" < "home")
       const { data: dbPage, error } = await query
-        .order("clientId", { ascending: false }) // Client-specific takes priority
+        .order("clientId", { ascending: false })
+        .order("slug", { ascending: true })
         .limit(1)
         .maybeSingle();
 
@@ -647,6 +650,7 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
         };
         cache.set(cacheKey, pageContent);
         console.log("📄 [CONTENT] Page loaded from database (cmsPages):", slug, {
+          dbSlug: dbPage.slug,
           template: normalizedTemplate,
           contentLength: (pageContent.content || "").length,
           hasContactForm: (pageContent.content || "").includes("<ContactForm"),

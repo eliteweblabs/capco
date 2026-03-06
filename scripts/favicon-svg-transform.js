@@ -21,6 +21,23 @@ function toHex(color) {
   return s;
 }
 
+/** Returns true if hex is dark (avg RGB < 136). Used to replace dark fills with primary. */
+function isDarkHex(hex) {
+  const m = hex.match(/^#?([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])?([0-9a-fA-F])?([0-9a-fA-F])?$/);
+  if (!m) return false;
+  let r, g, b;
+  if (m[4] !== undefined) {
+    r = parseInt(m[1] + m[2], 16);
+    g = parseInt(m[3] + m[4], 16);
+    b = parseInt((m[5] || m[3]) + (m[6] || m[4]), 16);
+  } else {
+    r = parseInt(m[1] + m[1], 16);
+    g = parseInt(m[2] + m[2], 16);
+    b = parseInt(m[3] + m[3], 16);
+  }
+  return (r + g + b) / 3 < 136;
+}
+
 /**
  * @param {string} svgString
  * @param {string} primaryColor
@@ -33,7 +50,13 @@ export function transformSvgForFavicon(svgString, primaryColor) {
   let svg = svgString
     .replace(/\bfill\s*=\s*["'](?:#000|black|currentColor)["']/gi, `fill="${primary}"`)
     .replace(/\bstroke\s*=\s*["'](?:#000|black|currentColor)["']/gi, `stroke="${primary}"`)
-    .replace(/\bfill\s*=\s*["']#000000["']/gi, `fill="${primary}"`);
+    .replace(/\bfill\s*=\s*["']#000000["']/gi, `fill="${primary}"`)
+    .replace(/\bfill\s*=\s*["'](#[0-9a-fA-F]{3,8})["']/g, (m, hex) =>
+      isDarkHex(hex) ? `fill="${primary}"` : m
+    )
+    .replace(/\bstroke\s*=\s*["'](#[0-9a-fA-F]{3,8})["']/g, (m, hex) =>
+      isDarkHex(hex) ? `stroke="${primary}"` : m
+    );
 
   svg = svg.replace(
     /<style[^>]*>[\s\S]*?<\/style>/gi,
@@ -41,17 +64,23 @@ export function transformSvgForFavicon(svgString, primaryColor) {
       if (/\.fill\s*\{[^}]*fill\s*:\s*(#000|#fff|black|white|currentColor)/i.test(styleBlock)) {
         return `<style>path, circle, rect, ellipse, polygon, .fill { fill: ${primary} !important; }</style>`;
       }
+      if (/\bfill\s*:\s*(#[0-9a-fA-F]{3,8})/i.test(styleBlock)) {
+        return styleBlock.replace(/\bfill\s*:\s*(#[0-9a-fA-F]{3,8})/gi, (m, hex) =>
+          isDarkHex(hex) ? `fill: ${primary}` : m
+        );
+      }
       return styleBlock;
     }
   );
 
+  const overrideStyle = `path, circle, rect, ellipse, polygon, .fill { fill: ${primary} !important; stroke: ${primary} !important; }`;
   const hasPrimaryStyle = new RegExp(`fill:\\s*${primary.replace(/[#()]/g, "\\$&")}`).test(svg);
   if (!hasPrimaryStyle) {
     if (/<defs[\s\S]*?>/i.test(svg)) {
-      svg = svg.replace(/(<defs[^>]*>)/i, `$1<style>path, circle, rect, ellipse, polygon, .fill { fill: ${primary}; }</style>`);
+      svg = svg.replace(/(<defs[^>]*>)/i, `$1<style>${overrideStyle}</style>`);
     } else {
       const afterSvgOpen = svg.indexOf(">", svg.indexOf("<svg")) + 1;
-      svg = svg.slice(0, afterSvgOpen) + `<defs><style>path, circle, rect, ellipse, polygon, .fill { fill: ${primary}; }</style></defs>` + svg.slice(afterSvgOpen);
+      svg = svg.slice(0, afterSvgOpen) + `<defs><style>${overrideStyle}</style></defs>` + svg.slice(afterSvgOpen);
     }
   }
 

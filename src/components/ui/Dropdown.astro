@@ -111,6 +111,72 @@ const { id, title = "", onOpenCallback, focusSelector, classList } = Astro.props
         });
       }); */
 
+      // Mobile: override Popper's absolute positioning with fixed below navbar.
+      // Popper sets position:absolute + top/left inline which breaks on mobile after
+      // scrolling because #reveal-scroll applies transform:translateY and the navbar
+      // z-index drops to match it. Use setProperty with !important to win over Popper.
+      document.querySelectorAll("[id$='-dropdown'][data-popover]").forEach(function (panel) {
+        if (panel.hasAttribute("data-mobile-pos-bound")) return;
+        panel.setAttribute("data-mobile-pos-bound", "true");
+        var isMobileFn = window.isMobile || function () { return window.innerWidth < 768; };
+        var PROPS = ["position", "top", "left", "right", "bottom", "transform", "width", "max-width"];
+
+        function applyFixed() {
+          var nav = document.getElementById("main-navbar");
+          var navH = nav ? nav.offsetHeight : 64;
+          panel.style.setProperty("position", "fixed", "important");
+          panel.style.setProperty("top", navH + "px", "important");
+          panel.style.setProperty("left", "0", "important");
+          panel.style.setProperty("right", "0", "important");
+          panel.style.setProperty("bottom", "0", "important");
+          panel.style.setProperty("transform", "none", "important");
+          panel.style.setProperty("width", "100%", "important");
+          panel.style.setProperty("max-width", "100%", "important");
+          panel.setAttribute("data-mobile-pos-applied", "");
+          // Boost navbar z-index so dropdown stays above #reveal-scroll (which is z-50)
+          if (nav) nav.style.setProperty("z-index", "1300", "important");
+        }
+
+        function clearFixed() {
+          panel.removeAttribute("data-mobile-pos-applied");
+          PROPS.forEach(function (p) { panel.style.removeProperty(p); });
+          // Restore navbar z-index to CSS-controlled value
+          var nav = document.getElementById("main-navbar");
+          if (nav) nav.style.removeProperty("z-index");
+        }
+
+        new MutationObserver(function () {
+          var isVisible = !panel.classList.contains("invisible") && !panel.classList.contains("hidden");
+          if (!isVisible || !isMobileFn()) { clearFixed(); return; }
+          // Apply immediately, then enforce for several frames to override Popper's repositioning
+          applyFixed();
+          var frames = 0;
+          (function enforce() {
+            if (++frames > 6) return;
+            requestAnimationFrame(function () { applyFixed(); enforce(); });
+          })();
+        }).observe(panel, { attributes: true, attributeFilter: ["class"] });
+      });
+
+      // Focus-on-open: when a trigger is clicked, focus the input specified by data-focus-on-open.
+      // Must run synchronously inside the same click event for iOS keyboard to open.
+      // Ref: https://gist.github.com/cathyxz/73739c1bdea7d7011abb236541dc9aaa
+      document.querySelectorAll("[data-popover-target], [data-dropdown-toggle]").forEach(function (trigger) {
+        var panelId = trigger.getAttribute("data-popover-target") || trigger.getAttribute("data-dropdown-toggle");
+        var panel = panelId ? document.getElementById(panelId) : null;
+        if (!panel) return;
+        var focusSel = panel.getAttribute("data-focus-on-open");
+        if (!focusSel) return;
+        if (trigger.hasAttribute("data-focus-open-bound")) return;
+        trigger.setAttribute("data-focus-open-bound", "true");
+        trigger.addEventListener("click", function () {
+          // Flowbite's handler runs first (same tick) and shows the panel.
+          // Focus synchronously in the same click gesture so iOS opens the keyboard.
+          var el = panel.querySelector(focusSel);
+          if (el && typeof el.focus === "function") el.focus();
+        });
+      });
+
       // When dropdown open: show X on trigger; when closed: show default icon. Wire X to close.
       document.querySelectorAll(".auth-icon-close").forEach(function (closeEl) {
         var trigger = closeEl.closest("[data-popover-target], [data-dropdown-toggle]");
@@ -176,6 +242,12 @@ const { id, title = "", onOpenCallback, focusSelector, classList } = Astro.props
   /* Panel above navbar: create stacking context so z-[1250] competes with nav (z-100) when panel is in body */
   [role="tooltip"][id$="-dropdown"] {
     isolation: isolate;
+  }
+
+  /* Mobile full-width: hide popper arrow when dropdown is fixed below navbar */
+  [data-mobile-pos-applied] > .dropdown-arrow,
+  [data-mobile-pos-applied] > [data-popper-arrow] {
+    display: none !important;
   }
 
   /* Arrow (pointer) above panel content and navbar – high z-index so it never paints under the nav */

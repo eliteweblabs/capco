@@ -28,47 +28,76 @@ function toHex(color: string): string {
   return s;
 }
 
-/**
- * Transform raw SVG string for favicon: primary color fill + padding for apple-touch.
- * Returns the transformed SVG string.
- */
 /** Fix malformed SVG width attribute (e.g. width="100% version="1.1") */
 function sanitizeSvgWidth(svg: string): string {
   return svg.replace(/width="100%\s*version="/gi, 'width="100%" version="');
 }
 
+/** Returns true if hex is dark (avg RGB < 136). Used to replace dark fills with primary. */
+function isDarkHex(hex: string): boolean {
+  const m = hex.match(/^#?([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])?([0-9a-fA-F])?([0-9a-fA-F])?$/);
+  if (!m) return false;
+  let r: number, g: number, b: number;
+  if (m[4] !== undefined) {
+    r = parseInt(m[1] + m[2], 16);
+    g = parseInt(m[3] + m[4], 16);
+    b = parseInt((m[5] || m[3]) + (m[6] || m[4]), 16);
+  } else {
+    r = parseInt(m[1] + m[1], 16);
+    g = parseInt(m[2] + m[2], 16);
+    b = parseInt(m[3] + m[3], 16);
+  }
+  return (r + g + b) / 3 < 136;
+}
+
+/**
+ * Transform raw SVG string for favicon: primary color fill + padding for apple-touch.
+ * Returns the transformed SVG string.
+ */
 export function transformSvgForFavicon(svgString: string, primaryColor: string): string {
   if (!svgString || !svgString.includes("<svg")) return svgString;
   let svg = sanitizeSvgWidth(svgString);
   const primary = toHex(primaryColor);
 
-  // 1) Replace theme-dependent fill/stroke: black, #000, currentColor with primary
+  // 1) Replace fill/stroke: black, #000, currentColor, and any dark hex (e.g. #333, #231F20)
   svg = svg
     .replace(/\bfill\s*=\s*["'](?:#000|black|currentColor)["']/gi, `fill="${primary}"`)
     .replace(/\bstroke\s*=\s*["'](?:#000|black|currentColor)["']/gi, `stroke="${primary}"`)
-    .replace(/\bfill\s*=\s*["']#000000["']/gi, `fill="${primary}"`);
+    .replace(/\bfill\s*=\s*["']#000000["']/gi, `fill="${primary}"`)
+    .replace(/\bfill\s*=\s*["'](#[0-9a-fA-F]{3,8})["']/g, (m, hex) =>
+      isDarkHex(hex) ? `fill="${primary}"` : m
+    )
+    .replace(/\bstroke\s*=\s*["'](#[0-9a-fA-F]{3,8})["']/g, (m, hex) =>
+      isDarkHex(hex) ? `stroke="${primary}"` : m
+    );
 
-  // 2) Remove or replace <style> that sets .fill to #000/#fff (theme-dependent)
+  // 2) Replace <style> that sets fill to dark/theme-dependent colors
   svg = svg.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, (styleBlock) => {
     if (/\.fill\s*\{[^}]*fill\s*:\s*(#000|#fff|black|white|currentColor)/i.test(styleBlock)) {
       return `<style>path, circle, rect, ellipse, polygon, .fill { fill: ${primary} !important; }</style>`;
     }
+    if (/\bfill\s*:\s*(#[0-9a-fA-F]{3,8})/i.test(styleBlock)) {
+      return styleBlock.replace(/\bfill\s*:\s*(#[0-9a-fA-F]{3,8})/gi, (m, hex) =>
+        isDarkHex(hex) ? `fill: ${primary}` : m
+      );
+    }
     return styleBlock;
   });
 
-  // 3) Ensure all fill-less paths get primary (inject override style inside defs or add defs+style)
+  // 3) Inject override style with !important so primary wins over inline fills (e.g. fill="#333")
+  const overrideStyle = `path, circle, rect, ellipse, polygon, .fill { fill: ${primary} !important; stroke: ${primary} !important; }`;
   const hasPrimaryStyle = new RegExp(`fill:\\s*${primary.replace(/[#()]/g, "\\$&")}`).test(svg);
   if (!hasPrimaryStyle) {
     if (/<defs[\s\S]*?>/i.test(svg)) {
       svg = svg.replace(
         /(<defs[^>]*>)/i,
-        `$1<style>path, circle, rect, ellipse, polygon, .fill { fill: ${primary}; }</style>`
+        `$1<style>${overrideStyle}</style>`
       );
     } else {
       const afterSvgOpen = svg.indexOf(">", svg.indexOf("<svg")) + 1;
       svg =
         svg.slice(0, afterSvgOpen) +
-        `<defs><style>path, circle, rect, ellipse, polygon, .fill { fill: ${primary}; }</style></defs>` +
+        `<defs><style>${overrideStyle}</style></defs>` +
         svg.slice(afterSvgOpen);
     }
   }

@@ -135,7 +135,7 @@ const {
   wrapperClass,
   id,
   marqueeDirection = 'left',
-  marqueeReduceMotion = props.marqueeReduceMotion ?? (variant === 'marquee' ? 'override' : 'respect'),
+  marqueeReduceMotion = props.marqueeReduceMotion ?? ((variant === 'marquee' || variant === 'simple') ? 'override' : 'respect'),
 } = props;
 
 const columns = typeof props.columns === 'string' ? parseInt(props.columns) : (props.columns ?? 6);
@@ -186,6 +186,9 @@ const gridClass = columnClasses[columns] || columnClasses[6];
   ]}
   data-animate={(variant === 'marquee' || variant === 'simple') ? undefined : (animationType || undefined)}
   data-animate-delay={(variant === 'marquee' || variant === 'simple') ? undefined : (animateDelay || undefined)}
+  data-marquee-variant={variant}
+  data-marquee-dir={marqueeDirection}
+  data-marquee-reduce={marqueeReduceMotion}
 >
   <div class="">
     {(title || description) && (
@@ -204,71 +207,66 @@ const gridClass = columnClasses[columns] || columnClasses[6];
     )}
     
     {(variant === 'marquee' || variant === 'simple') ? (
-      <div class="logo-cloud-marquee relative w-full min-w-0 overflow-hidden pointer-events-none" style="--marquee-gap: 4rem;">
-        {/* Fade edges */}
-        {/* <div class="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-white dark:from-gray-900 to-transparent z-10 pointer-events-none" /> */}
-        {/* <div class="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-white dark:from-gray-900 to-transparent z-10 pointer-events-none" /> */}
-        
-        <div class:list={['flex flex-nowrap logo-marquee-scroll gap-[var(--marquee-gap)] pointer-events-none', marqueeDirection === 'right' && 'logo-marquee-scroll--right']}>
-          {[...logoItems, ...logoItems, ...logoItems].map((logo) => (
-            logo.href ? (
-              <a 
-                href={logo.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="flex-shrink-0 pointer-events-none"
-                aria-hidden="true"
-                tabindex="-1"
-              >
-                {logo.icon ? (
-                  <i 
-                    class:list={[
-                      logo.icon,
-                      'text-4xl',
-                      logo.iconColor || 'text-gray-600 dark:text-gray-400',
-                      grayscale && 'grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all',
-                    ]}
-                    title={logo.alt}
-                  />
-                ) : (
-                  <img 
-                    src={logo.src} 
-                    alt={logo.alt}
-                    width={logo.width || 160}
-                    height="40"
-                    class:list={[
-                      'h-10 w-auto object-contain flex-shrink-0 mix-blend-multiply dark:invert dark:mix-blend-normal',
-                      grayscale && 'grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all',
-                    ]}
-                  />
-                )}
-              </a>
-            ) : logo.icon ? (
-              <i 
-                class:list={[
-                  logo.icon,
-                  'text-4xl flex-shrink-0 pointer-events-none',
-                  logo.iconColor || 'text-gray-600 dark:text-gray-400',
-                  grayscale && 'grayscale opacity-60',
-                ]}
-                title={logo.alt}
-                aria-hidden="true"
-              />
-            ) : (
-              <img 
-                src={logo.src} 
-                alt={logo.alt}
-                width={logo.width || 160}
-                height="40"
-                class:list={[
-                  'h-10 w-auto object-contain flex-shrink-0 mix-blend-multiply dark:invert dark:mix-blend-normal pointer-events-none',
-                  grayscale && 'grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all',
-                ]}
-                aria-hidden="true"
-              />
-            )
-          ))}
-        </div>
+      <div class:list={['logo-cloud-marquee', marqueeDirection === 'right' && 'logo-cloud-marquee--right']} style="--marquee-gap: 3rem;">
+        {[false, true].map((isClone) => (
+          <div class="logo-marquee-content" aria-hidden={isClone ? "true" : undefined}>
+            {logoItems.map((logo) => (
+              logo.href ? (
+                <a 
+                  href={logo.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="flex-shrink-0 pointer-events-none"
+                  tabindex="-1"
+                >
+                  {logo.icon ? (
+                    <i 
+                      class:list={[
+                        logo.icon,
+                        'text-4xl',
+                        logo.iconColor || 'text-gray-600 dark:text-gray-400',
+                        grayscale && 'grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all',
+                      ]}
+                      title={logo.alt}
+                    />
+                  ) : (
+                    <img 
+                      src={logo.src} 
+                      alt={logo.alt}
+                      width={logo.width || 160}
+                      height="40"
+                      class:list={[
+                        'h-10 w-auto object-contain flex-shrink-0 mix-blend-multiply dark:invert dark:mix-blend-normal',
+                        grayscale && 'grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all',
+                      ]}
+                    />
+                  )}
+                </a>
+              ) : logo.icon ? (
+                <i 
+                  class:list={[
+                    logo.icon,
+                    'text-4xl flex-shrink-0 pointer-events-none',
+                    logo.iconColor || 'text-gray-600 dark:text-gray-400',
+                    grayscale && 'grayscale opacity-60',
+                  ]}
+                  title={logo.alt}
+                />
+              ) : (
+                <img 
+                  src={logo.src} 
+                  alt={logo.alt}
+                  width={logo.width || 160}
+                  height="40"
+                  class:list={[
+                    'h-10 w-auto object-contain flex-shrink-0 mix-blend-multiply dark:invert dark:mix-blend-normal pointer-events-none',
+                    grayscale && 'grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all',
+                  ]}
+                />
+              )
+            ))}
+          </div>
+        ))}
       </div>
     ) : variant === 'centered' ? (
       <div class="flex flex-nowrap items-center justify-start gap-x-12 gap-y-8 overflow-x-auto scrollbar-hide">
@@ -386,28 +384,40 @@ const gridClass = columnClasses[columns] || columnClasses[6];
 
 {(variant === 'marquee' || variant === 'simple') && (
   <style is:global>
-    /* CSS animation runs on compositor thread – more reliable on real mobile devices than rAF */
-    @keyframes logo-cloud-marquee {
-      from { transform: translate3d(0, 0, 0); }
-      to { transform: translate3d(-33.333%, 0, 0); }
+    /* Standard infinite marquee: two identical content containers side by side.
+       Each translates its full width + gap, creating a seamless loop.
+       Reference: https://ryanmulligan.dev/blog/css-marquee/ */
+
+    .logo-cloud-block .logo-cloud-marquee {
+      display: flex;
+      overflow: hidden;
+      user-select: none;
+      gap: var(--marquee-gap, 3rem);
     }
 
-    .logo-cloud-block .logo-marquee-scroll {
-      animation: logo-cloud-marquee 10s linear infinite;
-      -webkit-animation: logo-cloud-marquee 10s linear infinite;
-      will-change: transform;
-      -webkit-backface-visibility: hidden;
-      backface-visibility: hidden;
+    .logo-cloud-block .logo-marquee-content {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      min-width: 100%;
+      gap: var(--marquee-gap, 3rem);
+      animation: logo-marquee-scroll 40s linear infinite;
     }
 
-    .logo-cloud-block .logo-marquee-scroll--right {
+    .logo-cloud-block .logo-cloud-marquee--right .logo-marquee-content {
       animation-direction: reverse;
     }
 
-    /* Respect reduced motion; .logo-cloud-marquee-force overrides for testing */
+    @keyframes logo-marquee-scroll {
+      from { transform: translateX(0); }
+      to   { transform: translateX(calc(-100% - var(--marquee-gap, 3rem))); }
+    }
+
+    /* Respect reduced motion; .logo-cloud-marquee-force overrides */
     @media (prefers-reduced-motion: reduce) {
-      .logo-cloud-block:not(.logo-cloud-marquee-force) .logo-marquee-scroll {
-        animation: none;
+      .logo-cloud-block:not(.logo-cloud-marquee-force) .logo-marquee-content {
+        animation-play-state: paused;
       }
     }
   </style>

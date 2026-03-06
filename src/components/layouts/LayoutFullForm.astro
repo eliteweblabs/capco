@@ -30,7 +30,60 @@ import PixelGrid from "../ui/PixelGrid.astro";
     class="mx-auto flex w-full max-w-4xl flex-col items-center justify-center p-4 md:p-8"
     role="main"
     data-dynamic-height="height"
+    data-ios-focus-root
   >
     <slot />
   </div>
 </App>
+
+<script is:inline>
+  (function () {
+    var isTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+    if (!isTouch) return;
+
+    var root = document.querySelector("[data-ios-focus-root]");
+    if (!root) return;
+
+    function getFirstInput() {
+      return root.querySelector(
+        "input[autofocus], input:not([type=hidden]):not([readonly]):not([disabled]), textarea, select"
+      );
+    }
+
+    // --- Attempt 1: synthetic click on page load (works on iOS 18+ PWA / some Safari) ---
+    var input = getFirstInput();
+    if (input) {
+      try {
+        var ev = new MouseEvent("click", { bubbles: true, cancelable: true, view: window });
+        input.dispatchEvent(ev);
+        input.focus();
+      } catch (e) { /* silent */ }
+    }
+
+    // --- Attempt 2: first real tap anywhere on the form focuses first input ---
+    // iOS only opens the keyboard when .focus() runs synchronously inside a
+    // user-gesture handler (click/touchend). No setTimeout, rAF, or Promise.
+    // Ref: https://gist.github.com/cathyxz/73739c1bdea7d7011abb236541dc9aaa
+    var done = false;
+    function focusFirst(e) {
+      if (done) return;
+      var tgt = e.target;
+      if (tgt.closest && tgt.closest("a, button, [data-share-trigger]")) return;
+      // If they tapped an input directly, let it handle its own focus
+      if (tgt.tagName === "INPUT" || tgt.tagName === "TEXTAREA" || tgt.tagName === "SELECT") {
+        done = true;
+        return;
+      }
+      var el = getFirstInput();
+      if (!el) return;
+      done = true;
+      root.removeEventListener("touchend", focusFirst, true);
+      root.removeEventListener("click", focusFirst, true);
+      el.focus();
+    }
+
+    root.addEventListener("touchend", focusFirst, true);
+    root.addEventListener("click", focusFirst, true);
+    root.setAttribute("data-ios-tap-hint", "");
+  })();
+</script>
