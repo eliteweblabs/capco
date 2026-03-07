@@ -21,7 +21,7 @@ Both write to same database. User picks their preference.
 |---------|-----|
 | Test Page | `/contact-hybrid` |
 | VAPI Dashboard | https://dashboard.vapi.ai |
-| Webhook Endpoint | `https://capcofire.com/api/vapi/webhook` |
+| Webhook Endpoint | `https://RAILWAY_PUBLIC_DOMAIN/api/vapi/webhook` |
 | Contact API | `/api/contact/submit` |
 
 ---
@@ -86,7 +86,7 @@ Dashboard → Test → Start conversation
 | Issue | Quick Fix |
 |-------|-----------|
 | Function not called | Check system prompt mentions submitContactForm |
-| Webhook 404 | Verify URL: `https://capcofire.com/api/vapi/webhook` |
+| Webhook 404 | Verify URL: `https://RAILWAY_PUBLIC_DOMAIN/api/vapi/webhook` |
 | Missing data | Review VAPI conversation logs |
 | No database entry | Check Railway logs for errors |
 | Chat not loading | Verify VAPI keys in env vars |

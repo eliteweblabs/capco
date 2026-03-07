@@ -12,7 +12,7 @@ import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
 import { globalCompanyData } from "../api/global/global-company-data.ts";
 import { globalClasses } from "../api/global/global-classes.ts";
 
-const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
+const { currentUser, session: _session, supabase: _supabase } = await checkAuth(Astro.cookies);
 const { globalInputClasses, primaryTextClasses, secondaryTextClasses, tabContentClasses } =
   globalClasses();
 const { globalCompanyName } = await globalCompanyData();
@@ -80,7 +80,7 @@ const { globalCompanyName } = await globalCompanyData();
 </LayoutFullWidth>
 
 <script>
-  window.switchNewProjectTab = function (tabId) {
+  (window as any).switchNewProjectTab = function (tabId: string) {
     const formPanel = document.getElementById("form-content");
     const pdfPanel = document.getElementById("pdf-content");
     if (!formPanel || !pdfPanel) return;

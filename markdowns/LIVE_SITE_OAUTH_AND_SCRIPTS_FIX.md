@@ -26,7 +26,7 @@ railway variables --set "RAILWAY_PUBLIC_DOMAIN=https://rothco-firstbranch.up.rai
 2. **Supabase Dashboard** → Authentication → URL Configuration:
    - **Site URL**: `https://rothco-firstbranch.up.railway.app` (not localhost)
    - **Redirect URLs**: Add `https://rothco-firstbranch.up.railway.app/auth/callback`
-   - Repeat for each deployment (capcofire.com, etc.)
+   - Repeat for each deployment (RAILWAY_PUBLIC_DOMAIN, etc.)
 
 3. **Google Cloud Console** → Credentials → OAuth 2.0 Client:
    - **Authorized redirect URIs** must include:  

@@ -2,7 +2,7 @@ import "dotenv/config";
 import fetch from "node-fetch";
 
 const VAPI_API_KEY = process.env.VAPI_API_KEY;
-const RAILWAY_PUBLIC_DOMAIN = "https://capcofire.com";
+const RAILWAY_PUBLIC_DOMAIN = process.env.RAILWAY_PUBLIC_DOMAIN;
 
 // Create a Custom Tool (not a function in the assistant)
 async function createTool() {

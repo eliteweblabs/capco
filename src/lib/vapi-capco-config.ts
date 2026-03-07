@@ -133,11 +133,11 @@ export const VAPI_DASHBOARD_INSTRUCTIONS = `
 5. Save changes
 
 ## Webhook URL:
-- Production: https://capcofire.com/api/vapi/webhook
+- Production: https://RAILWAY_PUBLIC_DOMAIN/api/vapi/webhook
 - Development: https://[your-tunnel-url].loca.lt/api/vapi/webhook
 
 ## Allowed Origins:
-- https://capcofire.com
+- https://RAILWAY_PUBLIC_DOMAIN
 - https://*.loca.lt (for development)
 `;
 

@@ -13,7 +13,7 @@ export const POST: APIRoute = async ({ request }) => {
     console.log("📋 [WEBHOOK] Headers:", headers);
 
     // Parse JSON if possible
-    let data;
+    let data: any;
     try {
       data = JSON.parse(body);
     } catch (e) {
@@ -82,7 +82,7 @@ export const POST: APIRoute = async ({ request }) => {
   }
 };
 
-export const GET: APIRoute = async ({ request }) => {
+export const GET: APIRoute = async ({ request: _request }) => {
   return new Response(
     JSON.stringify({
       success: true,

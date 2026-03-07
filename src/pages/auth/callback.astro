@@ -214,7 +214,7 @@ import App from "../../components/ui/App.astro";
 
     // CRITICAL: Set up auth state change listener BEFORE doing anything else
     // This will catch when Supabase automatically exchanges the code
-    let sessionReceived = false;
+    let _sessionReceived = false;
     let authStateSubscription: any = null;
 
     const authStatePromise = new Promise((resolve, reject) => {
@@ -236,7 +236,7 @@ import App from "../../components/ui/App.astro";
         );
         if (event === "SIGNED_IN" && session) {
           clearTimeout(timeout);
-          sessionReceived = true;
+          _sessionReceived = true;
           if (authStateSubscription) {
             authStateSubscription.unsubscribe();
           }
@@ -244,7 +244,7 @@ import App from "../../components/ui/App.astro";
         } else if (event === "TOKEN_REFRESHED" && session) {
           // Also handle token refresh as a sign-in event
           clearTimeout(timeout);
-          sessionReceived = true;
+          _sessionReceived = true;
           if (authStateSubscription) {
             authStateSubscription.unsubscribe();
           }

@@ -2,7 +2,7 @@ import "dotenv/config";
 import fetch from "node-fetch";
 
 const VAPI_API_KEY = process.env.VAPI_API_KEY;
-const RAILWAY_PUBLIC_DOMAIN = "https://capcofire.com";
+const RAILWAY_PUBLIC_DOMAIN = process.env.RAILWAY_PUBLIC_DOMAIN;
 const TOOL_ID = "0b17d3bc-a697-432b-8386-7ed1235fd111"; // getStaffSchedule tool ID
 
 // Update the tool to remove interfering messages

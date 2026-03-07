@@ -58,7 +58,7 @@ curl -X POST http://localhost:4321/api/send-email-sms \
 
 Both tests should:
 - ✅ Return 200 status code
-- ✅ Send emails to capco@eliteweblabs.com and jk@capcofire.com
+- ✅ Send emails to capco@eliteweblabs.com and jk@RAILWAY_PUBLIC_DOMAIN
 - ✅ Show proper logging in console
 - ✅ No more TypeError exceptions
 

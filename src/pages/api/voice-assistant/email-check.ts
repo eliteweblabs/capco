@@ -16,12 +16,12 @@ import type { APIRoute } from "astro";
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-    const { limit = 10 } = (await request.json()) || {};
+    const { limit: _limit = 10 } = (await request.json()) || {};
 
     // Check if email reading is configured
     // This would require additional setup (Gmail API, IMAP, etc.)
     const emailReadEnabled = import.meta.env.EMAIL_READ_ENABLED === "true";
-    const emailProvider = import.meta.env.EMAIL_PROVIDER || "resend";
+    const _emailProvider = import.meta.env.EMAIL_PROVIDER || "resend";
 
     if (!emailReadEnabled) {
       return new Response(

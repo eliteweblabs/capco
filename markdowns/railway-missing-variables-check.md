@@ -31,7 +31,7 @@ These are **REQUIRED** variables according to `railway-template.json`:
 ### 3. Email (Required - Resend)
 
 - ✅ `RESEND_API_KEY` = `re_HY32mGph_EZW1cR77aFPHbxMzuqVnJZ1t`
-- ✅ `EMAIL_FROM` = `noreply@capcofire.com` (use `FROM_EMAIL` from .env)
+- ✅ `EMAIL_FROM` = `noreply@RAILWAY_PUBLIC_DOMAIN` (use `FROM_EMAIL` from .env)
 - ✅ `EMAIL_FROM_NAME` = `CAPCO Design Group` (use `FROM_NAME` from .env)
 
 ### 4. Node Environment
@@ -142,7 +142,7 @@ These are **REQUIRED** variables according to `railway-template.json`:
 # Required - Company Info
 RAILWAY_PROJECT_NAME="CAPCO Design Group"
 GLOBAL_COMPANY_PHONE="+16175810583"
-GLOBAL_COMPANY_EMAIL="admin@capcofire.com"
+GLOBAL_COMPANY_EMAIL="admin@RAILWAY_PUBLIC_DOMAIN"
 GLOBAL_COLOR_PRIMARY="#825BDD"
 NODE_ENV="production"
 
@@ -185,7 +185,7 @@ VAPID_EMAIL="mailto:your-email@example.com"
 CMS_POSTGRES_URL="postgresql://user:password@host:5432/database"
 
 # Public URL (will be set by Railway automatically)
-PUBLIC_URL="https://capcofire.com"
+PUBLIC_URL="https://RAILWAY_PUBLIC_DOMAIN"
 ```
 
 ## CRITICAL MISSING ITEMS

@@ -160,7 +160,7 @@ return redirect(redirectTo);
 ### Important Note
 The base callback URL must be registered in Supabase:
 - ✅ `http://localhost:4321/auth/callback` (development)
-- ✅ `https://capcofire.com/auth/callback` (production)
+- ✅ `https://RAILWAY_PUBLIC_DOMAIN/auth/callback` (production)
 
 The query parameters (`?redirect=/mep-form`) are automatically preserved by Supabase OAuth and don't need separate registration.
 

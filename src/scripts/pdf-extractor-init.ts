@@ -246,7 +246,7 @@ document.addEventListener("DOMContentLoaded", function () {
           }
         });
 
-        input.addEventListener("blur", (e) => {
+        input.addEventListener("blur", (_e) => {
           // Don't collapse on blur - PDF stays expanded until form submission or doc deletion
           // Just clear the focused input reference but keep PDF expanded
           if (!isSelectingOnPDF) {
@@ -542,7 +542,7 @@ document.addEventListener("DOMContentLoaded", function () {
           // Get actual available width (accounting for padding)
           const containerWidth = container ? Math.max(container.clientWidth - 32, 200) : 400;
           const defaultViewport = page.getViewport({ scale: 1.0 });
-          const displayScale = containerWidth / defaultViewport.width;
+          const _displayScale = containerWidth / defaultViewport.width;
 
           // Create page container
           const pageContainer = document.createElement("div");

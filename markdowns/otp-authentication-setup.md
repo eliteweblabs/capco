@@ -158,7 +158,7 @@ The system uses **Resend** as the email provider (configured in `.env`):
 ```env
 EMAIL_PROVIDER=resend
 EMAIL_API_KEY=re_...
-FROM_EMAIL=noreply@capcofire.com
+FROM_EMAIL=noreply@RAILWAY_PUBLIC_DOMAIN
 FROM_NAME='CAPCO Design Group'
 ```
 
@@ -179,14 +179,14 @@ Supabase will use these settings to send OTP emails.
 1. **Request OTP:**
 
    ```bash
-   curl -X POST https://capcofire.com/api/auth/send-otp \
+   curl -X POST https://RAILWAY_PUBLIC_DOMAIN/api/auth/send-otp \
      -H "Content-Type: application/json" \
      -d '{"email": "test@example.com"}'
    ```
 
 2. **Verify OTP:**
    ```bash
-   curl -X POST https://capcofire.com/api/auth/verify-otp \
+   curl -X POST https://RAILWAY_PUBLIC_DOMAIN/api/auth/verify-otp \
      -H "Content-Type: application/json" \
      -d '{"email": "test@example.com", "token": "123456"}'
    ```

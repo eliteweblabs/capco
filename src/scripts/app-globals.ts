@@ -520,7 +520,7 @@ if (!String.prototype.startsWith) {
         if (node.nodeType === Node.ELEMENT_NODE) {
           const element = node as Element;
           const newInputs = element.querySelectorAll ? element.querySelectorAll(selector) : [];
-          newInputs.forEach((input) => {
+          newInputs.forEach((input: Element) => {
             input.addEventListener("focus", hideOnFocus);
             input.addEventListener("blur", showOnBlur);
           });
@@ -582,7 +582,7 @@ if (!String.prototype.startsWith) {
           const innerModals = element.querySelectorAll
             ? element.querySelectorAll('[data-modal], [id*="modal" i], [id*="Modal" i], .modal')
             : [];
-          innerModals.forEach((modal) => {
+          innerModals.forEach((modal: Element) => {
             modalObserver.observe(modal, { attributes: true, attributeFilter: ["class"] });
           });
         }
@@ -1475,7 +1475,7 @@ if ("serviceWorker" in navigator) {
     const columns = instanceEl.getAttribute("data-columns") || "4";
 
     // Store original parent for restoration if needed
-    const originalParent = instanceEl.parentElement;
+    const _originalParent = instanceEl.parentElement;
     instanceEl.setAttribute("data-original-parent", "true");
 
     // Get all buttons from this instance
@@ -1511,7 +1511,7 @@ if ("serviceWorker" in navigator) {
           console.log(`🎯 [STICKY-ACTIONS] Linked button to form: ${form.id}`, buttonClone);
         } else if (form && !form.id) {
           // Generate form ID if it doesn't have one
-          const formId = `form-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          const formId = `form-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
           form.id = formId;
           buttonClone.setAttribute("form", formId);
           console.log(`🎯 [STICKY-ACTIONS] Generated form ID and linked button: ${formId}`);
@@ -1776,7 +1776,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const element = el as HTMLElement;
         element.style.transform = "translateZ(0)"; // Force GPU layer
         element.style.willChange = "transform, top, bottom";
-        element.style.webkitBackfaceVisibility = "hidden";
+        (element.style as any).webkitBackfaceVisibility = "hidden";
         element.style.backfaceVisibility = "hidden";
       });
 
@@ -1799,7 +1799,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // Fix 4: Handle header positioning - target the actual navbar
       const navbar = document.querySelector("nav.fixed");
       if (navbar) {
-        const navbarElement = navbar as HTMLElement;
+        const _navbarElement = navbar as HTMLElement;
         console.log("🍎 [SAFARI-FIX] Found navbar, applying fixes");
 
         // Force the positioning

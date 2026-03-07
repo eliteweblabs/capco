@@ -199,11 +199,11 @@ Add new case to `handleToolCalls` function (around line 228):
       ? getApiBaseUrl(request)
       : process.env.PUBLIC_RAILWAY_STATIC_URL || 
         process.env.RAILWAY_PUBLIC_DOMAIN || 
-        "https://capcofire.com";
+        "https://RAILWAY_PUBLIC_DOMAIN";
   } catch (error) {
     baseUrl = process.env.PUBLIC_RAILWAY_STATIC_URL || 
               process.env.RAILWAY_PUBLIC_DOMAIN || 
-              "https://capcofire.com";
+              "https://RAILWAY_PUBLIC_DOMAIN";
   }
 
   // Call existing contact API

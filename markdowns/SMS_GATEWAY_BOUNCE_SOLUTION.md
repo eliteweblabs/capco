@@ -16,7 +16,7 @@ Your SMS gateway emails are bouncing to `@vtext.com` addresses (Verizon). This i
 - ✅ **Empty Subject Line** - Reduces spam triggers
 - ✅ **160 Character Limit** - Standard SMS length
 - ✅ **Plain Text Only** - No HTML content
-- ✅ **Consistent Sender** - `CAPCo Fire <noreply@capcofire.com>`
+- ✅ **Consistent Sender** - `CAPCo Fire <noreply@RAILWAY_PUBLIC_DOMAIN>`
 - ✅ **SMS Headers** - Added `X-SMS-Gateway: true`
 
 ### 2. **Message Content Optimization**
@@ -54,7 +54,7 @@ This will test 3 different formats and show which works best.
 
 ### 1. **Verify Resend Domain Authentication**
 
-Check your Resend dashboard to ensure `capcofire.com` is properly verified:
+Check your Resend dashboard to ensure `RAILWAY_PUBLIC_DOMAIN` is properly verified:
 
 - SPF record: `v=spf1 include:_spf.resend.com ~all`
 - DKIM records properly configured

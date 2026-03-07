@@ -50,9 +50,9 @@ FOR ALL USING (
   OR
   -- Fallback: specific admin emails
   auth.jwt() ->> 'email' IN (
-    'admin@capcofire.com',
-    'owner@capcofire.com', 
-    'staff@capcofire.com'
+    'admin@RAILWAY_PUBLIC_DOMAIN',
+    'owner@RAILWAY_PUBLIC_DOMAIN', 
+    'staff@RAILWAY_PUBLIC_DOMAIN'
   )
   OR
   -- User owns the project
@@ -62,9 +62,9 @@ WITH CHECK (
   (auth.jwt() ->> 'user_metadata')::jsonb ->> 'role' = 'Admin'
   OR
   auth.jwt() ->> 'email' IN (
-    'admin@capcofire.com',
-    'owner@capcofire.com',
-    'staff@capcofire.com'
+    'admin@RAILWAY_PUBLIC_DOMAIN',
+    'owner@RAILWAY_PUBLIC_DOMAIN',
+    'staff@RAILWAY_PUBLIC_DOMAIN'
   )
   OR
   auth.uid() = author_id

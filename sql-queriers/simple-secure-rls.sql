@@ -27,9 +27,9 @@ FOR ALL USING (
   auth.uid() = author_id OR
   -- OR user is admin (replace with your actual admin email)
   auth.jwt() ->> 'email' IN (
-    'admin@capcofire.com',
-    'owner@capcofire.com',
-    'staff@capcofire.com'
+    'admin@RAILWAY_PUBLIC_DOMAIN',
+    'owner@RAILWAY_PUBLIC_DOMAIN',
+    'staff@RAILWAY_PUBLIC_DOMAIN'
   )
 );
 
@@ -40,9 +40,9 @@ FOR ALL USING (
   auth.uid() = author_id OR
   -- OR user is admin
   auth.jwt() ->> 'email' IN (
-    'admin@capcofire.com', 
-    'owner@capcofire.com',
-    'staff@capcofire.com'
+    'admin@RAILWAY_PUBLIC_DOMAIN', 
+    'owner@RAILWAY_PUBLIC_DOMAIN',
+    'staff@RAILWAY_PUBLIC_DOMAIN'
   )
 );
 

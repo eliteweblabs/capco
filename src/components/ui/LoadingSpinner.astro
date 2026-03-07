@@ -63,12 +63,18 @@ const borderColorClasses = {
 const sizeClass = sizeClasses[size];
 const borderColorClass =
   borderColorClasses[borderColor as keyof typeof borderColorClasses] || borderColorClasses.primary;
+import SimpleIcon from "../common/SimpleIcon.astro";
+import { globalCompanyData } from "../../pages/api/global/global-company-data";
+const companyData = await globalCompanyData();
 ---
 
 <div {id} class={`flex flex-col items-center space-y-4 ${className}`}>
   <!-- Spinning loader -->
   <div class="relative">
-    <div class={`animate-spin rounded-full ${sizeClass} ${borderColorClass}`}></div>
+    <!-- <div class={`animate-spin rounded-full ${sizeClass} ${borderColorClass}`}> -->
+    <div class={`${sizeClass} ${borderColorClass}`}>
+      <SimpleIcon name={companyData.globalCompanyName} />
+    </div>
   </div>
 
   <!-- Loading text with typewriter effect -->

@@ -81,7 +81,7 @@ sql-queriers/
 ```bash
 ./scripts/test-otp-flow.sh
 # Or with custom URL and email:
-./scripts/test-otp-flow.sh https://capcofire.com your@email.com
+./scripts/test-otp-flow.sh https://RAILWAY_PUBLIC_DOMAIN your@email.com
 ```
 
 ### Manual Test
@@ -103,7 +103,7 @@ PUBLIC_SUPABASE_ANON_KEY=xxx
 # Email Provider (already configured)
 EMAIL_PROVIDER=resend
 EMAIL_API_KEY=re_xxx
-FROM_EMAIL=noreply@capcofire.com
+FROM_EMAIL=noreply@RAILWAY_PUBLIC_DOMAIN
 FROM_NAME='CAPCO Design Group'
 ```
 

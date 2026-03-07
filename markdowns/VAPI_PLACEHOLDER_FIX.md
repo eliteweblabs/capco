@@ -37,12 +37,12 @@ Go to **Railway Dashboard → Your Project → Variables** and add:
 
 ```bash
 RAILWAY_PROJECT_NAME="CAPCO Design Group"
-RAILWAY_PUBLIC_DOMAIN="capcofire.com"
+RAILWAY_PUBLIC_DOMAIN="RAILWAY_PUBLIC_DOMAIN"
 ```
 
 **Notes:**
 - Don't include `https://` in `RAILWAY_PUBLIC_DOMAIN` - the script adds it automatically
-- Or include it: `RAILWAY_PUBLIC_DOMAIN="https://capcofire.com"` - the script handles both
+- Or include it: `RAILWAY_PUBLIC_DOMAIN="https://RAILWAY_PUBLIC_DOMAIN"` - the script handles both
 
 ### Option 2: Update the Script to Use Existing Variables
 
@@ -57,10 +57,10 @@ const COMPANY_NAME_ENV_VAR = "FROM_NAME"; // Already set: "CAPCO Design Group"
 
 // And change lines 56-57 from:
 let WEBHOOK_DOMAIN =
-  process.env.RAILWAY_PUBLIC_DOMAIN || process.env.WEBHOOK_DOMAIN || "https://capcofire.com";
+  process.env.RAILWAY_PUBLIC_DOMAIN || process.env.WEBHOOK_DOMAIN || "https://RAILWAY_PUBLIC_DOMAIN";
 
 // To:
-let WEBHOOK_DOMAIN = "https://capcofire.com"; // Just hardcode it for CAPCO
+let WEBHOOK_DOMAIN = "https://RAILWAY_PUBLIC_DOMAIN"; // Just hardcode it for CAPCO
 ```
 
 ### Option 3: Remove Placeholder System (Simplest)
@@ -94,7 +94,7 @@ You are a helpful voice assistant for CAPCO Design Group, specializing...
 ### Steps:
 
 1. **Go to Railway Dashboard**
-   - Project: `capcofire.com` (or your project name)
+   - Project: `RAILWAY_PUBLIC_DOMAIN` (or your project name)
    - Tab: **Variables**
 
 2. **Add New Variable**
@@ -106,7 +106,7 @@ You are a helpful voice assistant for CAPCO Design Group, specializing...
 3. **Add Another Variable**
    - Click "New Variable"
    - Name: `RAILWAY_PUBLIC_DOMAIN`
-   - Value: `capcofire.com` or `https://capcofire.com`
+   - Value: `RAILWAY_PUBLIC_DOMAIN` or `https://RAILWAY_PUBLIC_DOMAIN`
    - Click "Add"
 
 4. **Redeploy**
@@ -150,7 +150,7 @@ The `.env` file in your local repo has these variables commented out:
 
 ```bash
 # Line 32-33 in .env
-# RAILWAY_PUBLIC_DOMAIN=https://capcofire.com
+# RAILWAY_PUBLIC_DOMAIN=https://RAILWAY_PUBLIC_DOMAIN
 # N8N_WEBHOOK_URL=${RAILWAY_PUBLIC_DOMAIN}/api/webhook/incoming-call
 ```
 
@@ -173,9 +173,9 @@ While you're in Railway Variables, also set these (see `RAILWAY_VARIABLES_CHECKL
 ```bash
 GLOBAL_COLOR_PRIMARY="#825BDD"           # Brand primary color
 GLOBAL_COLOR_SECONDARY="#0ea5e9"         # Brand secondary color
-GLOBAL_COMPANY_EMAIL="contact@capcofire.com"
+GLOBAL_COMPANY_EMAIL="contact@RAILWAY_PUBLIC_DOMAIN"
 GLOBAL_COMPANY_PHONE="+16175810583"
-FROM_EMAIL="noreply@capcofire.com"
+FROM_EMAIL="noreply@RAILWAY_PUBLIC_DOMAIN"
 FROM_NAME="CAPCO Design Group"
 ```
 
@@ -192,7 +192,7 @@ FONT_FAMILY="Outfit Variable"
 ```bash
 # Set env vars for local test
 export RAILWAY_PROJECT_NAME="CAPCO Design Group"
-export RAILWAY_PUBLIC_DOMAIN="capcofire.com"
+export RAILWAY_PUBLIC_DOMAIN="RAILWAY_PUBLIC_DOMAIN"
 
 # Run the script
 node scripts/vapi-capco-config.js

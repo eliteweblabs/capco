@@ -13,7 +13,7 @@ In your **Supabase Dashboard** → **Authentication** → **Providers** → **Go
 ✅ **Configure Redirect URLs:**
 
 - Development: `http://localhost:4321/api/auth/callback`
-- Production: `https://capcofire.com/api/auth/callback`
+- Production: `https://RAILWAY_PUBLIC_DOMAIN/api/auth/callback`
 
 ### 2. Enable User Auto-Creation
 

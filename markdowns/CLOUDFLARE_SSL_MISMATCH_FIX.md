@@ -14,7 +14,7 @@ Cloudflare's SSL/TLS encryption mode is incompatible with Railway's SSL certific
 
 1. **Go to Cloudflare Dashboard**
    - Login at https://dash.cloudflare.com
-   - Select your domain `capcofire.com`
+   - Select your domain `RAILWAY_PUBLIC_DOMAIN`
 
 2. **Go to SSL/TLS Settings**
    - Click **SSL/TLS** in the left sidebar
@@ -67,14 +67,14 @@ If Cloudflare is causing issues, you can temporarily bypass it:
 
 1. **Disable Cloudflare Proxy**
    - Cloudflare Dashboard → DNS → Records
-   - Find the record for `capcofire.com`
+   - Find the record for `RAILWAY_PUBLIC_DOMAIN`
    - Click the orange cloud icon to turn it grey (DNS only)
    - This disables Cloudflare proxy, DNS still works
    - Railway will handle SSL directly
 
 2. **Wait for DNS Propagation**
    - Changes take 5-60 minutes
-   - Test: `https://capcofire.com`
+   - Test: `https://RAILWAY_PUBLIC_DOMAIN`
 
 ## Troubleshooting Steps
 
@@ -95,7 +95,7 @@ curl -I https://your-app.up.railway.app
 ### 3. Check SSL Certificate Chain
 ```bash
 # Check certificate chain
-openssl s_client -connect capcofire.com:443 -showcerts
+openssl s_client -connect RAILWAY_PUBLIC_DOMAIN:443 -showcerts
 
 # Look for certificate chain issues
 ```
@@ -129,7 +129,7 @@ Always Use HTTPS: ON
 
 **Railway Settings:**
 ```
-Custom Domain: capcofire.com
+Custom Domain: RAILWAY_PUBLIC_DOMAIN
 SSL Certificate: Valid and Active
 ```
 

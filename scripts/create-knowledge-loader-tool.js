@@ -2,7 +2,7 @@ import "dotenv/config";
 import fetch from "node-fetch";
 
 const VAPI_API_KEY = process.env.VAPI_API_KEY;
-const RAILWAY_PUBLIC_DOMAIN = process.env.RAILWAY_PUBLIC_DOMAIN || process.env.PUBLIC_DOMAIN || "https://capcofire.com";
+const RAILWAY_PUBLIC_DOMAIN = process.env.RAILWAY_PUBLIC_DOMAIN || process.env.PUBLIC_DOMAIN;
 
 // Get the public domain, ensuring it's a valid URL
 let webhookUrl = RAILWAY_PUBLIC_DOMAIN.replace(/\$\{[^}]+\}/g, "").trim();
@@ -12,7 +12,7 @@ if (!webhookUrl.startsWith("http")) {
   if (webhookUrl) {
     webhookUrl = `https://${webhookUrl}`;
   } else {
-    webhookUrl = "https://capcofire.com";
+    webhookUrl = process.env.RAILWAY_PUBLIC_DOMAIN || "";
   }
 }
 

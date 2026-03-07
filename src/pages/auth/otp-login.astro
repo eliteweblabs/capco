@@ -4,15 +4,15 @@
 // Handle OAuth callback if code is present (MUST be first). Preserve full query (state, redirect).
 const authCode = Astro.url.searchParams.get("code");
 if (authCode) {
-  const query = Astro.url.search ? Astro.url.search : `?code=${encodeURIComponent(authCode)}`;
-  return Astro.redirect(`/api/auth/callback${query}`);
+  const _query = Astro.url.search ? Astro.url.search : `?code=${encodeURIComponent(authCode)}`;
+  return Astro.redirect(`/api/auth/callback${_query}`);
 }
 
 // Get auth data directly
 import { checkAuth } from "../../lib/auth";
 
 const authResult = await checkAuth(Astro.cookies);
-const { isAuth, currentUser } = authResult;
+const { isAuth, currentUser: _currentUser } = authResult;
 
 // Redirect authenticated users to dashboard
 if (isAuth) {

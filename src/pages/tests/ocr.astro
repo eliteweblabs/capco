@@ -258,7 +258,7 @@ const PUBLIC_SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
         const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
         const fileName = `${user.id}/${timestamp}_${sanitizedFileName}`;
 
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { data: _uploadData, error: uploadError } = await supabase.storage
           .from("project-documents")
           .upload(fileName, file, {
             cacheControl: "3600",
@@ -332,7 +332,7 @@ const PUBLIC_SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
     return div;
   }
 
-  function updateProgress(progressItem, status, message) {
+  function updateProgress(progressItem, status, _message) {
     console.log("updateProgress function called");
     const progressBar = progressItem.querySelector(".progress-bar");
     const progressText = progressItem.querySelector(".progress-text");
@@ -448,7 +448,7 @@ const PUBLIC_SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
     });
   }
 
-  function initPDFViewer(file, pdfUrl) {
+  function initPDFViewer(file, _pdfUrl) {
     console.log("initPDFViewer function called");
     const canvas = document.getElementById("pdf-canvas");
     const prevBtn = document.getElementById("pdf-prev-page");
@@ -459,7 +459,7 @@ const PUBLIC_SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
     const deleteBtn = document.getElementById("pdf-delete");
     const pdfContainer = document.getElementById("pdf-viewer-container");
     const overlay = document.getElementById("pdf-meta-extractor-overlay");
-    const ocrResultDiv = document.getElementById("pdf-meta-extractor-ocr-result");
+    const _ocrResultDiv = document.getElementById("pdf-meta-extractor-ocr-result");
 
     let pdfDoc = null;
     let currentPage = 1;
@@ -506,7 +506,7 @@ const PUBLIC_SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
       reader.readAsArrayBuffer(file);
     }
 
-    function clearOverlay() {
+    function _clearOverlay() {
       console.log("clearOverlay function called");
       const ctx = overlay.getContext("2d");
       ctx.clearRect(0, 0, overlay.width, overlay.height);
@@ -720,8 +720,8 @@ const PUBLIC_SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
         let startX, startY, endX, endY;
         let selectedField = null;
         let ocrText = "";
-        let imageBlob = null;
-        let pdfData = null;
+        let _imageBlob = null;
+        let _pdfData = null;
 
         function loadPDF(url) {
           console.log("loadPDF function called (second script)");
@@ -820,7 +820,7 @@ const PUBLIC_SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
           drawSelection();
         });
 
-        overlay.addEventListener("mouseup", function (e) {
+        overlay.addEventListener("mouseup", function (_e) {
           console.log("overlay mouseup event triggered");
           if (!isSelecting) return;
           isSelecting = false;
@@ -870,7 +870,7 @@ const PUBLIC_SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
           // document.body.appendChild(tempCanvas); // Remove or comment out after debugging
           if (selectedField === "image") {
             tempCanvas.toBlob(function (blob) {
-              imageBlob = blob;
+              _imageBlob = blob;
               // Show preview
               const img = document.getElementById("pdf-meta-extractor-image-preview");
               if (img) {

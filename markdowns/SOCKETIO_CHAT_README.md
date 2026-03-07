@@ -49,7 +49,7 @@ The server is configured to allow connections from:
 
 - `http://localhost:4321` (Astro dev server)
 - `http://localhost:3000` (alternative port)
-- `https://capcofire.com` (your production domain)
+- `https://RAILWAY_PUBLIC_DOMAIN` (your production domain)
 
 ## ✨ Features
 

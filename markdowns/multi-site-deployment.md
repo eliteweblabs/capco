@@ -6,7 +6,7 @@ This repository deploys **multiple sites** from a single codebase when synced to
 
 | Site | Domain | Notes |
 |------|--------|-------|
-| CAPCO Design Group | capcofire.com | |
+| CAPCO Design Group | RAILWAY_PUBLIC_DOMAIN | |
 | Rothco Built, LLC | rothco-built.com | |
 
 **More sites will be added.** Each has its own Railway project and Supabase instance.

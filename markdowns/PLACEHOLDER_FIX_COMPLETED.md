@@ -26,7 +26,7 @@ Query result before fix:
 }
 ```
 
-This explains why placeholders like `{{COMPANY_NAME}}` were showing "Rothco Built" on capcofire.com!
+This explains why placeholders like `{{COMPANY_NAME}}` were showing "Rothco Built" on RAILWAY_PUBLIC_DOMAIN!
 
 ## Solution Applied
 
@@ -34,8 +34,8 @@ Updated the `globalSettings` table with correct CAPCO data:
 
 ```sql
 UPDATE "globalSettings" SET value = 'CAPCO Design Group' WHERE key = 'companyName';
-UPDATE "globalSettings" SET value = 'https://capcofire.com' WHERE key = 'website';
-UPDATE "globalSettings" SET value = 'contact@capcofire.com' WHERE key = 'email';
+UPDATE "globalSettings" SET value = 'https://RAILWAY_PUBLIC_DOMAIN' WHERE key = 'website';
+UPDATE "globalSettings" SET value = 'contact@RAILWAY_PUBLIC_DOMAIN' WHERE key = 'email';
 UPDATE "globalSettings" SET value = '+16175810583' WHERE key = 'phone';
 UPDATE "globalSettings" SET value = 'Professional Fire Protection Plan Review & Approval' WHERE key = 'slogan';
 UPDATE "globalSettings" SET value = '#825BDD' WHERE key = 'primary_color';
@@ -47,8 +47,8 @@ UPDATE "globalSettings" SET value = '#0ea5e9' WHERE key = 'secondary_color';
 ```json
 {
   "companyName": "CAPCO Design Group",
-  "website": "https://capcofire.com",
-  "email": "contact@capcofire.com",
+  "website": "https://RAILWAY_PUBLIC_DOMAIN",
+  "email": "contact@RAILWAY_PUBLIC_DOMAIN",
   "phone": "+16175810583",
   "slogan": "Professional Fire Protection Plan Review & Approval",
   "primary_color": "#825BDD",
@@ -88,8 +88,8 @@ The following placeholders are now correctly replaced:
 - `{{COMPANY_NAME}}` → "CAPCO Design Group"
 - `{{RAILWAY_PROJECT_NAME}}` → "CAPCO Design Group"
 - `{{GLOBAL_COMPANY_NAME}}` → "CAPCO Design Group"
-- `{{GLOBAL_COMPANY_WEBSITE}}` → "https://capcofire.com"
-- `{{GLOBAL_COMPANY_EMAIL}}` → "contact@capcofire.com"
+- `{{GLOBAL_COMPANY_WEBSITE}}` → "https://RAILWAY_PUBLIC_DOMAIN"
+- `{{GLOBAL_COMPANY_EMAIL}}` → "contact@RAILWAY_PUBLIC_DOMAIN"
 - `{{GLOBAL_COMPANY_PHONE}}` → "+16175810583"
 - `{{GLOBAL_COMPANY_SLOGAN}}` → "Professional Fire Protection Plan Review & Approval"
 - `{{GLOBAL_COLOR_PRIMARY}}` → "#825BDD"
@@ -137,15 +137,15 @@ Create a test page with placeholders:
 
 ```html
 <p>Company: CAPCO Design Group</p>
-<p>Website: https://capcofire.com</p>
-<p>Email: contact@capcofire.com</p>
+<p>Website: https://RAILWAY_PUBLIC_DOMAIN</p>
+<p>Email: contact@RAILWAY_PUBLIC_DOMAIN</p>
 <p>Phone: +16175810583</p>
 <p>Color: #825BDD</p>
 ```
 
 ### 3. Check Live Server
 
-Visit any page on capcofire.com that uses placeholders:
+Visit any page on RAILWAY_PUBLIC_DOMAIN that uses placeholders:
 
 - Email templates
 - PDF documents
@@ -210,7 +210,7 @@ test("replaces company name placeholder", async () => {
 **Fix:** Updated database with correct CAPCO values  
 **Status:** ✅ **FIXED**
 
-All placeholders on capcofire.com will now correctly show CAPCO Design Group information.
+All placeholders on RAILWAY_PUBLIC_DOMAIN will now correctly show CAPCO Design Group information.
 
 ## Next Steps
 

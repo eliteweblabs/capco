@@ -31,13 +31,13 @@ CAMPFIRE_SMTP_HOST=smtp.resend.com
 CAMPFIRE_SMTP_PORT=587
 CAMPFIRE_SMTP_USER=resend
 CAMPFIRE_SMTP_PASSWORD=your_resend_api_key_here
-CAMPFIRE_FROM_EMAIL=noreply@capcofire.com
+CAMPFIRE_FROM_EMAIL=noreply@RAILWAY_PUBLIC_DOMAIN
 
 # Registration Settings
 CAMPFIRE_DISABLE_REGISTRATION=true
 
 # Admin User
-CAMPFIRE_ADMIN_EMAIL=admin@capcofire.com
+CAMPFIRE_ADMIN_EMAIL=admin@RAILWAY_PUBLIC_DOMAIN
 CAMPFIRE_ADMIN_PASSWORD=your_admin_password_here
 
 # VAPID Keys for Web Push Notifications (Mobile/Desktop)

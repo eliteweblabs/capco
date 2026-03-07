@@ -2,7 +2,7 @@ import "dotenv/config";
 import fetch from "node-fetch";
 
 const VAPI_API_KEY = process.env.VAPI_API_KEY;
-const RAILWAY_PUBLIC_DOMAIN = "https://capcofire.com";
+const RAILWAY_PUBLIC_DOMAIN = process.env.RAILWAY_PUBLIC_DOMAIN;
 const TOOL_ID = "5b8ac059-9bbe-4a27-985d-70df87f9490d";
 
 async function updateBookingTool() {

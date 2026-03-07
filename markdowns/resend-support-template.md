@@ -8,7 +8,7 @@ I'm experiencing persistent bounce issues with SMS gateway emails, specifically 
 
 **Account Details:**
 
-- Domain: capcofire.com
+- Domain: RAILWAY_PUBLIC_DOMAIN
 - Use Case: Fire protection project status notifications
 - Volume: Low volume (< 50 SMS/day)
 - Recipients: Business clients who opted in for project updates

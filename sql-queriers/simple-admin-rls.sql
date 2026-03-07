@@ -14,17 +14,17 @@ USING (
   (auth.jwt() ->> 'user_metadata')::jsonb ->> 'role' = 'Admin'
   OR
   -- Fallback: check email domain (replace with your domain)
-  auth.jwt() ->> 'email' LIKE '%@capcofire.com'
+  auth.jwt() ->> 'email' LIKE '%@RAILWAY_PUBLIC_DOMAIN'
   OR
   -- Specific admin emails (replace with actual admin emails)
-  auth.jwt() ->> 'email' IN ('admin@capcofire.com', 'admin@yourcompany.com')
+  auth.jwt() ->> 'email' IN ('admin@RAILWAY_PUBLIC_DOMAIN', 'admin@yourcompany.com')
 )
 WITH CHECK (
   (auth.jwt() ->> 'user_metadata')::jsonb ->> 'role' = 'Admin'
   OR
-  auth.jwt() ->> 'email' LIKE '%@capcofire.com'
+  auth.jwt() ->> 'email' LIKE '%@RAILWAY_PUBLIC_DOMAIN'
   OR
-  auth.jwt() ->> 'email' IN ('admin@capcofire.com', 'admin@yourcompany.com')
+  auth.jwt() ->> 'email' IN ('admin@RAILWAY_PUBLIC_DOMAIN', 'admin@yourcompany.com')
 );
 
 -- Allow users to see their own projects

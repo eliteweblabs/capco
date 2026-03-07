@@ -129,15 +129,15 @@ INSERT INTO pdfTemplates (name, description, content, templateType, isDefault, a
    <h1 style="margin: 0; color: #0056b3;">CAPCO Design Group</h1>
    <p style="margin: 5px 0; color: #666;">Professional Fire Protection Services</p>
  </div>', 
- 'header', true, (SELECT id FROM auth.users WHERE email = 'admin@capcofire.com' LIMIT 1)),
+ 'header', true, (SELECT id FROM auth.users WHERE email = 'admin@RAILWAY_PUBLIC_DOMAIN' LIMIT 1)),
 
 ('Default Footer', 'Standard footer template for all PDFs', 
  '<div style="text-align: center; padding: 20px; border-top: 1px solid #ccc; margin-top: 50px;">
    <p style="margin: 0; font-size: 12px; color: #666;">
      &copy; ' || EXTRACT(YEAR FROM NOW()) || ' CAPCO Design Group. All rights reserved.<br>
-     Phone: (555) 123-4567 | Email: info@capcofire.com
+     Phone: (555) 123-4567 | Email: info@RAILWAY_PUBLIC_DOMAIN
    </p>
  </div>', 
- 'footer', true, (SELECT id FROM auth.users WHERE email = 'admin@capcofire.com' LIMIT 1));
+ 'footer', true, (SELECT id FROM auth.users WHERE email = 'admin@RAILWAY_PUBLIC_DOMAIN' LIMIT 1));
 
 COMMIT;

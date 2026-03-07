@@ -11,7 +11,7 @@ import type { APIRoute } from "astro";
 import { createErrorResponse, createSuccessResponse } from "../../../lib/_api-optimization";
 import { supabase } from "../../../lib/supabase";
 
-export const POST: APIRoute = async ({ request, cookies }) => {
+export const POST: APIRoute = async ({ request, cookies: _cookies }) => {
   const startTime = Date.now();
 
   // Global timeout wrapper - prevent 502 errors by ensuring response within 2 minutes
@@ -624,7 +624,7 @@ function fixWordBreaks(text: string): string {
   Object.entries(wordFixes).forEach(([broken, correct]) => {
     // Look for broken word at start of word or after space
     const regex = new RegExp(`(^|\\s|\\b)${broken}\\b`, "gi");
-    fixedText = fixedText.replace(regex, (match, prefix) => {
+    fixedText = fixedText.replace(regex, (_match: string, prefix: string) => {
       return prefix + correct;
     });
   });
@@ -746,7 +746,7 @@ function extractBestAddress(text: string): { address: string | null; remainingTe
 
   addressPatterns.forEach(({ pattern, isComplete, priority }) => {
     const regex = new RegExp(pattern.source, pattern.flags);
-    let match;
+    let match: RegExpExecArray | null;
     while ((match = regex.exec(text)) !== null) {
       const fullMatch = match[0];
       const cleaned = fullMatch
@@ -806,7 +806,7 @@ function extractBestAddress(text: string): { address: string | null; remainingTe
  */
 function extractFieldsFromText(text: string): any[] {
   const fields: any[] = [];
-  const normalizedText = text.toLowerCase();
+  const _normalizedText = text.toLowerCase();
 
   // ===== PROJECT ADDRESS (FIRST PRIORITY) =====
   // Extract address first, then remove it from text for other field extraction
@@ -843,8 +843,8 @@ function extractFieldsFromText(text: string): any[] {
   const phonePatterns = [
     /(\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})/g, // Standard US format
     /\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b/g, // Simple format
-    /phone[:\s]+([0-9\-\(\)\s]+)/gi, // "Phone: ..."
-    /tel[:\s]+([0-9\-\(\)\s]+)/gi, // "Tel: ..."
+    /phone[:\s]+([0-9\-()\s]+)/gi, // "Phone: ..."
+    /tel[:\s]+([0-9\-()\s]+)/gi, // "Tel: ..."
   ];
 
   const foundPhones = new Set<string>();
@@ -874,9 +874,9 @@ function extractFieldsFromText(text: string): any[] {
   // ===== DATES =====
 
   const datePatterns = [
-    /\b\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\b/g, // MM/DD/YYYY
+    /\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b/g, // MM/DD/YYYY
     /\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{4}\b/gi, // Month DD, YYYY
-    /\b\d{4}[-\.]\d{1,2}[-\.]\d{1,2}\b/g, // YYYY-MM-DD
+    /\b\d{4}[-.]\d{1,2}[-.]\d{1,2}\b/g, // YYYY-MM-DD
   ];
 
   const foundDates = new Set<string>();
@@ -1025,8 +1025,8 @@ function extractFieldsFromText(text: string): any[] {
 
   // Pattern: "KEY: value" (most common format in documents)
   const colonPattern =
-    /([A-Z][A-Za-z\s&\/\-]+?)[:\s]+([^\n\r]{1,200}?)(?=\n|$|(?=[A-Z][A-Za-z\s&]+?:))/g;
-  let match;
+    /([A-Z][A-Za-z\s&/-]+?)[:\s]+([^\n\r]{1,200}?)(?=\n|$|(?=[A-Z][A-Za-z\s&]+?:))/g;
+  let match: RegExpExecArray | null;
   while ((match = colonPattern.exec(textForOtherFields)) !== null) {
     const key = match[1]?.trim();
     let value = match[2]?.trim();
@@ -1241,9 +1241,9 @@ function extractFieldsFromText(text: string): any[] {
   // ===== PERMIT NUMBERS =====
 
   const permitPatterns = [
-    /permit\s+(?:number|#|no\.?)[:\s]+([A-Z0-9\-]+)/gi,
-    /permit[:\s]+([A-Z0-9\-]+)/gi,
-    /permit\s+#\s*([A-Z0-9\-]+)/gi,
+    /permit\s+(?:number|#|no\.?)[:\s]+([A-Z0-9-]+)/gi,
+    /permit[:\s]+([A-Z0-9-]+)/gi,
+    /permit\s+#\s*([A-Z0-9-]+)/gi,
   ];
 
   permitPatterns.forEach((pattern) => {

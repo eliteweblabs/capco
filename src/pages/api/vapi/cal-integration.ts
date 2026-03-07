@@ -78,7 +78,7 @@ const mockEventTypes: CalComEventType[] = [
 ];
 
 // Generate mock availability data with ISO timestamps
-function generateMockAvailability(dateFrom: string, dateTo: string): CalComAvailability[] {
+function _generateMockAvailability(dateFrom: string, dateTo: string): CalComAvailability[] {
   const start = new Date(dateFrom);
   const end = new Date(dateTo);
   const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
@@ -359,7 +359,7 @@ async function getWorkingHours(
   if ((!availabilityResult || availabilityResult.rows.length === 0) && eventTypeId) {
     try {
       // First get the event type slug
-      let eventTypeSlugResult;
+      let eventTypeSlugResult: any;
       try {
         eventTypeSlugResult = await calcomDb.query(`SELECT slug FROM "EventType" WHERE id = $1`, [
           eventTypeId,
@@ -1150,7 +1150,7 @@ async function handleGoogleCalendarGetStaffSchedule(params: any = {}) {
     // 4. Format response similar to Cal.com format
 
     // Placeholder implementation
-    const googleCalendarId = process.env.GOOGLE_CALENDAR_ID || providedUsername || "primary";
+    const _googleCalendarId = process.env.GOOGLE_CALENDAR_ID || providedUsername || "primary";
     const googleApiKey = process.env.GOOGLE_CALENDAR_API_KEY;
 
     if (!googleApiKey) {
@@ -1261,7 +1261,7 @@ async function handleGetAvailability(params: any) {
     // IMPORTANT: This must match the calLink used in CalComBooking.astro (currently "capco/30min")
     // If VAPI_EVENT_TYPE_ID is not set, default to "capco/30min" to match the demo page
     const VAPI_EVENT_TYPE_ID = process.env.VAPI_EVENT_TYPE_ID || "capco/30min";
-    let eventTypeResult;
+    let eventTypeResult: any;
 
     // Check if it's a numeric ID or a slug/path
     if (/^\d+$/.test(VAPI_EVENT_TYPE_ID)) {
@@ -1601,7 +1601,7 @@ async function handleCalComCreateBooking(params: any, request?: Request) {
   // Parse start time - handle various formats including AM/PM
   let startDate: Date;
   // Store original for logging
-  const originalStart = typeof start === "string" ? start : String(start);
+  const _originalStart = typeof start === "string" ? start : String(start);
 
   if (typeof start === "string") {
     // CRITICAL FIX: If VAPI sends a past year (like 2023), correct it to current year
@@ -1775,13 +1775,13 @@ async function handleCalComCreateBooking(params: any, request?: Request) {
         // Create date in Eastern timezone, then convert to UTC
         // Use a library-like approach: create a date string in Eastern timezone and parse it
         // Format: "YYYY-MM-DD HH:MM:SS" in Eastern time
-        const easternDateString = `${year}-${month}-${String(day).padStart(2, "0")} ${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00`;
+        const _easternDateString = `${year}-${month}-${String(day).padStart(2, "0")} ${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00`;
 
         // Parse as Eastern time by creating a date and using timezone offset
         // We'll use a workaround: create the date assuming it's UTC, then adjust for Eastern offset
         // EST is UTC-5, EDT is UTC-4 (DST runs roughly March-November)
         // For November, we're likely in EST (UTC-5) since DST ends first Sunday of November
-        const tempDate = new Date(
+        const _tempDate = new Date(
           `${year}-${month}-${String(day).padStart(2, "0")}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00`
         );
 
@@ -1818,7 +1818,7 @@ async function handleCalComCreateBooking(params: any, request?: Request) {
         // But wait, that's backwards. Let's think differently:
         // If we want 11 AM Eastern, and 11 AM Eastern = 16:00 UTC (in EST), then offset = 16 - 11 = 5
         // So: UTC hour = Eastern hour + offset
-        const offsetHours = hour - easternHourFromUtc;
+        const _offsetHours = hour - easternHourFromUtc;
 
         // If offset is negative, we need to add hours to UTC to get the Eastern time we want
         // Actually, let's use a more direct approach: try different UTC hours until we get the Eastern time we want
@@ -1994,7 +1994,7 @@ async function handleCalComCreateBooking(params: any, request?: Request) {
     // IMPORTANT: This must match the calLink used in CalComBooking.astro (currently "capco/30min")
     // If VAPI_EVENT_TYPE_ID is not set, default to "capco/30min" to match the demo page
     const VAPI_EVENT_TYPE_ID = process.env.VAPI_EVENT_TYPE_ID || "capco/30min";
-    let eventTypeResult;
+    let eventTypeResult: any;
 
     // If we have a targetUserId, find event types for that user
     if (targetUserId) {
@@ -2181,7 +2181,7 @@ async function handleCalComCreateBooking(params: any, request?: Request) {
     }
 
     // Generate unique booking reference
-    const uid = `booking-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const uid = `booking-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 
     // Insert into Cal.com Booking table with all required fields
     // Detect actual column names in the Booking table
@@ -2488,7 +2488,7 @@ async function handleCalComCreateBooking(params: any, request?: Request) {
     // Use Intl.DateTimeFormat for reliable formatting in Eastern timezone
     // This matches what users expect and what Cal.com displays
     // IMPORTANT: Format in America/New_York timezone to match booking timezone
-    const dateFormatter = new Intl.DateTimeFormat("en-US", {
+    const _dateFormatter = new Intl.DateTimeFormat("en-US", {
       weekday: "long",
       month: "long",
       day: "numeric",
@@ -2661,7 +2661,7 @@ async function handleGoogleCalendarCreateBooking(params: any) {
     // 4. Set reminders (SMS if smsReminderNumber provided)
     // 5. Return confirmation
 
-    const googleCalendarId = process.env.GOOGLE_CALENDAR_ID || username || "primary";
+    const _googleCalendarId = process.env.GOOGLE_CALENDAR_ID || username || "primary";
     const googleApiKey = process.env.GOOGLE_CALENDAR_API_KEY;
 
     if (!googleApiKey) {
@@ -2672,7 +2672,7 @@ async function handleGoogleCalendarCreateBooking(params: any) {
 
     // Parse start time
     const startDate = new Date(startParam);
-    const endDate = new Date(startDate.getTime() + 30 * 60 * 1000); // Default 30 min duration
+    const _endDate = new Date(startDate.getTime() + 30 * 60 * 1000); // Default 30 min duration
 
     // Example: Use Google Calendar Events API
     // const eventUrl = `https://www.googleapis.com/calendar/v3/calendars/${googleCalendarId}/events?key=${googleApiKey}`;
@@ -2755,7 +2755,7 @@ async function handleICalCreateBooking(params: any) {
 
     // Parse start time
     const startDate = new Date(startParam);
-    const endDate = new Date(startDate.getTime() + 30 * 60 * 1000); // Default 30 min duration
+    const _endDate = new Date(startDate.getTime() + 30 * 60 * 1000); // Default 30 min duration
 
     // Example: Generate iCal event
     // const icalEvent = `BEGIN:VEVENT

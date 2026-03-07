@@ -54,17 +54,17 @@ const LOG_PREFIX = "[VAPI-CAPCO]";
 
 // Webhook domain - the live URL where the webhook is hosted
 let WEBHOOK_DOMAIN =
-  process.env.RAILWAY_PUBLIC_DOMAIN || process.env.WEBHOOK_DOMAIN || "https://capcofire.com";
+  process.env.RAILWAY_PUBLIC_DOMAIN || process.env.WEBHOOK_DOMAIN;
 
 // Validate that WEBHOOK_DOMAIN is not a placeholder (like ${LOCALTUNNEL_URL})
 // JavaScript template literals use ${} but env vars shouldn't contain these as literal strings
-if (WEBHOOK_DOMAIN.includes("${") || WEBHOOK_DOMAIN.includes("{{")) {
+if (WEBHOOK_DOMAIN && (WEBHOOK_DOMAIN.includes("${") || WEBHOOK_DOMAIN.includes("{{"))) {
   console.warn(`⚠️ ${LOG_PREFIX} WEBHOOK_DOMAIN contains a placeholder: ${WEBHOOK_DOMAIN}`);
   console.warn(
     `⚠️ ${LOG_PREFIX} Placeholders like \${LOCALTUNNEL_URL} are not evaluated in env vars`
   );
-  console.warn(`⚠️ ${LOG_PREFIX} Using fallback: https://capcofire.com`);
-  WEBHOOK_DOMAIN = "https://capcofire.com";
+  console.warn(`⚠️ ${LOG_PREFIX} Using fallback from RAILWAY_PUBLIC_DOMAIN`);
+  WEBHOOK_DOMAIN = process.env.RAILWAY_PUBLIC_DOMAIN || "";
 }
 
 // Ensure WEBHOOK_DOMAIN has protocol

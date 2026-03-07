@@ -30,7 +30,7 @@ PLAUSIBLE_DB_PASSWORD=your_secure_password_here
 PLAUSIBLE_SECRET_KEY=your_secret_key_here
 # Note: BASE_URL uses RAILWAY_PUBLIC_DOMAIN automatically (set by Railway)
 # Make sure to generate a public domain for the 'plausible' service
-PLAUSIBLE_MAILER_EMAIL=noreply@capcofire.com
+PLAUSIBLE_MAILER_EMAIL=noreply@RAILWAY_PUBLIC_DOMAIN
 
 # SMTP Configuration (using Resend)
 # Note: SMTP settings are configured in railway-plausible.json
@@ -38,7 +38,7 @@ PLAUSIBLE_MAILER_EMAIL=noreply@capcofire.com
 RESEND_API_KEY=re_your_resend_api_key_here
 
 # Admin User
-PLAUSIBLE_ADMIN_EMAIL=admin@capcofire.com
+PLAUSIBLE_ADMIN_EMAIL=admin@RAILWAY_PUBLIC_DOMAIN
 PLAUSIBLE_ADMIN_PASSWORD=your_admin_password_here
 ```
 
@@ -67,7 +67,7 @@ openssl rand -base64 32
 
 ### Step 6: Configure Your Site
 1. Login to Plausible with admin credentials
-2. Add your site: `capcofire.com`
+2. Add your site: `RAILWAY_PUBLIC_DOMAIN`
 3. Copy the tracking script
 4. Add it to your main app
 
@@ -172,7 +172,7 @@ PLAUSIBLE_API_KEY=your_api_key_from_plausible
 
 Once deployed:
 1. **Access Dashboard**: `https://capco-plausible-analytics.railway.app`
-2. **Add Site**: Enter `capcofire.com` 
+2. **Add Site**: Enter `RAILWAY_PUBLIC_DOMAIN` 
 3. **Get Tracking Script**: Copy the script to your main app
 4. **View Analytics**: Check your analytics page at `/admin/analytics`
 

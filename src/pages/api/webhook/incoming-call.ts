@@ -11,7 +11,7 @@ export const POST: APIRoute = async ({ request }) => {
 
   try {
     // Parse the request body
-    let requestData;
+    let requestData: any;
     const contentType = request.headers.get("content-type") || "";
 
     if (contentType.includes("application/json")) {
@@ -97,7 +97,7 @@ export const POST: APIRoute = async ({ request }) => {
 };
 
 // Test endpoint
-export const GET: APIRoute = async ({ request }) => {
+export const GET: APIRoute = async ({ request: _request }) => {
   console.log("🔍 [N8N-INCOMING] GET request received - testing connectivity");
 
   return new Response("N8N incoming call webhook endpoint is working!", {

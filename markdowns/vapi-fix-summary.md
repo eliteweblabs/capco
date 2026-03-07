@@ -49,10 +49,10 @@ All calls to `getApiBaseUrl(request)` now have proper error handling and fallbac
 ```typescript
 let baseUrl: string;
 try {
-  baseUrl = request ? getApiBaseUrl(request) : (process.env.PUBLIC_RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN || 'https://capcofire.com');
+  baseUrl = request ? getApiBaseUrl(request) : (process.env.PUBLIC_RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN || 'https://RAILWAY_PUBLIC_DOMAIN');
 } catch (error) {
   console.error(`[---VAPI-WEBHOOK] Error getting base URL:`, error);
-  baseUrl = process.env.PUBLIC_RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN || 'https://capcofire.com';
+  baseUrl = process.env.PUBLIC_RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN || 'https://RAILWAY_PUBLIC_DOMAIN';
 }
 ```
 
@@ -82,7 +82,7 @@ Created two test pages for debugging:
 ### 1. Test the Webhook Directly
 
 ```bash
-curl -X POST "https://capcofire.com/api/vapi/webhook?calendarType=calcom" \
+curl -X POST "https://RAILWAY_PUBLIC_DOMAIN/api/vapi/webhook?calendarType=calcom" \
   -H "Content-Type: application/json" \
   -d '{
     "message": {
@@ -102,7 +102,7 @@ curl -X POST "https://capcofire.com/api/vapi/webhook?calendarType=calcom" \
 
 ### 2. Test the Widget on the Live Site
 
-1. Visit https://capcofire.com
+1. Visit https://RAILWAY_PUBLIC_DOMAIN
 2. Click the VAPI chat widget button (bottom right)
 3. Send a test message
 4. The assistant should respond without getting stuck on "Assistant is typing..."

@@ -17,7 +17,7 @@ BEGIN
             role
         ) VALUES (
             'bdaaa7d3-469d-4b1b-90d1-978e1be47a17',
-            'admin@capcofire.com',
+            'admin@RAILWAY_PUBLIC_DOMAIN',
             '$2a$10$abcdefghijklmnopqrstuvwxyz123456',  -- This is a dummy hash
             NOW(),
             NOW(),
@@ -46,7 +46,7 @@ BEGIN
             'CAPCo',
             'Admin',
             'CAPCo Fire',
-            'admin@capcofire.com',
+            'admin@RAILWAY_PUBLIC_DOMAIN',
             'Admin',
             NOW(),
             NOW()

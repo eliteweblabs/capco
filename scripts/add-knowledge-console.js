@@ -1,7 +1,7 @@
 /**
  * Browser Console Script: Add Knowledge to AI Agent
  *
- * Paste this into your browser console on https://capcofire.com/ai-agent
+ * Paste this into your browser console on https://RAILWAY_PUBLIC_DOMAIN/ai-agent
  *
  * Usage:
  *   addKnowledge({

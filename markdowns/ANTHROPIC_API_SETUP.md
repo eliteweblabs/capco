@@ -116,7 +116,7 @@ Replace `YOUR_API_KEY` with your actual key.
 ## Quick Test
 
 After checking the console, test with our endpoint:
-- Visit: `https://capcofire.com/api/agent/test-models`
+- Visit: `https://RAILWAY_PUBLIC_DOMAIN/api/agent/test-models`
 - This will try multiple models and show which ones work
 
 ## Next Steps

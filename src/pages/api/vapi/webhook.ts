@@ -67,7 +67,7 @@ interface VapiWebhookData {
   };
 }
 
-export const POST: APIRoute = async ({ request, cookies }): Promise<Response> => {
+export const POST: APIRoute = async ({ request, cookies: _cookies }): Promise<Response> => {
   try {
     // Extract calendarType and defaultUsername from URL query parameters
     const url = new URL(request.url);
@@ -98,7 +98,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     });
 
     const metadataUserId = callMetadata?.userId;
-    const metadataUserEmail = callMetadata?.userEmail;
+    const _metadataUserEmail = callMetadata?.userEmail;
     // callMetadata.mode === "admin" when the admin voice widget started the call; use for admin-only
     // tools and prompts so one assistant can handle both customer and admin flows.
 
@@ -250,15 +250,10 @@ async function handleToolCalls(
         try {
           baseUrl = request
             ? getApiBaseUrl(request)
-            : process.env.PUBLIC_RAILWAY_STATIC_URL ||
-              process.env.RAILWAY_PUBLIC_DOMAIN ||
-              "https://capcofire.com";
+            : process.env.PUBLIC_RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN;
         } catch (error) {
           console.error(`[---VAPI-WEBHOOK] Error getting base URL:`, error);
-          baseUrl =
-            process.env.PUBLIC_RAILWAY_STATIC_URL ||
-            process.env.RAILWAY_PUBLIC_DOMAIN ||
-            "https://capcofire.com";
+          baseUrl = process.env.PUBLIC_RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN;
         }
 
         const projectResponse = await fetch(`${baseUrl}/api/projects/upsert`, {
@@ -308,15 +303,10 @@ async function handleToolCalls(
         try {
           baseUrl = request
             ? getApiBaseUrl(request)
-            : process.env.PUBLIC_RAILWAY_STATIC_URL ||
-              process.env.RAILWAY_PUBLIC_DOMAIN ||
-              "https://capcofire.com";
+            : process.env.PUBLIC_RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN;
         } catch (error) {
           console.error(`[---VAPI-WEBHOOK] Error getting base URL:`, error);
-          baseUrl =
-            process.env.PUBLIC_RAILWAY_STATIC_URL ||
-            process.env.RAILWAY_PUBLIC_DOMAIN ||
-            "https://capcofire.com";
+          baseUrl = process.env.PUBLIC_RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN;
         }
 
         // Call existing contact API endpoint
@@ -467,14 +457,9 @@ async function handleToolCalls(
         try {
           baseUrl = request
             ? getApiBaseUrl(request)
-            : process.env.PUBLIC_RAILWAY_STATIC_URL ||
-              process.env.RAILWAY_PUBLIC_DOMAIN ||
-              "https://capcofire.com";
+            : process.env.PUBLIC_RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN;
         } catch {
-          baseUrl =
-            process.env.PUBLIC_RAILWAY_STATIC_URL ||
-            process.env.RAILWAY_PUBLIC_DOMAIN ||
-            "https://capcofire.com";
+          baseUrl = process.env.PUBLIC_RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN;
         }
         try {
           const internalSecret =
@@ -524,14 +509,9 @@ async function handleToolCalls(
         try {
           baseUrl = request
             ? getApiBaseUrl(request)
-            : process.env.PUBLIC_RAILWAY_STATIC_URL ||
-              process.env.RAILWAY_PUBLIC_DOMAIN ||
-              "https://capcofire.com";
+            : process.env.PUBLIC_RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN;
         } catch {
-          baseUrl =
-            process.env.PUBLIC_RAILWAY_STATIC_URL ||
-            process.env.RAILWAY_PUBLIC_DOMAIN ||
-            "https://capcofire.com";
+          baseUrl = process.env.PUBLIC_RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN;
         }
         try {
           const emailPayload = {
@@ -581,15 +561,10 @@ async function handleToolCalls(
         try {
           baseUrl = request
             ? getApiBaseUrl(request)
-            : process.env.PUBLIC_RAILWAY_STATIC_URL ||
-              process.env.RAILWAY_PUBLIC_DOMAIN ||
-              "https://capcofire.com";
+            : process.env.PUBLIC_RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN;
         } catch (error) {
           console.error(`[---VAPI-WEBHOOK] Error getting base URL:`, error);
-          baseUrl =
-            process.env.PUBLIC_RAILWAY_STATIC_URL ||
-            process.env.RAILWAY_PUBLIC_DOMAIN ||
-            "https://capcofire.com";
+          baseUrl = process.env.PUBLIC_RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN;
         }
 
         const rememberResponse = await fetch(`${baseUrl}/api/voice-assistant/remember`, {
@@ -624,7 +599,7 @@ async function handleToolCalls(
           console.log(`✅ [VAPI-WEBHOOK] Conversation saved successfully:`, rememberData.id);
           const tagsDisplay =
             args.tags && args.tags.length > 0
-              ? ` with tags: ${args.tags.map((t) => `#${t}`).join(", ")}`
+              ? ` with tags: ${args.tags.map((t: string) => `#${t}`).join(", ")}`
               : "";
           results.push({
             toolCallId: toolCall.id,
@@ -956,15 +931,10 @@ async function handleToolCalls(
           try {
             baseUrl = request
               ? getApiBaseUrl(request)
-              : process.env.PUBLIC_RAILWAY_STATIC_URL ||
-                process.env.RAILWAY_PUBLIC_DOMAIN ||
-                "https://capcofire.com";
+              : process.env.PUBLIC_RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN;
           } catch (error) {
             console.error(`[---VAPI-WEBHOOK] Error getting base URL:`, error);
-            baseUrl =
-              process.env.PUBLIC_RAILWAY_STATIC_URL ||
-              process.env.RAILWAY_PUBLIC_DOMAIN ||
-              "https://capcofire.com";
+            baseUrl = process.env.PUBLIC_RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN;
           }
 
           // Download the file from the provided URL
@@ -1047,15 +1017,10 @@ async function handleToolCalls(
       try {
         baseUrl = request
           ? getApiBaseUrl(request)
-          : process.env.PUBLIC_RAILWAY_STATIC_URL ||
-            process.env.RAILWAY_PUBLIC_DOMAIN ||
-            "https://capcofire.com";
+          : process.env.PUBLIC_RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN;
       } catch (error) {
         console.error(`[---VAPI-WEBHOOK] Error getting base URL:`, error);
-        baseUrl =
-          process.env.PUBLIC_RAILWAY_STATIC_URL ||
-          process.env.RAILWAY_PUBLIC_DOMAIN ||
-          "https://capcofire.com";
+        baseUrl = process.env.PUBLIC_RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN;
       }
 
       const response = await fetch(`${baseUrl}/api/vapi/cal-integration`, {
@@ -1147,7 +1112,7 @@ async function handleFunctionCall(
   calendarType: string = "calcom",
   defaultUsername?: string,
   request?: Request,
-  callMetadata?: any
+  _callMetadata?: any
 ): Promise<Response> {
   if (!functionCall) {
     return new Response(JSON.stringify({ success: false, error: "No function call provided" }), {
@@ -1315,15 +1280,10 @@ async function handleFunctionCall(
         try {
           baseUrl = request
             ? getApiBaseUrl(request)
-            : process.env.PUBLIC_RAILWAY_STATIC_URL ||
-              process.env.RAILWAY_PUBLIC_DOMAIN ||
-              "https://capcofire.com";
+            : process.env.PUBLIC_RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN;
         } catch (error) {
           console.error(`[---VAPI-WEBHOOK] Error getting base URL:`, error);
-          baseUrl =
-            process.env.PUBLIC_RAILWAY_STATIC_URL ||
-            process.env.RAILWAY_PUBLIC_DOMAIN ||
-            "https://capcofire.com";
+          baseUrl = process.env.PUBLIC_RAILWAY_STATIC_URL || process.env.RAILWAY_PUBLIC_DOMAIN;
         }
 
         const response = await fetch(`${baseUrl}/api/vapi/cal-integration`, {

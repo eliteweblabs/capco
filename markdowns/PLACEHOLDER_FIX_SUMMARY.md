@@ -14,7 +14,7 @@ The real problem: **Wrong company data in the `globalSettings` database table**
 
 ### What We Found
 
-The CAPCO production database (`capcofire.com`) had **Rothco Built** company data instead of **CAPCO Design Group** data:
+The CAPCO production database (`RAILWAY_PUBLIC_DOMAIN`) had **Rothco Built** company data instead of **CAPCO Design Group** data:
 
 ```
 ❌ BEFORE (Wrong Data):
@@ -25,8 +25,8 @@ The CAPCO production database (`capcofire.com`) had **Rothco Built** company dat
 
 ✅ AFTER (Correct Data):
 - companyName: "CAPCO Design Group"
-- website: "https://capcofire.com"
-- email: "contact@capcofire.com"
+- website: "https://RAILWAY_PUBLIC_DOMAIN"
+- email: "contact@RAILWAY_PUBLIC_DOMAIN"
 - phone: "+16175810583"
 ```
 
@@ -58,8 +58,8 @@ Updated the `globalSettings` table with correct CAPCO values:
 
 ```sql
 UPDATE "globalSettings" SET value = 'CAPCO Design Group' WHERE key = 'companyName';
-UPDATE "globalSettings" SET value = 'https://capcofire.com' WHERE key = 'website';
-UPDATE "globalSettings" SET value = 'contact@capcofire.com' WHERE key = 'email';
+UPDATE "globalSettings" SET value = 'https://RAILWAY_PUBLIC_DOMAIN' WHERE key = 'website';
+UPDATE "globalSettings" SET value = 'contact@RAILWAY_PUBLIC_DOMAIN' WHERE key = 'email';
 UPDATE "globalSettings" SET value = '+16175810583' WHERE key = 'phone';
 UPDATE "globalSettings" SET value = 'Professional Fire Protection Plan Review & Approval' WHERE key = 'slogan';
 UPDATE "globalSettings" SET value = '#825BDD' WHERE key = 'primary_color';
@@ -79,8 +79,8 @@ All of these now correctly show CAPCO data:
 | `{{COMPANY_NAME}}`           | Rothco Built        | CAPCO Design Group    |
 | `{{RAILWAY_PROJECT_NAME}}`   | Rothco Built        | CAPCO Design Group    |
 | `{{GLOBAL_COMPANY_NAME}}`    | Rothco Built        | CAPCO Design Group    |
-| `{{GLOBAL_COMPANY_WEBSITE}}` | rothcollc.com       | capcofire.com         |
-| `{{GLOBAL_COMPANY_EMAIL}}`   | scott@rothcollc.com | contact@capcofire.com |
+| `{{GLOBAL_COMPANY_WEBSITE}}` | rothcollc.com       | RAILWAY_PUBLIC_DOMAIN         |
+| `{{GLOBAL_COMPANY_EMAIL}}`   | scott@rothcollc.com | contact@RAILWAY_PUBLIC_DOMAIN |
 | `{{GLOBAL_COMPANY_PHONE}}`   | +1 (857) 385-8579   | +16175810583          |
 | `{{GLOBAL_COLOR_PRIMARY}}`   | #d4a574             | #825BDD               |
 | `{{GLOBAL_COLOR_SECONDARY}}` | #a06e3c             | #0ea5e9               |
@@ -100,7 +100,7 @@ The `global-company-data.ts` file has a **1-minute cache** (TTL: 60000ms).
 **Optional:** Clear cache immediately by visiting:
 
 ```
-https://capcofire.com/api/cache/clear-settings
+https://RAILWAY_PUBLIC_DOMAIN/api/cache/clear-settings
 ```
 
 (This endpoint was created but needs to be deployed)
@@ -145,7 +145,7 @@ These pages/features now show correct CAPCO data:
 To verify the fix is working:
 
 - [ ] Wait 60 seconds for cache to expire (or clear cache manually)
-- [ ] Visit any page on capcofire.com
+- [ ] Visit any page on RAILWAY_PUBLIC_DOMAIN
 - [ ] Check footer - should say "CAPCO Design Group"
 - [ ] Check any email template - should have CAPCO branding
 - [ ] Generate a PDF - should have CAPCO info
@@ -184,7 +184,7 @@ Add to deployment checklist:
 SELECT key, value FROM "globalSettings"
 WHERE key = 'companyName';
 
--- Expected: "CAPCO Design Group" for capcofire.com
+-- Expected: "CAPCO Design Group" for RAILWAY_PUBLIC_DOMAIN
 -- Expected: "Rothco Built" for rothcollc.com
 ```
 
@@ -233,9 +233,9 @@ If placeholders still show wrong data after 60 seconds:
 2. Clear cache manually:
 
    ```bash
-   curl https://capcofire.com/api/cache/clear-settings
+   curl https://RAILWAY_PUBLIC_DOMAIN/api/cache/clear-settings
    ```
 
 3. Check browser console for errors
 
-4. Verify you're on the right domain (capcofire.com, not rothcollc.com)
+4. Verify you're on the right domain (RAILWAY_PUBLIC_DOMAIN, not rothcollc.com)

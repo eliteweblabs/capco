@@ -35,7 +35,7 @@ Make sure these are set in your `.env`:
 # Resend Configuration (already configured)
 EMAIL_PROVIDER=resend
 EMAIL_API_KEY=re_your_api_key_here
-FROM_EMAIL=noreply@capcofire.com
+FROM_EMAIL=noreply@RAILWAY_PUBLIC_DOMAIN
 FROM_NAME=CAPCO Design Group
 
 # Disable Supabase email confirmations

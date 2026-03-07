@@ -75,7 +75,7 @@ node scripts/process-manifest.js
 # 📊 Company: CAPCO Design Group
 # 📊 Slogan: Professional Fire Protection Plan Review & Approval
 # 📊 Theme Color: #825BDD
-# 📊 Site URL: https://capcofire.com
+# 📊 Site URL: https://RAILWAY_PUBLIC_DOMAIN
 # ✅ Manifest.json processed successfully!
 ```
 
@@ -106,7 +106,7 @@ The script expects these keys in the `globalSettings` table:
 | `slogan` | text | App description | "Professional Fire Protection..." |
 | `primary_color` | text | Theme color | "#825BDD" |
 | `secondary_color` | text | Accent color | "#0ea5e9" |
-| `website` | text | Site URL | "https://capcofire.com" |
+| `website` | text | Site URL | "https://RAILWAY_PUBLIC_DOMAIN" |
 
 ## Future Enhancements
 

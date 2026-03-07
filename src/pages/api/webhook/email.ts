@@ -4,10 +4,7 @@
 
 import type { APIRoute } from "astro";
 import { supabase } from "../../../lib/supabase";
-import { supabaseAdmin } from "../../../lib/supabase-admin";
 import { getApiBaseUrl } from "../../../lib/url-utils";
-// Import validateEmail from ux-utils (server-side API routes need explicit import)
-import { validateEmail } from "../../../lib/ux-utils";
 import { isValidEmail } from "../../../lib/global-display-utils";
 
 interface EmailWebhookData {
@@ -53,7 +50,7 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    let body;
+    let body: any;
     try {
       body = await request.json();
       console.log("📧 [EMAIL-WEBHOOK] Webhook body:", JSON.stringify(body, null, 2));
@@ -228,7 +225,8 @@ function extractOriginalSender(emailData: EmailWebhookData): string {
   });
 
   // If the 'from' field is our webhook address, this is likely a forwarded email
-  const webhookAddresses = ["project@new.capcofire.com", "webhook@capcofire.com"];
+  const domain = (process.env.RAILWAY_PUBLIC_DOMAIN || "").replace(/^https?:\/\//, "");
+  const webhookAddresses = [`project@new.${domain}`, `webhook@${domain}`];
   const fromLower = emailData.from?.toLowerCase() || "";
   const toLower = emailData.to?.toLowerCase() || "";
 
@@ -455,7 +453,7 @@ async function findOrCreateUser(
       return null;
     }
     // First, check if user exists in profiles
-    const { data: existingProfile, error: profileError } = await supabase
+    const { data: existingProfile, error: _profileError } = await supabase
       .from("profiles")
       .select("*")
       .eq("email", cleanEmail)
@@ -603,7 +601,7 @@ function extractPlaceholders(text: string): Record<string, string> {
   // Pattern: {{PLACEHOLDER_NAME: value}}
   const placeholderRegex = /\{\{(\w+):\s*([^}]+)\}\}/g;
 
-  let match;
+  let match: RegExpExecArray | null;
   while ((match = placeholderRegex.exec(text)) !== null) {
     const key = match[1];
     const value = match[2].trim();
@@ -725,7 +723,7 @@ async function uploadAttachments(projectId: number, attachments: any[]) {
       const filename = `${timestamp}_${attachment.filename}`;
 
       // Upload to Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { data: _uploadData, error: uploadError } = await supabase.storage
         .from("project-files")
         .upload(`${projectId}/${filename}`, buffer, {
           contentType: attachment.contentType,
@@ -738,7 +736,7 @@ async function uploadAttachments(projectId: number, attachments: any[]) {
       }
 
       // Get signed URL
-      const { data: urlData, error: urlError } = await supabase.storage
+      const { data: _urlData, error: urlError } = await supabase.storage
         .from("project-files")
         .createSignedUrl(`${projectId}/${filename}`, 3600);
 

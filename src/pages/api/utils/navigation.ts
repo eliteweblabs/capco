@@ -25,11 +25,6 @@ interface DropdownItem {
   href: string;
 }
 
-interface DropdownMenu {
-  label: string;
-  items: DropdownItem[];
-}
-
 export const navigation = async (
   currentUrl: string,
   isAuth: boolean,

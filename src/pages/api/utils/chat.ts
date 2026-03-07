@@ -51,7 +51,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    let body;
+    let body: any;
     try {
       body = await request.json();
     } catch (parseError) {
@@ -80,8 +80,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // });
 
     switch (action) {
-      case "join":
-        // Add user to active connections
+      case "join": {
         activeConnections.set(userId, {
           userId,
           userName,
@@ -100,7 +99,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             headers: { "Content-Type": "application/json", ...corsHeaders },
           });
         }
-        // Get recent chat history using admin client with timeout handling
         const historyPromise = supabaseAdmin
           .from("chatMessages")
           .select("*")
@@ -111,7 +109,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           setTimeout(() => reject(new Error("Database connection timeout")), 15000)
         );
 
-        let messages, historyError;
+        let messages: any, historyError: any;
         try {
           const result = (await Promise.race([historyPromise, timeoutPromise])) as any;
           messages = result.data;
@@ -136,7 +134,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           });
         }
 
-        // Clean up old connections (older than 5 minutes)
         const now = new Date();
         for (const [id, connection] of activeConnections.entries()) {
           if (now.getTime() - connection.lastSeen.getTime() > 5 * 60 * 1000) {
@@ -157,8 +154,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           status: 200,
           headers: { "Content-Type": "application/json", ...corsHeaders },
         });
+      }
 
-      case "message":
+      case "message": {
         console.log("🔔 [CHAT-API] Saving message:", { userId, userName, userRole, message });
 
         if (!supabaseAdmin) {
@@ -170,7 +168,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             headers: { "Content-Type": "application/json", ...corsHeaders },
           });
         }
-        // Save message to database using admin client to bypass RLS
         const { data: savedMessage, error: messageError } = await supabaseAdmin
           .from("chatMessages")
           .insert({
@@ -204,7 +201,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         console.log("✅ [CHAT-API] Message saved successfully:", savedMessage);
 
-        // Update user's last seen
         if (activeConnections.has(userId)) {
           const connection = activeConnections.get(userId)!;
           connection.lastSeen = new Date();
@@ -222,6 +218,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             headers: { "Content-Type": "application/json", ...corsHeaders },
           }
         );
+      }
 
       case "heartbeat":
         // Update user's last seen
@@ -248,8 +245,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           }
         );
 
-      case "get_messages":
-        // Get recent messages using admin client
+      case "get_messages": {
         if (!supabaseAdmin) {
           console.error(
             "❌ [CHAT-API] Supabase admin client is null - database connection not available"
@@ -285,6 +281,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             headers: { "Content-Type": "application/json", ...corsHeaders },
           }
         );
+      }
 
       default:
         return new Response(JSON.stringify({ error: "Invalid action" }), {

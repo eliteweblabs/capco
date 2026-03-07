@@ -118,8 +118,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
 
     // Handle different preview types
     switch (actualPreviewType) {
-      case "image":
-        // For images, return the public URL or proxy the file
+      case "image": {
         const { data: urlData } = supabaseAdmin.storage
           .from(file.bucketName)
           .getPublicUrl(file.filePath);
@@ -138,9 +137,9 @@ export const GET: APIRoute = async ({ url, cookies }) => {
           }),
           { status: 200, headers: { "Content-Type": "application/json" } }
         );
+      }
 
-      case "pdf":
-        // For PDFs, return the public URL for inline viewing
+      case "pdf": {
         const { data: pdfUrlData } = supabaseAdmin.storage
           .from(file.bucketName)
           .getPublicUrl(file.filePath);
@@ -159,9 +158,9 @@ export const GET: APIRoute = async ({ url, cookies }) => {
           }),
           { status: 200, headers: { "Content-Type": "application/json" } }
         );
+      }
 
-      case "text":
-        // For text files, download and return content
+      case "text": {
         const { data: textData, error: textError } = await supabaseAdmin.storage
           .from(file.bucketName)
           .download(file.filePath);
@@ -193,10 +192,10 @@ export const GET: APIRoute = async ({ url, cookies }) => {
           }),
           { status: 200, headers: { "Content-Type": "application/json" } }
         );
+      }
 
       case "download":
-      default:
-        // For other files, return download information
+      default: {
         const { data: downloadUrlData } = supabaseAdmin.storage
           .from(file.bucketName)
           .getPublicUrl(file.filePath);
@@ -215,6 +214,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
           }),
           { status: 200, headers: { "Content-Type": "application/json" } }
         );
+      }
     }
   } catch (error) {
     console.error("❌ [FILES-PREVIEW] Unexpected error:", error);

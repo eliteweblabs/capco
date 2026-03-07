@@ -8,7 +8,7 @@ Your system has been successfully reconfigured to send emails instead of SMS:
 
 1. **API Updated** (`/api/send-email-sms`):
    - SMS gateway functionality commented out
-   - Fixed recipients: `capco@eliteweblabs.com` and `jk@capcofire.com`
+   - Fixed recipients: `capco@eliteweblabs.com` and `jk@RAILWAY_PUBLIC_DOMAIN`
    - Proper HTML email formatting
    - No character limits (500 max in form)
 
@@ -43,7 +43,7 @@ curl -X POST http://localhost:4321/api/send-email-sms \
 
 ### **Expected Results:**
 
-- Both `capco@eliteweblabs.com` and `jk@capcofire.com` should receive:
+- Both `capco@eliteweblabs.com` and `jk@RAILWAY_PUBLIC_DOMAIN` should receive:
   - Subject: "CAPCO Design Group - Project Notification"
   - HTML formatted message
   - Contact info (if provided)

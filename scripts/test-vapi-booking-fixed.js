@@ -1,7 +1,7 @@
 import "dotenv/config";
 import fetch from "node-fetch";
 
-const RAILWAY_PUBLIC_DOMAIN = process.env.RAILWAY_PUBLIC_DOMAIN || "https://capcofire.com";
+const RAILWAY_PUBLIC_DOMAIN = process.env.RAILWAY_PUBLIC_DOMAIN;
 
 async function testVapiBooking() {
   try {

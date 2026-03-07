@@ -23,15 +23,15 @@ if (!currentUser) {
 import { globalClasses } from "../../api/global/global-classes.ts";
 const {
   globalInputClasses,
-  primaryTextClasses,
-  secondaryTextClasses,
+  primaryTextClasses: _primaryTextClasses,
+  secondaryTextClasses: _secondaryTextClasses,
   globalTextH3,
   globalFormLabel,
 } = globalClasses();
 
 // refresh-manager loaded in App.astro for Staff/Admin
 // Fetch project data using existing API
-let projectResponse;
+let projectResponse: any;
 try {
   projectResponse = await fetch(`${Astro.url.origin}/api/get-project?id=${id}`, {
     headers: {
@@ -69,11 +69,11 @@ if (!projectResult.success || !projectResult.project) {
 }
 
 const project = projectResult.project;
-const projectAuthor = projectResult.projectAuthor;
+const _projectAuthor = projectResult.projectAuthor;
 
 // Check if user has access to this project
-const isAdmin = currentUser?.profile?.role === "Admin" || currentUser?.profile?.role === "Staff";
-const isOwner = project.authorId === currentUser.id;
+const _isAdmin = currentUser?.profile?.role === "Admin" || currentUser?.profile?.role === "Staff";
+const _isOwner = project.authorId === currentUser.id;
 
 // if (!isAdmin && !isOwner) {
 //   return Astro.redirect("/dashboard");
@@ -723,8 +723,8 @@ const title = project.title || "Untitled Project";
       }
     });
 
-    let currentZoom = 100;
-    let previewIframe = null;
+    let _currentZoom = 100;
+    let _previewIframe = null;
 
     function showPreview(htmlContent) {
       console.log("🔧 [PDF-PREVIEW] Showing preview with HTML content length:", htmlContent.length);

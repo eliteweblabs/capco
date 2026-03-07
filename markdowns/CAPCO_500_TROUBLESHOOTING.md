@@ -14,7 +14,7 @@ When no site config is loaded (no `SITE_CONFIG` env, no `config-*.json`, no `sit
 
 ### 1. Identify the Failing URL
 
-The homepage (https://capcofire.com) and core routes often return 200. The 500 may occur on:
+The homepage (https://RAILWAY_PUBLIC_DOMAIN) and core routes often return 200. The 500 may occur on:
 
 - Specific pages (e.g. `/project/[id]`, `/admin/settings`, `/mep-form`)
 - API routes (e.g. `/api/global/company-data`, `/api/discussions/get`)

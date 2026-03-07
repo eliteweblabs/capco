@@ -135,7 +135,7 @@ https://your-domain.com/api/vapi/webhook
 ```
 
 Replace `your-domain.com` with:
-- `capcofire.com` (production)
+- `RAILWAY_PUBLIC_DOMAIN` (production)
 - `rothcobuilt.com` (production) 
 - Your Railway deployment URL
 - `localhost:4321` (local dev - requires ngrok)

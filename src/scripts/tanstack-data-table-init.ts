@@ -2,7 +2,12 @@
  * TanStack Data Table init — renders table with sorting, icon/tooltip in headers, optional expand/drag.
  * Does NOT replace AccordionDataTable or ProjectList; use alongside.
  */
-import { createTable, getCoreRowModel, getSortedRowModel } from "@tanstack/table-core";
+import {
+  createTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  type TableState,
+} from "@tanstack/table-core";
 import { getIcon } from "../lib/simple-icons";
 
 export interface TanStackColumnMeta {
@@ -109,10 +114,7 @@ export function initTanStackDataTable<T extends Record<string, unknown>>(
 
   const expanded = new Set<string>();
 
-  let tableState: {
-    sorting: { id: string; desc: boolean }[];
-    columnPinning?: { left: string[]; right: string[] };
-  } = {
+  let tableState: Partial<TableState> = {
     sorting: [],
     columnPinning: { left: [], right: [] },
   };
@@ -148,7 +150,7 @@ export function initTanStackDataTable<T extends Record<string, unknown>>(
     getSortedRowModel: getSortedRowModel(),
     state: tableState,
     onStateChange: (updater) => {
-      const next = typeof updater === "function" ? updater(tableState) : updater;
+      const next = typeof updater === "function" ? updater(tableState as TableState) : updater;
       tableState = { ...tableState, ...next };
       table.setOptions((prev) => ({ ...prev, state: tableState }));
       render();
@@ -324,7 +326,7 @@ export function initTanStackDataTable<T extends Record<string, unknown>>(
     }
   }
 
-  function setupReorderHandlers(tbodyEl: HTMLTableSectionElement, hasDetailRows: boolean) {
+  function setupReorderHandlers(tbodyEl: HTMLTableSectionElement, _hasDetailRows: boolean) {
     const cb = (typeof window !== "undefined" &&
       (window as unknown as Record<string, unknown>)[reorderCallback!]) as
       | ((order: { id: string | null; displayOrder: number }[]) => void | Promise<void>)
@@ -420,7 +422,7 @@ function initAll() {
       // Defer to next frame so container is laid out (avoids "left" measurement errors)
       requestAnimationFrame(() => {
         try {
-          initTanStackDataTable(el, config);
+          initTanStackDataTable(el, config as TanStackTableConfig<Record<string, unknown>>);
         } catch (err) {
           console.error("[TanStackDataTable] Failed to init:", err);
         }

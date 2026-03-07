@@ -67,7 +67,7 @@ async function handleAppointment(
   action: string,
   data: any,
   appointmentId: string | undefined,
-  currentUser: any
+  _currentUser: any
 ) {
   const calApiUrl = "http://localhost:3000/api";
 
@@ -124,8 +124,7 @@ async function handleAppointment(
       }
 
     case "write":
-    case "update":
-      // Create or update appointment
+    case "update": {
       const bookingData = {
         eventTypeId: data.eventTypeId,
         start: data.start,
@@ -161,8 +160,9 @@ async function handleAppointment(
           headers: { "Content-Type": "application/json" },
         }
       );
+    }
 
-    case "delete":
+    case "delete": {
       if (!appointmentId) {
         return new Response(JSON.stringify({ error: "Appointment ID required for deletion" }), {
           status: 400,
@@ -191,6 +191,7 @@ async function handleAppointment(
           headers: { "Content-Type": "application/json" },
         }
       );
+    }
 
     default:
       return new Response(JSON.stringify({ error: "Invalid action" }), {
@@ -201,7 +202,12 @@ async function handleAppointment(
 }
 
 // Handle user operations
-async function handleUser(action: string, data: any, userId: string | undefined, currentUser: any) {
+async function handleUser(
+  action: string,
+  data: any,
+  userId: string | undefined,
+  _currentUser: any
+) {
   const calApiUrl = "http://localhost:3000/api";
 
   switch (action) {
@@ -256,8 +262,7 @@ async function handleUser(action: string, data: any, userId: string | undefined,
         );
       }
 
-    case "write":
-      // Create user
+    case "write": {
       const userData = {
         username: data.username,
         email: data.email,
@@ -297,8 +302,9 @@ async function handleUser(action: string, data: any, userId: string | undefined,
           headers: { "Content-Type": "application/json" },
         }
       );
+    }
 
-    case "update":
+    case "update": {
       if (!userId) {
         return new Response(JSON.stringify({ error: "User ID required for update" }), {
           status: 400,
@@ -330,6 +336,7 @@ async function handleUser(action: string, data: any, userId: string | undefined,
           headers: { "Content-Type": "application/json" },
         }
       );
+    }
 
     default:
       return new Response(JSON.stringify({ error: "Invalid action" }), {
@@ -344,7 +351,7 @@ async function handleAvailability(
   action: string,
   data: any,
   eventTypeId: string | undefined,
-  currentUser: any
+  _currentUser: any
 ) {
   const calApiUrl = "http://localhost:3000/api";
 
@@ -401,10 +408,9 @@ async function handleAvailability(
       }
 
     case "write":
-    case "update":
-      // Create or update availability
+    case "update": {
       const availabilityData = {
-        days: data.days || [1, 2, 3, 4, 5], // Monday to Friday
+        days: data.days || [1, 2, 3, 4, 5],
         startTime: data.startTime || "09:00",
         endTime: data.endTime || "17:00",
         dateOverrides: data.dateOverrides || [],
@@ -435,6 +441,7 @@ async function handleAvailability(
           headers: { "Content-Type": "application/json" },
         }
       );
+    }
 
     default:
       return new Response(JSON.stringify({ error: "Invalid action" }), {
@@ -445,12 +452,11 @@ async function handleAvailability(
 }
 
 // Handle booking operations
-async function handleBooking(action: string, data: any, currentUser: any) {
+async function handleBooking(action: string, data: any, _currentUser: any) {
   const calApiUrl = "http://localhost:3000/api";
 
   switch (action) {
-    case "read":
-      // Get bookings for a specific date range
+    case "read": {
       const { start, end } = data;
       const params = new URLSearchParams();
       if (start) params.append("start", start);
@@ -478,9 +484,9 @@ async function handleBooking(action: string, data: any, currentUser: any) {
           headers: { "Content-Type": "application/json" },
         }
       );
+    }
 
-    case "write":
-      // Create a new booking
+    case "write": {
       const bookingData = {
         eventTypeId: data.eventTypeId,
         start: data.start,
@@ -515,6 +521,7 @@ async function handleBooking(action: string, data: any, currentUser: any) {
           headers: { "Content-Type": "application/json" },
         }
       );
+    }
 
     default:
       return new Response(JSON.stringify({ error: "Invalid action" }), {

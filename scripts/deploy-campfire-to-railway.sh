@@ -27,9 +27,9 @@ railway variables set CAMPFIRE_SMTP_HOST="smtp.resend.com"
 railway variables set CAMPFIRE_SMTP_PORT="587"
 railway variables set CAMPFIRE_SMTP_USER="resend"
 railway variables set CAMPFIRE_SMTP_PASSWORD="your_resend_api_key_here"
-railway variables set CAMPFIRE_FROM_EMAIL="noreply@capcofire.com"
+railway variables set CAMPFIRE_FROM_EMAIL="noreply@$RAILWAY_PUBLIC_DOMAIN"
 railway variables set CAMPFIRE_DISABLE_REGISTRATION="true"
-railway variables set CAMPFIRE_ADMIN_EMAIL="admin@capcofire.com"
+railway variables set CAMPFIRE_ADMIN_EMAIL="admin@$RAILWAY_PUBLIC_DOMAIN"
 railway variables set CAMPFIRE_ADMIN_PASSWORD=$(openssl rand -base64 32)
 
 echo ""
@@ -52,7 +52,7 @@ echo "   - CAMPFIRE_SMTP_PASSWORD: Set your Resend API key"
 echo "   - CAMPFIRE_ADMIN_PASSWORD: Note this value (shown above)"
 echo ""
 echo "🔐 Admin credentials:"
-echo "   Email: admin@capcofire.com"
+echo "   Email: admin@$RAILWAY_PUBLIC_DOMAIN"
 echo "   Password: Check Railway dashboard for CAMPFIRE_ADMIN_PASSWORD"
 
 # Deploy using the railway.json file

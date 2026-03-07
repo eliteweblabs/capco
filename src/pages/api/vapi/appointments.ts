@@ -167,7 +167,7 @@ async function handleCreateAppointment(currentUser: any, data: any) {
       organizerId: currentUser.id,
       organizerName: currentUser.name || "Unknown",
       organizerEmail: currentUser.email || "",
-      calUid: `app-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      calUid: `app-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
       eventTypeId: 1,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -204,7 +204,7 @@ async function handleCreateAppointment(currentUser: any, data: any) {
 
 // Update appointment
 async function handleUpdateAppointment(
-  currentUser: any,
+  _currentUser: any,
   appointmentId: string | undefined,
   data: any
 ) {
@@ -250,7 +250,7 @@ async function handleUpdateAppointment(
 }
 
 // Delete appointment
-async function handleDeleteAppointment(currentUser: any, appointmentId: string | undefined) {
+async function handleDeleteAppointment(_currentUser: any, appointmentId: string | undefined) {
   try {
     if (!appointmentId) {
       return new Response(JSON.stringify({ error: "Appointment ID required" }), {
@@ -285,7 +285,7 @@ async function handleDeleteAppointment(currentUser: any, appointmentId: string |
 }
 
 // Check availability
-async function handleCheckAvailability(currentUser: any, data: any, request: Request) {
+async function handleCheckAvailability(_currentUser: any, data: any, request: Request) {
   try {
     const { date, startDate, endDate, duration } = data;
 

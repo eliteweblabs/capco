@@ -1,6 +1,6 @@
 -- Fix CAPCO Design Group global settings
 -- This script updates the globalSettings table to have the correct CAPCO data
--- Run this on the CAPCO production database (capcofire.com)
+-- Run this on the CAPCO production database (RAILWAY_PUBLIC_DOMAIN)
 
 -- Update company name (currently shows "Rothco Built" which is wrong)
 UPDATE "globalSettings"
@@ -14,12 +14,12 @@ WHERE key = 'company_name';
 
 -- Update website URL
 UPDATE "globalSettings"
-SET value = 'https://capcofire.com', "updatedAt" = NOW()
+SET value = 'https://RAILWAY_PUBLIC_DOMAIN', "updatedAt" = NOW()
 WHERE key = 'website';
 
 -- Update email
 UPDATE "globalSettings"
-SET value = 'contact@capcofire.com', "updatedAt" = NOW()
+SET value = 'contact@RAILWAY_PUBLIC_DOMAIN', "updatedAt" = NOW()
 WHERE key = 'email';
 
 -- Update phone (CAPCO phone from VAPI)
@@ -44,7 +44,7 @@ WHERE key = 'secondary_color';
 
 -- Update Plausible domain
 UPDATE "globalSettings"
-SET value = 'capcofire.com', "updatedAt" = NOW()
+SET value = 'RAILWAY_PUBLIC_DOMAIN', "updatedAt" = NOW()
 WHERE key = 'plausible_site_id';
 
 -- Update social networks (CAPCO doesn't have Facebook like Rothco)
@@ -56,13 +56,13 @@ WHERE key = 'social_networks';
 INSERT INTO "globalSettings" (key, value, "valueType", category, description, "updatedAt")
 VALUES 
   ('companyName', 'CAPCO Design Group', 'text', 'company', 'Company name', NOW()),
-  ('website', 'https://capcofire.com', 'text', 'company', 'Company website URL', NOW()),
-  ('email', 'contact@capcofire.com', 'text', 'company', 'Company email', NOW()),
+  ('website', 'https://RAILWAY_PUBLIC_DOMAIN', 'text', 'company', 'Company website URL', NOW()),
+  ('email', 'contact@RAILWAY_PUBLIC_DOMAIN', 'text', 'company', 'Company email', NOW()),
   ('phone', '+16175810583', 'text', 'company', 'Company phone', NOW()),
   ('slogan', 'Professional Fire Protection Plan Review & Approval', 'text', 'company', 'Company slogan', NOW()),
   ('primary_color', '#825BDD', 'text', 'branding', 'Primary brand color', NOW()),
   ('secondary_color', '#0ea5e9', 'text', 'branding', 'Secondary brand color', NOW()),
-  ('plausible_site_id', 'capcofire.com', 'text', 'analytics', 'Plausible analytics site ID', NOW()),
+  ('plausible_site_id', 'RAILWAY_PUBLIC_DOMAIN', 'text', 'analytics', 'Plausible analytics site ID', NOW()),
   ('social_networks', '[]', 'json', 'company', 'Social media links', NOW())
 ON CONFLICT (key) DO UPDATE
 SET value = EXCLUDED.value, "updatedAt" = NOW();

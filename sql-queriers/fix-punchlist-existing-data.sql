@@ -139,7 +139,7 @@ BEGIN
       "updatedAt"
     ) VALUES (
       'bdaaa7d3-469d-4b1b-90d1-978e1be47a17',
-      'admin@capcofire.com',
+      'admin@RAILWAY_PUBLIC_DOMAIN',
       'CAPCo',
       'Admin',
       'CAPCO Design Group Systems',

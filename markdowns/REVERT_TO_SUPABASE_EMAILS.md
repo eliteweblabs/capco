@@ -72,7 +72,7 @@ You can keep your current `.env` settings:
 # Keep Resend for other emails (project notifications, etc.)
 EMAIL_PROVIDER=resend
 EMAIL_API_KEY=re_your_api_key_here
-FROM_EMAIL=noreply@capcofire.com
+FROM_EMAIL=noreply@RAILWAY_PUBLIC_DOMAIN
 FROM_NAME=CAPCO Design Group
 
 # Remove this line (or comment it out):

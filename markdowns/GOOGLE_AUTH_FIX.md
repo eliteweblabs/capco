@@ -2,15 +2,15 @@
 
 ## Problem
 
-When clicking "Sign in with Google" on https://capcofire.com/auth/login, you get the error "No authorization code received". This happens because Google OAuth isn't properly configured to redirect back to your app.
+When clicking "Sign in with Google" on https://RAILWAY_PUBLIC_DOMAIN/auth/login, you get the error "No authorization code received". This happens because Google OAuth isn't properly configured to redirect back to your app.
 
 ## Root Cause
 
 When using Supabase's `signInWithOAuth`, the OAuth flow works like this:
 
-1. Your app calls `supabase.auth.signInWithOAuth()` with `redirectTo: https://capcofire.com/auth/callback`
+1. Your app calls `supabase.auth.signInWithOAuth()` with `redirectTo: https://RAILWAY_PUBLIC_DOMAIN/auth/callback`
 2. Supabase generates an OAuth URL that tells Google to redirect to **Supabase's callback** first: `https://[project-id].supabase.co/auth/v1/callback`
-3. Supabase processes the OAuth response and then redirects to your app: `https://capcofire.com/auth/callback`
+3. Supabase processes the OAuth response and then redirects to your app: `https://RAILWAY_PUBLIC_DOMAIN/auth/callback`
 
 **The issue**: Google Cloud Console needs to have the **Supabase callback URL** registered, not your app's callback URL.
 
@@ -53,7 +53,7 @@ Your Supabase callback URL will be: `https://[project-id].supabase.co/auth/v1/ca
 2. Navigate to **Authentication** → **URL Configuration**
 3. Under **Redirect URLs**, ensure you have:
    ```
-   https://capcofire.com/auth/callback
+   https://RAILWAY_PUBLIC_DOMAIN/auth/callback
    ```
 4. If missing, click **Add URL** and add it
 5. Click **Save**
@@ -62,7 +62,7 @@ Your Supabase callback URL will be: `https://[project-id].supabase.co/auth/v1/ca
 
 In the same **URL Configuration** section, ensure **Site URL** is set to:
 ```
-https://capcofire.com
+https://RAILWAY_PUBLIC_DOMAIN
 ```
 
 ### Step 5: Wait for Changes to Propagate
@@ -72,9 +72,9 @@ https://capcofire.com
 
 ### Step 6: Test the Fix
 
-1. Clear your browser cache/cookies for capcofire.com
+1. Clear your browser cache/cookies for RAILWAY_PUBLIC_DOMAIN
 2. Or use an incognito/private window
-3. Go to https://capcofire.com/auth/login
+3. Go to https://RAILWAY_PUBLIC_DOMAIN/auth/login
 4. Click "Sign in with Google"
 5. Complete the Google sign-in
 6. You should be redirected back to your app successfully
@@ -102,7 +102,7 @@ The callback page now logs detailed information about:
 ❌ **Wrong project ID** - Must match your actual Supabase project ID
 
 ✅ **Add Supabase callback URL** - `https://[project-id].supabase.co/auth/v1/callback`
-✅ **Also add your app callback in Supabase** - `https://capcofire.com/auth/callback`
+✅ **Also add your app callback in Supabase** - `https://RAILWAY_PUBLIC_DOMAIN/auth/callback`
 ✅ **No trailing slash** - Exact match required
 ✅ **HTTPS for production** - Required for security
 

@@ -96,7 +96,7 @@ DROP POLICY IF EXISTS "profiles_email_admin" ON profiles;
 CREATE POLICY "profiles_email_admin" ON profiles
 FOR ALL USING (
   auth.uid() = id OR
-  auth.jwt() ->> 'email' LIKE '%@capcofire.com' OR
+  auth.jwt() ->> 'email' LIKE '%@RAILWAY_PUBLIC_DOMAIN' OR
   auth.jwt() ->> 'email' IN ('admin@yourcompany.com', 'owner@yourcompany.com')
 );
 
@@ -105,7 +105,7 @@ DROP POLICY IF EXISTS "projects_email_admin" ON projects;
 CREATE POLICY "projects_email_admin" ON projects
 FOR ALL USING (
   auth.uid() = author_id OR
-  auth.jwt() ->> 'email' LIKE '%@capcofire.com' OR
+  auth.jwt() ->> 'email' LIKE '%@RAILWAY_PUBLIC_DOMAIN' OR
   auth.jwt() ->> 'email' IN ('admin@yourcompany.com', 'owner@yourcompany.com')
 );
 

@@ -9,7 +9,7 @@ Google OAuth requires the redirect URI to be registered in **OAuth Client Creden
 ### 1. Authorized Domains (Consent Screen)
 - **Location**: APIs & Services → OAuth consent screen → Authorized domains
 - **Purpose**: Domains allowed on the consent screen
-- **What you have**: ✅ `capcofire.com` and `qudlxlryegnainztkrtk.supabase.co`
+- **What you have**: ✅ `RAILWAY_PUBLIC_DOMAIN` and `qudlxlryegnainztkrtk.supabase.co`
 
 ### 2. Authorized Redirect URIs (OAuth Client)
 - **Location**: APIs & Services → Credentials → Your OAuth 2.0 Client ID → Authorized redirect URIs
@@ -22,7 +22,7 @@ Based on your code, you need to add these **exact URLs** in the OAuth Client Cre
 
 ### Production (Required)
 ```
-https://capcofire.com/api/auth/callback
+https://RAILWAY_PUBLIC_DOMAIN/api/auth/callback
 ```
 
 ### Development (Optional but recommended)
@@ -49,7 +49,7 @@ https://qudlxlryegnainztkrtk.supabase.co/auth/v1/callback
 In the **Authorized redirect URIs** section, click **+ ADD URI** and add:
 
 ```
-https://capcofire.com/api/auth/callback
+https://RAILWAY_PUBLIC_DOMAIN/api/auth/callback
 ```
 
 **Important**: 
@@ -64,14 +64,14 @@ In **Supabase Dashboard** → **Authentication** → **Providers** → **Google*
 
 Make sure the **Redirect URL** is set to:
 ```
-https://capcofire.com/api/auth/callback
+https://RAILWAY_PUBLIC_DOMAIN/api/auth/callback
 ```
 
 ### Step 4: Check Railway Logs
 
 After making changes, try OAuth again and check Railway logs for:
 ```
-[---AUTH-SIGNIN] OAuth redirect URL: https://capcofire.com/api/auth/callback
+[---AUTH-SIGNIN] OAuth redirect URL: https://RAILWAY_PUBLIC_DOMAIN/api/auth/callback
 ```
 
 This should match what you configured in Google Cloud Console.
@@ -83,7 +83,7 @@ This should match what you configured in Google Cloud Console.
 ❌ **HTTP vs HTTPS** - Production must use `https://`
 ❌ **Trailing slash** - No trailing slash allowed
 
-✅ **Full URL with path** - `https://capcofire.com/api/auth/callback`
+✅ **Full URL with path** - `https://RAILWAY_PUBLIC_DOMAIN/api/auth/callback`
 ✅ **No trailing slash** - Exact match required
 ✅ **HTTPS for production** - Required for security
 

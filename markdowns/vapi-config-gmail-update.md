@@ -140,7 +140,7 @@ GMAIL_CLIENT_SECRET=your-client-secret-here
 PUBLIC_URL=http://localhost:4321
 
 # Railway Domain (for production)
-RAILWAY_PUBLIC_DOMAIN=capcofire.com
+RAILWAY_PUBLIC_DOMAIN=RAILWAY_PUBLIC_DOMAIN
 ```
 
 ## Troubleshooting

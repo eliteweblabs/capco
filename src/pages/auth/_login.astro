@@ -2,8 +2,8 @@
 // Handle OAuth callback if code is present (MUST be first). Preserve full query (state, redirect).
 const authCode = Astro.url.searchParams.get("code");
 if (authCode) {
-  const query = Astro.url.search ? Astro.url.search : `?code=${encodeURIComponent(authCode)}`;
-  return Astro.redirect(`/api/auth/callback${query}`);
+  const _query = Astro.url.search ? Astro.url.search : `?code=${encodeURIComponent(authCode)}`;
+  return Astro.redirect(`/api/auth/callback${_query}`);
 }
 
 // Get auth data directly
@@ -162,7 +162,7 @@ import SlidingTabs from "../../components/common/SlidingTabs.astro";
 
 <script>
   // Global function for tab switching (SlidingTabs handles indicator; this handles form visibility + URL)
-  window.switchAuthTab = function (tab) {
+  (window as any).switchAuthTab = function (tab: string) {
     const loginForm = document.getElementById("login-form");
     const registerForm = document.getElementById("register-form");
     if (!loginForm || !registerForm) return;
@@ -193,7 +193,7 @@ import SlidingTabs from "../../components/common/SlidingTabs.astro";
     const refreshToken = hashParams.get("refresh_token");
     const tokenType = hashParams.get("token_type");
     const expiresIn = hashParams.get("expires_in");
-    const expiresAt = hashParams.get("expires_at");
+    const _expiresAt = hashParams.get("expires_at");
     const type = hashParams.get("type");
 
     if (accessToken && refreshToken) {
@@ -256,7 +256,7 @@ import SlidingTabs from "../../components/common/SlidingTabs.astro";
     const urlParams = new URLSearchParams(window.location.search);
     const tab = urlParams.get("tab") || "login";
     if (tab === "register") {
-      window.switchAuthTab("register");
+      (window as any).switchAuthTab("register");
     }
   });
 </script>

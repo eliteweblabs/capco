@@ -4,71 +4,70 @@ export const partial = true;
 // Check if we have props (when used as component) or need to use headers (when used as partial)
 const hasProps = Object.keys(Astro.props).length > 0;
 
-let componentId,
-  title,
-  showSearch,
-  cancelButtonText,
-  selectButtonText,
-  noResultsText,
-  searchText,
-  searchPlaceholder,
-  searchLabel,
-  errorText,
-  showImages,
-  imageField,
-  valueField,
-  projectId,
-  name,
-  globalInputClasses,
-  labelField,
-  currentLocation;
+let componentId: any,
+  _title: any,
+  showSearch: any,
+  cancelButtonText: any,
+  selectButtonText: any,
+  noResultsText: any,
+  searchText: any,
+  _searchPlaceholder: any,
+  _searchLabel: any,
+  errorText: any,
+  _showImages: any,
+  _imageField: any,
+  _valueField: any,
+  _projectId: any,
+  _name: any,
+  globalInputClasses: any,
+  _labelField: any,
+  currentLocation: any;
 
 if (hasProps) {
   // Use props when available (prioritize props over headers)
   const props = Astro.props;
   componentId = props.id || "slot-machine";
-  title = props.title || "Select Option";
+  _title = props.title || "Select Option";
   showSearch = props.showSearch || false;
   cancelButtonText = props.cancelButtonText || "Cancel";
   selectButtonText = props.selectButtonText || "Select";
   noResultsText = props.noResultsText || "No results found";
   searchText = props.searchText || "Searching for options...";
-  searchPlaceholder = props.searchPlaceholder || "Type to search...";
-  searchLabel = props.searchLabel || "Search:";
+  _searchPlaceholder = props.searchPlaceholder || "Type to search...";
+  _searchLabel = props.searchLabel || "Search:";
   errorText = props.errorText || "Error loading options";
-  showImages = props.showImages || false;
-  imageField = props.imageField || "image_url";
-  valueField = props.valueField || "value";
-  labelField = props.labelField || "label";
-  projectId = props.projectId || "";
-  name = props.name || "";
+  _showImages = props.showImages || false;
+  _imageField = props.imageField || "image_url";
+  _valueField = props.valueField || "value";
+  _labelField = props.labelField || "label";
+  _projectId = props.projectId || "";
+  _name = props.name || "";
   globalInputClasses = props.globalInputClasses || "";
   currentLocation = props.currentLocation || false;
 } else {
   // Fall back to headers when used as partial
   componentId = Astro.request.headers.get("x-component-id") || "slot-machine";
-  title = Astro.request.headers.get("x-modal-title") || "Select Option";
+  _title = Astro.request.headers.get("x-modal-title") || "Select Option";
   showSearch = Astro.request.headers.get("x-show-search") === "true";
   cancelButtonText = Astro.request.headers.get("x-cancel-button") || "Cancel";
   selectButtonText = Astro.request.headers.get("x-select-button") || "Select";
   noResultsText = Astro.request.headers.get("x-no-results-text") || "No results found";
   searchText = Astro.request.headers.get("x-search-text") || "Searching for options...";
-  searchPlaceholder = Astro.request.headers.get("x-search-placeholder") || "Type to search...";
-  searchLabel = Astro.request.headers.get("x-search-label") || "Search:";
+  _searchPlaceholder = Astro.request.headers.get("x-search-placeholder") || "Type to search...";
+  _searchLabel = Astro.request.headers.get("x-search-label") || "Search:";
   errorText = Astro.request.headers.get("x-error-text") || "Error loading options";
-  showImages = Astro.request.headers.get("x-show-images") === "true";
-  imageField = Astro.request.headers.get("x-image-field") || "image_url";
-  valueField = Astro.request.headers.get("x-value-field") || "value";
-  labelField = Astro.request.headers.get("x-label-field") || "label";
-  projectId = Astro.request.headers.get("x-project-id") || "";
-  name = Astro.request.headers.get("x-name") || "";
+  _showImages = Astro.request.headers.get("x-show-images") === "true";
+  _imageField = Astro.request.headers.get("x-image-field") || "image_url";
+  _valueField = Astro.request.headers.get("x-value-field") || "value";
+  _labelField = Astro.request.headers.get("x-label-field") || "label";
+  _projectId = Astro.request.headers.get("x-project-id") || "";
+  _name = Astro.request.headers.get("x-name") || "";
   globalInputClasses = Astro.request.headers.get("x-global-input-classes") || "";
   currentLocation = Astro.request.headers.get("x-current-location") === "true";
 }
 
 import Button from "../../components/common/Button.astro";
 import FormActionButton from "../../components/form/FormActionButton.astro";
-import CloseButton from "../../components/ui/CloseButton.astro";
 import SearchInput from "../../components/form/SearchInput.astro";
 ---
 

@@ -254,7 +254,7 @@ if (typeof window !== "undefined" && (window as any).__jsOrderLog)
       const months = Math.floor(days / 30);
       const years = Math.floor(days / 365);
 
-      let timeText;
+      let timeText: string;
       if (years > 0) {
         timeText = `${years} year${years > 1 ? "s" : ""} ago`;
       } else if (months > 0) {

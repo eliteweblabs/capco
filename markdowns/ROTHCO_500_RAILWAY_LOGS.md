@@ -47,5 +47,5 @@ railway logs -d --lines 200
 
 ## Capco vs Rothco
 
-- **Capco:** `capcofire.com` – working.
+- **Capco:** `RAILWAY_PUBLIC_DOMAIN` – working.
 - **Rothco:** `rothcollc.com` – 500 on `/` (502 Bad Gateway observed when fetching).

@@ -40,7 +40,7 @@ PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
 3. Navigate to **Authentication** → **URL Configuration**
 4. Under **Redirect URLs**, click **Add URL** and add:
    ```
-   https://capcofire.com/auth/callback
+   https://RAILWAY_PUBLIC_DOMAIN/auth/callback
    ```
 5. Click **Save**
 
@@ -51,7 +51,7 @@ PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
 In the same **URL Configuration** section, ensure **Site URL** is set to:
 
 ```
-https://capcofire.com
+https://RAILWAY_PUBLIC_DOMAIN
 ```
 
 (Or your production domain)
@@ -68,7 +68,7 @@ After adding the environment variables in Railway:
 
 After the redeploy:
 
-1. Clear your browser cache/cookies for capcofire.com
+1. Clear your browser cache/cookies for RAILWAY_PUBLIC_DOMAIN
 2. Or use an incognito/private window
 3. Try logging in again
 
@@ -82,6 +82,6 @@ After the redeploy:
 
 After fixing:
 
-1. Clear your browser cache/cookies for capcofire.com
+1. Clear your browser cache/cookies for RAILWAY_PUBLIC_DOMAIN
 2. Try logging in again
 3. The callback should now work with the redirect URL registered

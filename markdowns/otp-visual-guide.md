@@ -237,7 +237,7 @@ OPTIONAL STEPS:
 ./scripts/test-otp-flow.sh
 
 # Test with custom domain
-./scripts/test-otp-flow.sh https://capcofire.com your@email.com
+./scripts/test-otp-flow.sh https://RAILWAY_PUBLIC_DOMAIN your@email.com
 
 # Check git status
 git status

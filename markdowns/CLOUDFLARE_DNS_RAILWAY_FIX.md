@@ -2,7 +2,7 @@
 
 ## Problem: Error 1001 - DNS Resolution Error
 
-You're seeing Cloudflare Error 1001, which means Cloudflare can't resolve `capcofire.com` to your Railway backend.
+You're seeing Cloudflare Error 1001, which means Cloudflare can't resolve `RAILWAY_PUBLIC_DOMAIN` to your Railway backend.
 
 ## Root Cause
 
@@ -14,11 +14,11 @@ The domain is using Cloudflare, but Cloudflare's DNS isn't properly configured t
 
 1. **Go to Cloudflare Dashboard**
    - Login at https://dash.cloudflare.com
-   - Select your domain `capcofire.com`
+   - Select your domain `RAILWAY_PUBLIC_DOMAIN`
 
 2. **Check DNS Records**
    - Go to **DNS** → **Records**
-   - Look for an A or CNAME record for `capcofire.com`
+   - Look for an A or CNAME record for `RAILWAY_PUBLIC_DOMAIN`
 
 3. **Get Railway's IP/Domain**
    - Go to Railway Dashboard → Your Project → **astro-app** service
@@ -29,13 +29,13 @@ The domain is using Cloudflare, but Cloudflare's DNS isn't properly configured t
 4. **Update Cloudflare DNS**
    - **If using CNAME:**
      - Type: `CNAME`
-     - Name: `@` (or `capcofire.com`)
+     - Name: `@` (or `RAILWAY_PUBLIC_DOMAIN`)
      - Target: `your-app.up.railway.app` (Railway's domain)
      - Proxy status: **Proxied** (orange cloud) ✅
    
    - **If using A record:**
      - Type: `A`
-     - Name: `@` (or `capcofire.com`)
+     - Name: `@` (or `RAILWAY_PUBLIC_DOMAIN`)
      - Target: Railway's IP address
      - Proxy status: **Proxied** (orange cloud) ✅
 
@@ -53,10 +53,10 @@ If you don't need Cloudflare, point DNS directly to Railway:
    - Copy the public domain (e.g., `your-app.up.railway.app`)
 
 2. **Update DNS at Your Registrar**
-   - Go to your domain registrar (where you bought capcofire.com)
+   - Go to your domain registrar (where you bought RAILWAY_PUBLIC_DOMAIN)
    - Remove Cloudflare nameservers
    - Add CNAME record:
-     - Name: `@` or `capcofire.com`
+     - Name: `@` or `RAILWAY_PUBLIC_DOMAIN`
      - Value: `your-app.up.railway.app`
 
 3. **Remove Cloudflare**
@@ -87,10 +87,10 @@ If Cloudflare is proxying but misconfigured:
 
 ```bash
 # Check what DNS records exist
-dig capcofire.com ANY
+dig RAILWAY_PUBLIC_DOMAIN ANY
 
 # Check what Cloudflare sees
-dig capcofire.com @1.1.1.1
+dig RAILWAY_PUBLIC_DOMAIN @1.1.1.1
 ```
 
 ### 2. Check Railway Domain
@@ -102,7 +102,7 @@ dig capcofire.com @1.1.1.1
 ### 3. Verify Cloudflare Configuration
 
 - Cloudflare Dashboard → DNS → Records
-- Ensure there's a record for `capcofire.com` or `@`
+- Ensure there's a record for `RAILWAY_PUBLIC_DOMAIN` or `@`
 - Ensure it points to Railway's domain
 - Ensure proxy is enabled (orange cloud)
 
@@ -130,7 +130,7 @@ dig capcofire.com @1.1.1.1
 ```
 DNS Record:
 - Type: CNAME
-- Name: @ (or capcofire.com)
+- Name: @ (or RAILWAY_PUBLIC_DOMAIN)
 - Target: your-app.up.railway.app
 - Proxy: ON (orange cloud) ✅
 - TTL: Auto
@@ -149,7 +149,7 @@ DNS Record (at registrar):
 - TTL: 3600
 
 Railway:
-- Custom domain: capcofire.com
+- Custom domain: RAILWAY_PUBLIC_DOMAIN
 - SSL: Automatic (Railway provides)
 ```
 
@@ -159,7 +159,7 @@ Railway:
 2. **Check Railway Dashboard** - Get current public domain
 3. **Update DNS** - Point to Railway correctly
 4. **Wait for Propagation** - DNS changes take 5-60 minutes
-5. **Test** - Visit https://capcofire.com
+5. **Test** - Visit https://RAILWAY_PUBLIC_DOMAIN
 
 ## Need Help?
 

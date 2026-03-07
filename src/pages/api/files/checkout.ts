@@ -63,7 +63,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     let result;
 
     switch (checkoutData.action) {
-      case "checkout":
+      case "checkout": {
         if (!checkoutData.userId) {
           return new Response(JSON.stringify({ error: "User ID required for checkout" }), {
             status: 400,
@@ -71,7 +71,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           });
         }
 
-        // Check if file is already checked out (from files table columns)
         const { data: existingFile, error: fileCheckError } = await supabaseAdmin
           .from("files")
           .select("id, checkedOutBy, checkedOutAt")
@@ -99,7 +98,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           );
         }
 
-        // Update file record with checkout info
         const { data: checkedOutFile, error: checkoutError } = await supabaseAdmin
           .from("files")
           .update({
@@ -128,9 +126,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           file: checkedOutFile,
         };
         break;
+      }
 
-      case "checkin":
-        // Update file to clear checkout status
+      case "checkin": {
         const { data: checkinFile, error: checkinError } = await supabaseAdmin
           .from("files")
           .update({
@@ -168,9 +166,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           file: checkinFile,
         };
         break;
+      }
 
-      case "cancel":
-        // Same as checkin - clear checkout status
+      case "cancel": {
         const { data: cancelFile, error: cancelError } = await supabaseAdmin
           .from("files")
           .update({
@@ -208,6 +206,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           file: cancelFile,
         };
         break;
+      }
 
       default:
         return new Response(

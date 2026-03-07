@@ -54,7 +54,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    const baseUrl = getApiBaseUrl(request);
+    const _baseUrl = getApiBaseUrl(request);
 
     // Create email content
     const emailSubject = `Appointment Confirmation - ${appointmentDetails.date || "Your Scheduled Meeting"}`;

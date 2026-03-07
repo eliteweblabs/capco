@@ -4,7 +4,7 @@ import fetch from "node-fetch";
 const VAPI_API_KEY = process.env.VAPI_API_KEY;
 
 // Get the public domain, ensuring it's a valid URL
-let RAILWAY_PUBLIC_DOMAIN = process.env.RAILWAY_PUBLIC_DOMAIN || process.env.PUBLIC_DOMAIN || "https://capcofire.com";
+let RAILWAY_PUBLIC_DOMAIN = process.env.RAILWAY_PUBLIC_DOMAIN || process.env.PUBLIC_DOMAIN;
 
 // Remove any template literal syntax if present
 RAILWAY_PUBLIC_DOMAIN = RAILWAY_PUBLIC_DOMAIN.replace(/\$\{[^}]+\}/g, "").trim();
@@ -15,7 +15,7 @@ if (!RAILWAY_PUBLIC_DOMAIN.startsWith("http")) {
   if (RAILWAY_PUBLIC_DOMAIN) {
     RAILWAY_PUBLIC_DOMAIN = `https://${RAILWAY_PUBLIC_DOMAIN}`;
   } else {
-    RAILWAY_PUBLIC_DOMAIN = "https://capcofire.com";
+    RAILWAY_PUBLIC_DOMAIN = process.env.RAILWAY_PUBLIC_DOMAIN || "";
   }
 }
 

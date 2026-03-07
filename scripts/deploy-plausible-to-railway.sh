@@ -22,8 +22,8 @@ echo "🔧 Setting up environment variables..."
 railway variables set PLAUSIBLE_DB_PASSWORD=$(openssl rand -base64 32)
 railway variables set PLAUSIBLE_SECRET_KEY=$(openssl rand -base64 64)
 railway variables set PLAUSIBLE_BASE_URL="https://capco-plausible-analytics.railway.app"
-railway variables set PLAUSIBLE_MAILER_EMAIL="noreply@capcofire.com"
-railway variables set PLAUSIBLE_ADMIN_EMAIL="admin@capcofire.com"
+railway variables set PLAUSIBLE_MAILER_EMAIL="noreply@$RAILWAY_PUBLIC_DOMAIN"
+railway variables set PLAUSIBLE_ADMIN_EMAIL="admin@$RAILWAY_PUBLIC_DOMAIN"
 railway variables set PLAUSIBLE_ADMIN_PASSWORD=$(openssl rand -base64 32)
 
 echo ""
@@ -33,7 +33,7 @@ echo "   (The configuration uses Resend SMTP at smtp.resend.com:587)"
 
 echo "✅ Environment variables set!"
 echo "🔐 Admin credentials:"
-echo "   Email: admin@capcofire.com"
+echo "   Email: admin@$RAILWAY_PUBLIC_DOMAIN"
 echo "   Password: Check Railway dashboard for PLAUSIBLE_ADMIN_PASSWORD"
 
 # Deploy using the railway.json file
@@ -42,5 +42,5 @@ railway up --detach
 
 echo "✅ Plausible Analytics deployed to Railway!"
 echo "🌐 Access your analytics at: https://capco-plausible-analytics.railway.app"
-echo "📊 Add your site (capcofire.com) in the Plausible dashboard"
+echo "📊 Add your site ($RAILWAY_PUBLIC_DOMAIN) in the Plausible dashboard"
 echo "🔧 Update your app's PLAUSIBLE_URL to: https://capco-plausible-analytics.railway.app"

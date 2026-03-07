@@ -1,4 +1,4 @@
-# Railway SSL/Domain Setup for capcofire.com
+# Railway SSL/Domain Setup for RAILWAY_PUBLIC_DOMAIN
 
 ## Issue: "Not Secure" / HTTPS Not Working
 
@@ -16,7 +16,7 @@ If you're seeing a "Not Secure" warning, Railway's SSL certificate isn't properl
    - Go to **Settings** tab
    - Scroll to **Networking** section
    - Under **Custom Domain**, click **Add Domain**
-   - Enter: `capcofire.com`
+   - Enter: `RAILWAY_PUBLIC_DOMAIN`
    - Railway will automatically provision an SSL certificate
 
 3. **Wait for SSL Certificate**
@@ -33,9 +33,9 @@ Railway will provide DNS records you need to add:
    - Usually a CNAME record pointing to Railway's domain
 
 2. **Add DNS Records**
-   - Go to your domain registrar (where you bought capcofire.com)
+   - Go to your domain registrar (where you bought RAILWAY_PUBLIC_DOMAIN)
    - Add the CNAME record Railway provides
-   - Example: `capcofire.com` → `your-app.up.railway.app`
+   - Example: `RAILWAY_PUBLIC_DOMAIN` → `your-app.up.railway.app`
 
 3. **Wait for DNS Propagation**
    - DNS changes can take up to 48 hours (usually much faster)
@@ -50,7 +50,7 @@ After DNS propagates and Railway provisions SSL:
    - SSL certificate status should be "Valid"
 
 2. **Test HTTPS**
-   - Visit `https://capcofire.com`
+   - Visit `https://RAILWAY_PUBLIC_DOMAIN`
    - Should show secure padlock icon
    - No "Not Secure" warning
 
@@ -79,7 +79,7 @@ If custom domain setup is complex, you can use Railway's auto-generated domain:
 **Solutions:**
 1. **Check DNS Records**
    - Verify CNAME record is correct
-   - Use `dig capcofire.com` or `nslookup capcofire.com` to verify
+   - Use `dig RAILWAY_PUBLIC_DOMAIN` or `nslookup RAILWAY_PUBLIC_DOMAIN` to verify
 
 2. **Wait Longer**
    - SSL provisioning can take up to 10 minutes
@@ -109,14 +109,14 @@ If custom domain setup is complex, you can use Railway's auto-generated domain:
 ### Domain Not Resolving
 
 **Symptoms:**
-- Browser can't connect to capcofire.com
+- Browser can't connect to RAILWAY_PUBLIC_DOMAIN
 - DNS lookup fails
 
 **Solutions:**
 1. **Verify DNS Records**
    ```bash
-   dig capcofire.com
-   nslookup capcofire.com
+   dig RAILWAY_PUBLIC_DOMAIN
+   nslookup RAILWAY_PUBLIC_DOMAIN
    ```
    Should point to Railway's domain
 
@@ -127,11 +127,11 @@ If custom domain setup is complex, you can use Railway's auto-generated domain:
 ## Current Configuration Check
 
 Based on your `astro.config.mjs`:
-- `site` is set to: `https://${env.RAILWAY_PUBLIC_DOMAIN || "capcofire.com"}`
+- `site` is set to: `https://${env.RAILWAY_PUBLIC_DOMAIN || "RAILWAY_PUBLIC_DOMAIN"}`
 - This is correct - it will use HTTPS
 
 **What to verify:**
-1. `RAILWAY_PUBLIC_DOMAIN` in Railway should be: `capcofire.com` (without https://)
+1. `RAILWAY_PUBLIC_DOMAIN` in Railway should be: `RAILWAY_PUBLIC_DOMAIN` (without https://)
 2. Custom domain should be added in Railway dashboard
 3. DNS should point to Railway
 4. SSL certificate should be provisioned
@@ -142,7 +142,7 @@ Based on your `astro.config.mjs`:
 - [ ] DNS CNAME record added at domain registrar
 - [ ] DNS propagated (check with dnschecker.org)
 - [ ] SSL certificate provisioned (check Railway dashboard)
-- [ ] `RAILWAY_PUBLIC_DOMAIN` set to `capcofire.com` (no https://)
+- [ ] `RAILWAY_PUBLIC_DOMAIN` set to `RAILWAY_PUBLIC_DOMAIN` (no https://)
 - [ ] Service redeployed after domain configuration
 
 ## Need Help?

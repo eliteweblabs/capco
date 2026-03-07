@@ -61,7 +61,7 @@ The chat server is configured to allow connections from:
 
 - `http://localhost:4321` (local development)
 - `http://localhost:3000` (alternative local port)
-- `https://capcofire.com` (your live domain)
+- `https://RAILWAY_PUBLIC_DOMAIN` (your live domain)
 
 ## 📱 How It Works
 

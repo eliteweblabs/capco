@@ -45,7 +45,7 @@ const CLIENT_PHONE = "+19783479161";
 const DEFAULT_USERNAME = "barry";
 
 // Webhook domain - the live URL where the webhook is hosted
-const WEBHOOK_DOMAIN = process.env.BARRY_WEBHOOK_DOMAIN || "https://capcofire.com";
+const WEBHOOK_DOMAIN = process.env.BARRY_WEBHOOK_DOMAIN || process.env.RAILWAY_PUBLIC_DOMAIN;
 
 // Company name environment variable name (used for placeholder replacement)
 const COMPANY_NAME_ENV_VAR = "BARRY_COMPANY_NAME";

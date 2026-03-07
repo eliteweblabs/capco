@@ -136,7 +136,7 @@ function initializeTypewriterInstance(element: HTMLElement, text: string): void 
   });
 
   // Build the typing sequence with pauses and natural variations
-  segments.forEach((segment, index) => {
+  segments.forEach((segment) => {
     if (segment.type === "text") {
       const text = segment.content!;
 
@@ -304,7 +304,7 @@ function injectSessionMetaIntoText(text: string, element?: HTMLElement): string 
     /<span[^>]*data-form-session-meta=['"]([^'"]+)['"][^>]*data-default=['"]([^'"]+)['"][^>]*>([^<]*)<\/span>/gi;
 
   let replacedText = text;
-  let match;
+  let match: RegExpExecArray | null;
   const form = (element?.closest("form") ?? document.querySelector("form")) as HTMLFormElement;
 
   while ((match = metaRegex.exec(text)) !== null) {
@@ -353,7 +353,7 @@ function parseTextWithPauses(
   const pauseRegex = /<span[^>]*data-typewriter-pause=["'](\d+)["'][^>]*>(.*?)<\/span>/gi;
 
   let lastIndex = 0;
-  let match;
+  let match: RegExpExecArray | null;
 
   while ((match = pauseRegex.exec(text)) !== null) {
     // Add text before the pause span

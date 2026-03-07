@@ -16,6 +16,9 @@ const prefillData = currentUser
     }
   : null;
 import LoadingSpinner from "../../../components/ui/LoadingSpinner.astro";
+import { globalCompanyData } from "../../../pages/api/global/global-company-data";
+const companyData = await globalCompanyData();
+const supportEmail = companyData.globalCompanyEmail || "support@example.com";
 ---
 
 <div
@@ -23,6 +26,7 @@ import LoadingSpinner from "../../../components/ui/LoadingSpinner.astro";
   class="min-h-[600px]"
   data-cal-link={calLink}
   data-prefill={prefillData ? JSON.stringify(prefillData) : ""}
+  data-support-email={supportEmail}
 >
   <div class="flex h-64 items-center justify-center rounded-lg">
     <LoadingSpinner size="lg" color="primary" className="mx-auto mb-4" />
@@ -62,9 +66,12 @@ import LoadingSpinner from "../../../components/ui/LoadingSpinner.astro";
         "sandbox",
         "allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
       );
+      const supportEmail = el.dataset.supportEmail || "support@example.com";
       iframe.onerror = function () {
         el.innerHTML =
-          '<div class="text-center py-12"><h3 class="text-lg font-medium mb-2">Calendar Unavailable</h3><p class="mb-4">Please contact us to schedule your demo.</p><a href="mailto:support@capcofire.com" class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg">Email Us</a></div>';
+          '<div class="text-center py-12"><h3 class="text-lg font-medium mb-2">Calendar Unavailable</h3><p class="mb-4">Please contact us to schedule your demo.</p><a href="mailto:' +
+          supportEmail +
+          '" class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg">Email Us</a></div>';
       };
       el.appendChild(iframe);
     });

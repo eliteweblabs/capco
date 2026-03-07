@@ -357,7 +357,7 @@ function extractFieldsFromText(text: string) {
   }
 
   // Date pattern
-  const dateRegex = /\b\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\b/g;
+  const dateRegex = /\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b/g;
   const dates = text.match(dateRegex);
   if (dates) {
     fields.push({ name: "Date", type: "date", value: dates[0] });

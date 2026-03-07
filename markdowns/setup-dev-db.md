@@ -267,7 +267,7 @@ echo "PUBLIC_SUPABASE_URL=https://qudlxlryegnainztkrtk.supabase.co" >> .env.prod
 echo "PUBLIC_SUPABASE_ANON_KEY=[production-anon-key]" >> .env.production
 echo "PUBLIC_SUPABASE_ANON_KEY=[production-service-role-key]" >> .env.production
 echo "NODE_ENV=production" >> .env.production
-echo "RAILWAY_PUBLIC_DOMAIN=https://capcofire.com" >> .env.production
+echo "RAILWAY_PUBLIC_DOMAIN=https://RAILWAY_PUBLIC_DOMAIN" >> .env.production
 ```
 
 ## Troubleshooting

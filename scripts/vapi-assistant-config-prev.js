@@ -42,7 +42,7 @@ import { fileURLToPath } from "url";
 
 const VAPI_API_KEY = process.env.VAPI_API_KEY;
 // do not change this url or this script will fail, the web hook url needs to be the live url of the site
-const RAILWAY_PUBLIC_DOMAIN = "https://capcofire.com";
+const RAILWAY_PUBLIC_DOMAIN = process.env.RAILWAY_PUBLIC_DOMAIN;
 const VAPI_WEBHOOK_URL = `${RAILWAY_PUBLIC_DOMAIN}/api/vapi/webhook`;
 
 // Process the assistant config to replace placeholders using placeholder-utils.ts
@@ -139,7 +139,7 @@ You are {{assistant.name}}, a receptionist for {{RAILWAY_PROJECT_NAME}}. We spec
 **Triggers**: 'website', 'login', 'portal', 'online', 'access'
 
 **Process**:
-1. Provide website information: "You can visit our website at capcofire.com"
+1. Provide website information: "You can visit our website at {{GLOBAL_COMPANY_WEBSITE}}"
 2. For login issues: "If you're having trouble logging in, I can help you reset your password or create an account"
 3. Ask: "Is there anything specific you need help with on our website?"
 
@@ -317,7 +317,7 @@ async function main() {
   if (!VAPI_WEBHOOK_URL) {
     console.error("❌ [VAPI-CONFIG] RAILWAY_PUBLIC_DOMAIN environment variable is required");
     console.error("❌ [VAPI-CONFIG] Please set RAILWAY_PUBLIC_DOMAIN in Railway global variables:");
-    console.error("   - RAILWAY_PUBLIC_DOMAIN=https://capcofire.com");
+    console.error("   - RAILWAY_PUBLIC_DOMAIN=https://your-domain.com");
     process.exit(1);
   }
 

@@ -98,7 +98,7 @@ Follow: `markdowns/vapi-dashboard-config-hybrid-contact.md`
 
 1. Add `submitContactForm` function to VAPI assistant
 2. Update system prompt with contact collection guidelines
-3. Configure webhook URL: `https://capcofire.com/api/vapi/webhook`
+3. Configure webhook URL: `https://RAILWAY_PUBLIC_DOMAIN/api/vapi/webhook`
 4. Set voice and model preferences
 5. Test conversation in VAPI dashboard
 

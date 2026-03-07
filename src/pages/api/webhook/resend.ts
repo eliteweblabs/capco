@@ -99,9 +99,8 @@ export const POST: APIRoute = async ({ request }) => {
         console.log("📧 [RESEND-WEBHOOK] Email delivered:", data.email);
         break;
 
-      case "email.opened":
+      case "email.opened": {
         console.log("📧 [RESEND-WEBHOOK] Email opened:", data.email);
-        // Check rate limit before processing
         const projectHeader = data.headers?.["x-Project"] || data.headers?.["x-project"];
         const project = projectHeader ? JSON.parse(projectHeader) : null;
         if (project && !checkRateLimit(project.id, "email.opened")) {
@@ -113,10 +112,10 @@ export const POST: APIRoute = async ({ request }) => {
         }
         await handleEmailOpened(data, new URL(request.url).origin);
         break;
+      }
 
-      case "email.clicked":
+      case "email.clicked": {
         console.log("📧 [RESEND-WEBHOOK] Email clicked:", data.email);
-        // Check rate limit before processing
         const clickedProjectHeader = data.headers?.["x-Project"] || data.headers?.["x-project"];
         const clickedProject = clickedProjectHeader ? JSON.parse(clickedProjectHeader) : null;
         if (clickedProject && !checkRateLimit(clickedProject.id, "email.clicked")) {
@@ -128,6 +127,7 @@ export const POST: APIRoute = async ({ request }) => {
         }
         await handleEmailClicked(data);
         break;
+      }
 
       case "email.bounced":
         console.log("📧 [RESEND-WEBHOOK] Email bounced:", data.email);
@@ -161,7 +161,7 @@ async function handleEmailOpened(data: any, baseUrl?: string) {
     const project = projectHeader ? JSON.parse(projectHeader) : null;
     const currentStatus = data.headers?.["X-Project-Status"] || data.headers?.["x-project-status"];
     const authorId = data.headers?.["X-Author-ID"] || data.headers?.["x-author-id"];
-    const currentUser = data.headers?.["X-Current-User"] || data.headers?.["x-current-user"];
+    const _currentUser = data.headers?.["X-Current-User"] || data.headers?.["x-current-user"];
 
     if (!project || !currentStatus || !authorId) {
       console.log(

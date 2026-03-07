@@ -42,7 +42,7 @@ const CALENDAR_TYPE = "calcom";
 const CLIENT_PHONE = "+19787208194";
 
 // Webhook domain - the live URL where the webhook is hosted
-const WEBHOOK_DOMAIN = process.env.BARBERS_EDGE_WEBHOOK_DOMAIN || "https://capcofire.com";
+const WEBHOOK_DOMAIN = process.env.BARBERS_EDGE_WEBHOOK_DOMAIN || process.env.RAILWAY_PUBLIC_DOMAIN;
 
 // Company name environment variable name (used for placeholder replacement)
 const COMPANY_NAME_ENV_VAR = "BARBERS_EDGE_COMPANY_NAME";

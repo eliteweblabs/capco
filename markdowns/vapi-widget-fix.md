@@ -89,12 +89,12 @@ Update the `VapiChatWidget.astro` to add proper error handling:
 
 ### Check Webhook Configuration
 
-The assistant's webhook is configured to: `https://capcofire.com/api/vapi/webhook?calendarType=calcom`
+The assistant's webhook is configured to: `https://RAILWAY_PUBLIC_DOMAIN/api/vapi/webhook?calendarType=calcom`
 
 Verify the webhook is responding correctly:
 
 ```bash
-curl -X POST https://capcofire.com/api/vapi/webhook?calendarType=calcom \
+curl -X POST https://RAILWAY_PUBLIC_DOMAIN/api/vapi/webhook?calendarType=calcom \
   -H "Content-Type: application/json" \
   -d '{"type":"function-call","functionCall":{"name":"test"}}' \
   -v

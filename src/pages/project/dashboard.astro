@@ -1,9 +1,13 @@
 ---
 const requireAuthRedirect = "/auth/login";
 import { checkAuth } from "../../lib/auth";
-const { currentUser, session, supabase, refreshToken, accessToken } = await checkAuth(
-  Astro.cookies
-);
+const {
+  currentUser,
+  session,
+  supabase: _supabase,
+  refreshToken: _refreshToken,
+  accessToken: _accessToken,
+} = await checkAuth(Astro.cookies);
 const currentRole = currentUser?.profile?.role || "Client";
 
 // Handle auth redirect first
@@ -13,10 +17,7 @@ if (requireAuthRedirect && (!session || !currentUser)) {
 
 import { globalCompanyData } from "../api/global/global-company-data.ts";
 import { globalClasses } from "../api/global/global-classes.ts";
-import App from "../../components/ui/App.astro";
 import DashboardContent from "../../components/project/Dashboard.astro";
-import type { Project } from "../../lib/api/_projects.ts";
-
 // ⚡ OPTIMIZATION: Run all data fetches in PARALLEL
 console.time("🏗️ [DASHBOARD] Total data fetch");
 
@@ -125,19 +126,18 @@ console.log(
 );
 
 const {
-  globalCompanyName,
-  globalCompanySlogan,
-  globalCompanyAddress,
-  globalCompanyPhone,
-  globalCompanyEmail,
-  globalCompanyWebsite,
-  globalCompanyLogo,
+  globalCompanyName: _globalCompanyName,
+  globalCompanySlogan: _globalCompanySlogan,
+  globalCompanyAddress: _globalCompanyAddress,
+  globalCompanyPhone: _globalCompanyPhone,
+  globalCompanyEmail: _globalCompanyEmail,
+  globalCompanyWebsite: _globalCompanyWebsite,
+  globalCompanyLogo: _globalCompanyLogo,
 } = companyData;
 
 const { globalInputClasses, primaryTextClasses, secondaryTextClasses } = globalClasses();
 const projects = projectsData;
 import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
-import DashboardProjectAccordionTable from "../../components/project/DashboardProjectAccordionTable.astro";
 ---
 
 <LayoutFullWidth
@@ -283,7 +283,7 @@ import DashboardProjectAccordionTable from "../../components/project/DashboardPr
   }
 
   // Listen for project deletions to update global count
-  document.addEventListener("projectDeleted", (event) => {
+  document.addEventListener("projectDeleted", (_event) => {
     console.log("🗑️  [DASHBOARD] Project deleted, updating global count");
     const currentCount = refreshManager.getGlobalState("projectCount") || 0;
     const newCount = Math.max(0, currentCount - 1);
@@ -292,7 +292,7 @@ import DashboardProjectAccordionTable from "../../components/project/DashboardPr
   });
 
   // Listen for project creations to update global count
-  document.addEventListener("projectCreated", (event) => {
+  document.addEventListener("projectCreated", (_event) => {
     console.log("➕ [DASHBOARD] Project created, updating global count");
     const currentCount = refreshManager.getGlobalState("projectCount") || 0;
     const newCount = currentCount + 1;

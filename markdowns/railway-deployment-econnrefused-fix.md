@@ -1,12 +1,12 @@
 # Railway Deployment ECONNREFUSED Fix
 
 **Date:** January 31, 2026  
-**Issue:** ECONNREFUSED errors on capcofire.com Railway deployment  
+**Issue:** ECONNREFUSED errors on RAILWAY_PUBLIC_DOMAIN Railway deployment  
 **Status:** ✅ Fixed
 
 ## Problem Summary
 
-The Railway deployment for capcofire.com was experiencing `ECONNREFUSED` errors when internal API calls were made. The logs showed:
+The Railway deployment for RAILWAY_PUBLIC_DOMAIN was experiencing `ECONNREFUSED` errors when internal API calls were made. The logs showed:
 
 ```
 🔍 [PROJECT-STATUSES-API] Error fetching project data: TypeError: fetch failed
@@ -96,7 +96,7 @@ RUN chmod +x scripts/init-content.sh 2>/dev/null || true
 
 ## Verification
 
-✅ **capcofire.com** - Site loads successfully with no console errors
+✅ **RAILWAY_PUBLIC_DOMAIN** - Site loads successfully with no console errors
 - Page title: "CAPCO Design Group → Welcome to Fire Protection Services"
 - No ECONNREFUSED errors in deployment logs
 - Application running on port 8080
@@ -106,7 +106,7 @@ RUN chmod +x scripts/init-content.sh 2>/dev/null || true
 When running inside a Docker container on Railway:
 
 1. **Without request parameter:** `getApiBaseUrl()` → falls back to `http://localhost:4321` → ECONNREFUSED
-2. **With request parameter:** `getApiBaseUrl(request)` → uses actual domain from request → `https://capcofire.com` → ✅ Works
+2. **With request parameter:** `getApiBaseUrl(request)` → uses actual domain from request → `https://RAILWAY_PUBLIC_DOMAIN` → ✅ Works
 
 The fix ensures that all internal API calls use the actual deployed domain instead of localhost, allowing them to communicate properly within the Railway environment.
 

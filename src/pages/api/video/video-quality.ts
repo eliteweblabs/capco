@@ -12,7 +12,7 @@ export const GET: APIRoute = async ({ request, url }) => {
     // Get connection hints from headers
     const userAgent = request.headers.get("user-agent") || "";
     const connectionType = request.headers.get("save-data") || "";
-    const acceptEncoding = request.headers.get("accept-encoding") || "";
+    const _acceptEncoding = request.headers.get("accept-encoding") || "";
 
     // Detect mobile device
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
