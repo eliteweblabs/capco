@@ -77,6 +77,7 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
             class:list={[
               "step-content space-y-8 overflow-y-visible p-2 sm:space-y-8 sm:p-4 md:my-0", // leave mt-20 for tooltips MUST MATGCG INPUTD,
               step.stepNumber === 1 ? "first-step active" : "",
+              step.fields?.some((f) => f.component === "AgeConsent") ? "age-consent-wall" : "",
             ]}
             data-step={step.stepNumber}
             data-hide-progress-bar={step.hideProgressBar ? "true" : "false"}
@@ -495,6 +496,11 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
     opacity: 1;
   }
 
+  /* Age consent wall: hide nav buttons; only Yes/No from AgeConsent component visible */
+  .step-content.age-consent-wall .step-form-buttons-wrapper {
+    display: none;
+  }
+
   /* Shake animation for validation failure feedback */
   @keyframes form-shake {
     0%,
@@ -519,6 +525,23 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
   }
   .step-content.shake {
     animation: form-shake 0.45s ease-in-out;
+  }
+
+  /* Age consent wall: hide nav buttons; only Yes/No from AgeConsent component visible */
+  .step-content.age-consent-wall .step-form-buttons-wrapper {
+    display: none;
+  }
+
+  /* Age consent wall: prominent gate styling */
+  .step-content.age-consent-wall .age-consent-module {
+    padding: 1.5rem;
+    border: 2px solid var(--color-primary-500, theme(colors.primary.500));
+    border-radius: 0.5rem;
+    background: color-mix(
+      in srgb,
+      var(--color-primary-500, theme(colors.primary.500)) 6%,
+      transparent
+    );
   }
 
   /* TEST: When data-test-no-cascade, bypass all hiding - everything visible immediately for keypad debugging */

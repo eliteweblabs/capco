@@ -372,6 +372,18 @@ export function createMultiStepFormHandler(
     // Inject form session data into spans with data-form-session-meta attribute
     injectSessionMetaData(targetStep);
 
+    // Age consent wall: disable and hide Next until user confirms Yes
+    if (targetStep.classList.contains("age-consent-wall")) {
+      const nextBtn = targetStep.querySelector(
+        "button.next-step, button.submit-step"
+      ) as HTMLButtonElement | null;
+      if (nextBtn) {
+        nextBtn.disabled = true;
+        nextBtn.setAttribute("aria-hidden", "true");
+        nextBtn.classList.add("!sr-only");
+      }
+    }
+
     // Note: Typewriter animation is now handled by typewriter-text.ts script
 
     // Hide title block when moving past step 1

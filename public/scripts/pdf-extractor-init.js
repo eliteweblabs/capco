@@ -639,7 +639,7 @@
               console.log("\u{1F4D0} [PDF-SELECTOR] Not switching - conditions not met");
             }
           });
-          input.addEventListener("blur", (e) => {
+          input.addEventListener("blur", (_e) => {
             if (!isSelectingOnPDF) {
               setTimeout(() => {
                 if (focusedInput === input && !isSelectingOnPDF) {
@@ -714,7 +714,7 @@
             const container = pdfViewer;
             const containerWidth = container ? Math.max(container.clientWidth - 32, 200) : 400;
             const defaultViewport = page.getViewport({ scale: 1 });
-            const displayScale = containerWidth / defaultViewport.width;
+            const _displayScale = containerWidth / defaultViewport.width;
             const pageContainer = document.createElement("div");
             pageContainer.className = "relative mb-4 w-full";
             pageContainer.id = `pdf-page-${pageNum}`;

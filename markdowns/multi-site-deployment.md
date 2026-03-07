@@ -6,10 +6,21 @@ This repository deploys **multiple sites** from a single codebase when synced to
 
 | Site | Domain | Notes |
 |------|--------|-------|
-| CAPCO Design Group | RAILWAY_PUBLIC_DOMAIN | |
-| Rothco Built, LLC | rothco-built.com | |
+| CAPCO Design Group | RAILWAY_PUBLIC_DOMAIN | Fire protection |
+| Rothco Built, LLC | rothco-built.com | Fire protection |
+| Luxe Meds | luxemeds.com | E-commerce, Square, social media; no projects |
 
 **More sites will be added.** Each has its own Railway project and Supabase instance.
+
+### Config Files
+
+| Site | Config File | RAILWAY_PROJECT_NAME |
+|------|-------------|----------------------|
+| CAPCO | `config-capco-design-group.json` | (varies) |
+| Rothco | `config-rothco-built-llc.json` | `Rothco Built, LLC` |
+| Luxe Meds | `config-luxe-meds.json` | `luxe-meds` |
+
+See `markdowns/clone-rothco-to-luxe-meds.md` for cloning Rothco → Luxe Meds.
 
 ## How It Works
 

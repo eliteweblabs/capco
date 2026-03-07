@@ -1,0 +1,104 @@
+---
+/**
+ * AgeConsent - Reusable age verification component for forms.
+ * Confirms user meets minimum age (default 18). Use in contact, register, or other flows.
+ *
+ * Usage in form config:
+ *   { type: "component", component: "AgeConsent", name: "ageConsent", componentProps: { minAge: 18 } }
+ */
+import { globalClasses } from "../../pages/api/global/global-classes";
+import Button from "../common/Button.astro";
+
+const { globalTextH3, mutedTextClasses, globalFlexRow } = globalClasses();
+
+export interface Props {
+  id?: string;
+  name?: string;
+  /** Minimum age (default 18) */
+  minAge?: number;
+  /** Heading text */
+  heading?: string;
+  /** Subtext/description */
+  subtext?: string;
+  /** Message when user selects "No" */
+  refuseMessage?: string;
+  /** Initial value */
+  value?: boolean;
+}
+
+const {
+  id = "age-consent",
+  name = "ageConsent",
+  minAge = 18,
+  heading = `I confirm I am ${minAge} years of age or older`,
+  subtext = "You must meet this requirement to use our services. See our Terms of Service for details.",
+  refuseMessage = "You must be 18 or older to use this service.",
+  value = false,
+} = Astro.props;
+---
+
+<div class="age-consent-module" data-age-consent-id={id}>
+  <input type="hidden" id={`${id}-input`} name={name} value={value ? "true" : ""} />
+  <h3 class={`${globalTextH3} mb-2`}>{heading}</h3>
+  {subtext && <p class={`${mutedTextClasses} mb-6`}>{subtext}</p>}
+  <div class={`${globalFlexRow} flex-wrap gap-3`}>
+    <Button type="button" variant="outline" size="md" class="age-consent-no" data-age-value="false">
+      No
+    </Button>
+    <Button type="button" variant="primary" size="md" class="age-consent-yes" data-age-value="true">
+      Yes, I am {minAge}+
+    </Button>
+  </div>
+  <p
+    id={`${id}-refuse`}
+    class={`${mutedTextClasses} mt-4 text-amber-600 dark:text-amber-400 hidden`}
+    role="alert"
+  >
+    {refuseMessage}
+  </p>
+</div>
+
+<script define:vars={{ inputId: `${id}-input`, refuseId: `${id}-refuse` }}>
+  document.addEventListener("DOMContentLoaded", () => {
+    const module = document.querySelector(
+      `[data-age-consent-id="${inputId.replace("-input", "")}"]`
+    );
+    if (!module) return;
+    const input = module.querySelector(`#${inputId}`) as HTMLInputElement;
+    const refuseEl = module.querySelector(`#${refuseId}`) as HTMLElement;
+    const yesBtn = module.querySelector(".age-consent-yes");
+    const noBtn = module.querySelector(".age-consent-no");
+    if (!input || !yesBtn || !noBtn) return;
+
+    // Wall: disable and hide Next until user confirms Yes
+    const stepContent = module.closest(".step-content");
+    const nextBtn = stepContent?.querySelector(
+      "button.next-step, button.submit-step"
+    ) as HTMLButtonElement;
+    if (nextBtn) {
+      nextBtn.disabled = true;
+      nextBtn.setAttribute("aria-hidden", "true");
+      nextBtn.classList.add("!sr-only");
+    }
+
+    yesBtn.addEventListener("click", () => {
+      input.value = "true";
+      refuseEl?.classList.add("hidden");
+      const nextBtnEl = module
+        .closest(".step-content")
+        ?.querySelector("button.next-step, button.submit-step") as HTMLButtonElement;
+      if (nextBtnEl) {
+        nextBtnEl.disabled = false;
+        nextBtnEl.removeAttribute("aria-hidden");
+        nextBtnEl.classList.remove("!sr-only");
+        nextBtnEl.click();
+      }
+    });
+
+    noBtn.addEventListener("click", () => {
+      input.value = "false";
+      refuseEl?.classList.remove("hidden");
+      refuseEl?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+  });
+</script>

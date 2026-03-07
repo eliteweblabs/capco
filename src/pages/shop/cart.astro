@@ -1,0 +1,89 @@
+---
+/**
+ * Cart - Mobile-first cart page
+ */
+import App from "../components/ui/App.astro";
+import { globalClasses } from "../api/global/global-classes";
+
+const { globalContainer, globalTextH2, mutedTextClasses } = globalClasses();
+---
+
+<App title="Cart" description="Your shopping cart">
+  <main class={`${globalContainer} py-8 sm:py-12`}>
+    <h1 class={`${globalTextH2} mb-8`}>Cart</h1>
+
+    <div id="cart-content">
+      <p class={mutedTextClasses}>Loading cart...</p>
+    </div>
+
+    <div id="cart-actions" class="mt-8 hidden">
+      <a
+        href="/shop/checkout"
+        id="checkout-btn"
+        class="inline-block rounded-lg bg-primary-600 px-6 py-3 font-medium text-white hover:bg-primary-700"
+      >
+        Checkout
+      </a>
+    </div>
+  </main>
+</App>
+
+<script is:inline>
+  (async () => {
+    const res = await fetch("/api/shop/cart");
+    const { cart, cartId, error } = await res.json();
+
+    const content = document.getElementById("cart-content");
+    const actions = document.getElementById("cart-actions");
+
+    if (error) {
+      content.innerHTML = `<p class="text-red-600">${error}</p>`;
+      return;
+    }
+
+    if (!cart || cart.length === 0) {
+      content.innerHTML =
+        '<p class="text-gray-600 dark:text-gray-400">Your cart is empty. <a href="/shop" class="text-primary-600 hover:underline">Browse products</a></p>';
+      return;
+    }
+
+    let totalCents = 0;
+    const html = cart
+      .map((item) => {
+        const product = item.product || {};
+        const priceCents = product.priceCents || 0;
+        const qty = item.quantity || 1;
+        const lineTotal = priceCents * qty;
+        totalCents += lineTotal;
+        return `
+          <div class="flex gap-4 border-b border-gray-200 py-4 dark:border-gray-700" data-item-id="${item.id}">
+            ${product.imageUrl ? `<img src="${product.imageUrl}" alt="" class="h-20 w-20 rounded object-cover" />` : '<div class="h-20 w-20 rounded bg-gray-200 flex items-center justify-center text-2xl">📦</div>'}
+            <div class="flex-1">
+              <h3 class="font-medium text-gray-900 dark:text-white">${product.title || "Product"}</h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400">$${(priceCents / 100).toFixed(2)} × ${qty}</p>
+              <button type="button" class="mt-1 text-sm text-red-600 hover:underline" data-remove="${item.id}" data-product-id="${item.productId}">Remove</button>
+            </div>
+            <div class="font-semibold">$${(lineTotal / 100).toFixed(2)}</div>
+          </div>
+        `;
+      })
+      .join("");
+
+    content.innerHTML =
+      html +
+      `<div class="mt-4 text-right text-lg font-bold">Total: $${(totalCents / 100).toFixed(2)}</div>`;
+    actions?.classList.remove("hidden");
+
+    content.querySelectorAll("[data-remove]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const productId = (btn as HTMLElement).dataset.productId;
+        await fetch("/api/shop/cart", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "remove", productId }),
+        });
+        location.reload();
+      });
+    });
+  })();
+</script>

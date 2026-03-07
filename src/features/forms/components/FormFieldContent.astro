@@ -14,6 +14,7 @@ import ToggleButtonGroup from "../../../components/form/ToggleButtonGroup.astro"
 import FileUpload from "../../../components/form/FileUpload.astro";
 import SignaturePadField from "../../../components/form/SignaturePadField.astro";
 import PhoneAndSMS from "../../../components/form/PhoneAndSMS.astro";
+import AgeConsent from "../../../components/form/AgeConsent.astro";
 import ProfileAvatarBlock from "../../../components/profile/ProfileAvatarBlock.astro";
 import SimpleIcon from "../../../components/common/SimpleIcon.astro";
 
@@ -89,6 +90,24 @@ const isMultistep = context === "multistep";
             ? `${inputClasses} ${field.iconPosition === "left" ? iconLeftPadding : iconRightPadding}`
             : inputClasses
         }
+      />
+    </>
+  ) : field.type === "component" && field.component === "AgeConsent" ? (
+    <>
+      {showLabel && field.label && (
+        <label for={id} class={labelClass}>
+          {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
+        </label>
+      )}
+      <AgeConsent
+        id={id}
+        name={field.name}
+        value={
+          initialData[field.name] === true ||
+          initialData[field.name] === "true" ||
+          initialData[field.name] === "1"
+        }
+        {...field.componentProps}
       />
     </>
   ) : field.type === "component" && field.component === "Select" ? (

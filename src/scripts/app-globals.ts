@@ -188,6 +188,10 @@ setupConsoleInterceptor();
 (window as any).STRIPE_PUBLISHABLE_KEY = import.meta.env.STRIPE_PUBLISHABLE_KEY;
 console.log("🔧 [STRIPE] Publishable key loaded:", !!(window as any).STRIPE_PUBLISHABLE_KEY);
 
+// Square Web Payments SDK config (for e-commerce checkout)
+(window as any).SQUARE_APPLICATION_ID = import.meta.env.SQUARE_APPLICATION_ID || "";
+(window as any).SQUARE_LOCATION_ID = import.meta.env.SQUARE_LOCATION_ID || "";
+
 // Helper function to create buttons using Button partial
 (window as any).createButtonPartial = async function (config: any) {
   try {

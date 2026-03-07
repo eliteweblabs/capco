@@ -1,0 +1,77 @@
+---
+/**
+ * Shop - Product listing (mobile-first)
+ * Feature-gated: only shown when ecommerce feature is enabled
+ */
+import App from "../components/ui/App.astro";
+import { globalClasses } from "../api/global/global-classes";
+import { supabaseAdmin } from "../../lib/supabase-admin";
+
+const { globalContainer, globalTextH2, mutedTextClasses } = globalClasses();
+
+let products: Array<{
+  id: number;
+  slug: string;
+  title: string;
+  description: string | null;
+  priceCents: number;
+  imageUrl: string | null;
+  status: string;
+}> = [];
+
+if (supabaseAdmin) {
+  const { data } = await supabaseAdmin
+    .from("ecomProducts")
+    .select("id, slug, title, description, priceCents, imageUrl, status")
+    .eq("status", "active");
+  products = data || [];
+}
+---
+
+<App title="Shop" description="Browse our products">
+  <main class={`${globalContainer} py-8 sm:py-12`}>
+    <h1 class={`${globalTextH2} mb-8`}>Shop</h1>
+
+    {
+      products.length === 0 ? (
+        <p class={mutedTextClasses}>No products yet. Check back soon!</p>
+      ) : (
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {products.map((p) => (
+            <a
+              href={`/shop/product/${p.slug}`}
+              class="group overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
+            >
+              {p.imageUrl ? (
+                <img
+                  src={p.imageUrl}
+                  alt={p.title}
+                  class="h-48 w-full object-cover transition group-hover:scale-105"
+                />
+              ) : (
+                <div class="flex h-48 w-full items-center justify-center bg-gray-100 dark:bg-gray-700">
+                  <span class="text-4xl text-gray-400">📦</span>
+                </div>
+              )}
+              <div class="p-4">
+                <h2 class="font-semibold text-gray-900 dark:text-white">{p.title}</h2>
+                <p class="mt-1 text-lg font-bold text-primary-600">
+                  ${(p.priceCents / 100).toFixed(2)}
+                </p>
+              </div>
+            </a>
+          ))}
+        </div>
+      )
+    }
+
+    <div class="mt-8 flex justify-center">
+      <a
+        href="/cart"
+        class="rounded-lg bg-primary-600 px-6 py-3 font-medium text-white hover:bg-primary-700"
+      >
+        View Cart
+      </a>
+    </div>
+  </main>
+</App>

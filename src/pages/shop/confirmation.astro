@@ -1,0 +1,31 @@
+---
+/**
+ * Order confirmation - shown after successful payment
+ */
+import App from "../components/ui/App.astro";
+import { globalClasses } from "../api/global/global-classes";
+
+const { globalContainer, globalTextH2 } = globalClasses();
+const orderId = Astro.url.searchParams.get("order");
+---
+
+<App title="Order Confirmed" description="Thank you for your order">
+  <main class={`${globalContainer} py-8 sm:py-12`}>
+    <h1 class={`${globalTextH2} mb-6`}>Thank you for your order!</h1>
+    {
+      orderId ? (
+        <p class="text-gray-600 dark:text-gray-400">
+          Order reference: <code class="rounded bg-gray-100 px-2 dark:bg-gray-800">{orderId}</code>
+        </p>
+      ) : (
+        <p class="text-gray-600 dark:text-gray-400">Your order has been received.</p>
+      )
+    }
+    <a
+      href="/shop"
+      class="mt-6 inline-block rounded-lg bg-primary-600 px-6 py-3 font-medium text-white hover:bg-primary-700"
+    >
+      Continue shopping
+    </a>
+  </main>
+</App>
