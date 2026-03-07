@@ -12,8 +12,10 @@ Age consent is controlled by `plugins.ageConsent` in the site config (e.g. `conf
 }]
 ```
 
-- **`ageConsent: false`** (default) – Age consent step is not shown; contact and register forms proceed without it.
-- **`ageConsent: true`** – Age consent step is injected as step 1 in the contact form and register form.
+- **`ageConsent: false`** (default) – No site-wide wall. Form steps come only from config; if your config has no AgeConsent step, none is shown.
+- **`ageConsent: true`** – **Site-wide consent wall** – A full-page overlay blocks the entire site until the user confirms they are 18+. Consent is stored in `localStorage`; returning users skip the wall.
+
+**Form steps** (contact, register, etc.) are always defined in `config-*.json`. To show age consent in a form, add an AgeConsent step to that form's `steps` in your company config. No code injection.
 
 The `plugins` array is merged into a single object, so you can combine multiple plugin flags:
 

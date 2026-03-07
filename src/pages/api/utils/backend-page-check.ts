@@ -28,7 +28,7 @@ export const isAuthPage = (pathname: string) => {
 };
 
 export const isContactPage = (pathname: string) => {
-  const contactPaths = ["/contact", "/mep-form"];
-
-  return contactPaths.some((path) => pathname.startsWith(path));
+  const p = (pathname || "").trim().toLowerCase();
+  const norm = p && !p.startsWith("/") ? `/${p}` : p;
+  return norm === "/contact" || norm.startsWith("/contact/") || norm === "/mep-form" || norm.startsWith("/mep-form/");
 };

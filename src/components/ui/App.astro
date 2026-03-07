@@ -165,15 +165,63 @@ import AdminVoiceAssistantWidget from "../admin/AdminVoiceAssistantWidget.astro"
 import CacheIndicator from "./CacheIndicator.astro";
 import CMSPreloader from "./CMSPreloader.astro";
 import AppHead from "./AppHead.astro";
+import AgeConsentWall from "../common/AgeConsentWall.astro";
+import { getSiteConfig } from "../../lib/content";
 
 const isAdmin = currentUser?.profile?.role === "Admin";
+
+/** Site-wide age consent wall: when plugins.ageConsent is true, block site until user confirms 18+ */
+let ageConsentWallEnabled = false;
+try {
+  const siteConfig = await getSiteConfig();
+  const plugins = (siteConfig as any)?.plugins;
+  const merged = Array.isArray(plugins)
+    ? Object.assign({}, ...plugins.filter((p: any) => p && typeof p === "object"))
+    : {};
+  ageConsentWallEnabled = merged.ageConsent === true;
+} catch {
+  /* ignore */
+}
+
+/** Force show age wall for testing: ?showAgeWall=1 bypasses localStorage (wall always visible) */
+const showAgeWallForce = Astro.url.searchParams.get("showAgeWall") === "1";
+const showAgeConsentWall =
+  (ageConsentWallEnabled || showAgeWallForce) &&
+  layout !== "authCallback" &&
+  !isAuthPageResult &&
+  !isContactPageResult;
+
+if (import.meta.env.DEV) {
+  console.log(
+    "[AgeConsentWall] enabled:",
+    ageConsentWallEnabled,
+    "show:",
+    showAgeConsentWall,
+    "path:",
+    Astro.url.pathname,
+    "force:",
+    showAgeWallForce,
+    "isAuth:",
+    isAuthPageResult,
+    "isContact:",
+    isContactPageResult
+  );
+}
 
 // Console suppression: ON by default. Set PUBLIC_SUPPRESS_CONSOLE_NOISE=false to disable (e.g. when debugging).
 const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "false";
 ---
 
 <!doctype html>
-<html lang="en" data-suppress-console-noise={suppressConsoleNoise ? "1" : "0"}>
+<html
+      lang="en"
+      data-suppress-console-noise={suppressConsoleNoise ? "1" : "0"}
+      data-force-show-age-wall={showAgeWallForce ? "1" : undefined}
+      data-age-consent-enabled={ageConsentWallEnabled ? "1" : "0"}
+      data-age-consent-show={showAgeConsentWall ? "1" : "0"}
+      data-pathname={Astro.url.pathname}
+      data-is-contact-page={isContactPageResult ? "1" : "0"}
+    >
   <head>
     {
       !ONLY_FLOWBITE_AND_THEME && (
@@ -219,6 +267,25 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
       )
     }
 
+    {/* Age consent wall: hide for returning users who already consented. ?showAgeWall=1 forces show. ?clearAgeConsent=1 clears consent and redirects for re-testing. */}
+    {showAgeConsentWall && (
+      <script is:inline>
+        (function () {
+          var u = new URL(window.location.href);
+          if (u.searchParams.get("clearAgeConsent") === "1") {
+            try { localStorage.removeItem("age-consent-wall"); } catch (e) {}
+            u.searchParams.delete("clearAgeConsent");
+            window.location.replace(u.pathname + u.search + (u.hash || ""));
+            return;
+          }
+          if (document.documentElement.getAttribute("data-force-show-age-wall") === "1") return;
+          if (typeof localStorage !== "undefined" && localStorage.getItem("age-consent-wall") === "true") {
+            document.documentElement.dataset.ageConsentGiven = "1";
+          }
+        })();
+      </script>
+    )}
+
     <!-- Set global user data for client-side components -->
 
     {
@@ -255,6 +322,10 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
           {/* SPA disabled: debug and runPageInits scripts */}
 
           <CMSPreloader showByDefault={true} {globalCompanyName} />
+
+          {showAgeConsentWall && (
+            <AgeConsentWall minAge={18} />
+          )}
 
           <UnifiedNotification />
 

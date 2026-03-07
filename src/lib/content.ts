@@ -141,6 +141,7 @@ function mergeJsonConfig(
   if (jsonConfig.forms) config.forms = jsonConfig.forms;
   if (jsonConfig.site) config.site = { ...config.site, ...jsonConfig.site };
   if (jsonConfig.branding) config.branding = { ...config.branding, ...jsonConfig.branding };
+  if (Array.isArray(jsonConfig.plugins)) config.plugins = jsonConfig.plugins;
 }
 
 /**
@@ -407,6 +408,21 @@ export async function getSiteConfig(): Promise<SiteConfig> {
     if (companySlug && companySlug !== railwaySlug) {
       candidates.push(join(dataDir, `config-${companySlug}.json`));
       candidates.push(join(distDataDir, `config-${companySlug}.json`));
+    }
+    // Fallback: known site slugs when Railway project name differs from config filename
+    // e.g. rothco-firstbranch, rothco-built → config-rothco-built-llc.json
+    const knownFallbacks: Record<string, string> = {
+      "rothco-built": "rothco-built-llc",
+      "rothco-firstbranch": "rothco-built-llc",
+      rothco: "rothco-built-llc",
+      luxemeds: "luxe-meds",
+    };
+    const fallbackSlug =
+      railwaySlug &&
+      (knownFallbacks[railwaySlug] ?? (railwaySlug.startsWith("rothco-") ? "rothco-built-llc" : null));
+    if (fallbackSlug) {
+      candidates.push(join(dataDir, `config-${fallbackSlug}.json`));
+      candidates.push(join(distDataDir, `config-${fallbackSlug}.json`));
     }
     // Final fallback: config.json (local dev)
     candidates.push(join(dataDir, "config.json"));

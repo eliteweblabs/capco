@@ -1,0 +1,115 @@
+---
+/**
+ * AgeConsentWall - Site-wide age verification overlay (paywall-style).
+ * Blocks the entire site until user confirms they are 18+. Controlled by plugins.ageConsent.
+ * Consent is stored in localStorage; returning users skip the wall.
+ *
+ * Rendered by App.astro when plugins.ageConsent is true.
+ */
+import { globalClasses } from "../../pages/api/global/global-classes";
+import Button from "./Button.astro";
+
+const { globalTextH3, mutedTextClasses, globalFlexRow } = globalClasses();
+
+export interface Props {
+  /** Minimum age (default 18) */
+  minAge?: number;
+  /** Heading text */
+  heading?: string;
+  /** Subtext/description */
+  subtext?: string;
+  /** Message when user selects "No" */
+  refuseMessage?: string;
+}
+
+const {
+  minAge = 18,
+  heading = `I confirm I am ${minAge} years of age or older`,
+  subtext = "You must meet this requirement to use our services. See our Terms of Service for details.",
+  refuseMessage = "You must be 18 or older to use this service.",
+} = Astro.props;
+
+const STORAGE_KEY = "age-consent-wall";
+---
+
+<div
+  id="age-consent-wall"
+  class="age-consent-wall fixed inset-0 z-[99999] flex items-center justify-center bg-gray-900/95 backdrop-blur-sm"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="age-consent-wall-heading"
+>
+  <div
+    class="color-background mx-4 max-w-md rounded-xl px-6 py-8 shadow-2xl sm:mx-6 sm:px-8 sm:py-10"
+  >
+    <h2 id="age-consent-wall-heading" class={`${globalTextH3} mb-2`}>
+      {heading}
+    </h2>
+    {subtext && <p class={`${mutedTextClasses} mb-6`}>{subtext}</p>}
+    <div class={`${globalFlexRow} flex-wrap gap-3`}>
+      <Button
+        type="button"
+        variant="outline"
+        size="md"
+        class="age-consent-wall-no"
+        data-age-value="false"
+      >
+        No
+      </Button>
+      <Button
+        type="button"
+        variant="primary"
+        size="md"
+        class="age-consent-wall-yes"
+        data-age-value="true"
+      >
+        Yes, I am {minAge}+
+      </Button>
+    </div>
+    <p
+      id="age-consent-wall-refuse"
+      class={`${mutedTextClasses} mt-4 text-amber-600 dark:text-amber-400 hidden`}
+      role="alert"
+    >
+      {refuseMessage}
+    </p>
+  </div>
+</div>
+
+<script define:vars={{ storageKey: STORAGE_KEY }}>
+  document.addEventListener("DOMContentLoaded", () => {
+    const wall = document.getElementById("age-consent-wall");
+    if (!wall) return;
+
+    const refuseEl = document.getElementById("age-consent-wall-refuse");
+    const yesBtn = wall.querySelector(".age-consent-wall-yes");
+    const noBtn = wall.querySelector(".age-consent-wall-no");
+    if (!yesBtn || !noBtn) return;
+
+    yesBtn.addEventListener("click", () => {
+      try {
+        localStorage.setItem(storageKey, "true");
+      } catch {
+        /* ignore */
+      }
+      refuseEl?.classList.add("hidden");
+      wall.classList.add("opacity-0", "pointer-events-none");
+      wall.style.transition = "opacity 0.2s ease-out";
+      setTimeout(() => {
+        wall.style.display = "none";
+      }, 200);
+    });
+
+    noBtn.addEventListener("click", () => {
+      refuseEl?.classList.remove("hidden");
+      refuseEl?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+  });
+</script>
+
+<style>
+  /* Hide wall immediately if user already consented (set by head script before body) */
+  html[data-age-consent-given] #age-consent-wall {
+    display: none !important;
+  }
+</style>
