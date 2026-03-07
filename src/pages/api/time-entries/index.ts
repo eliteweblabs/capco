@@ -71,7 +71,9 @@ export const GET: APIRoute = async ({ request, cookies }): Promise<Response> => 
         if (!Number.isNaN(fromDate.getTime())) {
           query = query.gte("startedAt", fromDate.toISOString());
         }
-      } catch (_) {}
+      } catch (_) {
+        // ignore invalid date
+      }
     }
     if (toParam) {
       try {
@@ -79,7 +81,9 @@ export const GET: APIRoute = async ({ request, cookies }): Promise<Response> => 
         if (!Number.isNaN(toDate.getTime())) {
           query = query.lte("startedAt", toDate.toISOString());
         }
-      } catch (_) {}
+      } catch (_) {
+        // ignore invalid date
+      }
     }
 
     const { data: entries, error: entriesError } = await query;

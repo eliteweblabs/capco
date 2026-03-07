@@ -35,7 +35,9 @@ function sanitizeSvgWidth(svg: string): string {
 
 /** Returns true if hex is dark (avg RGB < 136). Used to replace dark fills with primary. */
 function isDarkHex(hex: string): boolean {
-  const m = hex.match(/^#?([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])?([0-9a-fA-F])?([0-9a-fA-F])?$/);
+  const m = hex.match(
+    /^#?([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])?([0-9a-fA-F])?([0-9a-fA-F])?$/
+  );
   if (!m) return false;
   let r: number, g: number, b: number;
   if (m[4] !== undefined) {
@@ -89,10 +91,7 @@ export function transformSvgForFavicon(svgString: string, primaryColor: string):
   const hasPrimaryStyle = new RegExp(`fill:\\s*${primary.replace(/[#()]/g, "\\$&")}`).test(svg);
   if (!hasPrimaryStyle) {
     if (/<defs[\s\S]*?>/i.test(svg)) {
-      svg = svg.replace(
-        /(<defs[^>]*>)/i,
-        `$1<style>${overrideStyle}</style>`
-      );
+      svg = svg.replace(/(<defs[^>]*>)/i, `$1<style>${overrideStyle}</style>`);
     } else {
       const afterSvgOpen = svg.indexOf(">", svg.indexOf("<svg")) + 1;
       svg =

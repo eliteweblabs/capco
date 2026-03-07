@@ -266,8 +266,15 @@ const { projectId } = Astro.props;
     const hasPipePaths = pipes.some((p) => Array.isArray(p.path) && p.path.length >= 2);
     const sprinklerPos = floor.sprinklerHeads?.positions;
     const smokePos = floor.smokeAlarms?.positions;
-    const otherPos = floor.otherEquipment?.some((e) => Array.isArray(e.positions) && e.positions.length > 0);
-    return hasPipePaths || (Array.isArray(sprinklerPos) && sprinklerPos.length > 0) || (Array.isArray(smokePos) && smokePos.length > 0) || otherPos;
+    const otherPos = floor.otherEquipment?.some(
+      (e) => Array.isArray(e.positions) && e.positions.length > 0
+    );
+    return (
+      hasPipePaths ||
+      (Array.isArray(sprinklerPos) && sprinklerPos.length > 0) ||
+      (Array.isArray(smokePos) && smokePos.length > 0) ||
+      otherPos
+    );
   }
 
   function strokeWidthForDiameter(d) {
@@ -282,7 +289,8 @@ const { projectId } = Astro.props;
     const sprinklers = floor.sprinklerHeads || {};
     const smoke = floor.smokeAlarms || {};
     const other = floor.otherEquipment || [];
-    const sprinklerCount = sprinklers.count ?? sprinklers.locations?.length ?? sprinklers.positions?.length ?? 0;
+    const sprinklerCount =
+      sprinklers.count ?? sprinklers.locations?.length ?? sprinklers.positions?.length ?? 0;
     const smokeCount = smoke.count ?? smoke.locations?.length ?? smoke.positions?.length ?? 0;
 
     const aspectRatio = Math.max(0.5, Math.min(3, Number(floor.aspectRatio) || 1.4));
@@ -307,7 +315,10 @@ const { projectId } = Astro.props;
 
     const sprinklerPositions = sprinklers.positions || [];
     sprinklerPositions.forEach((pt, idx) => {
-      const tip = sprinklerPositions.length > 1 ? `Sprinkler ${idx + 1} of ${sprinklerPositions.length}` : "Sprinkler head";
+      const tip =
+        sprinklerPositions.length > 1
+          ? `Sprinkler ${idx + 1} of ${sprinklerPositions.length}`
+          : "Sprinkler head";
       const x = pt[0];
       const y = pt[1];
       schematicParts += `<g cursor="help" title="${tip}" transform="translate(${x},${y})"><circle r="2.5" fill="none" stroke="${SPRINKLER_COLOR}" stroke-width="1"/><path d="M-2.5 0 L2.5 0 M0 -2.5 L0 2.5" stroke="${SPRINKLER_COLOR}" stroke-width="0.8"/></g>`;
@@ -315,7 +326,10 @@ const { projectId } = Astro.props;
 
     const smokePositions = smoke.positions || [];
     smokePositions.forEach((pt, idx) => {
-      const tip = smokePositions.length > 1 ? `Smoke alarm ${idx + 1} of ${smokePositions.length}` : "Smoke alarm";
+      const tip =
+        smokePositions.length > 1
+          ? `Smoke alarm ${idx + 1} of ${smokePositions.length}`
+          : "Smoke alarm";
       const x = pt[0];
       const y = pt[1];
       schematicParts += `<g cursor="help" title="${tip}" transform="translate(${x},${y})"><rect x="-2" y="-1.5" width="4" height="3" rx="0.3" fill="none" stroke="${SMOKE_COLOR}" stroke-width="0.8"/></g>`;
@@ -336,18 +350,26 @@ const { projectId } = Astro.props;
     pipes.forEach((p, i) => {
       const color = PIPE_COLORS[i % PIPE_COLORS.length];
       const tip = `${esc(p.diameter)} — ${esc(p.length)}${p.notes ? " (" + esc(p.notes) + ")" : ""}`;
-      legendItems.push(`<g cursor="help" title="${tip}"><line x1="0" y1="0" x2="12" y2="0" stroke="${color}" stroke-width="2" stroke-linecap="round"/><text x="16" y="3.5" font-size="5" fill="currentColor">${esc(p.diameter)}</text></g>`);
+      legendItems.push(
+        `<g cursor="help" title="${tip}"><line x1="0" y1="0" x2="12" y2="0" stroke="${color}" stroke-width="2" stroke-linecap="round"/><text x="16" y="3.5" font-size="5" fill="currentColor">${esc(p.diameter)}</text></g>`
+      );
     });
     if (sprinklerCount > 0) {
-      legendItems.push(`<g cursor="help" title="Sprinkler heads: ${sprinklerCount}"><circle r="1.8" fill="none" stroke="${SPRINKLER_COLOR}" stroke-width="0.8"/><path d="M-1.8 0 L1.8 0 M0 -1.8 L0 1.8" stroke="${SPRINKLER_COLOR}" stroke-width="0.5"/><text x="4" y="3" font-size="5" fill="currentColor">×${sprinklerCount}</text></g>`);
+      legendItems.push(
+        `<g cursor="help" title="Sprinkler heads: ${sprinklerCount}"><circle r="1.8" fill="none" stroke="${SPRINKLER_COLOR}" stroke-width="0.8"/><path d="M-1.8 0 L1.8 0 M0 -1.8 L0 1.8" stroke="${SPRINKLER_COLOR}" stroke-width="0.5"/><text x="4" y="3" font-size="5" fill="currentColor">×${sprinklerCount}</text></g>`
+      );
     }
     if (smokeCount > 0) {
-      legendItems.push(`<g cursor="help" title="Smoke alarms: ${smokeCount}"><rect x="-2" y="-1.2" width="3" height="2.2" rx="0.3" fill="none" stroke="${SMOKE_COLOR}" stroke-width="0.5"/><text x="2.5" y="2.5" font-size="5" fill="currentColor">×${smokeCount}</text></g>`);
+      legendItems.push(
+        `<g cursor="help" title="Smoke alarms: ${smokeCount}"><rect x="-2" y="-1.2" width="3" height="2.2" rx="0.3" fill="none" stroke="${SMOKE_COLOR}" stroke-width="0.5"/><text x="2.5" y="2.5" font-size="5" fill="currentColor">×${smokeCount}</text></g>`
+      );
     }
     other.forEach((e) => {
       const cnt = e.count ?? 1;
       const tip = `${esc(e.type)}: ${cnt}${e.notes ? " — " + esc(e.notes) : ""}`;
-      legendItems.push(`<g cursor="help" title="${tip}"><rect x="-1.2" y="-1.2" width="2.4" height="2.4" rx="0.2" fill="${OTHER_COLOR}"/><text x="2" y="2.5" font-size="5" fill="currentColor">${esc(e.type)}</text></g>`);
+      legendItems.push(
+        `<g cursor="help" title="${tip}"><rect x="-1.2" y="-1.2" width="2.4" height="2.4" rx="0.2" fill="${OTHER_COLOR}"/><text x="2" y="2.5" font-size="5" fill="currentColor">${esc(e.type)}</text></g>`
+      );
     });
 
     const legendDy = 6;
@@ -390,14 +412,16 @@ const { projectId } = Astro.props;
     const other = floor.otherEquipment || [];
     const sprinklerCount = sprinklers.count ?? sprinklers.locations?.length ?? 0;
     const smokeCount = smoke.count ?? smoke.locations?.length ?? 0;
-    const noData = pipes.length === 0 && sprinklerCount === 0 && smokeCount === 0 && other.length === 0;
+    const noData =
+      pipes.length === 0 && sprinklerCount === 0 && smokeCount === 0 && other.length === 0;
     if (noData) return "";
     const msg = "Position data not available. Re-analyze the drawing to generate a schematic view.";
     let list = "";
     if (pipes.length > 0) list += `<li>Pipes: ${pipes.length} segment(s)</li>`;
     if (sprinklerCount > 0) list += `<li>Sprinklers: ${sprinklerCount}</li>`;
     if (smokeCount > 0) list += `<li>Smoke alarms: ${smokeCount}</li>`;
-    if (other.length > 0) list += `<li>Other: ${other.map((e) => esc(e.type) + " ×" + (e.count ?? 1)).join(", ")}</li>`;
+    if (other.length > 0)
+      list += `<li>Other: ${other.map((e) => esc(e.type) + " ×" + (e.count ?? 1)).join(", ")}</li>`;
     return `<div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-900/20"><h4 class="text-sm font-semibold text-amber-800 dark:text-amber-200">${esc(floor.name)}</h4><p class="mt-1 text-sm text-amber-700 dark:text-amber-300">${msg}</p><ul class="mt-2 list-disc list-inside text-sm text-amber-600 dark:text-amber-400">${list}</ul></div>`;
   }
 

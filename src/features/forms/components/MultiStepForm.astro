@@ -495,6 +495,32 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
     opacity: 1;
   }
 
+  /* Shake animation for validation failure feedback */
+  @keyframes form-shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    15% {
+      transform: translateX(-6px);
+    }
+    30% {
+      transform: translateX(5px);
+    }
+    45% {
+      transform: translateX(-4px);
+    }
+    60% {
+      transform: translateX(3px);
+    }
+    75% {
+      transform: translateX(-2px);
+    }
+  }
+  .step-content.shake {
+    animation: form-shake 0.45s ease-in-out;
+  }
+
   /* TEST: When data-test-no-cascade, bypass all hiding - everything visible immediately for keypad debugging */
   [data-multi-step-form][data-test-no-cascade] .step-form-fields-wrapper,
   [data-multi-step-form][data-test-no-cascade] .multi-step-choice-buttons,
@@ -929,7 +955,12 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
           ) as HTMLElement | null;
           if (first) {
             first.focus({ preventScroll: true });
-            console.log("[FOCUS] Step", stepNum, "direct focus:", first.getAttribute("name") || first.id);
+            console.log(
+              "[FOCUS] Step",
+              stepNum,
+              "direct focus:",
+              first.getAttribute("name") || first.id
+            );
           }
         }
 
@@ -938,7 +969,10 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
         const runFocus = () => {
           if (focusDone) return;
           focusDone = true;
-          if (fallbackId != null) { clearTimeout(fallbackId); fallbackId = null; }
+          if (fallbackId != null) {
+            clearTimeout(fallbackId);
+            fallbackId = null;
+          }
           directFocusFirst();
         };
 
@@ -946,7 +980,13 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
         const CASCADE_END_MS = 750;
         fallbackId = setTimeout(() => {
           fallbackId = null;
-          console.log("[FOCUS] Step", stepNum, "fallback setTimeout fired at", CASCADE_END_MS, "ms");
+          console.log(
+            "[FOCUS] Step",
+            stepNum,
+            "fallback setTimeout fired at",
+            CASCADE_END_MS,
+            "ms"
+          );
           runFocus();
         }, CASCADE_END_MS);
 
@@ -959,7 +999,10 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
           if (te.propertyName !== "opacity") return;
           if (te.target !== wrapperToUse) return;
           wrapperToUse!.removeEventListener("transitionend", onTransitionEnd);
-          if (fallbackId != null) { clearTimeout(fallbackId); fallbackId = null; }
+          if (fallbackId != null) {
+            clearTimeout(fallbackId);
+            fallbackId = null;
+          }
           console.log("[FOCUS] Step", stepNum, "transitionend (opacity), focusing now");
           runFocus();
         };

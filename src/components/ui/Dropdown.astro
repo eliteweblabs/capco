@@ -118,8 +118,21 @@ const { id, title = "", onOpenCallback, focusSelector, classList } = Astro.props
       document.querySelectorAll("[id$='-dropdown'][data-popover]").forEach(function (panel) {
         if (panel.hasAttribute("data-mobile-pos-bound")) return;
         panel.setAttribute("data-mobile-pos-bound", "true");
-        var isMobileFn = window.isMobile || function () { return window.innerWidth < 768; };
-        var PROPS = ["position", "top", "left", "right", "bottom", "transform", "width", "max-width"];
+        var isMobileFn =
+          window.isMobile ||
+          function () {
+            return window.innerWidth < 768;
+          };
+        var PROPS = [
+          "position",
+          "top",
+          "left",
+          "right",
+          "bottom",
+          "transform",
+          "width",
+          "max-width",
+        ];
 
         function applyFixed() {
           var nav = document.getElementById("main-navbar");
@@ -139,21 +152,30 @@ const { id, title = "", onOpenCallback, focusSelector, classList } = Astro.props
 
         function clearFixed() {
           panel.removeAttribute("data-mobile-pos-applied");
-          PROPS.forEach(function (p) { panel.style.removeProperty(p); });
+          PROPS.forEach(function (p) {
+            panel.style.removeProperty(p);
+          });
           // Restore navbar z-index to CSS-controlled value
           var nav = document.getElementById("main-navbar");
           if (nav) nav.style.removeProperty("z-index");
         }
 
         new MutationObserver(function () {
-          var isVisible = !panel.classList.contains("invisible") && !panel.classList.contains("hidden");
-          if (!isVisible || !isMobileFn()) { clearFixed(); return; }
+          var isVisible =
+            !panel.classList.contains("invisible") && !panel.classList.contains("hidden");
+          if (!isVisible || !isMobileFn()) {
+            clearFixed();
+            return;
+          }
           // Apply immediately, then enforce for several frames to override Popper's repositioning
           applyFixed();
           var frames = 0;
           (function enforce() {
             if (++frames > 6) return;
-            requestAnimationFrame(function () { applyFixed(); enforce(); });
+            requestAnimationFrame(function () {
+              applyFixed();
+              enforce();
+            });
           })();
         }).observe(panel, { attributes: true, attributeFilter: ["class"] });
       });
@@ -161,21 +183,25 @@ const { id, title = "", onOpenCallback, focusSelector, classList } = Astro.props
       // Focus-on-open: when a trigger is clicked, focus the input specified by data-focus-on-open.
       // Must run synchronously inside the same click event for iOS keyboard to open.
       // Ref: https://gist.github.com/cathyxz/73739c1bdea7d7011abb236541dc9aaa
-      document.querySelectorAll("[data-popover-target], [data-dropdown-toggle]").forEach(function (trigger) {
-        var panelId = trigger.getAttribute("data-popover-target") || trigger.getAttribute("data-dropdown-toggle");
-        var panel = panelId ? document.getElementById(panelId) : null;
-        if (!panel) return;
-        var focusSel = panel.getAttribute("data-focus-on-open");
-        if (!focusSel) return;
-        if (trigger.hasAttribute("data-focus-open-bound")) return;
-        trigger.setAttribute("data-focus-open-bound", "true");
-        trigger.addEventListener("click", function () {
-          // Flowbite's handler runs first (same tick) and shows the panel.
-          // Focus synchronously in the same click gesture so iOS opens the keyboard.
-          var el = panel.querySelector(focusSel);
-          if (el && typeof el.focus === "function") el.focus();
+      document
+        .querySelectorAll("[data-popover-target], [data-dropdown-toggle]")
+        .forEach(function (trigger) {
+          var panelId =
+            trigger.getAttribute("data-popover-target") ||
+            trigger.getAttribute("data-dropdown-toggle");
+          var panel = panelId ? document.getElementById(panelId) : null;
+          if (!panel) return;
+          var focusSel = panel.getAttribute("data-focus-on-open");
+          if (!focusSel) return;
+          if (trigger.hasAttribute("data-focus-open-bound")) return;
+          trigger.setAttribute("data-focus-open-bound", "true");
+          trigger.addEventListener("click", function () {
+            // Flowbite's handler runs first (same tick) and shows the panel.
+            // Focus synchronously in the same click gesture so iOS opens the keyboard.
+            var el = panel.querySelector(focusSel);
+            if (el && typeof el.focus === "function") el.focus();
+          });
         });
-      });
 
       // When dropdown open: show X on trigger; when closed: show default icon. Wire X to close.
       document.querySelectorAll(".auth-icon-close").forEach(function (closeEl) {

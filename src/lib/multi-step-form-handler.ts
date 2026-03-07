@@ -1358,8 +1358,23 @@ export function createMultiStepFormHandler(
               const skipDestAttr = nextBtn.getAttribute("data-skip");
               if (skipDestAttr != null) {
                 await showStep(parseInt(skipDestAttr));
+              } else {
+                // Fallback toast + shake when validation fails and form stays on current step
+                const activeStep = form.querySelector(`.step-content[data-step="${currentStep}"]`);
+                if (activeStep) {
+                  activeStep.classList.add("shake");
+                  setTimeout(() => activeStep.classList.remove("shake"), 500);
+                }
+                if ((window as any).showNotice) {
+                  const firstInvalid = activeStep?.querySelector(
+                    ".is-invalid, input:invalid, textarea:invalid"
+                  ) as HTMLElement | null;
+                  const msg =
+                    firstInvalid?.getAttribute("data-error") ||
+                    "Please fill in the required fields";
+                  (window as any).showNotice("error", "Required", msg, 3000);
+                }
               }
-              // Else: no data-skip, stay and show validation errors (validateStep already marks fields)
             }
           }
         } finally {

@@ -267,7 +267,9 @@ function skipActiveTypewriterToEnd(): boolean {
     el.innerHTML = buildFullTypewriterHtml(text, el);
     try {
       instance.destroy(true);
-    } catch (_) {}
+    } catch (_) {
+      // TypeIt instance may already be destroyed
+    }
     (el as any).__typeItInstance = null;
     el.setAttribute("data-typewriter-triggered", "true");
 

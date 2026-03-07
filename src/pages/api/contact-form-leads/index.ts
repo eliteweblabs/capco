@@ -11,8 +11,9 @@ import { checkAuth } from "../../../lib/auth";
 async function requireAdmin(cookies: Astro.Cookies) {
   const { currentUser } = await checkAuth(cookies);
   if (!currentUser) return null;
+  if (!supabaseAdmin) return null;
   const { data: profile } = await supabaseAdmin
-    ?.from("profiles")
+    .from("profiles")
     .select("role")
     .eq("id", currentUser.id)
     .single();
