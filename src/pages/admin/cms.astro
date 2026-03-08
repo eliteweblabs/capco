@@ -4,6 +4,7 @@
  * Template pages (cmsPages) – markdown/content + layout (default, fullwidth, fullform, etc.).
  */
 import { checkAuth } from "../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../lib/user-utils";
 import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
 import Button from "../../components/common/Button.astro";
 import FormActionButton from "../../components/form/FormActionButton.astro";
@@ -25,8 +26,8 @@ if (!currentUser || !session) {
   return Astro.redirect("/auth/login");
 }
 
-// Check if user is admin
-if (currentRole !== "Admin") {
+// Check if user is admin or SuperAdmin
+if (!isAdminOrSuperAdmin(currentRole)) {
   return Astro.redirect("/dashboard");
 }
 

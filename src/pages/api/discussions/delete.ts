@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
+import { isAdminOrStaffOrSuperAdmin } from "../../../lib/user-utils";
 
 /**
  * Standardized Discussions DELETE API
@@ -58,7 +59,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     // Check if user has permission to delete (author or admin)
     const userRole = currentUser.profile?.role;
-    const isAdmin = userRole === "Admin" || userRole === "Staff";
+    const isAdmin = isAdminOrStaffOrSuperAdmin(userRole);
     const isAuthor = discussion.authorId === currentUser.id;
 
     if (!isAdmin && !isAuthor) {

@@ -419,7 +419,8 @@ export async function getSiteConfig(): Promise<SiteConfig> {
     };
     const fallbackSlug =
       railwaySlug &&
-      (knownFallbacks[railwaySlug] ?? (railwaySlug.startsWith("rothco-") ? "rothco-built-llc" : null));
+      (knownFallbacks[railwaySlug] ??
+        (railwaySlug.startsWith("rothco-") ? "rothco-built-llc" : null));
     if (fallbackSlug) {
       candidates.push(join(dataDir, `config-${fallbackSlug}.json`));
       candidates.push(join(distDataDir, `config-${fallbackSlug}.json`));

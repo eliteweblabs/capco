@@ -7,6 +7,7 @@
  */
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../../lib/user-utils";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
 
 export const GET: APIRoute = async () => {
@@ -48,7 +49,7 @@ async function requireAdmin(cookies: Parameters<APIRoute>[0]["cookies"]) {
     .select("role")
     .eq("id", currentUser.id)
     .single();
-  if (profile?.role !== "Admin") {
+  if (!isAdminOrSuperAdmin(profile?.role)) {
     return { error: "Admin access required", status: 403 };
   }
   return { currentUser };

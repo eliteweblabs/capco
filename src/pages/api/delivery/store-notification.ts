@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { supabase } from "../../../lib/supabase";
+import { isAdminOrStaffOrSuperAdmin } from "../../../lib/user-utils";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
@@ -16,7 +17,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Only allow Admin and Staff to create notifications
-    if (currentRole !== "Admin" && currentRole !== "Staff") {
+    if (!isAdminOrStaffOrSuperAdmin(currentRole)) {
       return new Response(JSON.stringify({ error: "Insufficient permissions" }), {
         status: 403,
         headers: { "Content-Type": "application/json" },

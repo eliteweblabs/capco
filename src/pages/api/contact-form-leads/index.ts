@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
 import { checkAuth } from "../../../lib/auth";
+import { isAdminOrStaffOrSuperAdmin } from "../../../lib/user-utils";
 
 /**
  * Contact Form Leads API
@@ -17,7 +18,7 @@ async function requireAdmin(cookies: Astro.Cookies) {
     .select("role")
     .eq("id", currentUser.id)
     .single();
-  if (profile?.role !== "Admin" && profile?.role !== "Staff") return null;
+  if (!isAdminOrStaffOrSuperAdmin(profile?.role)) return null;
   return currentUser;
 }
 

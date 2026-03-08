@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { supabase } from "../../../lib/supabase";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
+import { isAdminOrStaffOrSuperAdmin } from "../../../lib/user-utils";
 
 /**
  * Standardized Files PREVIEW API
@@ -68,7 +69,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
 
     // Check authorization
     const userRole = currentUser.profile?.role;
-    const isAdmin = userRole === "Admin" || userRole === "Staff";
+    const isAdmin = isAdminOrStaffOrSuperAdmin(userRole);
     const isProjectAuthor = file.project?.authorId === currentUser.id;
     const isAssignedTo = file.project?.assignedToId === currentUser.id;
     const isFileAuthor = file.authorId === currentUser.id;

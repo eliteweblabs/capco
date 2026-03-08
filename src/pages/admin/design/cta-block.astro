@@ -1,11 +1,12 @@
 ---
 import { checkAuth } from "../../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../../lib/user-utils";
 import LayoutFullWidth from "../../../components/layouts/LayoutFullWidth.astro";
 import CTABlock from "../../../components/blocks/CTABlock.astro";
 import { globalClasses } from "../../api/global/global-classes";
 
 const { currentUser, session } = await checkAuth(Astro.cookies);
-if (!currentUser || !session || currentUser?.profile?.role !== "Admin") {
+if (!currentUser || !session || !isAdminOrSuperAdmin(currentUser?.profile?.role)) {
   return Astro.redirect("/auth/login");
 }
 const { primaryTextClasses, mutedTextClasses, globalCardStyle } = globalClasses();

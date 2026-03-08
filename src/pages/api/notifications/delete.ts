@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
+import { isAdminOrStaffOrSuperAdmin } from "../../../lib/user-utils";
 
 /**
  * Standardized Notifications DELETE API
@@ -63,7 +64,7 @@ async function handleDelete(request: Request, cookies: any): Promise<Response> {
 
     // Check if user has permission to delete (owner or admin)
     const userRole = currentUser.profile?.role;
-    const isAdmin = userRole === "Admin" || userRole === "Staff";
+    const isAdmin = isAdminOrStaffOrSuperAdmin(userRole);
     const isOwner = notification.userId === currentUser.id;
 
     if (!isAdmin && !isOwner) {

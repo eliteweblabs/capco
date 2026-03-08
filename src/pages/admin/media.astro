@@ -5,12 +5,13 @@
  */
 const requireAuthRedirect = "/auth/login";
 import { checkAuth } from "../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../lib/user-utils";
 import { getSiteConfig } from "../../lib/content";
 
 const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
 const currentRole = currentUser?.profile?.role;
 
-if (requireAuthRedirect && (!session || !currentUser || currentRole !== "Admin")) {
+if (requireAuthRedirect && (!session || !currentUser || !isAdminOrSuperAdmin(currentRole))) {
   return Astro.redirect(requireAuthRedirect);
 }
 

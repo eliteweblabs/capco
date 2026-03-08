@@ -4,6 +4,7 @@
  * Navbar icon shown when user is checked in. Dropdown: live duration, notes textarea, Stop button.
  * Synced with CheckInButton via sessionStorage + custom event.
  */
+import { isAdminOrStaffOrSuperAdmin } from "../../lib/user-utils";
 import SimpleIcon from "./SimpleIcon.astro";
 
 interface Props {
@@ -16,8 +17,7 @@ const {
   globalIconButtonClasses = "w-10 h-10 inline-flex items-center rounded-full justify-center p-2 text-black dark:text-white md:hover:bg-gray-100 dark:hover:bg-gray-700 dark:focus:ring-gray-700 focus:outline-none",
 } = Astro.props;
 
-const canCheckIn =
-  currentUser && (currentUser.profile?.role === "Admin" || currentUser.profile?.role === "Staff");
+const canCheckIn = currentUser && isAdminOrStaffOrSuperAdmin(currentUser.profile?.role);
 ---
 
 <div
@@ -30,7 +30,6 @@ const canCheckIn =
     type="button"
     id="my-checkin-trigger"
     title="You are checked in – click to stop"
-    data-popover-toggle="my-checkin-dropdown"
     data-popover-trigger="click"
     data-popover-target="my-checkin-dropdown"
     class={`relative ${globalIconButtonClasses}`}

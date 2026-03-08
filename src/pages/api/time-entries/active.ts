@@ -5,6 +5,7 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
+import { isAdminOrStaffOrSuperAdmin } from "../../../lib/user-utils";
 
 export const GET: APIRoute = async ({ cookies }): Promise<Response> => {
   try {
@@ -17,7 +18,7 @@ export const GET: APIRoute = async ({ cookies }): Promise<Response> => {
     }
 
     const role = (currentUser as any)?.profile?.role;
-    if (role !== "Admin" && role !== "Staff") {
+    if (!isAdminOrStaffOrSuperAdmin(role)) {
       return new Response(JSON.stringify({ entry: null }), {
         status: 200,
         headers: { "Content-Type": "application/json" },

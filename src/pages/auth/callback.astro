@@ -125,8 +125,7 @@ import App from "../../components/ui/App.astro";
       }, 12000);
     }
   })();
-</script>
-<script>
+
   // Show "Taking too long?" escape hatch after 8s (avoids stuck loading when DB/network is slow)
   const slowTimeout = setTimeout(() => {
     const el = document.getElementById("taking-too-long");
@@ -215,7 +214,7 @@ import App from "../../components/ui/App.astro";
     // CRITICAL: Set up auth state change listener BEFORE doing anything else
     // This will catch when Supabase automatically exchanges the code
     let _sessionReceived = false;
-    let authStateSubscription: any = null;
+    let authStateSubscription = null;
 
     const authStatePromise = new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
@@ -367,8 +366,8 @@ import App from "../../components/ui/App.astro";
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
 
-      let data: { session?: any } | undefined;
-      let exchangeError: any = null;
+      let data;
+      let exchangeError = null;
 
       // Try explicit exchange first (more reliable than relying on detectSessionInUrl timing)
       console.log("[AUTH-CALLBACK] Exchanging code for session...");
@@ -649,7 +648,7 @@ import App from "../../components/ui/App.astro";
     }
   }
 
-  function showError(message: string) {
+  function showError(message) {
     clearTimeout(slowTimeout);
     const errorContainer = document.getElementById("error");
     const errorMessage = document.getElementById("error-message");

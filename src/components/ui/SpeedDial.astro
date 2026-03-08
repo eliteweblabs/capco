@@ -1,5 +1,6 @@
 ---
 import { checkAuth } from "../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../lib/user-utils";
 const { currentUser } = await checkAuth(Astro.cookies);
 
 const { globalCompanyPhone } = Astro.props;
@@ -35,7 +36,7 @@ import Button from "../common/Button.astro";
     }
 
     {
-      currentUser && currentRole === "Admin" && (
+      currentUser && isAdminOrSuperAdmin(currentRole) && (
         <Tooltip position="left" text="Debug" className="speed-dial-tooltip" dismissable={false}>
           <button
             id="debug-toggle-btn"

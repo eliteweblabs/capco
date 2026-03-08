@@ -23,7 +23,6 @@
 import SimpleIcon from "../common/SimpleIcon.astro";
 import { buildArrayFromFlatProps } from "./BlockRegistry";
 import { globalClasses } from "../../pages/api/global/global-classes";
-import PixelGrid from "../ui/PixelGrid.astro";
 
 const { globalTextH2, globalTextH3, globalContainer } = globalClasses();
 
@@ -97,76 +96,84 @@ const iconContainerClass = "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text
 
 <section
   {id}
-  class={`what-sets-us-apart-block py-16 md:py-24 ${className}`.trim()}
+  class={`what-sets-us-apart-block relative overflow-hidden py-16 md:py-24 ${className}`.trim()}
   data-aos="fade-up"
   data-aos-duration="600"
 >
+  {
+    imageSrc && (
+      <>
+        <div
+          class="absolute inset-0 z-0"
+          role="img"
+          aria-label={imageAlt}
+          style={`background-image: url(${imageSrc}); background-size: cover; background-position: ${imagePosition === "left" ? "left" : "center"};`}
+        />
+        <div class="absolute inset-0 z-[1] bg-gray-900/50" aria-hidden="true" />
+      </>
+    )
+  }
+
   <div class={globalContainer}>
     <div
       class:list={[
-        "grid gap-12 lg:gap-16",
-        imageSrc && "lg:grid-cols-2 lg:items-center",
-        imagePosition === "left" && "lg:grid-cols-[1fr_2fr]",
+        "relative z-10",
+        imageSrc &&
+          "rounded-xl border border-white/10 bg-gray-900/40 px-6 py-8 backdrop-blur-xl dark:bg-gray-900/50 sm:px-8 sm:py-10",
       ]}
     >
       {
-        imageSrc && imagePosition === "left" && (
-          <div class="relative order-2 lg:order-1">
-            <img src={imageSrc} alt={imageAlt} class="w-full rounded-lg object-cover shadow-lg" />
-          </div>
-        )
-      }
-
-      <div class={imagePosition === "left" ? "order-1 lg:order-2" : ""}>
-        {
-          (title || description) && (
-            <div class="mb-10">
-              {title && <h2 class={globalTextH2}>{title}</h2>}
-              {description && (
-                <p class="mt-4 max-w-2xl text-lg text-gray-600 dark:text-gray-300">{description}</p>
-              )}
-            </div>
-          )
-        }
-
-        <div class="space-y-6">
-          {
-            items.map((item, index) => (
-              <div
-                class={[
-                  "flex gap-4 align-middle",
-                  variant === "numbered" && "items-start",
-                  variant === "icons" && "items-start",
-                ].join(" ")}
+        (title || description) && (
+          <div class="mb-10">
+            {title && (
+              <h2 class={`font-tertiary ${globalTextH2} ${imageSrc ? "text-white" : ""}`}>
+                {title}
+              </h2>
+            )}
+            {description && (
+              <p
+                class={`mt-4 max-w-2xl text-lg ${imageSrc ? "text-gray-200" : "text-gray-600 dark:text-gray-300"}`}
               >
-                <div
-                  class={`flex shrink-0 items-center justify-center rounded-lg ${iconContainerClass}`}
-                >
-                  {variant === "numbered" ? (
-                    <span class="text-lg font-bold">{index + 1}</span>
-                  ) : (
-                    <SimpleIcon name={getIcon(item, index)} class="h-6 w-6" />
-                  )}
-                </div>
-                <div class="flex-1">
-                  <h3 class={globalTextH3}>{item.title}</h3>
-                  {item.description && (
-                    <p class="mt-1 text-gray-600 dark:text-gray-300">{item.description}</p>
-                  )}
-                </div>
-              </div>
-            ))
-          }
-        </div>
-      </div>
-
-      {
-        imageSrc && imagePosition === "right" && (
-          <div class="relative">
-            <img src={imageSrc} alt={imageAlt} class="w-full rounded-lg object-cover shadow-lg" />
+                {description}
+              </p>
+            )}
           </div>
         )
       }
+
+      <div class="space-y-6">
+        {
+          items.map((item, index) => (
+            <div
+              class={[
+                "flex gap-4 align-middle",
+                variant === "numbered" && "items-start",
+                variant === "icons" && "items-start",
+              ].join(" ")}
+            >
+              <div
+                class={`flex shrink-0 items-center justify-center rounded-lg ${imageSrc ? "bg-white/20 text-white" : iconContainerClass}`}
+              >
+                {variant === "numbered" ? (
+                  <span class="text-lg font-bold">{index + 1}</span>
+                ) : (
+                  <SimpleIcon name={getIcon(item, index)} class="h-6 w-6" />
+                )}
+              </div>
+              <div class="flex-1">
+                <h3 class={`${globalTextH3} ${imageSrc ? "text-white" : ""}`}>{item.title}</h3>
+                {item.description && (
+                  <p
+                    class={`mt-1 ${imageSrc ? "text-gray-200" : "text-gray-600 dark:text-gray-300"}`}
+                  >
+                    {item.description}
+                  </p>
+                )}
+              </div>
+            </div>
+          ))
+        }
+      </div>
     </div>
   </div>
 </section>

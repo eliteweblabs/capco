@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { createErrorResponse, createSuccessResponse } from "../../../lib/_api-optimization";
 import { supabase } from "../../../lib/supabase";
+import { isAdminOrStaffOrSuperAdmin } from "../../../lib/user-utils";
 import { signPDF, type SigningOptions } from "../../../lib/pdf-signing";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
@@ -33,7 +34,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .single();
 
     const userRole = profile?.role || "Client";
-    if (userRole !== "Admin" && userRole !== "Staff") {
+    if (!isAdminOrStaffOrSuperAdmin(userRole)) {
       return createErrorResponse("Only Admin and Staff can sign PDFs", 403);
     }
 

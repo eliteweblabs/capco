@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
+import { isAdminOrStaffOrSuperAdmin } from "../../../lib/user-utils";
 import { supabase } from "../../../lib/supabase";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
 import { SimpleProjectLogger } from "../../../lib/simple-logging";
@@ -168,7 +169,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     } else {
       // Check if authenticated user has permission to create/update users
       const userRole = currentUser.profile?.role;
-      if (userRole !== "Admin" && userRole !== "Staff") {
+      if (!isAdminOrStaffOrSuperAdmin(userRole)) {
         return new Response(JSON.stringify({ error: "Insufficient permissions" }), {
           status: 403,
           headers: { "Content-Type": "application/json" },

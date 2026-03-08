@@ -2,6 +2,7 @@
 // Debug Panel Component - Admin Only
 // Shows all App component parameters in an accordion modal
 
+import { isAdminOrSuperAdmin } from "../../lib/user-utils";
 import CloseButton from "../ui/CloseButton.astro";
 import { globalClasses } from "../../pages/api/global/global-classes";
 
@@ -14,8 +15,8 @@ interface Props {
 
 const { debugData, currentRole } = Astro.props;
 
-// Only show for Admin users
-const isAdmin = currentRole === "Admin";
+// Only show for Admin or SuperAdmin users
+const isAdmin = isAdminOrSuperAdmin(currentRole);
 
 if (!isAdmin) {
   // Return empty component for non-admin users

@@ -5,6 +5,7 @@
  * Only accessible to Admin users
  */
 import { checkAuth } from "../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../lib/user-utils";
 import LayoutDefault from "../../components/layouts/LayoutDefault.astro";
 import FormActionButton from "../../components/form/FormActionButton.astro";
 import SlidingTabs from "../../components/common/SlidingTabs.astro";
@@ -25,8 +26,8 @@ if (!currentUser || !session) {
   return Astro.redirect("/auth/login");
 }
 
-// Check if user is admin
-if (currentRole !== "Admin") {
+// Check if user is admin or SuperAdmin
+if (!isAdminOrSuperAdmin(currentRole)) {
   return Astro.redirect("/dashboard");
 }
 

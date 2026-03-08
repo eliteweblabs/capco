@@ -4,6 +4,7 @@
  * Lists all available placeholders that can be used in templates, messages, and content
  */
 import { checkAuth } from "../../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../../lib/user-utils";
 import LayoutFullWidth from "../../../components/layouts/LayoutFullWidth.astro";
 import { globalCompanyData } from "../../api/global/global-company-data";
 import { globalClasses } from "../../api/global/global-classes";
@@ -17,7 +18,7 @@ if (!currentUser || !session) {
 }
 
 // Check if user is admin
-if (currentRole !== "Admin") {
+if (!isAdminOrSuperAdmin(currentRole)) {
   return Astro.redirect("/dashboard");
 }
 

@@ -4,6 +4,7 @@
  * Upload PDF/image and extract pipe lengths, sprinkler heads, smoke alarms via AI vision
  */
 import { checkAuth } from "../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../lib/user-utils";
 import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
 import DrawingAnalyzer from "../../features/drawing-analyzer/DrawingAnalyzer.astro";
 import { globalClasses } from "../api/global/global-classes";
@@ -15,7 +16,7 @@ const { primaryTextClasses, secondaryTextClasses } = globalClasses();
 if (!currentUser || !session) {
   return Astro.redirect("/auth/login");
 }
-if (currentRole !== "Admin") {
+if (!isAdminOrSuperAdmin(currentRole)) {
   return Astro.redirect("/dashboard");
 }
 ---

@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { supabase } from "../../../lib/supabase";
+import { isAdminOrSuperAdmin } from "../../../lib/user-utils";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
 
 async function deleteUserHandler({ request, cookies }: { request: Request; cookies: any }) {
@@ -10,7 +11,7 @@ async function deleteUserHandler({ request, cookies }: { request: Request; cooki
     // Check authentication and ensure user is Admin
     const { isAuth, currentUser, currentRole } = await checkAuth(cookies);
 
-    if (!isAuth || currentRole !== "Admin") {
+    if (!isAuth || !isAdminOrSuperAdmin(currentRole)) {
       console.log("🗑️ [DELETE-USER] Unauthorized access attempt");
       return new Response(
         JSON.stringify({

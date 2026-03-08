@@ -36,7 +36,7 @@ export const GET: APIRoute = async ({ url, redirect, cookies }) => {
     if (isGooglePeopleOAuth) {
       console.log("[---AUTH-CALLBACK] Detected Google People API OAuth, processing...");
       // Import and use the Google OAuth callback logic
-      const { GET: googleOAuthCallback } = await import("../google/____oauth-callback");
+      const { GET: googleOAuthCallback } = await import("../google/oauth-callback");
       return googleOAuthCallback({ url, cookies, redirect } as any);
     }
   }

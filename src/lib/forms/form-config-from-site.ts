@@ -13,7 +13,7 @@ import type {
 } from "../multi-step-form-config";
 import { GLOBAL_BUTTON_DEFAULTS, normalizeFormConfig } from "../multi-step-form-config";
 import type { FormElementConfig } from "../project-form-config";
-import { getFilteredUserFormElements } from "../__user-form-config";
+import { getFilteredUserFormElements } from "../user-form-config";
 import { getSiteConfig } from "../content";
 
 const FORM_ACTION_MAP: Record<string, string> = {

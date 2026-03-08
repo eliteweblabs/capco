@@ -32,7 +32,12 @@ export type AsideNavRenderItem = {
 function isRoleAllowed(allow: string[] | undefined, userRole?: string): boolean {
   if (!allow || allow.length === 0) return true;
   if (!userRole) return false;
-  return allow.some((r) => r.toLowerCase() === userRole.toLowerCase());
+  const match = allow.some((r) => r.toLowerCase() === userRole.toLowerCase());
+  // SuperAdmin is treated as Admin for nav visibility (like in navigation.ts)
+  if (!match && userRole === "SuperAdmin" && allow.some((r) => r.toLowerCase() === "admin")) {
+    return true;
+  }
+  return match;
 }
 
 function filterChildren(

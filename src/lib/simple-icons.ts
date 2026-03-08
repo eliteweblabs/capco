@@ -36,10 +36,12 @@ export function getIcon(name: string, config: IconConfig = {}): string {
     className && !className.includes("inline-block") && !className.includes("block");
   const classes = needsInlineBlock ? `${className} inline-block` : className || "inline-block";
 
-  // Replace width and height attributes only (not viewBox)
+  // Replace width and height (must match existing format: 16 for standard icons, 512 for custom like Rothco)
   let result = iconSvg
     .replace(/width="16"/g, `width="${size}"`)
-    .replace(/height="16"/g, `height="${size}"`);
+    .replace(/height="16"/g, `height="${size}"`)
+    .replace(/width="512"/g, `width="${size}"`)
+    .replace(/height="512"/g, `height="${size}"`);
 
   // Add class to root <svg> only; preserve classes on inner elements (e.g. path class="svg-icon-stroke" for animations)
   const svgTagMatch = result.match(/^(\s*)<svg([^>]*)>/);

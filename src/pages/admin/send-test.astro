@@ -1,10 +1,11 @@
 ---
 import { checkAuth } from "../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../lib/user-utils";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
 import Button from "../../components/common/Button.astro";
 import FormActionButton from "../../components/form/FormActionButton.astro";
-import InputLabelWrap from "../../components/common/__InputLabelWrap.astro";
+import InputLabelWrap from "../../components/common/InputLabelWrap.astro";
 import { globalClasses } from "../api/global/global-classes";
 
 // Check authentication
@@ -21,7 +22,7 @@ const { data: profile } = await supabase
   .eq("id", currentUser.id)
   .single();
 
-if (profile?.role !== "Admin") {
+if (!isAdminOrSuperAdmin(profile?.role)) {
   return Astro.redirect("/dashboard");
 }
 

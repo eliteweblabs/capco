@@ -5,6 +5,7 @@
  * Stored in globalSettings (keys aiAgent_*). Used by unified-agent.ts.
  */
 import { checkAuth } from "../../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../../lib/user-utils";
 import LayoutFullWidth from "../../../components/layouts/LayoutFullWidth.astro";
 import Button from "../../../components/common/Button.astro";
 import FormActionButton from "../../../components/form/FormActionButton.astro";
@@ -17,7 +18,7 @@ const currentRole = currentUser?.profile?.role;
 if (!currentUser || !session) {
   return Astro.redirect("/auth/login");
 }
-if (currentRole !== "Admin") {
+if (!isAdminOrSuperAdmin(currentRole)) {
   return Astro.redirect("/dashboard");
 }
 

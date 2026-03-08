@@ -136,6 +136,7 @@
 
 import type { APIRoute } from "astro";
 import { supabase } from "../../../lib/supabase";
+import { isAdminOrStaffOrSuperAdmin } from "../../../lib/user-utils";
 import puppeteer from "puppeteer";
 
 export const GET: APIRoute = async ({ url, cookies }) => {
@@ -424,7 +425,7 @@ async function handleFileDownloadWithAuth(
     .single();
 
   const userRole = profile?.role || "Client";
-  const isAdmin = userRole === "Admin" || userRole === "Staff";
+  const isAdmin = isAdminOrStaffOrSuperAdmin(userRole);
   const isProjectOwner = project.authorId === user.id;
 
   if (!isAdmin && !isProjectOwner) {

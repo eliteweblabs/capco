@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { createErrorResponse, createSuccessResponse } from "../../../lib/_api-optimization";
 import { supabase } from "../../../lib/supabase";
+import { isAdminOrStaffOrSuperAdmin } from "../../../lib/user-utils";
 import {
   signAndEncryptPDF,
   createSignAndEncryptOptionsFromForm,
@@ -33,7 +34,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .single();
 
     const userRole = profile?.role || "Client";
-    if (userRole !== "Admin" && userRole !== "Staff") {
+    if (!isAdminOrStaffOrSuperAdmin(userRole)) {
       return createErrorResponse("Only Admin and Staff can sign and encrypt PDFs", 403);
     }
 

@@ -4,6 +4,7 @@
  */
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../../lib/user-utils";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
 import { transformSvgForFavicon } from "../../../lib/favicon-svg-transform";
 import fs from "fs";
@@ -16,7 +17,7 @@ export const POST: APIRoute = async ({ cookies }) => {
   try {
     const { isAuth, currentUser } = await checkAuth(cookies);
     const role = currentUser?.profile?.role;
-    if (!isAuth || !currentUser || role !== "Admin") {
+    if (!isAuth || !currentUser || !isAdminOrSuperAdmin(role)) {
       return new Response(JSON.stringify({ success: false, error: "Admin access required" }), {
         status: 403,
         headers: { "Content-Type": "application/json" },

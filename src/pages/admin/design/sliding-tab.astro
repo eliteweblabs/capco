@@ -4,6 +4,7 @@
  * SlidingTabs nav with tab panels. Same pattern as Banner Alerts, Notifications, Project nav.
  */
 import { checkAuth } from "../../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../../lib/user-utils";
 import LayoutFullWidth from "../../../components/layouts/LayoutFullWidth.astro";
 import SlidingTabs from "../../../components/common/SlidingTabs.astro";
 import { globalClasses } from "../../api/global/global-classes";
@@ -14,7 +15,7 @@ const currentRole = currentUser?.profile?.role;
 if (!currentUser || !session) {
   return Astro.redirect("/auth/login");
 }
-if (currentRole !== "Admin") {
+if (!isAdminOrSuperAdmin(currentRole)) {
   return Astro.redirect("/dashboard");
 }
 

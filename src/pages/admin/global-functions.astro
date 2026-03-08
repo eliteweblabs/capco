@@ -5,6 +5,7 @@
  * Auto-updates when you run `npm run generate-global-functions` (runs before dev).
  */
 import { checkAuth } from "../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../lib/user-utils";
 import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
 import Button from "../../components/common/Button.astro";
 import { globalClasses } from "../api/global/global-classes";
@@ -12,7 +13,7 @@ import { globalClasses } from "../api/global/global-classes";
 const { globalCardStyle, globalTextH3 } = globalClasses();
 
 const { currentUser, session } = await checkAuth(Astro.cookies);
-if (!currentUser || !session || currentUser?.profile?.role !== "Admin") {
+if (!currentUser || !session || !isAdminOrSuperAdmin(currentUser?.profile?.role)) {
   return Astro.redirect("/auth/login");
 }
 

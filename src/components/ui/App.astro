@@ -103,6 +103,7 @@ const safeTitle = stripHtml(title) || Astro.url.pathname.replace(/\//g, " ").tri
 const safeDescription = stripHtml(description || globalCompanySlogan || "");
 
 import { checkAuth } from "../../lib/auth";
+import { isAdminOrSuperAdmin, isAdminOrStaffOrSuperAdmin } from "../../lib/user-utils";
 const { currentUser, session } = await checkAuth(Astro.cookies);
 import { globalClasses } from "../../pages/api/global/global-classes";
 const { globalInputClasses, primaryTextClasses, secondaryTextClasses, globalIconButtonClasses } =
@@ -119,7 +120,7 @@ const currentRole = currentUser?.profile?.role;
 let assignedProjectsCount = 0;
 let assignedProjectsPreview: any[] = [];
 const skipAssignedFetch = layout === "authCallback";
-if (!skipAssignedFetch && currentUser && (currentRole === "Admin" || currentRole === "Staff")) {
+if (!skipAssignedFetch && currentUser && isAdminOrStaffOrSuperAdmin(currentRole)) {
   try {
     const cookieHeader = Astro.request.headers.get("Cookie") || "";
     const res = await fetch(`${Astro.url.origin}/api/projects/assigned-summary`, {
@@ -168,7 +169,7 @@ import AppHead from "./AppHead.astro";
 import AgeConsentWall from "../common/AgeConsentWall.astro";
 import { getSiteConfig } from "../../lib/content";
 
-const isAdmin = currentUser?.profile?.role === "Admin";
+const isAdmin = isAdminOrSuperAdmin(currentUser?.profile?.role);
 
 /** Site-wide age consent wall: when plugins.ageConsent is true, block site until user confirms 18+ */
 let ageConsentWallEnabled = false;
@@ -432,11 +433,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
           {!ONLY_FLOWBITE_AND_THEME && <script is:inline src="/scripts/app-globals.js" />}
           {/* auth-google: pre-bundled (avoids Astro chunk 404 so Google OAuth works in prod). is:inline prevents Vite from bundling public/ asset. */}
           <script is:inline src="/scripts/auth-google.js" />
-          {/* Flowbite: CDN may load slowly or fail (CSP/network). Fallback below retries and can load script dynamically. */}
-          <script src="https://unpkg.com/flowbite@2.5.2/dist/flowbite.min.js" defer />
-          <script is:inline>
-            if (window.__jsOrderLog) window.__jsOrderLog("Flowbite script tag (inline after CDN)");
-          </script>
+          {/* Flowbite: bundled in app-globals (npm). Do NOT load Flowbite CDN - double init caused user dropdown race (click opens then immediately closes). */}
           {/* Multi-step form fallback: load form init first (critical), then typewriter (animation) so Next button works immediately */}
           <script is:inline src="/scripts/multistep-form-fallback.js" />
           {/* Alert and banner dismiss: inline so close works when module scripts don't load */}

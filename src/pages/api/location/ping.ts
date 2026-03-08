@@ -5,6 +5,7 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
+import { isAdminOrStaffOrSuperAdmin } from "../../../lib/user-utils";
 
 interface PingRequest {
   timeEntryId: number;
@@ -25,7 +26,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     }
 
     const role = (currentUser as any)?.profile?.role;
-    if (role !== "Admin" && role !== "Staff") {
+    if (!isAdminOrStaffOrSuperAdmin(role)) {
       return new Response(JSON.stringify({ error: "Admin or Staff role required" }), {
         status: 403,
         headers: { "Content-Type": "application/json" },

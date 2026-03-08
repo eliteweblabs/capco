@@ -5,6 +5,7 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
+import { isAdminOrSuperAdmin } from "../../../lib/user-utils";
 
 function cleanAddress(address: string | undefined): string {
   if (!address) return "";
@@ -50,7 +51,7 @@ export const GET: APIRoute = async ({ request, cookies }): Promise<Response> => 
     }
 
     const role = (currentUser as any)?.profile?.role;
-    if (role !== "Admin") {
+    if (!isAdminOrSuperAdmin(role)) {
       return new Response(JSON.stringify({ error: "Admin role required" }), {
         status: 403,
         headers: { "Content-Type": "application/json" },

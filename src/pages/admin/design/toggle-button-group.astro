@@ -4,6 +4,7 @@
  * Several contained versions including multi-select with "All" toggle.
  */
 import { checkAuth } from "../../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../../lib/user-utils";
 import LayoutFullWidth from "../../../components/layouts/LayoutFullWidth.astro";
 import ToggleButtonGroupComp from "../../../components/form/ToggleButtonGroup.astro";
 import { globalClasses } from "../../api/global/global-classes";
@@ -14,7 +15,7 @@ const currentRole = currentUser?.profile?.role;
 if (!currentUser || !session) {
   return Astro.redirect("/auth/login");
 }
-if (currentRole !== "Admin") {
+if (!isAdminOrSuperAdmin(currentRole)) {
   return Astro.redirect("/dashboard");
 }
 

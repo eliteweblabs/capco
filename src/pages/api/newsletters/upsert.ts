@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
+import { isAdminOrSuperAdmin } from "../../../lib/user-utils";
 
 /**
  * Newsletter Upsert API
@@ -13,7 +14,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const { currentUser } = await checkAuth(cookies);
 
     // Check if user is admin
-    if (!currentUser || currentUser.profile?.role !== "Admin") {
+    if (!currentUser || !isAdminOrSuperAdmin(currentUser.profile?.role)) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },

@@ -12,6 +12,8 @@
  */
 
 import App from "../components/ui/App.astro";
+import LoadingSpinner from "../components/ui/LoadingSpinner.astro";
+import SimpleIcon from "../components/common/SimpleIcon.astro";
 import { checkAuth } from "../lib/auth";
 
 const { currentUser } = await checkAuth(Astro.cookies);
@@ -26,6 +28,64 @@ const publicKey = import.meta.env.PUBLIC_VAPI_KEY || "";
 
 <App title="Voice Assistant (VAPI)" {currentUser} layout="centered">
   <div class="container mx-auto max-w-4xl px-4 py-8">
+    {/* Gmail OAuth overlay: auth-callback-style loading when returning from Gmail OAuth */}
+    <div id="gmail-oauth-overlay" class="hidden" data-dynamic-height="true">
+      <div
+        class="flex min-h-[280px] w-full flex-col items-center justify-center gap-6 rounded-lg border border-gray-200 bg-gray-50/80 py-12 dark:border-gray-700 dark:bg-gray-900/80"
+      >
+        <div id="gmail-oauth-loading" class="flex flex-col items-center gap-6">
+          <LoadingSpinner size="lg" color="primary" loadingText="Connecting Gmail" />
+          <p class="text-sm text-gray-600 dark:text-gray-400">Finishing Gmail setup...</p>
+        </div>
+        <div id="gmail-oauth-taking-too-long" class="hidden max-w-sm text-center">
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            Taking longer than expected? This can happen if the server is starting up or the network
+            is slow.
+          </p>
+          <a
+            href="/voice-assistant-vapi"
+            class="mt-3 inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+          >
+            <SimpleIcon name="arrow-left" />
+            Continue to Voice Assistant
+          </a>
+        </div>
+        <div
+          id="gmail-oauth-error"
+          class="hidden max-w-md rounded-lg border-2 border-red-200 bg-red-50 p-5 text-left dark:border-red-800 dark:bg-red-950/30"
+          role="alert"
+        >
+          <div
+            class="mb-2 flex items-center gap-2 text-lg font-semibold text-red-800 dark:text-red-200"
+          >
+            <SimpleIcon name="alert-circle" class="h-6 w-6 shrink-0" />
+            Gmail Connection Failed
+          </div>
+          <div
+            id="gmail-oauth-error-message"
+            class="text-[0.9375rem] leading-relaxed text-red-700 dark:text-red-300"
+          >
+          </div>
+          <div class="mt-4 flex flex-wrap gap-3">
+            <a
+              href="/api/auth/gmail/authorize"
+              class="inline-flex items-center gap-2 rounded-full bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700"
+            >
+              <SimpleIcon name="google" size="sm" />
+              Try again
+            </a>
+            <a
+              href="/voice-assistant-vapi"
+              class="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+            >
+              <SimpleIcon name="arrow-left" />
+              Back to Voice Assistant
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <h1 class="mb-6 text-3xl font-bold dark:text-white">Voice Assistant (VAPI)</h1>
 
     <!-- Gmail Connection Status -->
@@ -722,17 +782,82 @@ const publicKey = import.meta.env.PUBLIC_VAPI_KEY || "";
     }
   }
 
-  // Check Gmail status on page load
-  document.addEventListener("DOMContentLoaded", () => {
-    checkGmailStatus();
+  // Gmail OAuth overlay: auth-callback-style loading when returning from Gmail OAuth
+  const GMAIL_ERROR_MESSAGES = {
+    gmail_access_denied: "Access was denied. You may have declined the permission request.",
+    gmail_invalid_request: "Invalid request. Please try connecting again.",
+    gmail_token_missing: "Could not complete authorization. Please try again.",
+    gmail_storage_failed: "Could not save your Gmail connection. Please try again.",
+    gmail_callback_failed: "Something went wrong during setup. Please try again.",
+    gmail_auth_failed: "Authorization failed. Please try again.",
+  };
 
-    // Check for Gmail connection success
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get("gmail") === "connected") {
-      // Remove query param and reload status
-      window.history.replaceState({}, "", window.location.pathname);
-      setTimeout(() => checkGmailStatus(), 500);
+  function showGmailOverlay() {
+    const overlay = document.getElementById("gmail-oauth-overlay");
+    if (overlay) overlay.classList.remove("hidden");
+  }
+
+  function hideGmailOverlay() {
+    const overlay = document.getElementById("gmail-oauth-overlay");
+    if (overlay) overlay.classList.add("hidden");
+  }
+
+  function showGmailOverlayError(errorCode) {
+    const loading = document.getElementById("gmail-oauth-loading");
+    const takingTooLong = document.getElementById("gmail-oauth-taking-too-long");
+    const errEl = document.getElementById("gmail-oauth-error");
+    const errMsg = document.getElementById("gmail-oauth-error-message");
+    if (loading) loading.classList.add("hidden");
+    if (takingTooLong) takingTooLong.classList.add("hidden");
+    if (errEl && errMsg) {
+      errMsg.textContent = GMAIL_ERROR_MESSAGES[errorCode] || "An unexpected error occurred.";
+      errEl.classList.remove("hidden");
     }
+  }
+
+  function showGmailOverlayTakingTooLong() {
+    const loading = document.getElementById("gmail-oauth-loading");
+    const takingTooLong = document.getElementById("gmail-oauth-taking-too-long");
+    if (loading) loading.classList.add("hidden");
+    if (takingTooLong) takingTooLong.classList.remove("hidden");
+  }
+
+  // Check Gmail status on page load
+  document.addEventListener("DOMContentLoaded", async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const gmailParam = urlParams.get("gmail");
+    const errorParam = urlParams.get("error");
+
+    // Handle Gmail OAuth error redirect
+    if (errorParam && errorParam.startsWith("gmail_")) {
+      window.history.replaceState({}, "", window.location.pathname);
+      showGmailOverlay();
+      showGmailOverlayError(errorParam);
+      checkGmailStatus();
+      return;
+    }
+
+    // Handle Gmail OAuth success redirect
+    if (gmailParam === "connected") {
+      window.history.replaceState({}, "", window.location.pathname);
+      showGmailOverlay();
+
+      const takingTooLongTimer = setTimeout(() => {
+        showGmailOverlayTakingTooLong();
+      }, 5000);
+
+      try {
+        await checkGmailStatus();
+        clearTimeout(takingTooLongTimer);
+        hideGmailOverlay();
+      } catch (e) {
+        clearTimeout(takingTooLongTimer);
+        hideGmailOverlay();
+      }
+      return;
+    }
+
+    checkGmailStatus();
   });
 </script>
 

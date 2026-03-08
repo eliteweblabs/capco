@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
+import { isAdminOrSuperAdmin } from "../../../lib/user-utils";
 
 /**
  * Banner Alerts DELETE API
@@ -36,7 +37,7 @@ async function handleDelete(request: Request, cookies: any): Promise<Response> {
       .eq("id", currentUser.id)
       .single();
 
-    if (profile?.role !== "Admin") {
+    if (!isAdminOrSuperAdmin(profile?.role)) {
       return new Response(JSON.stringify({ error: "Admin access required" }), {
         status: 403,
         headers: { "Content-Type": "application/json" },

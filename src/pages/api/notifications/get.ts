@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { supabase } from "../../../lib/supabase";
+import { isAdminOrSuperAdmin } from "../../../lib/user-utils";
 
 /**
  * Standardized Notifications GET API
@@ -55,7 +56,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         .eq("id", currentUser.id)
         .single();
 
-      if (!profile || profile.role !== "Admin") {
+      if (!profile || !isAdminOrSuperAdmin(profile.role)) {
         return new Response(JSON.stringify({ error: "Unauthorized - Admin access required" }), {
           status: 403,
           headers: { "Content-Type": "application/json" },

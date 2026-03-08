@@ -4,9 +4,10 @@
  * Basic form fields and patterns (globalInputClasses, InputLabelWrap, Button).
  */
 import { checkAuth } from "../../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../../lib/user-utils";
 import LayoutFullWidth from "../../../components/layouts/LayoutFullWidth.astro";
 import FormActionButton from "../../../components/form/FormActionButton.astro";
-import InputLabelWrap from "../../../components/common/__InputLabelWrap.astro";
+import InputLabelWrap from "../../../components/common/InputLabelWrap.astro";
 import SlideToggle from "../../../components/form/SlideToggle.astro";
 import { globalClasses } from "../../api/global/global-classes";
 
@@ -16,7 +17,7 @@ const currentRole = currentUser?.profile?.role;
 if (!currentUser || !session) {
   return Astro.redirect("/auth/login");
 }
-if (currentRole !== "Admin") {
+if (!isAdminOrSuperAdmin(currentRole)) {
   return Astro.redirect("/dashboard");
 }
 

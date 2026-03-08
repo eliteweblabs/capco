@@ -437,6 +437,17 @@ const { projectId } = Astro.props;
       html += `<div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900"><p class="text-sm font-medium text-gray-700 dark:text-gray-300">Summary</p><p class="mt-1 text-gray-600 dark:text-gray-400">${String(parsed.summary)}</p></div>`;
     }
 
+    const materials = parsed.materials;
+    if (Array.isArray(materials) && materials.length > 0) {
+      let matHtml =
+        '<div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900 mt-4"><p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Materials</p><table class="min-w-full text-sm"><thead><tr class="border-b border-gray-200 dark:border-gray-600"><th class="text-left py-1 pr-3">Type</th><th class="text-left py-1 pr-3">Spec</th><th class="text-left py-1 pr-3">Quantity</th><th class="text-left py-1">Notes</th></tr></thead><tbody>';
+      materials.forEach((m) => {
+        matHtml += `<tr class="border-b border-gray-100 dark:border-gray-700"><td class="py-1 pr-3">${esc(m.type || "")}</td><td class="py-1 pr-3">${esc(m.spec || "")}</td><td class="py-1 pr-3">${esc(m.quantity || "")}</td><td class="py-1">${esc(m.notes || "")}</td></tr>`;
+      });
+      matHtml += "</tbody></table></div>";
+      html += matHtml;
+    }
+
     floors.forEach((floor) => {
       html += renderFloorSvg(floor);
     });

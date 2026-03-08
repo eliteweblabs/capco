@@ -4,6 +4,7 @@
  * Each element has its own page under /admin/design/<slug>.
  */
 import { checkAuth } from "../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../lib/user-utils";
 import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
 import { globalClasses } from "../api/global/global-classes";
 import { getDesignPageLinks } from "../../lib/aside-nav-config";
@@ -14,7 +15,7 @@ const currentRole = currentUser?.profile?.role;
 if (!currentUser || !session) {
   return Astro.redirect("/auth/login");
 }
-if (currentRole !== "Admin") {
+if (!isAdminOrSuperAdmin(currentRole)) {
   return Astro.redirect("/dashboard");
 }
 

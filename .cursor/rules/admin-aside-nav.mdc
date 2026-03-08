@@ -1,0 +1,47 @@
+---
+description: Add new admin features to asideNav config when creating admin pages
+globs: ["**/admin/**/*.astro", "**/public/data/config-*.json"]
+alwaysApply: false
+---
+
+# Admin Aside Nav Rule
+
+**When creating a new admin feature (page), add it to the asideNav** in the site config so it appears in the admin sidebar.
+
+## Where to Add
+
+- **Config files:** `public/data/config-*.json` (e.g. `config-capco-design-group.json`, `config-rothco-built-llc.json`)
+- **Key:** `asideNav` (array of nav items)
+- **Logic:** `src/lib/aside-nav-config.ts` reads nav from `getSiteConfig()` (navigation.aside or asideNav)
+
+## Structure
+
+Top-level link (no children):
+
+```json
+{
+  "id": "my-feature",
+  "label": "My Feature",
+  "href": "/admin/my-feature",
+  "icon": "star",
+  "allow": ["Admin"]
+}
+```
+
+Child under a section (e.g. Design):
+
+```json
+{ "label": "My Component", "href": "/admin/design/my-component" }
+```
+
+## DO
+
+- Add new admin pages to `asideNav` in **all site config files** that use the admin
+- Use a unique `id` for top-level items
+- Set `allow` to control visibility by role (Admin, SuperAdmin, Staff, Client)
+- Place design-system/component demos under the Design section's `children`
+
+## DON'T
+
+- Do not create a new admin page without adding it to asideNav—users won't see it in the sidebar
+- Do not forget to update all site configs if the feature applies across sites

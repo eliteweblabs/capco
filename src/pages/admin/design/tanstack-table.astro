@@ -4,6 +4,7 @@
  * Documents all table types available in the project.
  */
 import { checkAuth } from "../../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../../lib/user-utils";
 import LayoutFullWidth from "../../../components/layouts/LayoutFullWidth.astro";
 import TanStackDataTable from "../../../components/common/TanStackDataTable.astro";
 import AccordionDataTable from "../../../components/common/AccordionDataTable.astro";
@@ -15,7 +16,7 @@ const currentRole = currentUser?.profile?.role;
 if (!currentUser || !session) {
   return Astro.redirect("/auth/login");
 }
-if (currentRole !== "Admin") {
+if (!isAdminOrSuperAdmin(currentRole)) {
   return Astro.redirect("/dashboard");
 }
 

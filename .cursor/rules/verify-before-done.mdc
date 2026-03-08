@@ -29,3 +29,12 @@ alwaysApply: true
 ## If You Cannot Verify
 
 Say so explicitly: "I’ve made changes X and Y. I can’t run the app from here—please test and confirm. If issues remain, share the console output or screenshot."
+
+## MCP / Browser Verification for UI Bugs
+
+**When the user reports a UI bug (dropdown closes immediately, double handlers, layout issues, etc.):**
+
+1. **Prefer MCP browser tools** – Use `cursor-ide-browser` MCP to open the affected page and reproduce the behavior before claiming "fixed."
+2. **Avoid claim-then-repeat cycles** – User feedback: "I present the problem → you claim it's fixed → I check again, it's not → repeat." Do not declare fixed until the flow is actually verified in a browser.
+3. **Inspect the live HTML** – When the user shares DevTools HTML (e.g. attributes like `data-focus-open-bound`, overlapped elements), analyze event flow and which elements receive/target events. Two elements being targeted or triggered is a common cause of races.
+4. **When you cannot verify** – Be explicit: "I cannot run the browser here. Please test after these changes. If it still fails, share the exact HTML/steps and I’ll dig deeper."

@@ -4,6 +4,7 @@
  * Manage customer testimonials with drag/drop AccordionDataTable
  */
 import { checkAuth } from "../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../lib/user-utils";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
 import AccordionDataTable from "../../components/common/AccordionDataTable.astro";
@@ -25,7 +26,7 @@ const { data: profile } = await supabase
   .select("role")
   .eq("id", currentUser.id)
   .single();
-if (profile?.role !== "Admin") {
+if (!isAdminOrSuperAdmin(profile?.role)) {
   return Astro.redirect("/dashboard");
 }
 

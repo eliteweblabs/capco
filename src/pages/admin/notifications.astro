@@ -1,5 +1,6 @@
 ---
 import { checkAuth } from "../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../lib/user-utils";
 import { supabaseAdmin } from "../../lib/supabase-admin";
 import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
 import Hero from "../../components/common/Hero.astro";
@@ -26,7 +27,7 @@ const { data: profile } = await supabase
   .eq("id", currentUser.id)
   .single();
 
-if (profile?.role !== "Admin") {
+if (!isAdminOrSuperAdmin(profile?.role)) {
   return Astro.redirect("/dashboard");
 }
 

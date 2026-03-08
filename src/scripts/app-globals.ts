@@ -1625,10 +1625,17 @@ if ("serviceWorker" in navigator) {
   );
 };
 
+// Expose for Discussions.astro and other dynamic content that calls window.initFlowbite
+(window as any).initFlowbite = initFlowbite;
+
 document.addEventListener("DOMContentLoaded", () => {
   try {
-    // Flowbite: ensure dropdowns/drawers/popovers work (fallback if flowbite-init chunk fails to load on server)
-    initFlowbite();
+    // Flowbite: single init from app-globals (npm). Do NOT also load Flowbite CDN - double init causes
+    // user dropdown race: click opens, second handler immediately toggles closed.
+    if (!(window as any).__flowbiteInitialized) {
+      initFlowbite();
+      (window as any).__flowbiteInitialized = true;
+    }
 
     // Initialize autofill navigation - COMMENTED OUT
     // (window as any).setupAutofillNavigation();

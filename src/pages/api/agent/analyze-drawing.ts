@@ -50,6 +50,8 @@ Extract and identify the following, based on standard NFPA/fire protection conve
 
 4. **Other fire protection equipment** – Pull stations, horns, strobes, standpipes, FDC, etc.
 
+5. **Materials** – Extract material callouts from the drawing: pipe materials (steel, CPVC, copper, galvanized, etc.), sprinkler head types, valve materials, insulation specs, drywall/sheetrock thickness, and any material schedules or legends. Add a top-level "materials" array: [{ "type": "pipe", "spec": "2\" steel", "quantity": "45 ft", "notes": "main feed" }, ...].
+
 Consider:
 - **Line width** = pipe diameter (NFPA plans often use line weight for pipe size)
 - **Color** = fire lines often red; domestic/cold gray
@@ -81,6 +83,7 @@ Return a structured JSON object with this exact structure (no markdown, no code 
   "sprinklerHeads": { "count": 0, "positions": [], "locations": [], "confidence": "low" },
   "smokeAlarms": { "count": 0, "positions": [], "locations": [], "confidence": "low" },
   "otherEquipment": [],
+  "materials": [{ "type": "pipe", "spec": "2\\" steel", "quantity": "45 ft", "notes": "main feed" }],
   "uncertainties": []
 }
 

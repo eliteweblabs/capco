@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { createErrorResponse, createSuccessResponse } from "../../../lib/_api-optimization";
 import { checkAuth } from "../../../lib/auth";
 import { supabase } from "../../../lib/supabase";
+import { isAdminOrStaffOrSuperAdmin } from "../../../lib/user-utils";
 
 /**
  * Send Invoice Email API
@@ -23,7 +24,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Only admins can send invoices
-    if (currentRole !== "Admin" && currentRole !== "Staff") {
+    if (!isAdminOrStaffOrSuperAdmin(currentRole)) {
       return createErrorResponse("Insufficient permissions", 403);
     }
 

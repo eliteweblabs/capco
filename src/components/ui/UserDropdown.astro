@@ -38,9 +38,11 @@ import AuthMenu from "./AuthMenu.astro";
 
 const title = currentUser ? "" : "";
 
-/** When not logged in: focus first login input on open (opens mobile keypad). Dropdown runs focus in same click handler for iOS. */
 const onOpenCallback = currentUser ? undefined : undefined;
-const focusSelector = currentUser ? undefined : 'input:not([type="hidden"])';
+// focusSelector removed: Flowbite Popover hideEvents include blur. Focusing the input inside
+// the panel causes the trigger to blur → Flowbite hides the panel immediately (100ms delay).
+// Trade-off: popover stays open reliably; iOS users tap the input to open keypad.
+const focusSelector = undefined;
 ---
 
 <!-- Login popover: AuthIcon uses data-popover-target when not authenticated -->

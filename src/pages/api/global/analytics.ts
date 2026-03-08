@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { supabase } from "../../../lib/supabase";
+import { isAdminOrStaffOrSuperAdmin } from "../../../lib/user-utils";
 
 /**
  * Standardized Global Analytics API
@@ -37,7 +38,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
 
     // Only Admin and Staff can access analytics
     const userRole = currentUser.profile?.role;
-    if (userRole !== "Admin" && userRole !== "Staff") {
+    if (!isAdminOrStaffOrSuperAdmin(userRole)) {
       return new Response(JSON.stringify({ error: "Insufficient permissions" }), {
         status: 403,
         headers: { "Content-Type": "application/json" },

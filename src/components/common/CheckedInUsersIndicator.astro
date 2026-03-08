@@ -4,6 +4,7 @@
  * Shows icons in navbar for each user who is checked in (active time entry).
  * Tooltip: name, duration, location. Polls every 30s.
  */
+import { isAdminOrSuperAdmin } from "../../lib/user-utils";
 interface Props {
   currentUser?: any;
   globalIconButtonClasses?: string;
@@ -12,7 +13,7 @@ interface Props {
 const { currentUser, globalIconButtonClasses = "w-10 h-10 inline-flex items-center rounded-full justify-center p-2 text-black dark:text-white md:hover:bg-gray-100 dark:hover:bg-gray-700 dark:focus:ring-gray-700 focus:outline-none" } = Astro.props;
 
 const currentRole = currentUser?.profile?.role;
-const showCheckedIn = currentRole === "Admin";
+const showCheckedIn = isAdminOrSuperAdmin(currentRole);
 ---
 
 {showCheckedIn && (

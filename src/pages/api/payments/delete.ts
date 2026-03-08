@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
+import { isAdminOrStaffOrSuperAdmin } from "../../../lib/user-utils";
 
 /**
  * Payments DELETE API
@@ -76,8 +77,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     // Check user's role and permissions
     const userRole = currentUser.profile?.role;
-    const canDelete =
-      userRole === "Admin" || userRole === "Staff" || payment.createdBy === currentUser.id;
+    const canDelete = isAdminOrStaffOrSuperAdmin(userRole) || payment.createdBy === currentUser.id;
 
     if (!canDelete) {
       console.error("Unauthorized to delete this payment");

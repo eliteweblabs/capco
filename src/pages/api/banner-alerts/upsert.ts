@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
 import { ensureTable, bannerAlertsSchema } from "../../../lib/db-schemas";
+import { isAdminOrSuperAdmin } from "../../../lib/user-utils";
 
 interface BannerAlertRequest {
   id?: number;
@@ -54,7 +55,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       .eq("id", currentUser.id)
       .single();
 
-    if (profile?.role !== "Admin") {
+    if (!isAdminOrSuperAdmin(profile?.role)) {
       return new Response(JSON.stringify({ error: "Admin access required" }), {
         status: 403,
         headers: { "Content-Type": "application/json" },

@@ -1,4 +1,5 @@
 ---
+import { isAdminOrStaffOrSuperAdmin } from "../../lib/user-utils";
 import AuthIcon from "../common/AuthIcon.astro";
 import Logo from "./Logo.astro";
 import ToggleSidebar from "./ToggleSidebar.astro";
@@ -43,8 +44,7 @@ const {
   hideFooter = false,
 } = Astro.props;
 
-const canCheckIn =
-  currentUser && (currentUser.profile?.role === "Admin" || currentUser.profile?.role === "Staff");
+const canCheckIn = currentUser && isAdminOrStaffOrSuperAdmin(currentUser.profile?.role);
 ---
 
 <!-- shadow when scrolled: light drop shadow, animated via .navbar-scrolled -->

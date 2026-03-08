@@ -4,6 +4,7 @@
  * Lists time entries with author, project, start, end, notes. Supports filters and inline edit.
  */
 import { checkAuth } from "../../lib/auth";
+import { isAdminOrStaffOrSuperAdmin } from "../../lib/user-utils";
 import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
 import Hero from "../../components/common/Hero.astro";
 import Button from "../../components/common/Button.astro";
@@ -16,7 +17,7 @@ if (!currentUser) {
   return Astro.redirect("/auth/login");
 }
 
-if (currentRole !== "Admin" && currentRole !== "Staff") {
+if (!isAdminOrStaffOrSuperAdmin(currentRole)) {
   return Astro.redirect("/dashboard");
 }
 

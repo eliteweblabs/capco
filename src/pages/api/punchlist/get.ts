@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { isAdminOrStaffOrSuperAdmin } from "../../../lib/user-utils";
 
 export const GET: APIRoute = async ({ request, cookies }) => {
   try {
@@ -177,7 +178,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     // Filter items based on user role and internal status
     const filteredItems = punchlistItems.filter((item) => {
       // Admins and Staff can see all items
-      if (userRole === "Admin" || userRole === "Staff") {
+      if (isAdminOrStaffOrSuperAdmin(userRole)) {
         return true;
       }
 

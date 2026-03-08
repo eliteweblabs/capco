@@ -5,11 +5,15 @@
  */
 const requireAuthRedirect = "/auth/login";
 import { checkAuth } from "../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../lib/user-utils";
 
 const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
 
 // Handle auth redirect first
-if (requireAuthRedirect && (!session || !currentUser || currentUser?.profile?.role !== "Admin")) {
+if (
+  requireAuthRedirect &&
+  (!session || !currentUser || !isAdminOrSuperAdmin(currentUser?.profile?.role))
+) {
   return Astro.redirect(requireAuthRedirect);
 }
 

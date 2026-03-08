@@ -5,6 +5,7 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
+import { isAdminOrSuperAdmin } from "../../../lib/user-utils";
 
 if (!supabaseAdmin) {
   console.error("[settings/update] supabaseAdmin not available - check SUPABASE_SECRET env var");
@@ -23,7 +24,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Check if user is admin
     const userRole = currentUser.profile?.role;
-    if (userRole !== "Admin") {
+    if (!isAdminOrSuperAdmin(userRole)) {
       return new Response(JSON.stringify({ error: "Admin access required" }), {
         status: 403,
         headers: { "Content-Type": "application/json" },

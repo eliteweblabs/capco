@@ -7,6 +7,7 @@ import type { APIRoute } from "astro";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { checkAuth } from "../../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../../lib/user-utils";
 import { replacePlaceholders } from "../../../lib/placeholder-utils";
 
 const USE_CASES: Record<
@@ -108,7 +109,7 @@ export const GET: APIRoute = async ({ request, cookies }): Promise<Response> => 
   try {
     const { isAuth, currentUser } = await checkAuth(cookies);
     const role = currentUser?.profile?.role;
-    if (!isAuth || !currentUser || role !== "Admin") {
+    if (!isAuth || !currentUser || !isAdminOrSuperAdmin(role)) {
       return new Response("Admin access required", {
         status: 403,
         headers: { "Content-Type": "text/plain" },

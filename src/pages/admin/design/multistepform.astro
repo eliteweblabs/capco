@@ -4,6 +4,7 @@
  * Multi-step form driven by JSON config (progress bar, steps, buttons).
  */
 import { checkAuth } from "../../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../../lib/user-utils";
 import LayoutFullWidth from "../../../components/layouts/LayoutFullWidth.astro";
 import MultiStepForm from "../../../features/forms/components/MultiStepForm.astro";
 import type { MultiStepFormConfig } from "../../../lib/multi-step-form-config";
@@ -15,7 +16,7 @@ const currentRole = currentUser?.profile?.role;
 if (!currentUser || !session) {
   return Astro.redirect("/auth/login");
 }
-if (currentRole !== "Admin") {
+if (!isAdminOrSuperAdmin(currentRole)) {
   return Astro.redirect("/dashboard");
 }
 

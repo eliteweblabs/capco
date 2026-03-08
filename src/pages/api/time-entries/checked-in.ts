@@ -5,6 +5,7 @@
  */
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../../lib/user-utils";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
 
 async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
@@ -45,7 +46,7 @@ export const GET: APIRoute = async ({ cookies }): Promise<Response> => {
     }
 
     const role = (currentUser as any)?.profile?.role;
-    if (role !== "Admin") {
+    if (!isAdminOrSuperAdmin(role)) {
       return new Response(JSON.stringify({ users: [] }), {
         status: 200,
         headers: { "Content-Type": "application/json" },

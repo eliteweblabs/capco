@@ -5,12 +5,13 @@
 import type { APIRoute } from "astro";
 import { listmonk } from "../../../lib/listmonk";
 import { checkAuth } from "../../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../../lib/user-utils";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     // Check authentication - Admin only
     const { currentUser, session, supabase } = await checkAuth(cookies);
-    if (!session || !currentUser || currentUser?.profile?.role !== "Admin") {
+    if (!session || !currentUser || !isAdminOrSuperAdmin(currentUser?.profile?.role)) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },

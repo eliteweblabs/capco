@@ -8,12 +8,13 @@
  * Placeholder patterns: /admin/design/placeholders
  */
 import { checkAuth } from "../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../lib/user-utils";
 import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
 import Button from "../../components/common/Button.astro";
 import Hero from "../../components/common/Hero.astro";
 import DeleteConfirmButton from "../../components/ui/DeleteConfirmButton.astro";
 import CloseButton from "../../components/ui/CloseButton.astro";
-import InputLabelWrap from "../../components/common/__InputLabelWrap.astro";
+import InputLabelWrap from "../../components/common/InputLabelWrap.astro";
 import SlidingTabs from "../../components/common/SlidingTabs.astro";
 import { globalClasses } from "../api/global/global-classes";
 import SimpleIcon from "../../components/common/SimpleIcon.astro";
@@ -24,7 +25,7 @@ const currentRole = currentUser?.profile?.role;
 if (!currentUser || !session) {
   return Astro.redirect("/auth/login");
 }
-if (currentRole !== "Admin") {
+if (!isAdminOrSuperAdmin(currentRole)) {
   return Astro.redirect("/dashboard");
 }
 

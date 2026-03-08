@@ -3,6 +3,7 @@ import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
 import Dropzone from "../../components/common/Dropzone.astro";
 import FormActionButton from "../../components/form/FormActionButton.astro";
 import { checkAuth } from "../../lib/auth";
+import { isAdminOrStaffOrSuperAdmin } from "../../lib/user-utils";
 import { globalClasses } from "../api/global/global-classes";
 
 const { globalFormClasses, globalInputClasses } = globalClasses();
@@ -15,7 +16,7 @@ if (!currentUser) {
   return Astro.redirect("/auth/login");
 }
 
-if (currentRole !== "Admin" && currentRole !== "Staff") {
+if (!isAdminOrStaffOrSuperAdmin(currentRole)) {
   return Astro.redirect("/dashboard");
 }
 ---
