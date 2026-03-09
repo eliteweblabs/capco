@@ -1,7 +1,7 @@
 // Navigation schema
 import { buttonVariantClasses } from "../../../lib/button-styles";
 
-type UserRole = "any" | "Client" | "Admin" | "Staff" | "SuperAdmin";
+type UserRole = "any" | "Client" | "Admin" | "Staff" | "superAdmin";
 type NavType = "frontend" | "backend";
 
 interface NavItem {
@@ -124,7 +124,7 @@ export const navigation = async (
           isAuth &&
           currentRole &&
           (item.roles.includes(currentRole as UserRole) ||
-            (currentRole === "SuperAdmin" && item.roles.includes("Admin")));
+            (currentRole === "superAdmin" && item.roles.includes("Admin")));
         return item.roles.includes("any") || !!roleMatch;
       }
 
@@ -133,7 +133,7 @@ export const navigation = async (
         const roleMatch =
           currentRole &&
           (item.roles.includes(currentRole as UserRole) ||
-            (currentRole === "SuperAdmin" && item.roles.includes("Admin")));
+            (currentRole === "superAdmin" && item.roles.includes("Admin")));
         return item.roles.includes("any") || !!roleMatch;
       }
 

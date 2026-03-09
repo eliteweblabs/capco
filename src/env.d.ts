@@ -14,6 +14,9 @@ interface ImportMetaEnv {
   // Supabase - Alternative names (optional, fallback to above)
   readonly SUPABASE_URI?: string;
 
+  /** DB password for pg_dump (clone-deploy). From Supabase Dashboard → Database. */
+  readonly SUPABASE_DB_PASSWORD?: string;
+
   // Email configuration
   readonly EMAIL_PROVIDER?: string;
   readonly EMAIL_API_KEY?: string;

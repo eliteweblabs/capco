@@ -102,37 +102,35 @@ export function getUserRole(userInfo: UserInfo): string {
 }
 
 /**
- * Check if user is admin (or SuperAdmin for access gates)
+ * Check if user is admin (or superAdmin for access gates)
  * @param userInfo - User information object
- * @returns boolean - True if user is Admin or SuperAdmin
+ * @returns boolean - True if user is Admin or superAdmin
  */
 export function isAdmin(userInfo: UserInfo): boolean {
-  return userInfo.role === "Admin" || userInfo.role === "SuperAdmin";
+  return userInfo.role === "Admin" || userInfo.role === "superAdmin";
 }
 
 /**
- * Check if user is SuperAdmin (cookie-based elevation, not in DB)
+ * Check if user is superAdmin (DB role).
  * @param userInfo - User information object
- * @returns boolean - True if user is SuperAdmin
+ * @returns boolean - True if user is superAdmin
  */
 export function isSuperAdmin(userInfo: UserInfo): boolean {
-  return userInfo.role === "SuperAdmin";
+  return userInfo.role === "superAdmin";
 }
 
 /**
- * Check if role has admin-level access (Admin or SuperAdmin).
- * Use for gates that should allow both DB Admin and cookie-based SuperAdmin.
+ * Check if role has admin-level access (Admin or superAdmin).
  */
 export function isAdminOrSuperAdmin(role: string | null | undefined): boolean {
-  return role === "Admin" || role === "SuperAdmin";
+  return role === "Admin" || role === "superAdmin";
 }
 
 /**
- * Check if role has admin/staff-level access (Admin, SuperAdmin, or Staff).
- * Use for gates that allow Admin, Staff, or cookie-based SuperAdmin.
+ * Check if role has admin/staff-level access (Admin, superAdmin, or Staff).
  */
 export function isAdminOrStaffOrSuperAdmin(role: string | null | undefined): boolean {
-  return role === "Admin" || role === "SuperAdmin" || role === "Staff";
+  return role === "Admin" || role === "superAdmin" || role === "Staff";
 }
 
 /**

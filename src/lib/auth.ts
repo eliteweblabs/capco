@@ -1,8 +1,8 @@
 import type { User } from "@supabase/supabase-js";
 import { clearAuthCookies, setAuthCookies } from "./auth-cookies";
 import { supabase } from "./supabase";
+import { supabaseAdmin } from "./supabase-admin";
 import { isBackendPage } from "../pages/api/utils/backend-page-check";
-import { getValidSuperAdminFromCookie } from "./superadmin";
 
 export interface ExtendedUser extends User {
   profile?: any;
@@ -54,34 +54,40 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
   // });
 
   if (customSessionToken && customUserEmail && customUserId) {
-    // console.log("🔐 [AUTH] Custom session found, creating custom user object");
-    // console.log("🔐 [AUTH] Custom session details:", {
-    //   hasToken: !!customSessionToken,
-    //   hasEmail: !!customUserEmail,
-    //   hasUserId: !!customUserId,
-    //   tokenValue: customSessionToken?.value,
-    //   emailValue: customUserEmail?.value,
-    //   userIdValue: customUserId?.value,
-    // });
+    let role = "Client";
+    let profile: Record<string, unknown> = { role: "Client" };
 
-    // Create a custom user object for the custom session
+    // Fetch actual role from profiles (custom session hardcodes Client otherwise)
+    if (supabaseAdmin) {
+      try {
+        const { data: profileData } = await supabaseAdmin
+          .from("profiles")
+          .select("*")
+          .eq("id", customUserId.value)
+          .single();
+        if (profileData?.role) {
+          role = profileData.role;
+          profile = profileData;
+        }
+      } catch {
+        // Use Client fallback
+      }
+    }
+
     const customUser: ExtendedUser = {
       id: customUserId.value,
       email: customUserEmail.value,
       user_metadata: {
         email: customUserEmail.value,
-        role: "Client", // Default role, could be enhanced
+        role,
       },
       app_metadata: {},
       aud: "authenticated",
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      profile: {
-        role: "Client", // Add profile.role for App.astro compatibility
-      },
+      profile,
     };
 
-    const role = getValidSuperAdminFromCookie(cookies, customUser.id) ? "SuperAdmin" : "Client";
     return {
       isAuth: true,
       session: { user: customUser },
@@ -189,10 +195,6 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
 
               console.warn("🔐 [AUTH] Using default profile for user without profile record");
             }
-          }
-          if (currentUser && getValidSuperAdminFromCookie(cookies, currentUser.id)) {
-            currentRole = "SuperAdmin";
-            if (currentUser.profile) currentUser.profile.role = "SuperAdmin";
           }
         }
       } else {

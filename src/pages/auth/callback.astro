@@ -20,7 +20,8 @@ import App from "../../components/ui/App.astro";
     <div id="taking-too-long" class="hidden max-w-sm text-center">
       <p class="text-sm text-gray-600 dark:text-gray-400">
         Taking longer than expected? This can happen if the server is starting up or the network is
-        slow.
+        slow. <strong>Using a tunnel (loca.lt)?</strong> OAuth can stall—try
+        <a href="http://localhost:4321/auth/login" class="underline">localhost:4321</a> directly.
       </p>
       <a
         href="/auth/login"
@@ -126,67 +127,58 @@ import App from "../../components/ui/App.astro";
     }
   })();
 
-  // Show "Taking too long?" escape hatch after 8s (avoids stuck loading when DB/network is slow)
-  const slowTimeout = setTimeout(() => {
-    const el = document.getElementById("taking-too-long");
+  // Show "Taking too long?" escape hatch after 5s (avoids stuck loading when DB/network/tunnel is slow)
+  window.__authCallbackSlowTimeout = setTimeout(function () {
+    var el = document.getElementById("taking-too-long");
     if (el) el.classList.remove("hidden");
-  }, 8000);
+  }, 5000);
 
-  // CRITICAL: Capture and restore code IMMEDIATELY before ANY imports or client initialization
-  // Supabase's detectSessionInUrl checks the URL when the client is created, so the code MUST be present
-  const initialUrl = window.location.href;
-  const initialSearch = window.location.search;
-  const initialHash = window.location.hash;
-
-  // Parse code and redirect parameter immediately
-  const initialUrlParams = new URLSearchParams(initialSearch);
-  const initialHashParams = new URLSearchParams(initialHash.substring(1));
-  const capturedCode = initialUrlParams.get("code") || initialHashParams.get("code");
-  const capturedError = initialUrlParams.get("error") || initialHashParams.get("error");
-  const capturedErrorDescription =
-    initialUrlParams.get("error_description") || initialHashParams.get("error_description");
-  // Redirect destination: prefer URL param (legacy), fall back to localStorage (set by auth-google.ts)
-  const capturedRedirect =
+  // Capture code/redirect and restore to URL BEFORE module loads (Supabase detectSessionInUrl reads URL)
+  var initialSearch = window.location.search;
+  var initialHash = (window.location.hash || "").substring(1);
+  var initialUrlParams = new URLSearchParams(initialSearch);
+  var initialHashParams = new URLSearchParams(initialHash);
+  var capturedCode = initialUrlParams.get("code") || initialHashParams.get("code");
+  var capturedRedirect =
     initialUrlParams.get("redirect") ||
     initialHashParams.get("redirect") ||
-    (() => {
+    (function () {
       try {
         return localStorage.getItem("post-auth-redirect");
-      } catch {
+      } catch (e) {
         return null;
       }
     })() ||
     "/project/dashboard";
 
-  console.log("[AUTH-CALLBACK] IMMEDIATE CAPTURE on page load:");
-  console.log("[AUTH-CALLBACK] Initial URL:", initialUrl);
-  console.log("[AUTH-CALLBACK] Initial search:", initialSearch);
-  console.log("[AUTH-CALLBACK] Initial hash:", initialHash);
-  console.log(
-    "[AUTH-CALLBACK] Captured code:",
-    capturedCode ? `${capturedCode.substring(0, 20)}...` : null
-  );
-  console.log("[AUTH-CALLBACK] Captured error:", capturedError);
-  console.log("[AUTH-CALLBACK] Captured redirect:", capturedRedirect);
-
-  // CRITICAL: Restore code to URL IMMEDIATELY if it was stripped
-  // This MUST happen before Supabase client is imported/initialized
-  // Supabase's detectSessionInUrl only checks the URL once during client creation
-  if (capturedCode && !initialSearch.includes("code=") && !initialHash.includes("code=")) {
-    console.log("[AUTH-CALLBACK] ⚠️ Code was stripped from URL, restoring BEFORE client init...");
-    const restoreUrl = new URL(window.location.href);
+  if (
+    capturedCode &&
+    initialSearch.indexOf("code=") === -1 &&
+    initialHash.indexOf("code=") === -1
+  ) {
+    var restoreUrl = new URL(window.location.href);
     restoreUrl.searchParams.set("code", capturedCode);
     window.history.replaceState({}, "", restoreUrl.toString());
-    console.log("[AUTH-CALLBACK] ✅ URL restored:", restoreUrl.toString());
   }
 
-  // NOW import Supabase client - it will see the code in the URL
-  // Use singleton Supabase client to avoid multiple instances
-  // IMPORTANT: Import happens synchronously, but client creation happens when getSupabaseClient() is called
+  window.__AUTH_CALLBACK_DATA = {
+    capturedCode: capturedCode,
+    capturedError: initialUrlParams.get("error") || initialHashParams.get("error"),
+    capturedErrorDescription:
+      initialUrlParams.get("error_description") ||
+      initialHashParams.get("error_description") ||
+      null,
+    capturedRedirect: capturedRedirect,
+  };
+</script>
+
+<script>
   import { getSupabaseClient } from "../../lib/supabase-client";
 
-  // CRITICAL: Create Supabase client IMMEDIATELY (synchronously) to ensure detectSessionInUrl runs
-  // This must happen before any async operations
+  const { capturedCode, capturedError, capturedErrorDescription, capturedRedirect } =
+    window.__AUTH_CALLBACK_DATA || {};
+  const slowTimeout = window.__authCallbackSlowTimeout;
+
   const supabase = getSupabaseClient();
 
   if (!supabase) {

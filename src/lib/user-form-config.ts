@@ -34,8 +34,9 @@ export const USER_FORM_ELEMENTS: FormElementConfig[] = [
       { value: "Client", label: "Client" },
       { value: "Staff", label: "Staff" },
       { value: "Admin", label: "Admin" },
+      { value: "superAdmin", label: "superAdmin" },
     ],
-    allow: ["Admin"],
+    allow: ["Admin", "superAdmin"],
     columns: 1,
   },
   {

@@ -20,8 +20,10 @@ if [[ -f "$ENV_FILE" ]]; then
 fi
 
 # --- Required: Source Supabase ---
-: "${SOURCE_SUPABASE_REF:?Set SOURCE_SUPABASE_REF (project ref from https://XXX.supabase.co)}"
-: "${SOURCE_SUPABASE_DB_PASSWORD:?Set SOURCE_SUPABASE_DB_PASSWORD (from Supabase Dashboard > Project Settings > Database)}"
+# SOURCE_SUPABASE_REF = project ref from your Supabase project URL
+# SOURCE_SUPABASE_DB_PASSWORD = from Supabase Dashboard > Project Settings > Database
+: "${SOURCE_SUPABASE_REF:?Set SOURCE_SUPABASE_REF in clone-site-and-db.env}"
+: "${SOURCE_SUPABASE_DB_PASSWORD:?Set SOURCE_SUPABASE_DB_PASSWORD in clone-site-and-db.env}"
 
 # --- Required: Dest Supabase (create new project first at supabase.com) ---
 : "${DEST_SUPABASE_REF:?Set DEST_SUPABASE_REF}"
@@ -33,8 +35,7 @@ fi
 DEST_RAILWAY_PROJECT_NAME="${DEST_RAILWAY_PROJECT_NAME:-New Client}"
 DEST_RAILWAY_DOMAIN="${DEST_RAILWAY_DOMAIN:-}"
 GITHUB_REPO="${GITHUB_REPO:-}"
-USE_DOCKER_FOR_PG_DUMP="${USE_DOCKER_FOR_PG_DUMP:-0}"
-
+USE_DOCKER_FOR_PG_DUMP="${USE_DOCKER_FOR_PG_DUMP:-1}"
 SOURCE_DB_URL="postgresql://postgres:${SOURCE_SUPABASE_DB_PASSWORD}@db.${SOURCE_SUPABASE_REF}.supabase.co:5432/postgres"
 DEST_DB_URL="postgresql://postgres:${DEST_SUPABASE_DB_PASSWORD}@db.${DEST_SUPABASE_REF}.supabase.co:5432/postgres"
 DUMP_FILE="${SCRIPT_DIR}/clone-dump-$(date +%Y%m%d-%H%M%S).sql"
@@ -43,33 +44,70 @@ echo "[clone] Source: $SOURCE_SUPABASE_REF"
 echo "[clone] Dest:   $DEST_SUPABASE_REF"
 echo "[clone] Dump:   $DUMP_FILE"
 
-# --- Step 1: Dump source database ---
+# Resolve to IPv4 for Docker (avoids "Network is unreachable" on IPv6)
+SOURCE_HOST="db.${SOURCE_SUPABASE_REF}.supabase.co"
+DEST_HOST="db.${DEST_SUPABASE_REF}.supabase.co"
+SOURCE_IP=""
+DEST_IP=""
+if command -v dig &>/dev/null; then
+  SOURCE_IP=$(dig +short A "$SOURCE_HOST" 2>/dev/null | head -1)
+  DEST_IP=$(dig +short A "$DEST_HOST" 2>/dev/null | head -1)
+fi
+[[ -z "$SOURCE_IP" ]] && SOURCE_IP="$SOURCE_HOST"
+[[ -z "$DEST_IP" ]] && DEST_IP="$DEST_HOST"
+SOURCE_DOCKER_URL="postgresql://postgres@${SOURCE_IP}:5432/postgres"
+DEST_DOCKER_URL="postgresql://postgres@${DEST_IP}:5432/postgres"
+
+# --- Step 1: Dump source database (try Docker, then local pg_dump) ---
 echo "[clone] Step 1: Dumping source database..."
-if [[ "$USE_DOCKER_FOR_PG_DUMP" == "1" ]]; then
-  docker run --rm -e PGPASSWORD="$SOURCE_SUPABASE_DB_PASSWORD" postgres:15 \
-    pg_dump "postgresql://postgres@db.${SOURCE_SUPABASE_REF}.supabase.co:5432/postgres" \
-    --no-owner --no-acl > "$DUMP_FILE"
-else
-  if ! command -v pg_dump &>/dev/null; then
-    echo "[clone] pg_dump not found. Install: brew install postgresql  (or set USE_DOCKER_FOR_PG_DUMP=1)"
-    exit 1
-  fi
-  pg_dump "$SOURCE_DB_URL" --no-owner --no-acl -f "$DUMP_FILE"
+DUMP_OK=0
+
+# Try Docker first (use IPv4 to avoid Docker IPv6 issues)
+echo "[clone] Trying Docker (postgres:17)..."
+if docker run --rm -e PGPASSWORD="$SOURCE_SUPABASE_DB_PASSWORD" postgres:17 \
+  pg_dump "$SOURCE_DOCKER_URL" --no-owner --no-acl > "$DUMP_FILE" 2>/dev/null; then
+  echo "[clone] Dump complete (Docker): $DUMP_FILE"
+  DUMP_OK=1
 fi
 
-echo "[clone] Dump complete: $DUMP_FILE"
-
-# --- Step 2: Restore to dest ---
-echo "[clone] Step 2: Restoring to destination database..."
-if [[ "$USE_DOCKER_FOR_PG_DUMP" == "1" ]]; then
-  cat "$DUMP_FILE" | docker run --rm -i -e PGPASSWORD="$DEST_SUPABASE_DB_PASSWORD" postgres:15 \
-    psql "postgresql://postgres@db.${DEST_SUPABASE_REF}.supabase.co:5432/postgres"
-else
-  if ! command -v psql &>/dev/null; then
-    echo "[clone] psql not found. Install: brew install postgresql  (or set USE_DOCKER_FOR_PG_DUMP=1)"
-    exit 1
+# Fallback: local pg_dump
+if [[ "$DUMP_OK" -eq 0 ]] && command -v pg_dump &>/dev/null; then
+  echo "[clone] Docker failed, trying local pg_dump..."
+  if pg_dump "$SOURCE_DB_URL" --no-owner --no-acl -f "$DUMP_FILE" 2>/dev/null; then
+    echo "[clone] Dump complete (local): $DUMP_FILE"
+    DUMP_OK=1
   fi
-  psql "$DEST_DB_URL" -f "$DUMP_FILE"
+fi
+
+if [[ "$DUMP_OK" -eq 0 ]]; then
+  echo "[clone] ERROR: Dump failed. Try: (1) Start Docker Desktop, or (2) brew install postgresql@17 && export PATH=\"\$(brew --prefix postgresql@17)/bin:\$PATH\""
+  exit 1
+fi
+
+# --- Step 2: Restore to dest (try Docker, then local psql) ---
+echo "[clone] Step 2: Restoring to destination database..."
+RESTORE_OK=0
+
+# Try Docker first (use IPv4)
+echo "[clone] Trying Docker (postgres:17)..."
+if cat "$DUMP_FILE" | docker run --rm -i -e PGPASSWORD="$DEST_SUPABASE_DB_PASSWORD" postgres:17 \
+  psql "$DEST_DOCKER_URL" >/dev/null 2>&1; then
+  echo "[clone] Restore complete (Docker)"
+  RESTORE_OK=1
+fi
+
+# Fallback: local psql
+if [[ "$RESTORE_OK" -eq 0 ]] && command -v psql &>/dev/null; then
+  echo "[clone] Docker failed, trying local psql..."
+  if psql "$DEST_DB_URL" -f "$DUMP_FILE" >/dev/null 2>&1; then
+    echo "[clone] Restore complete (local)"
+    RESTORE_OK=1
+  fi
+fi
+
+if [[ "$RESTORE_OK" -eq 0 ]]; then
+  echo "[clone] ERROR: Restore failed. Try starting Docker or: brew install postgresql@17"
+  exit 1
 fi
 
 echo "[clone] Restore complete."
