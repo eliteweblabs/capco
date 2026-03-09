@@ -25,12 +25,12 @@ export const GET: APIRoute = async ({ url, redirect }) => {
 
     if (error) {
       console.error("[GMAIL-CALLBACK] Authorization error:", error);
-      return redirect("/voice-assistant-vapi?error=gmail_access_denied");
+      return redirect("/ai-agent/voice?error=gmail_access_denied");
     }
 
     if (!code || !state) {
       console.error("[GMAIL-CALLBACK] Missing code or state");
-      return redirect("/voice-assistant-vapi?error=gmail_invalid_request");
+      return redirect("/ai-agent/voice?error=gmail_invalid_request");
     }
 
     const userId = state;
@@ -57,7 +57,7 @@ export const GET: APIRoute = async ({ url, redirect }) => {
 
     if (!tokens.access_token || !tokens.refresh_token) {
       console.error("[GMAIL-CALLBACK] Missing tokens in response");
-      return redirect("/voice-assistant-vapi?error=gmail_token_missing");
+      return redirect("/ai-agent/voice?error=gmail_token_missing");
     }
 
     // Get user's email address
@@ -84,7 +84,7 @@ export const GET: APIRoute = async ({ url, redirect }) => {
 
     if (dbError) {
       console.error("[GMAIL-CALLBACK] Database error:", dbError);
-      return redirect("/voice-assistant-vapi?error=gmail_storage_failed");
+      return redirect("/ai-agent/voice?error=gmail_storage_failed");
     }
 
     // Create default email preferences if they don't exist
@@ -114,9 +114,9 @@ export const GET: APIRoute = async ({ url, redirect }) => {
       `[GMAIL-CALLBACK] Successfully authorized Gmail for user ${userId} (${emailAddress})`
     );
 
-    return redirect("/voice-assistant-vapi?gmail=connected");
+    return redirect("/ai-agent/voice?gmail=connected");
   } catch (error: any) {
     console.error("[GMAIL-CALLBACK] Error:", error);
-    return redirect("/voice-assistant-vapi?error=gmail_callback_failed");
+    return redirect("/ai-agent/voice?error=gmail_callback_failed");
   }
 };

@@ -57,6 +57,6 @@ export const GET: APIRoute = async ({ cookies, redirect, url }) => {
     return redirect(authUrl);
   } catch (error) {
     console.error("[GMAIL-AUTH] Error generating auth URL:", error);
-    return redirect("/voice-assistant-vapi?error=gmail_auth_failed");
+    return redirect("/ai-agent/voice?error=gmail_auth_failed");
   }
 };
