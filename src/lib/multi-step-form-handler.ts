@@ -1522,6 +1522,24 @@ export function createMultiStepFormHandler(
         if (options.onSubmit) {
           console.log("[MULTISTEP-FORM] Using custom onSubmit handler");
           await options.onSubmit(formData);
+          if (responseType === "inline") {
+            showInlineFormResponse(
+              "success",
+              "Success!",
+              "Your information has been submitted. Thank you!"
+            );
+          } else if ((window as any).showNotice) {
+            (window as any).showNotice(
+              "success",
+              "Success!",
+              "Your information has been submitted. Thank you!",
+              3000
+            );
+          }
+          const redirectUrl = options.formConfig?.successRedirect || "/";
+          setTimeout(() => {
+            window.location.href = redirectUrl;
+          }, 3000);
         } else {
           // Default submission
           console.log("[MULTISTEP-FORM] Using default submission");
@@ -1859,6 +1877,35 @@ export function initializeMultiStepForm(
     return currentStep; // No valid previous step
   }
 
+  /** Update data-prev and data-next on nav buttons from actual valid steps (skips applied). */
+  function updateNavigationButtons(stepNumber: number) {
+    const stepContent = form.querySelector(
+      `.step-content[data-step="${stepNumber}"]`
+    ) as HTMLElement | null;
+    if (!stepContent) return;
+
+    const prevStep = getPrevValidStep(stepNumber);
+    const nextStep = getNextValidStep(stepNumber);
+
+    const prevButtons = stepContent.querySelectorAll("button.prev-step, a.prev-step");
+    prevButtons.forEach((btn) => btn.setAttribute("data-prev", String(prevStep)));
+
+    // Next/skip buttons: data-next and data-skip = actual next valid step (handles skipped steps)
+    const nextButtons = stepContent.querySelectorAll(
+      "button.next-step, button.skip-step"
+    );
+    nextButtons.forEach((btn) => {
+      if (
+        !btn.classList.contains("submit-step") &&
+        !btn.classList.contains("submit-registration") &&
+        !btn.classList.contains("submit-contact")
+      ) {
+        btn.setAttribute("data-next", String(nextStep));
+        if (btn.hasAttribute("data-skip")) btn.setAttribute("data-skip", String(nextStep));
+      }
+    });
+  }
+
   // Initialize with the handler, but override the initial step
   const firstStep = getFirstValidStep();
 
@@ -1866,6 +1913,7 @@ export function initializeMultiStepForm(
   const handler = createMultiStepFormHandler(form.id, formConfig?.totalSteps || 8, {
     onStepChange: (stepNumber) => {
       console.log(`[MULTISTEP-FORM] Step changed to: ${stepNumber}`);
+      updateNavigationButtons(stepNumber);
     },
     formConfig: formConfig, // Pass formConfig to enable registerUser flag
     initialData, // Pass for data-form-session-meta fallback when logged-in users skip steps

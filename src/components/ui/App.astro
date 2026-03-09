@@ -274,7 +274,11 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
         (function () {
           var u = new URL(window.location.href);
           if (u.searchParams.get("clearAgeConsent") === "1") {
-            try { localStorage.removeItem("age-consent-wall"); } catch (e) {}
+            try {
+              localStorage.removeItem("age-consent-wall");
+            } catch {
+              /* intentionally empty */
+            }
             u.searchParams.delete("clearAgeConsent");
             window.location.replace(u.pathname + u.search + (u.hash || ""));
             return;

@@ -1,4 +1,5 @@
 ---
+import SimpleIcon from "../common/SimpleIcon.astro";
 import { globalClasses } from "../../pages/api/global/global-classes";
 
 const { globalTextH3 } = globalClasses();
@@ -82,7 +83,8 @@ const animateDelay = Astro.props.animateDelay;
 /**
  * Parse items from string with line breaks and indentation
  */
-function parseItems(input: string | string[]): ListItem[] {
+function parseItems(input: string | string[] | undefined): ListItem[] {
+  if (input == null) return [];
   // If already an array, convert to simple items
   if (Array.isArray(input)) {
     return input.map((text) => ({ text: text.trim(), children: [] }));
@@ -182,12 +184,12 @@ const itemClasses = {
   checklist: "",
 };
 
-// Get bullet/marker based on type and variant
-function getMarker(isChecklist: boolean = false): string {
-  if (icon) return icon;
-  if (isChecklist || variant === "checklist") return "fa-regular fa-square";
-  if (type === "ordered") return ""; // Use default numbers
-  return "fa-solid fa-circle text-[6px]";
+/** SimpleIcon name for list marker. Uses project's SimpleIcon set (check, check-circle, etc.). */
+function getIconName(): string | null {
+  if (icon) return icon; // e.g. "check" from CMS
+  if (variant === "checklist") return "check";
+  if (type === "ordered") return null;
+  return null; // default bullet uses CSS dot
 }
 ---
 
@@ -213,7 +215,14 @@ function getMarker(isChecklist: boolean = false): string {
             <div class="flex items-start gap-3">
               {type !== "ordered" && (
                 <span class:list={["mt-1.5 flex-shrink-0", iconColor]}>
-                  <i class={getMarker()} aria-hidden="true" />
+                  {getIconName() ? (
+                    <SimpleIcon name={getIconName()!} class="h-4 w-4" />
+                  ) : (
+                    <span
+                      class="block h-1.5 w-1.5 shrink-0 rounded-full bg-current"
+                      aria-hidden="true"
+                    />
+                  )}
                 </span>
               )}
               <div class="flex-1">

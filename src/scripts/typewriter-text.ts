@@ -71,7 +71,7 @@ function initializeTypewriterInstance(element: HTMLElement, text: string): void 
 
   // Create TypeIt instance
   const instance = new TypeIt(element, {
-    speed: 0.005, // Fast typing (~2ms per character)
+    speed: 0.0005, // Fast typing (~2ms per character)
     cursor: true, // Show blinking cursor
     waitUntilVisible,
     html: true, // Enable HTML parsing for <br> tags

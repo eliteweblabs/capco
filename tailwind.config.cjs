@@ -49,11 +49,6 @@ module.exports = {
       pattern: /^text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl)$/,
       variants: ["sm", "md", "lg", "xl"],
     },
-    // Arbitrary text sizes for CMS (e.g. text-[4rem], md:text-[6rem])
-    {
-      pattern: /^text-\[[\d.]+(rem|em|px)\]$/,
-      variants: ["sm", "md", "lg", "xl"],
-    },
     // CMS hero/title content (classes in DB aren't seen by content scanner)
     "md:text-left",
     "md:text-right",

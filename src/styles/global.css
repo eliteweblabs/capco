@@ -1232,11 +1232,12 @@ span[data-refresh][data-edited="true"].fade-out::after {
   word-break: normal;
 }
 
-/* Each individual letter: starts at 110% scale / full opacity, animates to 100% scale / 50% opacity */
+/* Each individual letter: starts at 110% scale / full opacity, animates to 100% scale / 50% opacity.
+   Keep short (150ms) so TypeIt speed is perceptible; 500ms masked speed changes. */
 .typewriter-text .typewriter-char {
   display: inline-block;
   opacity: 1;
-  animation: typewriter-char-fade 500ms ease-out forwards;
+  animation: typewriter-char-fade 150ms ease-out forwards;
 }
 
 @keyframes typewriter-char-fade {
@@ -1536,7 +1537,6 @@ select:autofill:focus {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-
   z-index: 1;
 }
 .input-with-icon:focus-within .input-icon-absolute {
@@ -1788,3 +1788,20 @@ select.is-valid:focus {
     transform: translateY(0);
   }
 } */
+
+/* Arbitrary bottom values and z-index for CMS content - not tree-shaken (classes in DB aren't seen by Tailwind) */
+.z-\[-1\],
+[class*="z-[-1]"] {
+  z-index: -1;
+}
+
+@media (min-width: 768px) {
+  .md\:-bottom-\[1\.5rem\],
+  [class*="md:-bottom-[1.5rem\]"] {
+    bottom: -1.5rem !important;
+  }
+  .md\:-bottom-\[3rem\],
+  [class*="md:-bottom-[3rem\]"] {
+    bottom: -3rem !important;
+  }
+}

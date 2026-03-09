@@ -24,7 +24,7 @@ import SimpleIcon from "../common/SimpleIcon.astro";
 import { buildArrayFromFlatProps } from "./BlockRegistry";
 import { globalClasses } from "../../pages/api/global/global-classes";
 
-const { globalTextH2, globalTextH3, globalContainer } = globalClasses();
+const { globalTextH2, globalTextH3, globalContainer, globalContainerPadding } = globalClasses();
 
 interface Item {
   icon?: string;
@@ -96,43 +96,47 @@ const iconContainerClass = "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text
 
 <section
   {id}
-  class={`what-sets-us-apart-block relative overflow-hidden py-16 md:py-24 ${className}`.trim()}
+  class={`what-sets-us-apart-block relative overflow-hidden ${className}`.trim()}
   data-aos="fade-up"
   data-aos-duration="600"
 >
-  {
-    imageSrc && (
-      <>
-        <div
-          class="absolute inset-0 z-0"
-          role="img"
-          aria-label={imageAlt}
-          style={`background-image: url(${imageSrc}); background-size: cover; background-position: ${imagePosition === "left" ? "left" : "center"};`}
-        />
-        <div class="absolute inset-0 z-[1] bg-gray-900/50" aria-hidden="true" />
-      </>
-    )
-  }
-
-  <div class={globalContainer}>
+  <div class={globalContainer + " " + globalContainerPadding}>
     <div
       class:list={[
         "relative z-10",
         imageSrc &&
-          "rounded-xl border border-white/10 bg-gray-900/40 px-6 py-8 backdrop-blur-xl dark:bg-gray-900/50 sm:px-8 sm:py-10",
+          "rounded-xl border border-gray-900/10 bg-white/40 px-6 py-6 backdrop-blur-xl dark:border-white/10 dark:bg-gray-900/50 sm:px-8 sm:py-8",
       ]}
     >
+      {
+        imageSrc && (
+          <>
+            <div
+              class="absolute inset-0 z-0 rounded-xl opacity-25"
+              role="img"
+              aria-label={imageAlt}
+              style={`background-image: url(${imageSrc}); background-size: cover; background-position: ${imagePosition === "left" ? "left" : "center"}; filter: grayscale(100%);`}
+            />
+            <div
+              class="absolute inset-0 z-[1] rounded-xl bg-white/60 dark:bg-gray-900/70"
+              aria-hidden="true"
+            />
+          </>
+        )
+      }
       {
         (title || description) && (
           <div class="mb-10">
             {title && (
-              <h2 class={`font-tertiary ${globalTextH2} ${imageSrc ? "text-white" : ""}`}>
+              <h2
+                class={`font-tertiary ${globalTextH2} ${imageSrc ? "text-gray-900 dark:text-white" : ""}`}
+              >
                 {title}
               </h2>
             )}
             {description && (
               <p
-                class={`mt-4 max-w-2xl text-lg ${imageSrc ? "text-gray-200" : "text-gray-600 dark:text-gray-300"}`}
+                class={`mt-4 max-w-2xl text-lg ${imageSrc ? "text-gray-700 dark:text-gray-200" : "text-gray-600 dark:text-gray-300"}`}
               >
                 {description}
               </p>
@@ -152,7 +156,7 @@ const iconContainerClass = "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text
               ].join(" ")}
             >
               <div
-                class={`flex shrink-0 items-center justify-center rounded-lg ${imageSrc ? "bg-white/20 text-white" : iconContainerClass}`}
+                class={`flex shrink-0 items-center justify-center rounded-lg ${imageSrc ? "bg-gray-900/20 text-gray-900 dark:bg-white/20 dark:text-white" : iconContainerClass}`}
               >
                 {variant === "numbered" ? (
                   <span class="text-lg font-bold">{index + 1}</span>
@@ -161,10 +165,12 @@ const iconContainerClass = "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text
                 )}
               </div>
               <div class="flex-1">
-                <h3 class={`${globalTextH3} ${imageSrc ? "text-white" : ""}`}>{item.title}</h3>
+                <h3 class={`${globalTextH3} ${imageSrc ? "text-gray-900 dark:text-white" : ""}`}>
+                  {item.title}
+                </h3>
                 {item.description && (
                   <p
-                    class={`mt-1 ${imageSrc ? "text-gray-200" : "text-gray-600 dark:text-gray-300"}`}
+                    class={`mt-1 ${imageSrc ? "text-gray-700 dark:text-gray-200" : "text-gray-900 dark:text-gray-100"}`}
                   >
                     {item.description}
                   </p>

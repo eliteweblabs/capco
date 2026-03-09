@@ -39,7 +39,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   if (!sourceRef || !sourceDbPassword) {
     return new Response(
       JSON.stringify({
-        error: "Source config missing. Set SUPABASE_DB_PASSWORD (and PUBLIC_SUPABASE_URL) in your deployment env.",
+        error:
+          "Source config missing. Set SUPABASE_DB_PASSWORD (and PUBLIC_SUPABASE_URL) in your deployment env.",
       }),
       { status: 400, headers: { "Content-Type": "application/json" } }
     );
