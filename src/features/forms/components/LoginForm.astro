@@ -6,9 +6,10 @@ interface Props {
   redirectUrl?: string;
   id?: string;
   layout?: "standard" | "multi-step";
+  initialData?: Record<string, string>;
 }
 
-const { redirectUrl = "/project/dashboard", layout = "multi-step" } = Astro.props;
+const { redirectUrl = "/project/dashboard", layout = "multi-step", initialData = {} } = Astro.props;
 
 import ConfigForm from "./ConfigForm.astro";
 import { getLoginFormConfig } from "../../../lib/forms/form-config-from-site";
@@ -16,6 +17,10 @@ import { getLoginFormConfig } from "../../../lib/forms/form-config-from-site";
 const loginFormConfig = await getLoginFormConfig();
 ---
 
-<ConfigForm config={loginFormConfig} initialData={{ redirect: redirectUrl }} layout={layout} />
+<ConfigForm
+  config={loginFormConfig}
+  initialData={{ redirect: redirectUrl, ...initialData }}
+  layout={layout}
+/>
 
 <!-- Google OAuth: lib/auth-google.ts (loaded by App.astro and auth/login.astro). AuthProviders .provider-btn[data-provider="google"] uses it. -->

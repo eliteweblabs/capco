@@ -10,6 +10,7 @@ if (authCode) {
 }
 
 let redirectUrl = Astro.url.searchParams.get("redirect") || "/project/dashboard";
+const emailFromUrl = Astro.url.searchParams.get("email")?.trim() || undefined;
 const authPages = ["/auth/login", "/auth/callback", "/auth/register", "/auth/reset"];
 if (authPages.some((p) => redirectUrl.startsWith(p))) {
   redirectUrl = "/project/dashboard";
@@ -31,7 +32,7 @@ const id = "login-form";
 <LayoutFullForm title="Login / Register" description="Login or register to access your dashboard">
   <div id={id} class="relative flex min-h-[300px] flex-col pb-24">
     <div class="mb-8 flex-1">
-      <LoginForm redirectUrl={redirectUrl} layout="standard" />
+      <LoginForm redirectUrl={redirectUrl} layout="standard" initialData={emailFromUrl ? { email: emailFromUrl } : undefined} />
     </div>
     {/* Fallback: ensure sign-in at least validates when main form script has not inited */}
     <script is:inline>

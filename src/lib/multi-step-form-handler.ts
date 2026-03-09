@@ -655,9 +655,10 @@ export function createMultiStepFormHandler(
         if (!emailValid) {
           emailInput.classList.add("touched");
 
-          // Redirect to login with callback URL to return to this form
+          // Redirect to login with callback URL and email for autofill
           const currentUrl = window.location.pathname;
-          const loginUrl = `/auth/login?redirect=${encodeURIComponent(currentUrl)}`;
+          const emailVal = emailInput.value?.trim() || "";
+          const loginUrl = `/auth/login?redirect=${encodeURIComponent(currentUrl)}${emailVal ? `&email=${encodeURIComponent(emailVal)}` : ""}`;
 
           if ((window as any).showNotice) {
             (window as any).showNotice(
@@ -1378,13 +1379,40 @@ export function createMultiStepFormHandler(
                   setTimeout(() => activeStep.classList.remove("shake"), 500);
                 }
                 if ((window as any).showNotice) {
+                  let msg: string | null = "Please fill in the required fields";
                   const firstInvalid = activeStep?.querySelector(
                     ".is-invalid, input:invalid, textarea:invalid"
-                  ) as HTMLElement | null;
-                  const msg =
-                    firstInvalid?.getAttribute("data-error") ||
-                    "Please fill in the required fields";
-                  (window as any).showNotice("error", "Required", msg, 3000);
+                  ) as HTMLInputElement | HTMLTextAreaElement | null;
+                  if (firstInvalid) {
+                    msg =
+                      firstInvalid.getAttribute("data-error") ||
+                      firstInvalid.validationMessage ||
+                      msg;
+                  } else {
+                    // Fallback: find first required input that fails validity
+                    const requiredInputs = activeStep?.querySelectorAll(
+                      "input[required], textarea[required]"
+                    );
+                    let foundInvalid = false;
+                    for (const el of requiredInputs ?? []) {
+                      const input = el as HTMLInputElement | HTMLTextAreaElement;
+                      if (!input.checkValidity()) {
+                        msg =
+                          input.getAttribute("data-error") ||
+                          input.validationMessage ||
+                          msg;
+                        foundInvalid = true;
+                        break;
+                      }
+                    }
+                    // If all required inputs pass checkValidity(), the failure was from
+                    // something else (e.g. email uniqueness, phone format). Don't show
+                    // the generic "required fields" — validateStep already showed the real message.
+                    if (!foundInvalid) msg = null;
+                  }
+                  if (msg) {
+                    (window as any).showNotice("error", "Required", msg, 3000);
+                  }
                 }
               }
             }
@@ -1891,9 +1919,7 @@ export function initializeMultiStepForm(
     prevButtons.forEach((btn) => btn.setAttribute("data-prev", String(prevStep)));
 
     // Next/skip buttons: data-next and data-skip = actual next valid step (handles skipped steps)
-    const nextButtons = stepContent.querySelectorAll(
-      "button.next-step, button.skip-step"
-    );
+    const nextButtons = stepContent.querySelectorAll("button.next-step, button.skip-step");
     nextButtons.forEach((btn) => {
       if (
         !btn.classList.contains("submit-step") &&
@@ -2031,7 +2057,8 @@ async function validateFormContainer(container: HTMLElement, formConfig?: any): 
             const msg = "This email is already registered. Please log in instead.";
             if (useInline && formId) showInlineValidationError(formId, msg);
             else if ((window as any).showNotice) {
-              const loginUrl = `/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+              const emailVal = emailInput.value?.trim() || "";
+              const loginUrl = `/auth/login?redirect=${encodeURIComponent(window.location.pathname)}${emailVal ? `&email=${encodeURIComponent(emailVal)}` : ""}`;
               (window as any).showNotice(
                 "warning",
                 "Email Already Registered",
