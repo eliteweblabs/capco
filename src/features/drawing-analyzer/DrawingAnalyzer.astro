@@ -80,7 +80,76 @@ const { projectId } = Astro.props;
     <h3 class="mb-3 text-lg font-semibold text-gray-900 dark:text-white">Analysis Results</h3>
     <div id="drawing-results-content" class="space-y-4"></div>
 
-    <!-- Help the AI learn -->
+    <!-- Correct by selection: human-in-the-loop -->
+    <div
+      id="drawing-selection-correction"
+      class="mt-6 rounded-lg border border-primary-200 bg-primary-50/30 p-4 dark:border-primary-800 dark:bg-primary-900/20"
+    >
+      <h4 class="mb-2 text-sm font-semibold text-primary-900 dark:text-primary-200">
+        Correct the AI by selecting on the drawing
+      </h4>
+      <p class="mb-3 text-xs text-primary-800 dark:text-primary-300">
+        If the schematic shows elements that don&apos;t exist, or is missing something,
+        <strong>click and drag</strong> on the original drawing above to select the area, then choose what it is below.
+      </p>
+      <button
+        type="button"
+        id="drawing-selection-toggle"
+        class="rounded-md border border-primary-500 bg-white px-3 py-1.5 text-sm font-medium text-primary-700 transition-colors hover:bg-primary-100 dark:border-primary-600 dark:bg-primary-900/40 dark:text-primary-200 dark:hover:bg-primary-900/60"
+      >
+        Cancel selection
+      </button>
+      <div id="drawing-selection-form" class="mt-4 hidden rounded border border-gray-200 bg-white p-3 dark:border-gray-600 dark:bg-gray-800">
+        <p class="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">What did you select?</p>
+        <div class="flex flex-wrap gap-2">
+          <select
+            id="correction-element-type"
+            class="rounded border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+          >
+            <option value="">Choose element type...</option>
+            <optgroup label="Pipe">
+              <option value='pipe-2"'>Pipe 2&quot;</option>
+              <option value='pipe-1-1/2"'>Pipe 1-1/2&quot;</option>
+              <option value='pipe-1"'>Pipe 1&quot;</option>
+              <option value="pipe-other">Pipe (other)</option>
+            </optgroup>
+            <option value="sprinkler">Sprinkler head</option>
+            <option value="smoke">Smoke alarm</option>
+            <option value="pull">Pull station</option>
+            <option value="fdc">FDC (Fire Dept connection)</option>
+            <option value="horn">Horn/strobe</option>
+            <option value="other">Other (describe below)</option>
+            <option value="ignore">Not an element — AI should ignore this</option>
+          </select>
+          <input
+            id="correction-element-notes"
+            type="text"
+            placeholder="Notes (e.g. length, spec)"
+            class="rounded border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            maxlength="120"
+          />
+        </div>
+        <div class="mt-2 flex items-center gap-2">
+          <button
+            type="button"
+            id="correction-selection-submit"
+            class="rounded-md bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700"
+          >
+            Save correction
+          </button>
+          <button
+            type="button"
+            id="correction-selection-cancel"
+            class="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+          >
+            Cancel
+          </button>
+          <span id="correction-selection-status" class="text-sm text-gray-500"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Help the AI learn (text) -->
     <details
       class="mt-6 rounded-lg border border-gray-200 dark:border-gray-700"
       id="drawing-correction-details"
@@ -120,6 +189,23 @@ const { projectId } = Astro.props;
   </div>
 </div>
 
+<style>
+  .drawing-original-wrapper.selection-active {
+    box-shadow: 0 0 0 2px #825bdd;
+  }
+  .dark .drawing-original-wrapper.selection-active {
+    box-shadow: 0 0 0 2px #a78bfa;
+  }
+  .drawing-original-wrapper.selection-active .drawing-selection-overlay {
+    pointer-events: auto;
+  }
+  .drawing-selection-rect {
+    position: absolute;
+    border: 2px solid rgb(var(--color-primary-500, 130 91 221));
+    background: rgba(130, 91, 221, 0.2);
+    pointer-events: none;
+  }
+</style>
 <script src="/js/pdf.min.js" defer></script>
 <script define:vars={{ projectId: projectId ?? null }}>
   const dropzone = document.getElementById("drawing-dropzone");
@@ -168,10 +254,18 @@ const { projectId } = Astro.props;
     statusEl?.classList.add("hidden");
   }
 
-  function showResults(html) {
+  function showResults(html, imageUrls = []) {
     if (!resultsEl || !resultsContent) return;
     resultsContent.innerHTML = html;
     resultsEl.classList.remove("hidden");
+    // Enable selection mode by default so user can immediately click-and-drag on drawings
+    selectionMode = true;
+    const wrappers = document.querySelectorAll(".drawing-original-wrapper");
+    const overlays = document.querySelectorAll(".drawing-selection-overlay");
+    console.log("[DrawingAnalyzer] showResults: wrappers=", wrappers.length, "overlays=", overlays.length);
+    wrappers.forEach((w) => w.classList.add("selection-active"));
+    const toggleBtn = document.getElementById("drawing-selection-toggle");
+    if (toggleBtn) toggleBtn.textContent = "Cancel selection";
   }
 
   function ensurePdfJs() {
@@ -346,43 +440,52 @@ const { projectId } = Astro.props;
       });
     });
 
+    const truncate = (s, maxLen = 18) => {
+      const str = String(s || "").trim();
+      return str.length <= maxLen ? str : str.slice(0, maxLen) + "…";
+    };
+    const legendFontSize = 2.8;
+    const legendDy = 3.5;
     const legendItems = [];
     pipes.forEach((p, i) => {
       const color = PIPE_COLORS[i % PIPE_COLORS.length];
       const tip = `${esc(p.diameter)} — ${esc(p.length)}${p.notes ? " (" + esc(p.notes) + ")" : ""}`;
       legendItems.push(
-        `<g cursor="help" title="${tip}"><line x1="0" y1="0" x2="12" y2="0" stroke="${color}" stroke-width="2" stroke-linecap="round"/><text x="16" y="3.5" font-size="5" fill="currentColor">${esc(p.diameter)}</text></g>`
+        `<g cursor="help" title="${tip}"><line x1="0" y1="0" x2="8" y2="0" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/><text x="10" y="2.2" font-size="${legendFontSize}" fill="currentColor">${esc(truncate(p.diameter, 12))}</text></g>`
       );
     });
     if (sprinklerCount > 0) {
       legendItems.push(
-        `<g cursor="help" title="Sprinkler heads: ${sprinklerCount}"><circle r="1.8" fill="none" stroke="${SPRINKLER_COLOR}" stroke-width="0.8"/><path d="M-1.8 0 L1.8 0 M0 -1.8 L0 1.8" stroke="${SPRINKLER_COLOR}" stroke-width="0.5"/><text x="4" y="3" font-size="5" fill="currentColor">×${sprinklerCount}</text></g>`
+        `<g cursor="help" title="Sprinkler heads: ${sprinklerCount}"><circle r="1.2" fill="none" stroke="${SPRINKLER_COLOR}" stroke-width="0.6"/><path d="M-1.2 0 L1.2 0 M0 -1.2 L0 1.2" stroke="${SPRINKLER_COLOR}" stroke-width="0.4"/><text x="3" y="2.2" font-size="${legendFontSize}" fill="currentColor">×${sprinklerCount}</text></g>`
       );
     }
     if (smokeCount > 0) {
       legendItems.push(
-        `<g cursor="help" title="Smoke alarms: ${smokeCount}"><rect x="-2" y="-1.2" width="3" height="2.2" rx="0.3" fill="none" stroke="${SMOKE_COLOR}" stroke-width="0.5"/><text x="2.5" y="2.5" font-size="5" fill="currentColor">×${smokeCount}</text></g>`
+        `<g cursor="help" title="Smoke alarms: ${smokeCount}"><rect x="-1.4" y="-1" width="2.2" height="1.6" rx="0.25" fill="none" stroke="${SMOKE_COLOR}" stroke-width="0.4"/><text x="1.8" y="1.6" font-size="${legendFontSize}" fill="currentColor">×${smokeCount}</text></g>`
       );
     }
     other.forEach((e) => {
       const cnt = e.count ?? 1;
       const tip = `${esc(e.type)}: ${cnt}${e.notes ? " — " + esc(e.notes) : ""}`;
+      const label = truncate(e.type, 14);
       legendItems.push(
-        `<g cursor="help" title="${tip}"><rect x="-1.2" y="-1.2" width="2.4" height="2.4" rx="0.2" fill="${OTHER_COLOR}"/><text x="2" y="2.5" font-size="5" fill="currentColor">${esc(e.type)}</text></g>`
+        `<g cursor="help" title="${tip}"><rect x="-1" y="-1" width="1.8" height="1.8" rx="0.2" fill="${OTHER_COLOR}"/><text x="2" y="1.6" font-size="${legendFontSize}" fill="currentColor">${esc(label)}</text></g>`
       );
     });
 
-    const legendDy = 6;
-    let ly = 92;
-    let lx = 2;
+    const legendRows = Math.ceil(legendItems.length / 2);
+    const legendTitleHeight = 4;
+    const legendHeight = legendTitleHeight + legendRows * legendDy;
+    const legendTop = 100 - legendHeight;
+    const col1X = 2;
+    const col2X = 50;
+    const itemsStartY = legendTop + legendTitleHeight;
     let legendSvg = "";
-    legendItems.forEach((item) => {
-      legendSvg += `<g transform="translate(${lx},${ly})">${item}</g>`;
-      lx += 22;
-      if (lx > 70) {
-        lx = 2;
-        ly += legendDy;
-      }
+    legendItems.forEach((item, i) => {
+      const lx = i % 2 === 0 ? col1X : col2X;
+      const row = Math.floor(i / 2);
+      const y = itemsStartY + row * legendDy;
+      legendSvg += `<g transform="translate(${lx},${y})">${item}</g>`;
     });
 
     return `<div class="rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900 overflow-hidden">
@@ -395,8 +498,8 @@ const { projectId } = Astro.props;
             <rect x="0" y="0" width="100" height="100" fill="#fafafa" class="dark:fill-gray-900"/>
             ${schematicParts}
             <g fill="currentColor" class="text-gray-600 dark:text-gray-400" opacity="0.9">
-              <rect x="0" y="88" width="98" height="12" rx="2" fill="currentColor" opacity="0.08"/>
-              <text x="4" y="91" font-size="4" font-weight="600">Legend</text>
+              <rect x="0" y="${legendTop}" width="98" height="${legendHeight}" rx="2" fill="currentColor" opacity="0.08"/>
+              <text x="4" y="${legendTop + 2.5}" font-size="3" font-weight="600">Legend</text>
               ${legendSvg}
             </g>
           </svg>
@@ -425,7 +528,7 @@ const { projectId } = Astro.props;
     return `<div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-900/20"><h4 class="text-sm font-semibold text-amber-800 dark:text-amber-200">${esc(floor.name)}</h4><p class="mt-1 text-sm text-amber-700 dark:text-amber-300">${msg}</p><ul class="mt-2 list-disc list-inside text-sm text-amber-600 dark:text-amber-400">${list}</ul></div>`;
   }
 
-  function renderAnalysis(parsed, scaleUsed) {
+  function renderAnalysis(parsed, scaleUsed, imageUrls = []) {
     if (!parsed) return '<p class="text-gray-500 dark:text-gray-400">Raw response only.</p>';
 
     const floors = normalizeFloors(parsed);
@@ -448,7 +551,14 @@ const { projectId } = Astro.props;
       html += matHtml;
     }
 
-    floors.forEach((floor) => {
+    floors.forEach((floor, idx) => {
+      const imgUrl = imageUrls[idx] || imageUrls[0];
+      if (imgUrl) {
+        html += `<div class="drawing-original-wrapper relative my-4 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-600" data-image-url="${esc(imgUrl)}" data-floor-index="${idx}" data-floor-name="${esc(floor.name || "Plan")}">
+          <img src="${esc(imgUrl)}" alt="Original drawing - ${esc(floor.name || "Plan")}" class="max-h-80 w-full object-contain select-none" draggable="false" />
+          <div class="drawing-selection-overlay absolute inset-0 cursor-crosshair pointer-events-none" aria-hidden="true"></div>
+        </div>`;
+      }
       html += renderFloorSvg(floor);
     });
 
@@ -533,17 +643,18 @@ const { projectId } = Astro.props;
       const parsed = data.analysis?.parsed;
       const raw = data.analysis?.rawResponse;
       const html =
-        renderAnalysis(parsed, scale) +
+        renderAnalysis(parsed, scale, imageUrls) +
         (raw && !parsed
           ? `<details class="mt-4"><summary class="cursor-pointer text-sm text-gray-500">Raw response</summary><pre class="mt-2 overflow-x-auto rounded bg-gray-100 p-3 text-xs dark:bg-gray-800">${raw.replace(/</g, "&lt;")}</pre></details>`
           : "");
-      showResults(html);
+      showResults(html, imageUrls);
     } catch (err) {
       console.error("Drawing analyzer error:", err);
       showStatus(err?.message || "An error occurred", "error");
     }
   }
 
+  console.log("[DrawingAnalyzer] init: resultsEl=", !!resultsEl, "resultsEl?.id=", resultsEl?.id);
   dropzone?.addEventListener("click", () => fileInput?.click());
   fileInput?.addEventListener("change", (e) => {
     const f = e.target?.files?.[0];
@@ -565,7 +676,200 @@ const { projectId } = Astro.props;
     if (f) processFile(f);
   });
 
-  // Save correction to knowledge base
+  // Selection mode: correct by selecting region on drawing
+  let selectionMode = false;
+  let selectionStart = null;
+  let selectionRectEl = null;
+  let selectionWrapper = null;
+  const selectionForm = document.getElementById("drawing-selection-form");
+  const elementTypeSelect = document.getElementById("correction-element-type");
+  const elementNotesInput = document.getElementById("correction-element-notes");
+  const selectionStatusEl = document.getElementById("correction-selection-status");
+
+  document.getElementById("drawing-selection-toggle")?.addEventListener("click", () => {
+    selectionMode = !selectionMode;
+    console.log("[DrawingAnalyzer] selection toggle clicked, selectionMode=", selectionMode);
+    const wrappers = document.querySelectorAll(".drawing-original-wrapper");
+    wrappers.forEach((w) => w.classList.toggle("selection-active", selectionMode));
+    const btn = document.getElementById("drawing-selection-toggle");
+    if (btn) btn.textContent = selectionMode ? "Cancel selection" : "Select region (click to enable)";
+    if (!selectionMode) {
+      selectionForm?.classList.add("hidden");
+      selectionStart = null;
+      if (selectionRectEl) selectionRectEl.remove();
+    }
+  });
+
+  document.getElementById("correction-selection-cancel")?.addEventListener("click", () => {
+    selectionForm?.classList.add("hidden");
+    selectionStart = null;
+    if (selectionRectEl) selectionRectEl.remove();
+    selectionRectEl = null;
+  });
+
+  resultsEl?.addEventListener("mousedown", (e) => {
+    console.log("[DrawingAnalyzer] mousedown", {
+      selectionMode,
+      target: e.target?.className,
+      targetTag: e.target?.tagName,
+      wrapper: !!e.target.closest(".drawing-original-wrapper"),
+      wrapperActive: !!e.target.closest(".drawing-original-wrapper.selection-active"),
+      onOverlay: !!e.target.closest(".drawing-selection-overlay"),
+    });
+    if (!selectionMode) return;
+    const wrapper = e.target.closest(".drawing-original-wrapper.selection-active");
+    if (!wrapper || !e.target.closest(".drawing-selection-overlay")) return;
+    console.log("[DrawingAnalyzer] mousedown: starting selection", { wrapper: !!wrapper });
+    e.preventDefault();
+    const overlay = wrapper.querySelector(".drawing-selection-overlay");
+    if (!overlay) return;
+    const rect = overlay.getBoundingClientRect();
+    selectionStart = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    selectionWrapper = wrapper;
+    selectionRectEl = document.createElement("div");
+    selectionRectEl.className = "drawing-selection-rect";
+    selectionRectEl.style.left = selectionStart.x + "px";
+    selectionRectEl.style.top = selectionStart.y + "px";
+    selectionRectEl.style.width = "0";
+    selectionRectEl.style.height = "0";
+    overlay.appendChild(selectionRectEl);
+  });
+
+  let mousemoveLogCount = 0;
+  resultsEl?.addEventListener("mousemove", (e) => {
+    if (selectionStart && selectionRectEl && mousemoveLogCount++ < 3) {
+      console.log("[DrawingAnalyzer] mousemove", {
+        hasSelectionStart: !!selectionStart,
+        hasRectEl: !!selectionRectEl,
+        hasWrapper: !!selectionWrapper,
+      });
+    }
+    if (!selectionStart || !selectionRectEl || !selectionWrapper) return;
+    const overlay = selectionWrapper.querySelector(".drawing-selection-overlay");
+    if (!overlay) return;
+    const rect = overlay.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const left = Math.min(selectionStart.x, x);
+    const top = Math.min(selectionStart.y, y);
+    const width = Math.abs(x - selectionStart.x);
+    const height = Math.abs(y - selectionStart.y);
+    selectionRectEl.style.left = left + "px";
+    selectionRectEl.style.top = top + "px";
+    selectionRectEl.style.width = width + "px";
+    selectionRectEl.style.height = height + "px";
+  });
+
+  function finishSelection(e) {
+    console.log("[DrawingAnalyzer] finishSelection called", {
+      hasSelectionStart: !!selectionStart,
+      hasRectEl: !!selectionRectEl,
+      hasWrapper: !!selectionWrapper,
+    });
+    if (!selectionStart || !selectionRectEl || !selectionWrapper) return;
+    e?.preventDefault();
+    const overlay = selectionWrapper.querySelector(".drawing-selection-overlay");
+    if (!overlay) return;
+    const rect = overlay.getBoundingClientRect();
+    const style = selectionRectEl.style;
+    let left = parseFloat(style.left) || 0;
+    let top = parseFloat(style.top) || 0;
+    let width = parseFloat(style.width) || 0;
+    let height = parseFloat(style.height) || 0;
+    if (width < 4 && height < 4) {
+      left = selectionStart.x - 10;
+      top = selectionStart.y - 10;
+      width = 20;
+      height = 20;
+    }
+    selectionRectEl.remove();
+    selectionRectEl = null;
+
+    const centerX = ((left + width / 2) / rect.width) * 100;
+    const centerY = ((top + height / 2) / rect.height) * 100;
+    const floorName = selectionWrapper.dataset.floorName || "Plan";
+    const floorIndex = selectionWrapper.dataset.floorIndex || "0";
+    selectionWrapper.dataset.pendingCorrection = JSON.stringify({
+      centerX,
+      centerY,
+      floorName,
+      floorIndex,
+    });
+
+    selectionForm?.classList.remove("hidden");
+    if (elementTypeSelect) elementTypeSelect.value = "";
+    if (elementNotesInput) elementNotesInput.value = "";
+    if (selectionStatusEl) selectionStatusEl.textContent = "";
+    selectionStart = null;
+    selectionWrapper = null;
+  }
+
+  resultsEl?.addEventListener("mouseup", (e) => {
+    console.log("[DrawingAnalyzer] mouseup on resultsEl", {
+      selectionStart: !!selectionStart,
+      selectionRectEl: !!selectionRectEl,
+      target: e.target?.className,
+    });
+    finishSelection(e);
+  });
+  document.addEventListener("mouseup", (e) => {
+    if (selectionStart && selectionRectEl) finishSelection(e);
+  });
+
+  document.getElementById("correction-selection-submit")?.addEventListener("click", async () => {
+    const wrapper = document.querySelector(".drawing-original-wrapper[data-pending-correction]");
+    const typeVal = elementTypeSelect?.value?.trim();
+    const notes = elementNotesInput?.value?.trim() || "";
+
+    if (!wrapper || !typeVal) {
+      if (selectionStatusEl) selectionStatusEl.textContent = "Please choose an element type.";
+      return;
+    }
+
+    const pending = JSON.parse(wrapper.dataset.pendingCorrection || "{}");
+    const label =
+      typeVal === "ignore"
+        ? "not an element (AI should ignore)"
+        : typeVal === "other"
+          ? `other: ${notes || "see notes"}`
+          : typeVal.startsWith("pipe-")
+            ? `pipe: ${typeVal.replace("pipe-", "")}${notes ? " — " + notes : ""}`
+            : `${typeVal}${notes ? " — " + notes : ""}`;
+
+    const title = `Drawing correction: ${pending.floorName}`;
+    const content = `User selected a region (center ~${Math.round(pending.centerX)}%, ${Math.round(pending.centerY)}% of image) on a fire protection drawing and identified it as: ${label}. When analyzing similar drawings, use this identification.`;
+
+    const btn = document.getElementById("correction-selection-submit");
+    if (btn) btn.disabled = true;
+    if (selectionStatusEl) selectionStatusEl.textContent = "Saving...";
+
+    try {
+      const res = await fetch("/api/agent/knowledge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          title,
+          content,
+          category: "drawing_analysis",
+          priority: 8,
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || data.message || "Failed to save");
+
+      if (selectionStatusEl) selectionStatusEl.textContent = "Saved. Future analyses will use this.";
+      selectionForm?.classList.add("hidden");
+      delete wrapper.dataset.pendingCorrection;
+    } catch (err) {
+      if (selectionStatusEl) selectionStatusEl.textContent = err?.message || "Error saving";
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  });
+
+  // Save correction to knowledge base (text form)
   document.getElementById("correction-submit")?.addEventListener("click", async () => {
     const titleEl = document.getElementById("correction-title");
     const contentEl = document.getElementById("correction-content");
