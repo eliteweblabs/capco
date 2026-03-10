@@ -2058,18 +2058,18 @@ async function validateFormContainer(container: HTMLElement, formConfig?: any): 
           const result = await response.json();
           if (result.available === false) {
             emailInput.classList.add("touched");
-            const msg = "This email is already registered. Please log in instead.";
-            if (useInline && formId) showInlineValidationError(formId, msg);
-            else if ((window as any).showNotice) {
-              const emailVal = emailInput.value?.trim() || "";
-              const loginUrl = `/auth/login?redirect=${encodeURIComponent(window.location.pathname)}${emailVal ? `&email=${encodeURIComponent(emailVal)}` : ""}`;
-              (window as any).showNotice(
-                "warning",
-                "Email Already Registered",
-                `This email is already registered. <a href="${loginUrl}" class="text-primary-600 underline">Log in</a>`,
-                10000
-              );
+            const emailVal = emailInput.value?.trim() || "";
+            const loginUrl = `/auth/login?redirect=${encodeURIComponent(window.location.pathname)}${emailVal ? `&email=${encodeURIComponent(emailVal)}` : ""}`;
+            const msg = `This email is already registered. <a href="${loginUrl}" class="text-primary-600 underline">Log in</a>`;
+            // Always toast so the user sees why submission was blocked
+            if ((window as any).showNotice) {
+              (window as any).showNotice("warning", "Email Already Registered", msg, 10000);
             }
+            if (useInline && formId)
+              showInlineValidationError(
+                formId,
+                "This email is already registered. Please log in instead."
+              );
             return false;
           }
         }
@@ -2106,10 +2106,11 @@ async function validateFormContainer(container: HTMLElement, formConfig?: any): 
               const msg =
                 validateMessage?.replace(/<[^>]*>/g, "").trim() ||
                 "This email is not registered. Please create an account first.";
-              if (useInline && formId) showInlineValidationError(formId, msg);
-              else if ((window as any).showNotice && validateMessage) {
-                (window as any).showNotice("warning", "Not found", validateMessage, 10000);
+              // Always show a toast so the user sees why the form didn't submit
+              if ((window as any).showNotice) {
+                (window as any).showNotice("warning", "Email not found", msg, 8000);
               }
+              if (useInline && formId) showInlineValidationError(formId, msg);
               return false;
             }
           }

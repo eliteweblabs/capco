@@ -3,6 +3,7 @@ import type { APIRoute } from "astro";
 import { setAuthCookies } from "../../../lib/auth-cookies";
 import { SimpleProjectLogger } from "../../../lib/simple-logging";
 import { supabase } from "../../../lib/supabase";
+import { supabaseAdmin } from "../../../lib/supabase-admin";
 import { getBaseUrl } from "../../../lib/url-utils";
 
 export const POST: APIRoute = async ({ request, cookies, redirect }) => {
@@ -55,10 +56,48 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     return redirect("/auth/login?error=invalid_credentials");
   }
 
-  const { data, error } = await supabase.auth.signInWithPassword({
+  let data: { user: any; session: any } | null = null;
+  let error: { message: string } | null = null;
+  const signInResult = await supabase.auth.signInWithPassword({
     email,
     password,
   });
+  data = signInResult.data;
+  error = signInResult.error;
+
+  // DEV: Accept any data – create or update user so any email+password works
+  const isDev = import.meta.env.DEV;
+  if (error && isDev && supabaseAdmin) {
+    try {
+      const admin = supabaseAdmin.auth.admin;
+      const { data: listData } = await admin.listUsers({ perPage: 1000 });
+      const existing = listData?.users?.find(
+        (u) => u.email?.toLowerCase() === email?.toLowerCase()
+      );
+      if (existing) {
+        await admin.updateUserById(existing.id, { password: password! });
+        const retry = await supabase.auth.signInWithPassword({ email, password: password! });
+        data = retry.data;
+        error = retry.error;
+      } else {
+        const { data: created } = await admin.createUser({
+          email: email!,
+          password: password!,
+          email_confirm: true,
+        });
+        if (created?.user) {
+          const retry = await supabase.auth.signInWithPassword({
+            email,
+            password: password!,
+          });
+          data = retry.data;
+          error = retry.error;
+        }
+      }
+    } catch (devBypassErr) {
+      console.warn("[---AUTH-SIGNIN] Dev bypass failed:", devBypassErr);
+    }
+  }
 
   if (error) {
     // Log failed login attempt

@@ -1,70 +1,11 @@
 ---
-// Reusable StickyActions component - now works with portal system in App.astro
-// This component marks itself for teleportation to avoid z-index stacking context issues
-export const partial = true;
-
-// Detect if this is being used as a partial
-const isPartial = Astro.request.headers.has("x-sticky-actions-id");
-let id,
-  columns,
-  className,
-  isAuthPageResult = false,
-  isContactPageResult = false,
-  currentUser = undefined,
-  isBackend = false,
-  primaryTextClasses = "",
-  secondaryTextClasses = "",
-  globalInputClasses = "",
-  globalCompanyName = "",
-  globalCompanyPhone = "";
-
-if (isPartial) {
-  // Extract props from headers when used as partial
-  id = Astro.request.headers.get("x-sticky-actions-id") || "";
-  columns = Astro.request.headers.get("x-sticky-actions-columns") || "4";
-  className = Astro.request.headers.get("x-sticky-actions-class") || "";
-} else {
-  // Use regular props when used as a component
-  const props = Astro.props;
-  id = props.id || `sticky-actions-${Math.random().toString(36).substr(2, 9)}`;
-  columns = props.columns || "4";
-  className = props.class || "";
-  isAuthPageResult = props.isAuthPageResult || false;
-  isContactPageResult = props.isContactPageResult || false;
-  currentUser = props.currentUser || undefined;
-  isBackend = props.isBackend || false;
-  primaryTextClasses = props.primaryTextClasses || "";
-  secondaryTextClasses = props.secondaryTextClasses || "";
-  globalInputClasses = props.globalInputClasses || "";
-  globalCompanyName = props.globalCompanyName || "";
-  globalCompanyPhone = props.globalCompanyPhone || "";
-}
-
-import SimpleIcon from "../common/SimpleIcon.astro";
-import ToggleSidebar from "../ui/ToggleSidebar.astro";
+const { id = `sticky-actions-${Math.random().toString(36).substr(2, 9)}` } = Astro.props;
 ---
 
-<!-- Teleported to portal in App.astro to avoid z-index stacking issues --><!-- {
-  !isAuthPageResult && !isContactPageResult && ( -->
-<div
-  id="sticky-actions"
-  class="mx-auto w-full max-w-lg grid-cols-3 items-center pb-[env(safe-area-inset-bottom)]"
->
+<div id={id} class="pb-[env(safe-area-inset-bottom)]">
   <div class="flex max-w-full items-center justify-start sm:hidden"></div>
   <div class="flex max-w-full items-center justify-center"></div>
   <div class="flex max-w-full items-center justify-end">
     <slot />
   </div>
 </div>
-<!-- )
-} -->
-
-<!-- <script>
-  // Auto-initialize when this component loads
-  document.addEventListener("DOMContentLoaded", () => {
-    // Trigger portal re-initialization in case this component loaded after initial page load
-    if (window.initializeStickyActionsPortal) {
-      window.initializeStickyActionsPortal();
-    }
-  });
-</script> -->

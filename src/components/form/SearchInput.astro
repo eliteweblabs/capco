@@ -107,7 +107,7 @@ const needsRightPadding = showLocationBtn || !clearButtonId;
           }
         >
           <SimpleIcon
-            name={type === "address" ? "pin-location" : "search"}
+            name={currentLocation ? "crosshairs" : type === "address" ? "pin-location" : "search"}
             size="sm"
             backgroundColor="primary"
             style="fill: var(--color-primary-500);"
@@ -118,7 +118,7 @@ const needsRightPadding = showLocationBtn || !clearButtonId;
     <button
       type="button"
       id={resolvedClearBtnId}
-      class={`search-input-clear absolute top-1/2 -translate-y-1/2 p-1.5 text-primary-500 transition-colors duration-200 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 ${showLocationBtn ? "right-10" : "right-2"} ${clearButtonId ? "pointer-events-none opacity-0" : "hidden"}`}
+      class={`search-input-clear absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-primary-500 transition-colors duration-200 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 ${clearButtonId ? "pointer-events-none opacity-0" : "hidden"}`}
       title="Clear search"
       aria-label="Clear search"
     >
@@ -166,6 +166,8 @@ const needsRightPadding = showLocationBtn || !clearButtonId;
     suggestionsSlot,
     resolvedSuggestionsId,
     resolvedClearBtnId,
+    locationBtnId,
+    showLocationBtn,
     fetchApiEndpoint,
     apiParams,
     valueField,
@@ -182,8 +184,12 @@ const needsRightPadding = showLocationBtn || !clearButtonId;
     const clearBtn = document.getElementById(resolvedClearBtnId);
     if (!input || !clearBtn) return;
 
+    const locationBtn = showLocationBtn ? document.getElementById(locationBtnId) : null;
+
     function toggleClear() {
-      clearBtn.classList.toggle("hidden", !input.value.trim());
+      const hasValue = !!input.value.trim();
+      clearBtn.classList.toggle("hidden", !hasValue);
+      if (locationBtn) locationBtn.classList.toggle("hidden", hasValue);
     }
 
     function hideSuggestionsSlot() {

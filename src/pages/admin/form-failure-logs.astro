@@ -77,76 +77,87 @@ function formatDate(iso: string) {
   />
 
   <div class={globalCardStyle}>
-    {logs.length === 0 ? (
-      <p class="text-gray-500 dark:text-gray-400 py-8 text-center">
-        No form failures recorded yet.
-      </p>
-    ) : (
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead class="bg-gray-50 dark:bg-gray-800">
-            <tr>
-              <th
-                scope="col"
-                class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
-              >
-                Time
-              </th>
-              <th
-                scope="col"
-                class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
-              >
-                Form
-              </th>
-              <th
-                scope="col"
-                class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
-              >
-                Error
-              </th>
-              <th
-                scope="col"
-                class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
-              >
-                Context
-              </th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-            {logs.map((log) => (
-              <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                <td class="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">
-                  {formatDate(log.createdAt)}
-                </td>
-                <td class="px-4 py-2 text-sm">
-                  <span class="font-medium text-gray-900 dark:text-white">{log.formId || "—"}</span>
-                  {log.formAction && (
-                    <span class="block text-xs text-gray-500 truncate max-w-[200px]" title={log.formAction}>
-                      {log.formAction}
-                    </span>
-                  )}
-                </td>
-                <td class="px-4 py-2 text-sm text-red-600 dark:text-red-400 max-w-[300px]">
-                  {log.error}
-                </td>
-                <td class="px-4 py-2 text-xs text-gray-500 dark:text-gray-400">
-                  {log.context && Object.keys(log.context).length > 0 ? (
-                    <pre class="m-0 p-1 bg-gray-100 dark:bg-gray-900 rounded truncate max-w-[200px]" title={JSON.stringify(log.context)}>
-                      {JSON.stringify(log.context)}
-                    </pre>
-                  ) : (
-                    "—"
-                  )}
-                </td>
+    {
+      logs.length === 0 ? (
+        <p class="py-8 text-center text-gray-500 dark:text-gray-400">
+          No form failures recorded yet.
+        </p>
+      ) : (
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-800">
+              <tr>
+                <th
+                  scope="col"
+                  class="px-4 py-2 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400"
+                >
+                  Time
+                </th>
+                <th
+                  scope="col"
+                  class="px-4 py-2 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400"
+                >
+                  Form
+                </th>
+                <th
+                  scope="col"
+                  class="px-4 py-2 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400"
+                >
+                  Error
+                </th>
+                <th
+                  scope="col"
+                  class="px-4 py-2 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400"
+                >
+                  Context
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    )}
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+              {logs.map((log) => (
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                  <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-600 dark:text-gray-300">
+                    {formatDate(log.createdAt)}
+                  </td>
+                  <td class="px-4 py-2 text-sm">
+                    <span class="font-medium text-gray-900 dark:text-white">
+                      {log.formId || "—"}
+                    </span>
+                    {log.formAction && (
+                      <span
+                        class="block max-w-[200px] truncate text-xs text-gray-500"
+                        title={log.formAction}
+                      >
+                        {log.formAction}
+                      </span>
+                    )}
+                  </td>
+                  <td class="max-w-[300px] px-4 py-2 text-sm text-red-600 dark:text-red-400">
+                    {log.error}
+                  </td>
+                  <td class="px-4 py-2 text-xs text-gray-500 dark:text-gray-400">
+                    {log.context && Object.keys(log.context).length > 0 ? (
+                      <pre
+                        class="m-0 max-w-[200px] truncate rounded bg-gray-100 p-1 dark:bg-gray-900"
+                        title={JSON.stringify(log.context)}
+                      >
+                        {JSON.stringify(log.context)}
+                      </pre>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )
+    }
   </div>
 
   <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
-    Logs are captured automatically when a form fails to submit. Stored in Supabase and viewable here.
+    Logs are captured automatically when a form fails to submit. Stored in Supabase and viewable
+    here.
   </p>
 </LayoutFullWidth>

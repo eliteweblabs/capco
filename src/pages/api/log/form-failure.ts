@@ -20,17 +20,17 @@ export const POST: APIRoute = async ({ request }) => {
     };
 
     if (!body?.error || typeof body.error !== "string") {
-      return new Response(
-        JSON.stringify({ success: false, error: "Missing or invalid error" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: false, error: "Missing or invalid error" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     if (!supabaseAdmin) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Logging not configured" }),
-        { status: 503, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: false, error: "Logging not configured" }), {
+        status: 503,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const { error } = await supabaseAdmin.from("formFailureLogs").insert({
@@ -44,21 +44,21 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (error) {
       console.error("[FORM-FAILURE-LOG] Supabase insert error:", error);
-      return new Response(
-        JSON.stringify({ success: false, error: error.message }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: false, error: error.message }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
-    return new Response(
-      JSON.stringify({ success: true }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (e) {
     console.error("[FORM-FAILURE-LOG] API error:", e);
-    return new Response(
-      JSON.stringify({ success: false, error: "Internal error" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ success: false, error: "Internal error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 };

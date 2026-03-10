@@ -248,7 +248,12 @@ export function formFailureLog(payload: FormFailurePayload): void {
   };
 
   // Always log to console for dev visibility
-  console.error("[FORM-FAILURE]", payload.formId || "unknown", payload.formAction || "", payload.error);
+  console.error(
+    "[FORM-FAILURE]",
+    payload.formId || "unknown",
+    payload.formAction || "",
+    payload.error
+  );
 
   // Buffer in localStorage (survives tab close; can be flushed later or viewed in devtools)
   try {

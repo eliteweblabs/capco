@@ -70,6 +70,17 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
+    // DEV: treat every email as "exists" so login validation always passes (dev bypass in signin.ts creates the user)
+    if (import.meta.env.DEV) {
+      return new Response(
+        JSON.stringify({ success: true, available: false, email: email.toLowerCase() }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
     const isAvailable = !existingProfile;
 
     return new Response(

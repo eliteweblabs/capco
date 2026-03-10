@@ -1,23 +1,24 @@
 ---
-// Hero section component
-
 interface Props {
-  title: string;
-  description: string;
+  role?: string;
   projectLength: number;
 }
 
 import Breadcrumb from "./Breadcrumb.astro";
-import Button from "./Button.astro";
-const { title, description, projectLength } = Astro.props;
+
+const { role, projectLength } = Astro.props;
+const isClient = role === "Client";
+
+const title = projectLength === 0 ? "Project Dashboard" : "Start A New Project";
+const description = isClient
+  ? projectLength === 0
+    ? "Manage and track your fire protection projects"
+    : "Welcome to the Project Management System. All aspects of your project can be managed here."
+  : projectLength === 0
+    ? "Manage and track all fire protection projects"
+    : "Welcome to the Project Management System. All aspects of your project can be managed here.";
 ---
 
-<!-- <div
-  class="col-span-full flex items-center align-center justify-between md:flex"
->
-  <h1 class="text-2xl font-medium text-black dark:text-white" id="page-project-title" set:html={title} />
-  <h2 id="page-subtitle" class="text-black dark:text-white" set:html={description} />
-</div> -->
 <Breadcrumb
   items={[
     {
@@ -42,4 +43,10 @@ const { title, description, projectLength } = Astro.props;
       href: "/project/new",
     },
   ]}
+  class="mb-8"
 />
+
+<div class="mb-8 px-1">
+  <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{title}</h1>
+  <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{description}</p>
+</div>
