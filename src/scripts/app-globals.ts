@@ -23,6 +23,7 @@ import {
 import { initFlowbite } from "flowbite";
 import { initPageSizeToggle } from "../lib/page-size-plugin";
 import { validatePhone, formatPhoneAsYouType } from "../lib/phone-validation";
+import { Debug, formFailureLog } from "../lib/debug-logger";
 
 // Single source for global (window.*) functions. Components keep their own JS; only shared globals here.
 if (typeof window !== "undefined") {
@@ -40,6 +41,8 @@ if (typeof window !== "undefined") {
   w.initPageSizeToggle = initPageSizeToggle;
   w.validatePhone = validatePhone;
   w.formatPhoneAsYouType = formatPhoneAsYouType;
+  w.Debug = Debug;
+  w.formFailureLog = formFailureLog;
 }
 
 // No modals in this project; showModal/hideModal/removeModal stay as no-op stubs above.
@@ -57,6 +60,10 @@ declare global {
     clipboardData?: any;
     createLineItemRow?: (data: any) => HTMLElement;
     createButtonPartial?: (config: any) => Promise<HTMLElement | null>;
+    /** Toggleable function-call debug logger. Usage: Debug.enable(), Debug.log("cat","fn",args), Debug.wrap(fn,{category}) */
+    Debug?: import("../lib/debug-logger").DebugLogger;
+    /** Always-on form failure logger. Call when form submit fails for monitoring. Usage: formFailureLog({ formId, formAction, error, context }) */
+    formFailureLog?: (payload: import("../lib/debug-logger").FormFailurePayload) => void;
     deleteProject?: (projectId: any) => void;
     getProject?: (projectId: string | number) => Promise<any>;
     handleNewStatusModalAndEmail?: any;

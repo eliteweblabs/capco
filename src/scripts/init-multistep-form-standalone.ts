@@ -32,6 +32,10 @@ function runMultiStepInit(): void {
   if (forms.length === 0) return;
   forms.forEach((formEl) => {
     const form = formEl as HTMLFormElement;
+    // Skip StandardForm (login, etc.) – it has no .step-content, MultiStepForm would break it
+    if (form.getAttribute("data-standard-form-inited") === "1" || form.closest("[data-standard-form]")) {
+      return;
+    }
     let formId: string;
     let formConfig: any;
     let initialData: Record<string, any> = {};

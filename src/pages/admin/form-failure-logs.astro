@@ -1,0 +1,152 @@
+---
+import { checkAuth } from "../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../lib/user-utils";
+import { supabaseAdmin } from "../../lib/supabase-admin";
+import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
+import Hero from "../../components/common/Hero.astro";
+import { globalClasses } from "../api/global/global-classes";
+
+const { primaryTextClasses, secondaryTextClasses, globalCardStyle } = globalClasses();
+
+// Check authentication
+const { currentUser, supabase } = await checkAuth(Astro.cookies);
+
+if (!currentUser) {
+  return Astro.redirect("/auth/login");
+}
+
+const { data: profile } = await supabase
+  .from("profiles")
+  .select("role")
+  .eq("id", currentUser.id)
+  .single();
+
+if (!isAdminOrSuperAdmin(profile?.role)) {
+  return Astro.redirect("/dashboard");
+}
+
+let logs: Array<{
+  id: number;
+  formId: string | null;
+  formAction: string | null;
+  error: string;
+  statusCode: number | null;
+  context: Record<string, unknown> | null;
+  userAgent: string | null;
+  createdAt: string;
+}> = [];
+
+if (supabaseAdmin) {
+  const { data, error } = await supabaseAdmin
+    .from("formFailureLogs")
+    .select("id, formId, formAction, error, statusCode, context, userAgent, createdAt")
+    .order("createdAt", { ascending: false })
+    .limit(100);
+
+  if (error) {
+    console.error("Error fetching form failure logs:", error);
+  } else {
+    logs = data || [];
+  }
+}
+
+function formatDate(iso: string) {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString(undefined, {
+      dateStyle: "short",
+      timeStyle: "medium",
+    });
+  } catch {
+    return iso;
+  }
+}
+---
+
+<LayoutFullWidth
+  title="Form Failure Logs"
+  classList="p-4"
+  description="Review client-side form submission failures for debugging"
+>
+  <Hero
+    enableAos={false}
+    title="Form Failure Logs"
+    description="Recent form submission failures. Use to monitor and debug contact forms, registration, and other submissions."
+    {primaryTextClasses}
+    {secondaryTextClasses}
+  />
+
+  <div class={globalCardStyle}>
+    {logs.length === 0 ? (
+      <p class="text-gray-500 dark:text-gray-400 py-8 text-center">
+        No form failures recorded yet.
+      </p>
+    ) : (
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead class="bg-gray-50 dark:bg-gray-800">
+            <tr>
+              <th
+                scope="col"
+                class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
+              >
+                Time
+              </th>
+              <th
+                scope="col"
+                class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
+              >
+                Form
+              </th>
+              <th
+                scope="col"
+                class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
+              >
+                Error
+              </th>
+              <th
+                scope="col"
+                class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
+              >
+                Context
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+            {logs.map((log) => (
+              <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                <td class="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                  {formatDate(log.createdAt)}
+                </td>
+                <td class="px-4 py-2 text-sm">
+                  <span class="font-medium text-gray-900 dark:text-white">{log.formId || "—"}</span>
+                  {log.formAction && (
+                    <span class="block text-xs text-gray-500 truncate max-w-[200px]" title={log.formAction}>
+                      {log.formAction}
+                    </span>
+                  )}
+                </td>
+                <td class="px-4 py-2 text-sm text-red-600 dark:text-red-400 max-w-[300px]">
+                  {log.error}
+                </td>
+                <td class="px-4 py-2 text-xs text-gray-500 dark:text-gray-400">
+                  {log.context && Object.keys(log.context).length > 0 ? (
+                    <pre class="m-0 p-1 bg-gray-100 dark:bg-gray-900 rounded truncate max-w-[200px]" title={JSON.stringify(log.context)}>
+                      {JSON.stringify(log.context)}
+                    </pre>
+                  ) : (
+                    "—"
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </div>
+
+  <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
+    Logs are captured automatically when a form fails to submit. Stored in Supabase and viewable here.
+  </p>
+</LayoutFullWidth>

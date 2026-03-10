@@ -4,6 +4,7 @@
 import { validatePhone, formatPhoneAsYouType } from "./phone-validation";
 import { getSupabaseClient } from "./supabase-client";
 import { parseFullNameToFirstAndLast } from "./multi-step-form-config";
+import { formFailureLog } from "./debug-logger";
 
 export interface MultiStepFormHandler {
   init: () => void;
@@ -1625,6 +1626,12 @@ export function createMultiStepFormHandler(
       } catch (error) {
         console.error("[MULTISTEP-FORM] Submission error:", error);
         const errMsg = error instanceof Error ? error.message : "An unexpected error occurred";
+        formFailureLog({
+          formId: form.id || undefined,
+          formAction: form.action || undefined,
+          error: errMsg,
+          context: { handler: "multistep", currentStep },
+        });
         if (responseType === "inline") {
           showInlineFormResponse("error", "Submission Failed", errMsg);
         } else if ((window as any).showNotice) {
@@ -2223,6 +2230,12 @@ export function initializeStandardForm(
       setTimeout(() => (window.location.href = redirectUrl), 3000);
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : "An unexpected error occurred";
+      formFailureLog({
+        formId,
+        formAction: form.action || undefined,
+        error: errMsg,
+        context: { handler: "standard" },
+      });
       if (formConfig?.responseType === "inline") {
         const container = document.getElementById(`${formId}-response-alert`);
         if (container) {

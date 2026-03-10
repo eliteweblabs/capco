@@ -9,6 +9,8 @@ const { currentUser } = await checkAuth(Astro.cookies);
 const { globalCompanyName, virtualAssistantName } = await globalCompanyData();
 const contactFormConfig = await getContactFormConfig(globalCompanyName, virtualAssistantName);
 const initialData = buildFormInitialDataFromUser(currentUser);
+/** ?mcp=1 disables typewriter/cascade so MCP browser can fill and submit immediately */
+const testNoCascade = Astro.url.searchParams.get("mcp") === "1";
 ---
 
-<ConfigForm config={contactFormConfig} {initialData} />
+<ConfigForm config={contactFormConfig} {initialData} testNoCascade={testNoCascade} />
