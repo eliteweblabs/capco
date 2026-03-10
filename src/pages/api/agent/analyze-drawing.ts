@@ -13,13 +13,24 @@ import { UnifiedFireProtectionAgent } from "../../../lib/ai/unified-agent";
 import { checkAuth } from "../../../lib/auth";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
 
+interface UserSelection {
+  floorIndex: string;
+  floorName: string;
+  elementType: string;
+  notes?: string;
+  region?: { left: number; top: number; width: number; height: number };
+  centerX?: number;
+  centerY?: number;
+}
+
 interface AnalyzeDrawingRequest {
   imageUrls: string[];
   projectId?: number;
   scale?: string;
+  userSelections?: UserSelection[];
 }
 
-function buildDrawingAnalysisPrompt(scale?: string): string {
+function buildDrawingAnalysisPrompt(scale?: string, userSelections?: UserSelection[]): string {
   const scaleSection =
     scale && scale.trim()
       ? `
@@ -34,8 +45,23 @@ You MUST use this scale when reporting pipe lengths:
 - If scale is NTS (not to scale), report lengths as drawn and note "scale uncertain" in notes.`
       : "";
 
+  const userSelectionsSection =
+    userSelections && userSelections.length > 0
+      ? `
+
+**USER-PROVIDED REGIONS (use these to guide your analysis):**
+The user has selected and identified these regions on the drawing. Use them as examples to find similar elements elsewhere and to inform your interpretation:
+${userSelections
+  .map(
+    (s) =>
+      `- ${s.elementType}${s.notes ? ` (${s.notes})` : ""} on ${s.floorName}: center ~${Math.round(s.centerX ?? 0)}%, ${Math.round(s.centerY ?? 0)}%`
+  )
+  .join("\n")}
+`
+      : "";
+
   return `Analyze these fire protection system drawings/diagrams.
-${scaleSection}
+${scaleSection}${userSelectionsSection}
 
 Extract and identify the following, based on standard NFPA/fire protection conventions:
 
@@ -116,7 +142,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const body: AnalyzeDrawingRequest = await request.json();
-    const { imageUrls, projectId, scale } = body;
+    const { imageUrls, projectId, scale, userSelections } = body;
 
     if (!imageUrls || !Array.isArray(imageUrls) || imageUrls.length === 0) {
       return new Response(
@@ -146,7 +172,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       projectId ? `project ${projectId}` : ""
     );
 
-    const prompt = buildDrawingAnalysisPrompt(scale);
+    const prompt = buildDrawingAnalysisPrompt(scale, userSelections);
 
     const agent = new UnifiedFireProtectionAgent(apiKey);
     const response = await agent.processQuery({

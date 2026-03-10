@@ -1,10 +1,13 @@
 ---
 /**
- * Fire Protection Drawing Analyzer
+ * Fire Protection Drawing Analyzer (PdfExtractor-like flow)
  *
- * Uploads PDF or image files, converts PDF pages to images client-side,
- * then sends to AI agent (Claude Vision) to recognize pipe lengths, sprinkler heads,
- * smoke alarms, etc. based on line width, color, and NFPA symbol conventions.
+ * 1. Upload document (PDF or image)
+ * 2. Drawing is displayed; user selects what to look for (element type)
+ * 3. User clicks and drags on the drawing to select regions
+ * 4. Each selection (region + element type) is added to a list
+ * 5. User clicks "Analyze" to send image + selections to AI agent
+ * 6. AI uses user selections to inform analysis of pipe lengths, sprinklers, etc.
  */
 import { globalClasses } from "../../pages/api/global/global-classes";
 import SimpleIcon from "../../components/common/SimpleIcon.astro";
@@ -24,8 +27,9 @@ const { projectId } = Astro.props;
     <h2 class={globalTextH3}>Drawing Analyzer</h2>
   </div>
   <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
-    Upload a fire protection drawing (PDF or image). The AI will detect pipe lengths by diameter,
-    sprinkler heads, smoke alarms, and other equipment based on line width, color, and NFPA symbols.
+    Upload a drawing, then <strong>select examples</strong> on the drawing (choose element type, click
+    and drag to mark regions). Those selections teach the AI what to look for. Click &quot;Analyze drawing&quot;
+    and the AI finds all similar instances and calculates counts/lengths into the form.
   </p>
 
   <!-- Editable Scale -->
@@ -49,9 +53,9 @@ const { projectId } = Astro.props;
     </p>
   </div>
 
-  <!-- Dropzone -->
+  <!-- Dropzone (hidden after upload) -->
   <div
-    id="drawing-dropzone"
+    id="drawing-dropzone-container"
     class="mb-6 flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-8 transition-colors hover:border-primary-400 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-900 dark:hover:border-primary-500"
   >
     <SimpleIcon name="image" class="mb-3 h-12 w-12 text-gray-400" />
@@ -67,6 +71,87 @@ const { projectId } = Astro.props;
     />
   </div>
 
+  <!-- Guided interface + viewer (shown after upload, like PdfExtractor) -->
+  <div id="drawing-viewer-section" class="mb-6 hidden">
+    <div
+      id="drawing-guided-interface"
+      class="bg-primary-50/30 dark:bg-primary-900/20 mb-4 rounded-lg border border-primary-200 p-4 dark:border-primary-800"
+    >
+      <div class="flex flex-wrap items-end gap-3">
+        <div class="min-w-[200px] flex-1">
+          <label for="drawing-element-type" class={globalFormLabel}>What element to identify?</label
+          >
+          <select
+            id="drawing-element-type"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+          >
+            <option value="">Choose before selecting on drawing...</option>
+            <optgroup label="Pipe">
+              <option value='pipe-2"'>Pipe 2&quot;</option>
+              <option value='pipe-1-1/2"'>Pipe 1-1/2&quot;</option>
+              <option value='pipe-1"'>Pipe 1&quot;</option>
+              <option value="pipe-other">Pipe (other)</option>
+            </optgroup>
+            <option value="sprinkler">Sprinkler head</option>
+            <option value="smoke">Smoke alarm</option>
+            <option value="pull">Pull station</option>
+            <option value="fdc">FDC (Fire Dept connection)</option>
+            <option value="horn">Horn/strobe</option>
+            <option value="other">Other (describe in notes)</option>
+          </select>
+        </div>
+        <input
+          id="drawing-element-notes"
+          type="text"
+          placeholder="Notes (e.g. length)"
+          class="rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+          maxlength="120"
+        />
+      </div>
+      <p class="mt-2 text-xs text-primary-800 dark:text-primary-300">
+        <strong>Select element type above</strong>, then click and drag on the drawing below to mark
+        the region. Add as many as you like, then click &quot;Analyze drawing&quot;.
+      </p>
+    </div>
+
+    <div
+      id="drawing-selections-list"
+      class="mb-3 max-h-32 min-h-0 overflow-y-auto rounded border border-gray-200 bg-gray-50 p-2 text-sm dark:border-gray-700 dark:bg-gray-900"
+    >
+      <p class="text-gray-500 dark:text-gray-400">No selections yet. Add regions above.</p>
+    </div>
+
+    <div class="mb-4 flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        id="drawing-analyze-btn"
+        class="rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700"
+      >
+        Analyze drawing
+      </button>
+      <button
+        type="button"
+        id="drawing-close-viewer-btn"
+        class="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+      >
+        Remove and start over
+      </button>
+    </div>
+
+    <div
+      id="drawing-viewer-content"
+      class="space-y-4 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800"
+    >
+      <!-- Drawing wrappers with overlays inserted here after upload -->
+    </div>
+    <div
+      id="drawing-selection-hint"
+      class="drawing-selection-hint dark:bg-primary-900/20 mt-2 hidden rounded border border-primary-200 bg-primary-50 p-2 text-sm text-primary-800 dark:border-primary-800 dark:text-primary-300"
+    >
+      <strong>Selection mode:</strong> Click and drag on the drawing above to mark regions.
+    </div>
+  </div>
+
   <!-- Status -->
   <div
     id="drawing-status"
@@ -77,30 +162,116 @@ const { projectId } = Astro.props;
 
   <!-- Results -->
   <div id="drawing-results" class="hidden">
-    <h3 class="mb-3 text-lg font-semibold text-gray-900 dark:text-white">Analysis Results</h3>
+    <div class="mb-3 flex items-center justify-between">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Analysis Results</h3>
+      <button
+        type="button"
+        id="drawing-new-btn"
+        class="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+      >
+        New drawing
+      </button>
+    </div>
+
+    <!-- Editable form: focus an input to enable selection, then click+drag on drawing to extract -->
+    <div
+      id="drawing-editable-form"
+      class="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900"
+    >
+      <h4 class="mb-3 text-sm font-semibold text-gray-900 dark:text-white">
+        Extracted values (edit directly or click a field, then select region on drawing to
+        re-extract)
+      </h4>
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <label class="block">
+          <span class={globalFormLabel}>Pipe 2&quot; (ft)</span>
+          <input
+            type="text"
+            id="drawing-field-pipe-2"
+            data-field-type='pipe-2"'
+            class="drawing-field-input w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            placeholder="—"
+          />
+        </label>
+        <label class="block">
+          <span class={globalFormLabel}>Pipe 1-1/2&quot; (ft)</span>
+          <input
+            type="text"
+            id="drawing-field-pipe-1-1-2"
+            data-field-type='pipe-1-1/2"'
+            class="drawing-field-input w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            placeholder="—"
+          />
+        </label>
+        <label class="block">
+          <span class={globalFormLabel}>Pipe 1&quot; (ft)</span>
+          <input
+            type="text"
+            id="drawing-field-pipe-1"
+            data-field-type='pipe-1"'
+            class="drawing-field-input w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            placeholder="—"
+          />
+        </label>
+        <label class="block">
+          <span class={globalFormLabel}>Sprinkler count</span>
+          <input
+            type="text"
+            id="drawing-field-sprinkler"
+            data-field-type="sprinkler"
+            class="drawing-field-input w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            placeholder="—"
+          />
+        </label>
+        <label class="block">
+          <span class={globalFormLabel}>Smoke alarm count</span>
+          <input
+            type="text"
+            id="drawing-field-smoke"
+            data-field-type="smoke"
+            class="drawing-field-input w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            placeholder="—"
+          />
+        </label>
+      </div>
+      <div
+        id="drawing-form-selection-hint"
+        class="dark:bg-primary-900/20 mt-3 hidden rounded border border-primary-200 bg-primary-50 p-2 text-sm text-primary-800 dark:border-primary-800 dark:text-primary-300"
+      >
+        <strong>Selection mode:</strong> Click and drag on the drawing below to extract the value for
+        the focused field.
+      </div>
+    </div>
+
     <div id="drawing-results-content" class="space-y-4"></div>
 
     <!-- Correct by selection: human-in-the-loop -->
     <div
       id="drawing-selection-correction"
-      class="mt-6 rounded-lg border border-primary-200 bg-primary-50/30 p-4 dark:border-primary-800 dark:bg-primary-900/20"
+      class="bg-primary-50/30 dark:bg-primary-900/20 mt-6 rounded-lg border border-primary-200 p-4 dark:border-primary-800"
     >
       <h4 class="mb-2 text-sm font-semibold text-primary-900 dark:text-primary-200">
         Correct the AI by selecting on the drawing
       </h4>
       <p class="mb-3 text-xs text-primary-800 dark:text-primary-300">
         If the schematic shows elements that don&apos;t exist, or is missing something,
-        <strong>click and drag</strong> on the original drawing above to select the area, then choose what it is below.
+        <strong>click and drag</strong> on the original drawing above to select the area, then choose
+        what it is below.
       </p>
       <button
         type="button"
         id="drawing-selection-toggle"
-        class="rounded-md border border-primary-500 bg-white px-3 py-1.5 text-sm font-medium text-primary-700 transition-colors hover:bg-primary-100 dark:border-primary-600 dark:bg-primary-900/40 dark:text-primary-200 dark:hover:bg-primary-900/60"
+        class="dark:bg-primary-900/40 dark:hover:bg-primary-900/60 rounded-md border border-primary-500 bg-white px-3 py-1.5 text-sm font-medium text-primary-700 transition-colors hover:bg-primary-100 dark:border-primary-600 dark:text-primary-200"
       >
         Cancel selection
       </button>
-      <div id="drawing-selection-form" class="mt-4 hidden rounded border border-gray-200 bg-white p-3 dark:border-gray-600 dark:bg-gray-800">
-        <p class="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">What did you select?</p>
+      <div
+        id="drawing-selection-form"
+        class="mt-4 hidden rounded border border-gray-200 bg-white p-3 dark:border-gray-600 dark:bg-gray-800"
+      >
+        <p class="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+          What did you select?
+        </p>
         <div class="flex flex-wrap gap-2">
           <select
             id="correction-element-type"
@@ -198,6 +369,13 @@ const { projectId } = Astro.props;
   }
   .drawing-original-wrapper.selection-active .drawing-selection-overlay {
     pointer-events: auto;
+    cursor: crosshair;
+    z-index: 10;
+  }
+  .drawing-selection-overlay {
+    z-index: 5;
+    background: transparent !important;
+    /* Fully transparent so the drawing stays visible; overlay only captures pointer events */
   }
   .drawing-selection-rect {
     position: absolute;
@@ -208,8 +386,19 @@ const { projectId } = Astro.props;
 </style>
 <script src="/js/pdf.min.js" defer></script>
 <script define:vars={{ projectId: projectId ?? null }}>
-  const dropzone = document.getElementById("drawing-dropzone");
+  const dropzoneContainer = document.getElementById("drawing-dropzone-container");
+  const dropzone = dropzoneContainer; // Entire area is clickable
   const fileInput = document.getElementById("drawing-file-input");
+  const viewerSection = document.getElementById("drawing-viewer-section");
+  const viewerContent = document.getElementById("drawing-viewer-content");
+  const selectionsListEl = document.getElementById("drawing-selections-list");
+  const guidedElementType = document.getElementById("drawing-element-type");
+  const guidedElementNotes = document.getElementById("drawing-element-notes");
+
+  /** User selections: { floorIndex, floorName, elementType, notes, region: { left, top, width, height }, centerX, centerY } */
+  let userSelections = [];
+  /** Image URLs from current upload (for Analyze button) */
+  let currentImageUrls = [];
   const statusEl = document.getElementById("drawing-status");
   const statusText = document.getElementById("drawing-status-text");
   const resultsEl = document.getElementById("drawing-results");
@@ -254,16 +443,165 @@ const { projectId } = Astro.props;
     statusEl?.classList.add("hidden");
   }
 
-  function showResults(html, imageUrls = []) {
+  function renderSelectionsList() {
+    if (!selectionsListEl) return;
+    if (userSelections.length === 0) {
+      selectionsListEl.innerHTML =
+        '<p class="text-gray-500 dark:text-gray-400">No selections yet. Add regions above.</p>';
+      return;
+    }
+    selectionsListEl.innerHTML = userSelections
+      .map(
+        (s, i) =>
+          `<div class="flex items-center justify-between gap-2 py-1 border-b border-gray-200 dark:border-gray-700 last:border-0">
+            <span class="text-gray-700 dark:text-gray-300">${esc(s.elementType)}${s.notes ? " — " + esc(s.notes) : ""} (${s.floorName})</span>
+            <button type="button" class="drawing-remove-selection text-red-600 hover:text-red-700 text-xs" data-index="${i}">Remove</button>
+          </div>`
+      )
+      .join("");
+    selectionsListEl.querySelectorAll(".drawing-remove-selection").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const idx = parseInt(btn.getAttribute("data-index") || "0", 10);
+        userSelections.splice(idx, 1);
+        renderSelectionsList();
+      });
+    });
+  }
+
+  function setupOverlayListeners(overlay, wrapper) {
+    if (!overlay) return;
+    overlay.addEventListener(
+      "mousedown",
+      (e) => {
+        if (!selectionMode) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const rect = overlay.getBoundingClientRect();
+        selectionStart = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        selectionWrapper = wrapper;
+        selectionRectEl = document.createElement("div");
+        selectionRectEl.className = "drawing-selection-rect";
+        selectionRectEl.style.left = selectionStart.x + "px";
+        selectionRectEl.style.top = selectionStart.y + "px";
+        selectionRectEl.style.width = "0";
+        selectionRectEl.style.height = "0";
+        overlay.appendChild(selectionRectEl);
+      },
+      { capture: true }
+    );
+  }
+
+  function showViewer(imageUrls = []) {
+    if (!viewerSection || !viewerContent) return;
+    userSelections = [];
+    renderSelectionsList();
+    viewerContent.innerHTML = "";
+    imageUrls.forEach((url, idx) => {
+      const floorName = imageUrls.length > 1 ? `Page ${idx + 1}` : "Plan";
+      const wrapper = document.createElement("div");
+      wrapper.className =
+        "drawing-original-wrapper relative my-4 overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-900";
+      wrapper.dataset.imageUrl = url;
+      wrapper.dataset.floorIndex = String(idx);
+      wrapper.dataset.floorName = floorName;
+
+      const img = document.createElement("img");
+      img.src = url;
+      img.alt = `Drawing - ${floorName}`;
+      img.className = "max-h-96 w-full object-contain select-none";
+      img.draggable = false;
+
+      const overlay = document.createElement("div");
+      overlay.className = "drawing-selection-overlay absolute inset-0 z-10 cursor-crosshair";
+      overlay.style.pointerEvents = "auto";
+      overlay.style.background = "transparent";
+      overlay.setAttribute("aria-hidden", "true");
+
+      wrapper.appendChild(img);
+      wrapper.appendChild(overlay);
+      viewerContent.appendChild(wrapper);
+
+      setupOverlayListeners(overlay, wrapper);
+    });
+
+    dropzoneContainer?.classList.add("hidden");
+    viewerSection?.classList.remove("hidden");
+    selectionMode = true;
+    document
+      .querySelectorAll(".drawing-original-wrapper")
+      .forEach((w) => w.classList.add("selection-active"));
+    document.getElementById("drawing-selection-hint")?.classList.remove("hidden");
+
+    // Show form immediately (empty until Analyze runs)
+    if (resultsEl) {
+      resultsEl.classList.remove("hidden");
+      if (resultsContent) {
+        resultsContent.innerHTML =
+          '<p class="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-200">Click &quot;Analyze drawing&quot; above to extract values into the form.</p>';
+      }
+    }
+  }
+
+  function extractValuesFromParsed(parsed) {
+    if (!parsed) return {};
+    const floors = normalizeFloors(parsed);
+    const sumPipeLength = (match) => {
+      let total = 0;
+      floors.forEach((f) => {
+        (f.pipeSegments || []).forEach((p) => {
+          const d = String(p.diameter || "");
+          if (match(d)) {
+            const m = String(p.length || "").match(/[\d.]+/);
+            if (m) total += parseFloat(m);
+          }
+        });
+      });
+      return total ? `${total} ft` : "";
+    };
+    const pipe2 = sumPipeLength((d) => d.includes("2") && !d.includes("1/2"));
+    const pipe112 = sumPipeLength((d) => d.includes("1-1/2") || d.includes("1½"));
+    const pipe1 = sumPipeLength(
+      (d) => d.includes('1"') && !d.includes("1-1/2") && !d.includes("1½")
+    );
+    let sprinkler = 0;
+    let smoke = 0;
+    floors.forEach((f) => {
+      sprinkler += f.sprinklerHeads?.count ?? f.sprinklerHeads?.positions?.length ?? 0;
+      smoke += f.smokeAlarms?.count ?? f.smokeAlarms?.positions?.length ?? 0;
+    });
+    return {
+      'pipe-2"': pipe2,
+      'pipe-1-1/2"': pipe112,
+      'pipe-1"': pipe1,
+      sprinkler: sprinkler ? String(sprinkler) : "",
+      smoke: smoke ? String(smoke) : "",
+    };
+  }
+
+  function populateExtractedForm(parsed) {
+    const vals = extractValuesFromParsed(parsed);
+    document.querySelectorAll(".drawing-field-input").forEach((el) => {
+      const ft = el.dataset.fieldType;
+      if (ft && vals[ft] !== undefined) el.value = vals[ft] || "";
+    });
+  }
+
+  function showResults(html, imageUrls = [], parsed = null) {
     if (!resultsEl || !resultsContent) return;
     resultsContent.innerHTML = html;
     resultsEl.classList.remove("hidden");
-    // Enable selection mode by default so user can immediately click-and-drag on drawings
+    if (parsed) populateExtractedForm(parsed);
     selectionMode = true;
     const wrappers = document.querySelectorAll(".drawing-original-wrapper");
-    const overlays = document.querySelectorAll(".drawing-selection-overlay");
-    console.log("[DrawingAnalyzer] showResults: wrappers=", wrappers.length, "overlays=", overlays.length);
-    wrappers.forEach((w) => w.classList.add("selection-active"));
+    wrappers.forEach((w) => {
+      w.classList.add("selection-active");
+      const overlay = w.querySelector(".drawing-selection-overlay");
+      if (overlay) {
+        overlay.style.pointerEvents = "auto";
+        setupOverlayListeners(overlay, w);
+      }
+    });
+    document.getElementById("drawing-selection-hint")?.classList.remove("hidden");
     const toggleBtn = document.getElementById("drawing-selection-toggle");
     if (toggleBtn) toggleBtn.textContent = "Cancel selection";
   }
@@ -616,19 +954,33 @@ const { projectId } = Astro.props;
         return;
       }
 
-      showStatus("Analyzing with AI...");
+      showStatus("Drawing ready. Select regions and click Analyze.", "success");
+      currentImageUrls = imageUrls;
+      showViewer(imageUrls);
+    } catch (err) {
+      console.error("Drawing analyzer error:", err);
+      showStatus(err?.message || "An error occurred", "error");
+    }
+  }
 
-      const scaleInput = document.getElementById("drawing-scale");
-      const scale = scaleInput?.value?.trim() || '1" = 10\'-0"';
+  async function runAnalysis() {
+    if (!currentImageUrls.length) return;
+    hideStatus();
+    showStatus("Analyzing with AI...");
 
+    const scaleInput = document.getElementById("drawing-scale");
+    const scale = scaleInput?.value?.trim() || '1" = 10\'-0"';
+
+    try {
       const res = await fetch("/api/agent/analyze-drawing", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          imageUrls,
+          imageUrls: currentImageUrls,
           projectId: projectId || undefined,
           scale,
+          userSelections: userSelections.length > 0 ? userSelections : undefined,
         }),
       });
 
@@ -643,18 +995,40 @@ const { projectId } = Astro.props;
       const parsed = data.analysis?.parsed;
       const raw = data.analysis?.rawResponse;
       const html =
-        renderAnalysis(parsed, scale, imageUrls) +
+        renderAnalysis(parsed, scale, currentImageUrls) +
         (raw && !parsed
           ? `<details class="mt-4"><summary class="cursor-pointer text-sm text-gray-500">Raw response</summary><pre class="mt-2 overflow-x-auto rounded bg-gray-100 p-3 text-xs dark:bg-gray-800">${raw.replace(/</g, "&lt;")}</pre></details>`
           : "");
-      showResults(html, imageUrls);
+      showResults(html, currentImageUrls, parsed);
+      viewerSection?.classList.add("hidden");
     } catch (err) {
       console.error("Drawing analyzer error:", err);
       showStatus(err?.message || "An error occurred", "error");
     }
   }
 
-  console.log("[DrawingAnalyzer] init: resultsEl=", !!resultsEl, "resultsEl?.id=", resultsEl?.id);
+  document.getElementById("drawing-analyze-btn")?.addEventListener("click", runAnalysis);
+  document.getElementById("drawing-close-viewer-btn")?.addEventListener("click", () => {
+    viewerSection?.classList.add("hidden");
+    resultsEl?.classList.add("hidden");
+    dropzoneContainer?.classList.remove("hidden");
+    currentImageUrls = [];
+    userSelections = [];
+    document.getElementById("drawing-selection-hint")?.classList.add("hidden");
+    document.getElementById("drawing-form-selection-hint")?.classList.add("hidden");
+    hideStatus();
+  });
+
+  document.getElementById("drawing-new-btn")?.addEventListener("click", () => {
+    resultsEl?.classList.add("hidden");
+    dropzoneContainer?.classList.remove("hidden");
+    currentImageUrls = [];
+    userSelections = [];
+    document.getElementById("drawing-selection-hint")?.classList.add("hidden");
+    hideStatus();
+    fileInput.value = "";
+  });
+
   dropzone?.addEventListener("click", () => fileInput?.click());
   fileInput?.addEventListener("change", (e) => {
     const f = e.target?.files?.[0];
@@ -682,22 +1056,51 @@ const { projectId } = Astro.props;
   let selectionRectEl = null;
   let selectionWrapper = null;
   const selectionForm = document.getElementById("drawing-selection-form");
-  const elementTypeSelect = document.getElementById("correction-element-type");
-  const elementNotesInput = document.getElementById("correction-element-notes");
   const selectionStatusEl = document.getElementById("correction-selection-status");
+
+  /** When set, selection extracts value for this field (PdfExtractor-like flow) */
+  let focusedFieldForSelection = null;
 
   document.getElementById("drawing-selection-toggle")?.addEventListener("click", () => {
     selectionMode = !selectionMode;
-    console.log("[DrawingAnalyzer] selection toggle clicked, selectionMode=", selectionMode);
+    focusedFieldForSelection = null;
     const wrappers = document.querySelectorAll(".drawing-original-wrapper");
     wrappers.forEach((w) => w.classList.toggle("selection-active", selectionMode));
     const btn = document.getElementById("drawing-selection-toggle");
-    if (btn) btn.textContent = selectionMode ? "Cancel selection" : "Select region (click to enable)";
+    if (btn)
+      btn.textContent = selectionMode ? "Cancel selection" : "Select region (click to enable)";
+    const hint = document.getElementById("drawing-selection-hint");
+    const formHint = document.getElementById("drawing-form-selection-hint");
+    if (selectionMode && focusedFieldForSelection) formHint?.classList.remove("hidden");
+    else formHint?.classList.add("hidden");
+    if (selectionMode) hint?.classList.remove("hidden");
+    else hint?.classList.add("hidden");
     if (!selectionMode) {
       selectionForm?.classList.add("hidden");
       selectionStart = null;
       if (selectionRectEl) selectionRectEl.remove();
     }
+  });
+
+  document.querySelectorAll(".drawing-field-input").forEach((input) => {
+    input.addEventListener("focus", () => {
+      focusedFieldForSelection = {
+        input,
+        fieldType: input.dataset.fieldType || "other",
+        label: input.closest("label")?.querySelector("span")?.textContent?.trim() || input.id,
+      };
+      selectionMode = true;
+      document
+        .querySelectorAll(".drawing-original-wrapper")
+        .forEach((w) => w.classList.add("selection-active"));
+      document.getElementById("drawing-form-selection-hint")?.classList.remove("hidden");
+    });
+    input.addEventListener("blur", () => {
+      if (!selectionStart) {
+        focusedFieldForSelection = null;
+        document.getElementById("drawing-form-selection-hint")?.classList.add("hidden");
+      }
+    });
   });
 
   document.getElementById("correction-selection-cancel")?.addEventListener("click", () => {
@@ -707,43 +1110,8 @@ const { projectId } = Astro.props;
     selectionRectEl = null;
   });
 
-  resultsEl?.addEventListener("mousedown", (e) => {
-    console.log("[DrawingAnalyzer] mousedown", {
-      selectionMode,
-      target: e.target?.className,
-      targetTag: e.target?.tagName,
-      wrapper: !!e.target.closest(".drawing-original-wrapper"),
-      wrapperActive: !!e.target.closest(".drawing-original-wrapper.selection-active"),
-      onOverlay: !!e.target.closest(".drawing-selection-overlay"),
-    });
-    if (!selectionMode) return;
-    const wrapper = e.target.closest(".drawing-original-wrapper.selection-active");
-    if (!wrapper || !e.target.closest(".drawing-selection-overlay")) return;
-    console.log("[DrawingAnalyzer] mousedown: starting selection", { wrapper: !!wrapper });
-    e.preventDefault();
-    const overlay = wrapper.querySelector(".drawing-selection-overlay");
-    if (!overlay) return;
-    const rect = overlay.getBoundingClientRect();
-    selectionStart = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    selectionWrapper = wrapper;
-    selectionRectEl = document.createElement("div");
-    selectionRectEl.className = "drawing-selection-rect";
-    selectionRectEl.style.left = selectionStart.x + "px";
-    selectionRectEl.style.top = selectionStart.y + "px";
-    selectionRectEl.style.width = "0";
-    selectionRectEl.style.height = "0";
-    overlay.appendChild(selectionRectEl);
-  });
-
-  let mousemoveLogCount = 0;
-  resultsEl?.addEventListener("mousemove", (e) => {
-    if (selectionStart && selectionRectEl && mousemoveLogCount++ < 3) {
-      console.log("[DrawingAnalyzer] mousemove", {
-        hasSelectionStart: !!selectionStart,
-        hasRectEl: !!selectionRectEl,
-        hasWrapper: !!selectionWrapper,
-      });
-    }
+  // mousedown is on each overlay via setupOverlayListeners; mousemove/mouseup need document scope for drag
+  document.addEventListener("mousemove", (e) => {
     if (!selectionStart || !selectionRectEl || !selectionWrapper) return;
     const overlay = selectionWrapper.querySelector(".drawing-selection-overlay");
     if (!overlay) return;
@@ -760,12 +1128,22 @@ const { projectId } = Astro.props;
     selectionRectEl.style.height = height + "px";
   });
 
-  function finishSelection(e) {
-    console.log("[DrawingAnalyzer] finishSelection called", {
-      hasSelectionStart: !!selectionStart,
-      hasRectEl: !!selectionRectEl,
-      hasWrapper: !!selectionWrapper,
+  async function cropImageToBlob(img, cropLeft, cropTop, cropWidth, cropHeight) {
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(cropWidth));
+    canvas.height = Math.max(1, Math.round(cropHeight));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas not supported");
+    ctx.drawImage(img, cropLeft, cropTop, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height);
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error("toBlob failed"))),
+        "image/png"
+      );
     });
+  }
+
+  async function finishSelection(e) {
     if (!selectionStart || !selectionRectEl || !selectionWrapper) return;
     e?.preventDefault();
     const overlay = selectionWrapper.querySelector(".drawing-selection-overlay");
@@ -788,38 +1166,97 @@ const { projectId } = Astro.props;
     const centerX = ((left + width / 2) / rect.width) * 100;
     const centerY = ((top + height / 2) / rect.height) * 100;
     const floorName = selectionWrapper.dataset.floorName || "Plan";
-    const floorIndex = selectionWrapper.dataset.floorIndex || "0";
-    selectionWrapper.dataset.pendingCorrection = JSON.stringify({
-      centerX,
-      centerY,
-      floorName,
-      floorIndex,
-    });
+    const floorIndex = String(selectionWrapper.dataset.floorIndex || "0");
 
-    selectionForm?.classList.remove("hidden");
-    if (elementTypeSelect) elementTypeSelect.value = "";
-    if (elementNotesInput) elementNotesInput.value = "";
-    if (selectionStatusEl) selectionStatusEl.textContent = "";
+    const isInViewer = viewerContent?.contains(selectionWrapper);
+
+    if (isInViewer) {
+      const typeVal = guidedElementType?.value?.trim();
+      const notes = guidedElementNotes?.value?.trim() || "";
+      if (typeVal) {
+        userSelections.push({
+          floorIndex,
+          floorName,
+          elementType: typeVal,
+          notes,
+          region: { left, top, width, height },
+          centerX,
+          centerY,
+        });
+        renderSelectionsList();
+      }
+    } else if (focusedFieldForSelection && resultsEl?.contains(selectionWrapper)) {
+      const img = selectionWrapper.querySelector("img");
+      if (!img || !img.complete) {
+        showStatus("Image not ready. Try again.", "error");
+        selectionStart = null;
+        selectionWrapper = null;
+        return;
+      }
+      const scaleX = img.naturalWidth / rect.width;
+      const scaleY = img.naturalHeight / rect.height;
+      const cropLeft = Math.max(0, left * scaleX);
+      const cropTop = Math.max(0, top * scaleY);
+      const cropWidth = Math.min(img.naturalWidth - cropLeft, width * scaleX);
+      const cropHeight = Math.min(img.naturalHeight - cropTop, height * scaleY);
+      const fieldInput = focusedFieldForSelection.input;
+      const fieldType = focusedFieldForSelection.fieldType;
+
+      try {
+        showStatus("Extracting value...");
+        const blob = await cropImageToBlob(img, cropLeft, cropTop, cropWidth, cropHeight);
+        const croppedUrl = await uploadImage(blob, `crop-${fieldType}.png`);
+        const scaleInput = document.getElementById("drawing-scale");
+        const scale = scaleInput?.value?.trim() || '1" = 10\'-0"';
+
+        const res = await fetch("/api/agent/extract-drawing-field", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ imageUrl: croppedUrl, fieldType, scale }),
+        });
+        const data = await res.json();
+
+        if (res.ok && data.value) {
+          fieldInput.value = data.value;
+          showStatus("Value extracted.", "success");
+        } else {
+          showStatus(data.error || data.message || "Extraction failed", "error");
+        }
+      } catch (err) {
+        console.error("Extract error:", err);
+        showStatus(err?.message || "Extraction failed", "error");
+      } finally {
+        focusedFieldForSelection = null;
+        document.getElementById("drawing-form-selection-hint")?.classList.add("hidden");
+      }
+    } else {
+      selectionWrapper.dataset.pendingCorrection = JSON.stringify({
+        centerX,
+        centerY,
+        floorName,
+        floorIndex,
+      });
+      selectionForm?.classList.remove("hidden");
+      const correctionElementType = document.getElementById("correction-element-type");
+      const correctionElementNotes = document.getElementById("correction-element-notes");
+      if (correctionElementType) correctionElementType.value = "";
+      if (correctionElementNotes) correctionElementNotes.value = "";
+      if (selectionStatusEl) selectionStatusEl.textContent = "";
+    }
+
     selectionStart = null;
     selectionWrapper = null;
   }
 
-  resultsEl?.addEventListener("mouseup", (e) => {
-    console.log("[DrawingAnalyzer] mouseup on resultsEl", {
-      selectionStart: !!selectionStart,
-      selectionRectEl: !!selectionRectEl,
-      target: e.target?.className,
-    });
-    finishSelection(e);
-  });
   document.addEventListener("mouseup", (e) => {
     if (selectionStart && selectionRectEl) finishSelection(e);
   });
 
   document.getElementById("correction-selection-submit")?.addEventListener("click", async () => {
     const wrapper = document.querySelector(".drawing-original-wrapper[data-pending-correction]");
-    const typeVal = elementTypeSelect?.value?.trim();
-    const notes = elementNotesInput?.value?.trim() || "";
+    const typeVal = document.getElementById("correction-element-type")?.value?.trim();
+    const notes = document.getElementById("correction-element-notes")?.value?.trim() || "";
 
     if (!wrapper || !typeVal) {
       if (selectionStatusEl) selectionStatusEl.textContent = "Please choose an element type.";
@@ -859,7 +1296,8 @@ const { projectId } = Astro.props;
 
       if (!res.ok) throw new Error(data.error || data.message || "Failed to save");
 
-      if (selectionStatusEl) selectionStatusEl.textContent = "Saved. Future analyses will use this.";
+      if (selectionStatusEl)
+        selectionStatusEl.textContent = "Saved. Future analyses will use this.";
       selectionForm?.classList.add("hidden");
       delete wrapper.dataset.pendingCorrection;
     } catch (err) {

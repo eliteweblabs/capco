@@ -1552,9 +1552,12 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
           target.closest("button") || // Check if inside a button
           target.closest("a"); // Check if inside a link
 
+        // Drawing Analyzer requires click-and-drag on images/overlays — do not intercept
+        const isInsideDrawingAnalyzer = target.closest(".drawing-analyzer");
+
         // If clicking on a non-interactive element while an input has focus,
         // prevent focus loss
-        if (!isInteractiveElement) {
+        if (!isInteractiveElement && !isInsideDrawingAnalyzer) {
           console.log("[MULTISTEP-CLICK-DEBUG] mousedown (MultiStepForm): prevented focus loss", {
             targetTag: target.tagName,
             targetClass: target.className?.slice?.(0, 60),

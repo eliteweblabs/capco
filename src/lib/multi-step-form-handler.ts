@@ -1397,10 +1397,7 @@ export function createMultiStepFormHandler(
                     for (const el of requiredInputs ?? []) {
                       const input = el as HTMLInputElement | HTMLTextAreaElement;
                       if (!input.checkValidity()) {
-                        msg =
-                          input.getAttribute("data-error") ||
-                          input.validationMessage ||
-                          msg;
+                        msg = input.getAttribute("data-error") || input.validationMessage || msg;
                         foundInvalid = true;
                         break;
                       }
@@ -2243,11 +2240,15 @@ export function initializeStandardForm(
               <div class="mr-8 flex-1 text-base text-red-800 dark:text-red-400">${escaped(errMsg)}</div>
             </div>`;
           container.classList.remove("hidden");
+          container.scrollIntoView({ behavior: "smooth", block: "nearest" });
         }
       } else if ((window as any).showNotice) {
         (window as any).showNotice("error", "Submission Failed", errMsg, 8000);
       }
-      setTimeout(() => (window.location.href = "/"), 3000);
+      // Don't redirect on error for login form – keep user on page to retry
+      if (formId !== "login-form") {
+        setTimeout(() => (window.location.href = "/"), 3000);
+      }
     } finally {
       isSubmitting = false;
       if (submitBtn) submitBtn.disabled = false;
