@@ -33,7 +33,7 @@ import Button from "../common/Button.astro";
   <!-- Panel body: data-dropdown-id passed so script can find panel/triggers (Navbar uses id="notifications") -->
   <div class="min-h-0 flex-1 overflow-y-auto" data-dropdown-id={id}>
     <!-- Header with Mark all read and Archive all -->
-    <div class="flex items-center justify-between gap-2">
+    <div id="notification-actions" class="flex items-center justify-between gap-2 hidden">
       <Button type="button" id="mark-all-read" variant="link" size="sm" class="!px-0 !py-1 text-sm">
         Mark all read
       </Button>
@@ -328,6 +328,8 @@ import Button from "../common/Button.astro";
       const scrollTop = saveScrollPosition ? list.scrollTop : undefined;
       const scrollHeight = saveScrollPosition ? list.scrollHeight : undefined;
 
+      const actions = document.getElementById("notification-actions");
+
       // Hide loading and empty states
       loading?.classList.add("hidden");
       empty?.classList.add("hidden");
@@ -337,8 +339,11 @@ import Button from "../common/Button.astro";
 
       if (this.notifications.length === 0) {
         empty?.classList.remove("hidden");
+        actions?.classList.add("hidden");
         return;
       }
+
+      actions?.classList.remove("hidden");
 
       list.innerHTML = "";
 
@@ -787,20 +792,24 @@ import Button from "../common/Button.astro";
       const loading = document.getElementById("notification-loading") as HTMLElement;
       const empty = document.getElementById("notification-empty");
       const list = document.getElementById("notification-list");
+      const actions = document.getElementById("notification-actions");
 
       loading?.classList.remove("hidden");
       empty?.classList.add("hidden");
       list?.classList.add("hidden");
+      actions?.classList.add("hidden");
     }
 
     showEmpty() {
       const loading = document.getElementById("notification-loading") as HTMLElement;
       const empty = document.getElementById("notification-empty");
       const list = document.getElementById("notification-list");
+      const actions = document.getElementById("notification-actions");
 
       loading?.classList.add("hidden");
       empty?.classList.remove("hidden");
       list?.classList.add("hidden");
+      actions?.classList.add("hidden");
     }
 
     showMigrationRequired(instructions: string[]) {

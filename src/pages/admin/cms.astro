@@ -601,9 +601,18 @@ try {
           if (!response.ok) throw new Error(result.error || "Failed to save page");
           if (window.showSuccess)
             window.showSuccess("Page Saved", "Page saved successfully.", 4000);
-          if (openTemplateSlotId && openTemplateSlotId !== "template-create")
-            delete templateFormCache[openTemplateSlotId];
-          window.location.reload();
+          if (openTemplateSlotId) {
+            templateFormCache[openTemplateSlotId] = {
+              slug,
+              title: title ?? "",
+              description: description ?? "",
+              template,
+              content,
+              includeInNavigation,
+              nav_roles,
+              nav_button_style: nav_button_style ?? "",
+            };
+          }
         } catch (error) {
           if (window.showError)
             window.showError(

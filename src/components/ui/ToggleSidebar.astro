@@ -1,4 +1,6 @@
 ---
+import Button from "../common/Button.astro";
+
 interface Props {
   currentUser: any;
 }
@@ -10,12 +12,17 @@ const currentUrl = Astro.url.pathname;
 const responsiveClass = !currentUser ? "md:hidden" : "";
 ---
 
-<button
+<Button
   type="button"
-  data-sidebar-toggle-button
-  aria-controls="sidebar"
-  data-is-auth={currentUser ? "true" : "false"}
-  class={`inline-flex items-center p-4 text-sm ${responsiveClass}`}
+  variant="anchor"
+  iconOnly
+  ariaLabel="Toggle sidebar"
+  class={responsiveClass}
+  dataAttributes={{
+    "data-sidebar-toggle-button": "",
+    "data-is-auth": currentUser ? "true" : "false",
+    "aria-controls": "sidebar",
+  }}
 >
   <div class="relative flex h-6 w-6 items-center justify-center overflow-hidden">
     <svg
@@ -46,7 +53,7 @@ const responsiveClass = !currentUser ? "md:hidden" : "";
   </div>
 
   <span class="sr-only">Open sidebar</span>
-</button>
+</Button>
 
 <script>
   import { BREAKPOINTS } from "../../lib/ux-utils";

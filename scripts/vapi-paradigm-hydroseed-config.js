@@ -53,7 +53,7 @@ const assistantConfig = {
   functions: [],
   model: {
     provider: "anthropic",
-    model: "claude-3-5-sonnet-20241022",
+    model: "claude-sonnet-4-5-20250929",
     temperature: 0.7,
     maxTokens: 1000,
     messages: [

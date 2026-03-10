@@ -330,8 +330,9 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
 
       const navbarContent = document.getElementById("navbar-content");
       const footer = document.getElementById("reveal-footer");
-      const REM = Math.max(navbarContent?.offsetHeight ?? 4 * 16, footer?.offsetHeight ?? 4 * 16) / 16;
-      const maxPx = () => REM * remPx();
+      // Use offsetHeight directly in px — no rem conversion (offsetHeight is already px,
+      // and remPx() != 16 when data-page-size="large" scales html font-size to 112.5%)
+      const maxPx = () => Math.max(navbarContent?.offsetHeight ?? 64, footer?.offsetHeight ?? 64);
 
       function clampedScrollTop() {
         const maxScroll = Math.max(0, scrollEl.scrollHeight - scrollEl.clientHeight);

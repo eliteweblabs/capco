@@ -151,6 +151,8 @@ const { id, title = "", onOpenCallback, focusSelector, classList } = Astro.props
         }
 
         function clearFixed() {
+          // Only undo styles that applyFixed() set — don't touch Popper's inline positioning
+          if (!panel.hasAttribute("data-mobile-pos-applied")) return;
           panel.removeAttribute("data-mobile-pos-applied");
           PROPS.forEach(function (p) {
             panel.style.removeProperty(p);

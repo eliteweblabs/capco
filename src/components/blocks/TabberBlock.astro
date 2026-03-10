@@ -124,14 +124,242 @@ top: -38px;
 </section>
 
 <script>
+  const tabberMobileQuery = "(max-width: 767px)";
+  const tabberScrollCooldownMs = 360;
+  const tabberWheelTriggerThreshold = 120;
+  const tabberTouchThresholdPx = 26;
+
+  function tabberDebug(fnName, args = [], result = undefined) {
+    const debug = (window as any).Debug;
+    if (debug && typeof debug.log === "function") {
+      debug.log("tabber", fnName, args, result);
+    }
+  }
+
+  function isMobileTabberMode() {
+    return window.matchMedia(tabberMobileQuery).matches;
+  }
+
+  function getNavbarBottomOffset() {
+    const navbar = document.getElementById("main-navbar");
+    if (!navbar) return 0;
+    return navbar.getBoundingClientRect().bottom;
+  }
+
+  function getTabberTriggerLineY() {
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+    return getNavbarBottomOffset() + viewportHeight * 0.25;
+  }
+
+  function isTabberAtTriggerLine(block) {
+    const rect = block.getBoundingClientRect();
+    const triggerLineY = getTabberTriggerLineY();
+    return rect.top <= triggerLineY && rect.bottom >= triggerLineY;
+  }
+
+  function isTabberOutOfViewport(block) {
+    const rect = block.getBoundingClientRect();
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+    return rect.bottom < 0 || rect.top > viewportHeight;
+  }
+
+  function getTabButtons(nav) {
+    return Array.from(nav.querySelectorAll("button[data-index]"));
+  }
+
+  function getActiveTabIndex(buttons) {
+    const activeButton = buttons.find((btn) => btn.getAttribute("data-active") === "true");
+    const indexSource = activeButton || buttons[0];
+    if (!indexSource) return -1;
+    return parseInt(indexSource.getAttribute("data-index") || "0", 10);
+  }
+
+  function setActiveTabIndex(buttons, index) {
+    const target = buttons.find((btn) => parseInt(btn.getAttribute("data-index") || "-1", 10) === index);
+    if (!target || target.getAttribute("data-active") === "true") return false;
+    target.click();
+    return true;
+  }
+
+  function initTabberScrollProgression(block) {
+    if (block.getAttribute("data-tabber-scroll-progression-init") === "true") return;
+    block.setAttribute("data-tabber-scroll-progression-init", "true");
+
+    let lastStepTimestamp = 0;
+    let touchStartY = null;
+    let wheelDeltaBuffer = 0;
+    let lockedDirection = 0;
+    let lastReleasedDirection = 0;
+
+    const isLocked = () => lockedDirection !== 0;
+    const unlock = () => {
+      if (lockedDirection !== 0) {
+        lastReleasedDirection = lockedDirection;
+      }
+      lockedDirection = 0;
+      wheelDeltaBuffer = 0;
+      tabberDebug("unlock", [block.id || "tabber", lastReleasedDirection]);
+    };
+
+    const maybeResetPassState = () => {
+      if (isTabberOutOfViewport(block)) {
+        lastReleasedDirection = 0;
+        if (isLocked()) unlock();
+      }
+    };
+
+    const tryStepTabByDirection = (direction) => {
+      if (!isMobileTabberMode()) return { consumed: false, released: false };
+      if (!isTabberAtTriggerLine(block)) return { consumed: false, released: false };
+      const nav = block.querySelector("nav");
+      if (!nav) return { consumed: false, released: false };
+
+      const buttons = getTabButtons(nav);
+      if (buttons.length < 2) return { consumed: false, released: false };
+
+      if (!isLocked()) {
+        if (lastReleasedDirection !== 0 && direction === lastReleasedDirection) {
+          return { consumed: false, released: false };
+        }
+        lockedDirection = direction;
+        lastReleasedDirection = 0;
+        tabberDebug("lock", [block.id || "tabber", lockedDirection]);
+      }
+
+      const activeIndex = getActiveTabIndex(buttons);
+      if (activeIndex < 0) return { consumed: false, released: false };
+
+      const lastIndex = buttons.length - 1;
+      const atLockBoundary =
+        (lockedDirection > 0 && activeIndex === lastIndex) ||
+        (lockedDirection < 0 && activeIndex === 0);
+      if (atLockBoundary) {
+        unlock();
+        return { consumed: false, released: true };
+      }
+
+      const now = Date.now();
+      if (now - lastStepTimestamp < tabberScrollCooldownMs) return { consumed: true, released: false };
+
+      const nextIndex = direction > 0 ? activeIndex + 1 : activeIndex - 1;
+      if (nextIndex < 0 || nextIndex >= buttons.length) {
+        const reachedLockBoundary =
+          (lockedDirection > 0 && activeIndex === lastIndex && direction > 0) ||
+          (lockedDirection < 0 && activeIndex === 0 && direction < 0);
+        if (reachedLockBoundary) {
+          unlock();
+          return { consumed: false, released: true };
+        }
+        return { consumed: true, released: false };
+      }
+
+      const changed = setActiveTabIndex(buttons, nextIndex);
+      if (changed) {
+        lastStepTimestamp = now;
+        tabberDebug("step", [block.id || "tabber", activeIndex, nextIndex, lockedDirection]);
+        const reachedBoundaryAfterStep =
+          (lockedDirection > 0 && nextIndex === lastIndex) || (lockedDirection < 0 && nextIndex === 0);
+        if (reachedBoundaryAfterStep) {
+          unlock();
+        }
+      }
+      return { consumed: true, released: false };
+    };
+
+    document.addEventListener(
+      "wheel",
+      (event) => {
+        maybeResetPassState();
+        const shouldHandleThisScroll = isLocked() || isTabberAtTriggerLine(block);
+        if (!shouldHandleThisScroll) return;
+
+        const dominantDelta =
+          Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
+        if (!dominantDelta) return;
+
+        const direction = dominantDelta > 0 ? 1 : -1;
+        wheelDeltaBuffer += dominantDelta;
+        if (Math.abs(wheelDeltaBuffer) < tabberWheelTriggerThreshold) {
+          if (isLocked()) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+          return;
+        }
+        const { consumed } = tryStepTabByDirection(direction);
+        wheelDeltaBuffer = 0;
+        if (consumed || isLocked()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      },
+      { passive: false }
+    );
+
+    document.addEventListener(
+      "touchstart",
+      (event) => {
+        touchStartY = event.touches?.[0]?.clientY ?? null;
+      },
+      { passive: true }
+    );
+
+    document.addEventListener(
+      "touchmove",
+      (event) => {
+        maybeResetPassState();
+        const shouldHandleThisScroll = isLocked() || isTabberAtTriggerLine(block);
+        if (!shouldHandleThisScroll) return;
+
+        if (touchStartY === null) return;
+        const currentY = event.touches?.[0]?.clientY;
+        if (typeof currentY !== "number") return;
+        const deltaY = touchStartY - currentY;
+        if (Math.abs(deltaY) < tabberTouchThresholdPx) {
+          if (isLocked()) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+          return;
+        }
+
+        const { consumed } = tryStepTabByDirection(deltaY > 0 ? 1 : -1);
+        if (consumed || isLocked()) {
+          event.preventDefault();
+          event.stopPropagation();
+          touchStartY = currentY;
+        }
+      },
+      { passive: false }
+    );
+
+    document.addEventListener(
+      "touchend",
+      () => {
+        touchStartY = null;
+      },
+      { passive: true }
+    );
+    document.addEventListener(
+      "touchcancel",
+      () => {
+        touchStartY = null;
+      },
+      { passive: true }
+    );
+  }
+
   function initTabberPanels() {
     document.querySelectorAll("[data-tabber]").forEach((block) => {
       const nav = block.querySelector("nav");
       const panels = block.querySelectorAll("[data-tabber-panel]");
       if (!nav || !panels.length) return;
+      initTabberScrollProgression(block);
 
       const buttons = nav.querySelectorAll("button[data-index]");
       buttons.forEach((btn) => {
+        if (btn.getAttribute("data-tabber-panel-init") === "true") return;
+        btn.setAttribute("data-tabber-panel-init", "true");
         btn.addEventListener("click", function () {
           const idx = parseInt((this as HTMLElement).dataset.index ?? "0", 10);
           panels.forEach((panel, i) => {
@@ -147,4 +375,6 @@ top: -38px;
   } else {
     initTabberPanels();
   }
+
+  document.addEventListener("astro:page-load", initTabberPanels);
 </script>
