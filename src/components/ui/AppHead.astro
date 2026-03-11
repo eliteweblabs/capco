@@ -92,12 +92,27 @@ const displayName =
   globalCompanyName && globalCompanyName !== "Company Name Not Set" ? globalCompanyName : "App";
 const normalizedTitle = safeTitle.trim();
 const normalizedDisplayName = displayName.trim();
-const titleContainsBrand =
-  normalizedDisplayName.length > 0 &&
-  normalizedTitle.toLowerCase().includes(normalizedDisplayName.toLowerCase());
-const titleWithBrand = titleContainsBrand
-  ? normalizedTitle
-  : `${normalizedDisplayName} | ${normalizedTitle}`;
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+const brandRegex = normalizedDisplayName
+  ? new RegExp(escapeRegExp(normalizedDisplayName), "ig")
+  : null;
+
+const titleWithoutBrand = brandRegex ? normalizedTitle.replace(brandRegex, " ") : normalizedTitle;
+
+const cleanedTitleCore = titleWithoutBrand
+  .replace(/\s*(\||->|→|—|-|:)\s*/g, " ")
+  .replace(/\s+/g, " ")
+  .trim();
+
+const contentTitle = cleanedTitleCore || normalizedTitle || "Home";
+const titleWithBrand =
+  contentTitle.toLowerCase() === normalizedDisplayName.toLowerCase()
+    ? normalizedDisplayName
+    : `${normalizedDisplayName} | ${contentTitle}`;
 const ogImageAlt = `${normalizedDisplayName} - ${safeDescription}`;
 ---
 
