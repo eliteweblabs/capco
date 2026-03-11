@@ -723,6 +723,8 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
   if (typeof window !== "undefined" && (window as any).__jsOrderLog)
     (window as any).__jsOrderLog("MultiStepForm (module)");
   import { initializeMultiStepForm } from "../../../lib/multi-step-form-handler";
+  const multistepDebug =
+    typeof (window as any).__MULTISTEP_DEBUG !== "undefined" && (window as any).__MULTISTEP_DEBUG;
 
   function runMultiStepPageInit() {
     if (typeof window !== "undefined" && (window as any).__traceLog)
@@ -1485,20 +1487,22 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
         // Don't allow focus to land on a step we haven't reached (errant click/tab on password etc.)
         const currentStep = handler?.getCurrentStep?.() ?? 1;
         if (stepNumber > currentStep) {
-          console.log("[MULTISTEP-CLICK-DEBUG] focus blocked (future step)", {
-            stepNumber,
-            currentStep,
-            targetId: target.id,
-          });
+          if (multistepDebug)
+            console.log("[MULTISTEP-CLICK-DEBUG] focus blocked (future step)", {
+              stepNumber,
+              currentStep,
+              targetId: target.id,
+            });
           setTimeout(() => (target as HTMLInputElement).blur(), 0);
           return;
         }
 
-        console.log("[MULTISTEP-CLICK-DEBUG] focus on input → setActiveStepByFocus", {
-          stepNumber,
-          targetId: target.id,
-          targetName: (target as HTMLInputElement).name,
-        });
+        if (multistepDebug)
+          console.log("[MULTISTEP-CLICK-DEBUG] focus on input → setActiveStepByFocus", {
+            stepNumber,
+            targetId: target.id,
+            targetName: (target as HTMLInputElement).name,
+          });
         if (handler?.setActiveStepByFocus) {
           handler.setActiveStepByFocus(stepNumber);
         }
@@ -1563,11 +1567,12 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
         // If clicking on a non-interactive element while an input has focus,
         // prevent focus loss
         if (!isInteractiveElement && !isInsideDrawingAnalyzer) {
-          console.log("[MULTISTEP-CLICK-DEBUG] mousedown (MultiStepForm): prevented focus loss", {
-            targetTag: target.tagName,
-            targetClass: target.className?.slice?.(0, 60),
-            focusedTag: focusedElement?.tagName,
-          });
+          if (multistepDebug)
+            console.log("[MULTISTEP-CLICK-DEBUG] mousedown (MultiStepForm): prevented focus loss", {
+              targetTag: target.tagName,
+              targetClass: target.className?.slice?.(0, 60),
+              focusedTag: focusedElement?.tagName,
+            });
           e.preventDefault();
           // Ensure focus stays on the input
           setTimeout(() => {
@@ -1650,7 +1655,7 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
   function checkAllFieldsValid() {
     const activeStep = document.querySelector(".step-content.active");
     if (!activeStep) {
-      console.log("[FIELD-VALIDATION] No active step found");
+      if (multistepDebug) console.log("[FIELD-VALIDATION] No active step found");
       return false;
     }
 

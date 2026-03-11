@@ -47,24 +47,31 @@ interface NotificationRequest {
  * - Mark Viewed: POST /api/notifications/upsert { notificationIds: [1,2,3], viewed: true }
  */
 export const POST: APIRoute = async ({ request, cookies }): Promise<Response> => {
+  const traceId =
+    request.headers.get("x-trace-id") ||
+    `notif-upsert-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const traceName = request.headers.get("x-trace-name") || "api.notifications.upsert";
+  const json = (payload: Record<string, unknown>, status: number) =>
+    new Response(JSON.stringify(payload), {
+      status,
+      headers: {
+        "Content-Type": "application/json",
+        "x-trace-id": traceId,
+        "x-trace-name": traceName,
+      },
+    });
   console.log("🔔 [NOTIFICATIONS-UPSERT] API endpoint called");
   try {
     // Check authentication
     const { isAuth, currentUser } = await checkAuth(cookies);
     console.log("🔔 [NOTIFICATIONS-UPSERT] Auth check:", { isAuth, hasUser: !!currentUser });
     if (!isAuth || !currentUser) {
-      return new Response(JSON.stringify({ error: "Authentication required" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: "Authentication required" }, 401);
     }
 
     if (!supabaseAdmin) {
       console.error("Supabase admin client not initialized");
-      return new Response(JSON.stringify({ error: "Server configuration error" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: "Server configuration error" }, 500);
     }
 
     const body: NotificationRequest = await request.json();
@@ -86,10 +93,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
 
       if (error) {
         console.error("❌ [NOTIFICATIONS-UPSERT] Error marking notifications as viewed:", error);
-        return new Response(JSON.stringify({ error: "Failed to mark notifications as viewed" }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        });
+        return json({ error: "Failed to mark notifications as viewed" }, 500);
       }
 
       console.log(
@@ -99,15 +103,12 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
         body.viewed ? "viewed" : "unviewed"
       );
 
-      return new Response(
-        JSON.stringify({
+      return json(
+        {
           success: true,
           updatedCount: data?.length || 0,
-        }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        }
+        },
+        200
       );
     }
 
@@ -139,20 +140,11 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
     } = body;
 
     if (!title || !message) {
-      return new Response(JSON.stringify({ error: "Title and message are required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: "Title and message are required" }, 400);
     }
 
     if (!allUsers && !userId && !userEmail && !groupType) {
-      return new Response(
-        JSON.stringify({ error: "Either userId, userEmail, allUsers, or groupType is required" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return json({ error: "Either userId, userEmail, allUsers, or groupType is required" }, 400);
     }
 
     // Send to all users
@@ -162,10 +154,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
         .select("id");
 
       if (usersError || !allUsersData) {
-        return new Response(JSON.stringify({ error: "Failed to fetch users" }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        });
+        return json({ error: "Failed to fetch users" }, 500);
       }
 
       const notifications = allUsersData.map((user) => ({
@@ -184,22 +173,16 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
         .insert(notifications);
 
       if (insertError) {
-        return new Response(JSON.stringify({ error: "Failed to create notifications" }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        });
+        return json({ error: "Failed to create notifications" }, 500);
       }
 
-      return new Response(
-        JSON.stringify({
+      return json(
+        {
           success: true,
           message: `Notification sent to ${allUsersData.length} users`,
           count: allUsersData.length,
-        }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        }
+        },
+        200
       );
     }
 
@@ -213,10 +196,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
 
       const role = roleMap[groupType];
       if (!role) {
-        return new Response(JSON.stringify({ error: "Invalid group type" }), {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        });
+        return json({ error: "Invalid group type" }, 400);
       }
 
       const { data: groupUsersData, error: groupUsersError } = await supabaseAdmin
@@ -225,23 +205,17 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
         .eq("role", role);
 
       if (groupUsersError || !groupUsersData) {
-        return new Response(JSON.stringify({ error: "Failed to fetch group users" }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        });
+        return json({ error: "Failed to fetch group users" }, 500);
       }
 
       if (groupUsersData.length === 0) {
-        return new Response(
-          JSON.stringify({
+        return json(
+          {
             success: true,
             message: `No users found with role ${role}`,
             count: 0,
-          }),
-          {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          }
+          },
+          200
         );
       }
 
@@ -262,26 +236,20 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
 
       if (insertError) {
         console.error("❌ [NOTIFICATIONS] Error creating group notifications:", insertError);
-        return new Response(JSON.stringify({ error: "Failed to create group notifications" }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        });
+        return json({ error: "Failed to create group notifications" }, 500);
       }
 
       console.log(
         `✅ [NOTIFICATIONS] Created ${groupUsersData.length} notifications for ${groupType} group`
       );
 
-      return new Response(
-        JSON.stringify({
+      return json(
+        {
           success: true,
           message: `Notification sent to ${groupUsersData.length} ${groupType}`,
           count: groupUsersData.length,
-        }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        }
+        },
+        200
       );
     }
 
@@ -295,15 +263,12 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
         userId === "allUsers" ||
         !userId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i))
     ) {
-      return new Response(
-        JSON.stringify({
+      return json(
+        {
           error:
             "Invalid userId. Use 'allUsers: true' for all users or 'groupType' for role groups",
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
+        },
+        400
       );
     }
 
@@ -316,10 +281,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
         .single();
 
       if (userError || !userData) {
-        return new Response(JSON.stringify({ error: "User not found for email" }), {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        });
+        return json({ error: "User not found for email" }, 404);
       }
 
       targetUserId = userData.id;
@@ -330,13 +292,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
       !targetUserId ||
       !targetUserId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
     ) {
-      return new Response(
-        JSON.stringify({ error: "Invalid userId format. Must be a valid UUID." }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return json({ error: "Invalid userId format. Must be a valid UUID." }, 400);
     }
 
     // Create the notification
@@ -399,37 +355,28 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
         hint: error.hint,
         targetUserId,
       });
-      return new Response(
-        JSON.stringify({
+      return json(
+        {
           error: "Failed to create notification",
           details: error.message,
           code: error.code,
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        }
+        },
+        500
       );
     }
 
     console.log(`✅ [NOTIFICATIONS] Created notification ${data.id} for user ${targetUserId}`);
 
-    return new Response(
-      JSON.stringify({
+    return json(
+      {
         success: true,
         notificationId: data.id,
         notification: data,
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }
+      },
+      200
     );
   } catch (error) {
     console.error("❌ [NOTIFICATIONS] Error in notifications API:", error);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return json({ error: "Internal server error" }, 500);
   }
 };

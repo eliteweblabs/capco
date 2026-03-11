@@ -54,6 +54,24 @@ export const GET: APIRoute = async ({ url, redirect, cookies }) => {
 };
 
 export const POST: APIRoute = async ({ request, cookies, url }) => {
+  const traceId =
+    request.headers.get("x-trace-id") ||
+    `auth-callback-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const traceName = request.headers.get("x-trace-name") || "api.auth.callback";
+  const json = (
+    payload: Record<string, unknown>,
+    status: number,
+    extraHeaders: Record<string, string> = {}
+  ) =>
+    new Response(JSON.stringify(payload), {
+      status,
+      headers: {
+        "Content-Type": "application/json",
+        "x-trace-id": traceId,
+        "x-trace-name": traceName,
+        ...extraHeaders,
+      },
+    });
   console.log(
     "[---AUTH-CALLBACK] POST callback started - receiving tokens from client-side PKCE exchange"
   );
@@ -61,10 +79,7 @@ export const POST: APIRoute = async ({ request, cookies, url }) => {
   // Check if Supabase is configured
   if (!supabase) {
     console.error("[---AUTH-CALLBACK] Supabase is not configured");
-    return new Response(JSON.stringify({ error: "Supabase is not configured" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return json({ error: "Supabase is not configured" }, 500);
   }
 
   try {
@@ -80,10 +95,7 @@ export const POST: APIRoute = async ({ request, cookies, url }) => {
 
     if (!access_token || !refresh_token) {
       console.error("[---AUTH-CALLBACK] Missing required tokens");
-      return new Response(JSON.stringify({ error: "Missing access_token or refresh_token" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: "Missing access_token or refresh_token" }, 400);
     }
 
     // Verify the session with Supabase
@@ -94,18 +106,12 @@ export const POST: APIRoute = async ({ request, cookies, url }) => {
 
     if (error) {
       console.error("[---AUTH-CALLBACK] Session verification error:", error);
-      return new Response(JSON.stringify({ error: error.message }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: error.message }, 400);
     }
 
     if (!data.session) {
       console.error("[---AUTH-CALLBACK] No session created");
-      return new Response(JSON.stringify({ error: "Failed to create session" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: "Failed to create session" }, 400);
     }
 
     console.log("[---AUTH-CALLBACK] Session verified for user:", data.user?.email);
@@ -233,30 +239,24 @@ export const POST: APIRoute = async ({ request, cookies, url }) => {
       refreshTokenValue: cookies.get("sb-refresh-token")?.value?.substring(0, 20) + "...",
     });
 
-    return new Response(
-      JSON.stringify({
+    return json(
+      {
         success: true,
         user: data.user?.email,
-      }),
+      },
+      200,
       {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          // Ensure cookies are sent with the response
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-        },
+        // Ensure cookies are sent with the response
+        "Cache-Control": "no-cache, no-store, must-revalidate",
       }
     );
   } catch (error) {
     console.error("[---AUTH-CALLBACK] Unexpected error:", error);
-    return new Response(
-      JSON.stringify({
-        error: error instanceof Error ? error.message : "Unknown error",
-      }),
+    return json(
       {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      500
     );
   }
 };

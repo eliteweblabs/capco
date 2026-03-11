@@ -296,7 +296,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 };
 
 export const DELETE: APIRoute = async ({ request, cookies }) => {
-  const traceId = `media-del-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const incomingTraceId = request.headers.get("x-trace-id");
+  const traceId =
+    incomingTraceId || `media-del-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   try {
     const { isAuth, currentUser } = await checkAuth(cookies);
     const currentRole = currentUser?.profile?.role;
@@ -308,14 +310,22 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     if (!isAuth || !currentUser || !isAdminOrSuperAdmin(currentRole)) {
       return new Response(JSON.stringify({ success: false, error: "Admin access required" }), {
         status: 403,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-trace-id": traceId,
+          "x-trace-name": "api.adminMedia.delete",
+        },
       });
     }
 
     if (!supabaseAdmin) {
       return new Response(JSON.stringify({ success: false, error: "Database not configured" }), {
         status: 500,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-trace-id": traceId,
+          "x-trace-name": "api.adminMedia.delete",
+        },
       });
     }
 
@@ -343,7 +353,11 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       });
       return new Response(JSON.stringify({ success: false, error: "File ID required" }), {
         status: 400,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-trace-id": traceId,
+          "x-trace-name": "api.adminMedia.delete",
+        },
       });
     }
 
@@ -392,7 +406,11 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       });
       return new Response(JSON.stringify({ success: false, error: "Invalid file ID" }), {
         status: 400,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-trace-id": traceId,
+          "x-trace-name": "api.adminMedia.delete",
+        },
       });
     }
 
@@ -420,7 +438,11 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       });
       return new Response(JSON.stringify({ success: false, error: "File not found" }), {
         status: 404,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-trace-id": traceId,
+          "x-trace-name": "api.adminMedia.delete",
+        },
       });
     }
 
@@ -439,7 +461,14 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       });
       return new Response(
         JSON.stringify({ success: false, error: "Failed to delete from database" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
+        {
+          status: 500,
+          headers: {
+            "Content-Type": "application/json",
+            "x-trace-id": traceId,
+            "x-trace-name": "api.adminMedia.delete",
+          },
+        }
       );
     }
 
@@ -460,7 +489,11 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     return new Response(JSON.stringify({ success: true, message: "File deleted successfully" }), {
       status: 200,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-trace-id": traceId,
+        "x-trace-name": "api.adminMedia.delete",
+      },
     });
   } catch (error: any) {
     console.error("❌ [ADMIN-MEDIA] DELETE error:", error);
@@ -470,7 +503,11 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     });
     return new Response(JSON.stringify({ success: false, error: error.message }), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-trace-id": traceId,
+        "x-trace-name": "api.adminMedia.delete",
+      },
     });
   }
 };

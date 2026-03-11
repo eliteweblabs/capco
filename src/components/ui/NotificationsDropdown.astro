@@ -33,7 +33,7 @@ import Button from "../common/Button.astro";
   <!-- Panel body: data-dropdown-id passed so script can find panel/triggers (Navbar uses id="notifications") -->
   <div class="min-h-0 flex-1 overflow-y-auto" data-dropdown-id={id}>
     <!-- Header with Mark all read and Archive all -->
-    <div id="notification-actions" class="flex items-center justify-between gap-2 hidden">
+    <div id="notification-actions" class="flex hidden items-center justify-between gap-2">
       <Button type="button" id="mark-all-read" variant="link" size="sm" class="!px-0 !py-1 text-sm">
         Mark all read
       </Button>
@@ -99,6 +99,7 @@ import Button from "../common/Button.astro";
     isLoadingMore: boolean = false;
     hasMore: boolean = true;
     panelId: string;
+    trace: any;
 
     constructor() {
       const dropdownContainer = document.querySelector("[data-dropdown-id]");
@@ -110,8 +111,24 @@ import Button from "../common/Button.astro";
       }
       const dropdownId = dropdownContainer.getAttribute("data-dropdown-id");
       this.panelId = dropdownId ? `${dropdownId}-dropdown` : "notifications-dropdown";
+      this.trace = (window as any).TraceLog;
       console.log("🔔 [NOTIFICATIONS-DROPDOWN] Constructor: panelId =", this.panelId);
       this.init();
+    }
+
+    startTrace(name: string, payload?: Record<string, unknown>) {
+      if (!this.trace?.start) return null;
+      return this.trace.start(name, payload);
+    }
+
+    async tracedFetch(url: string, init: RequestInit, opName: string, traceCtx: any) {
+      const headers = new Headers(init.headers || {});
+      if (traceCtx?.id && this.trace?.createTraceHeaders) {
+        const traceHeaders = this.trace.createTraceHeaders(opName, traceCtx.id);
+        headers.set("x-trace-id", traceHeaders["x-trace-id"]);
+        headers.set("x-trace-name", traceHeaders["x-trace-name"]);
+      }
+      return fetch(url, { ...init, headers });
     }
 
     async init() {
@@ -250,14 +267,22 @@ import Button from "../common/Button.astro";
     }
 
     async loadNotifications() {
+      const traceCtx = this.startTrace("ui.notifications.loadNotifications", {
+        panelId: this.panelId,
+      });
       console.log("🔔 [NOTIFICATIONS-DROPDOWN] loadNotifications() called");
       try {
         this.showLoading();
         const url = "/api/notifications/get?limit=25";
         console.log("🔔 [NOTIFICATIONS-DROPDOWN] Fetching:", url);
-        const response = await fetch(url, {
-          credentials: "include",
-        });
+        const response = await this.tracedFetch(
+          url,
+          {
+            credentials: "include",
+          },
+          "ui.notifications.loadNotifications.fetch",
+          traceCtx
+        );
         console.log(
           "🔔 [NOTIFICATIONS-DROPDOWN] loadNotifications response:",
           response.status,
@@ -296,6 +321,7 @@ import Button from "../common/Button.astro";
           );
           this.updateBadge(data.unreadCount || 0);
           this.renderNotifications();
+          this.trace?.end(traceCtx, { ok: true, count: this.notifications.length });
         } else if (data.migrationRequired) {
           console.warn("⚠️ [NOTIFICATIONS] Database migration required:", data.error);
           this.showMigrationRequired(data.instructions);
@@ -306,6 +332,7 @@ import Button from "../common/Button.astro";
       } catch (error) {
         console.error("❌ [NOTIFICATIONS] Error loading notifications:", error);
         this.showEmpty();
+        this.trace?.error(traceCtx, error);
       }
     }
 
@@ -546,12 +573,17 @@ import Button from "../common/Button.astro";
       try {
         const body = { notificationIds: ids, viewed: true };
         console.log("🔔 [NOTIFICATIONS-DROPDOWN] POST /api/notifications/upsert body:", body);
-        const response = await fetch("/api/notifications/upsert", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(body),
-        });
+        const response = await this.tracedFetch(
+          "/api/notifications/upsert",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(body),
+          },
+          "ui.notifications.markViewed.upsert",
+          this.startTrace("ui.notifications.markViewed", { count: ids.length })
+        );
         console.log(
           "🔔 [NOTIFICATIONS-DROPDOWN] markViewedNotificationsAsRead response:",
           response.status
@@ -607,7 +639,12 @@ import Button from "../common/Button.astro";
 
       try {
         const url = `/api/notifications/get?limit=${limit}&offset=${offset}`;
-        const response = await fetch(url, { credentials: "include" });
+        const response = await this.tracedFetch(
+          url,
+          { credentials: "include" },
+          "ui.notifications.loadMore.fetch",
+          this.startTrace("ui.notifications.loadMore", { offset, limit })
+        );
         console.log("🔔 [NOTIFICATIONS-DROPDOWN] loadMore response:", response.status);
 
         if (!response.ok) {
@@ -657,12 +694,17 @@ import Button from "../common/Button.astro";
           "🔔 [NOTIFICATIONS-DROPDOWN] POST /api/notifications/upsert (mark all read) body:",
           body
         );
-        const response = await fetch("/api/notifications/upsert", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(body),
-        });
+        const response = await this.tracedFetch(
+          "/api/notifications/upsert",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(body),
+          },
+          "ui.notifications.markAllRead.upsert",
+          this.startTrace("ui.notifications.markAllRead", { count: unreadIds.length })
+        );
         console.log("🔔 [NOTIFICATIONS-DROPDOWN] markAllAsRead response:", response.status);
 
         if (response.ok) {
@@ -693,12 +735,17 @@ import Button from "../common/Button.astro";
           "🔔 [NOTIFICATIONS-DROPDOWN] POST /api/notifications/upsert (archive one) body:",
           body
         );
-        const response = await fetch("/api/notifications/upsert", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(body),
-        });
+        const response = await this.tracedFetch(
+          "/api/notifications/upsert",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(body),
+          },
+          "ui.notifications.archiveOne.upsert",
+          this.startTrace("ui.notifications.archiveOne", { notificationId })
+        );
         console.log(
           "🔔 [NOTIFICATIONS-DROPDOWN] archiveNotification response:",
           response.status,
@@ -732,12 +779,17 @@ import Button from "../common/Button.astro";
           "🔔 [NOTIFICATIONS-DROPDOWN] POST /api/notifications/upsert (archive all) body:",
           body
         );
-        const response = await fetch("/api/notifications/upsert", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(body),
-        });
+        const response = await this.tracedFetch(
+          "/api/notifications/upsert",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(body),
+          },
+          "ui.notifications.archiveAll.upsert",
+          this.startTrace("ui.notifications.archiveAll", { count: ids.length })
+        );
         console.log(
           "🔔 [NOTIFICATIONS-DROPDOWN] archiveAll response:",
           response.status,

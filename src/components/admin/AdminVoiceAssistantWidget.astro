@@ -190,6 +190,11 @@ const currentUserRole = currentUser?.profile?.role || "Client";
 <script define:vars={{ assistantId, publicKey, currentUser, currentUserRole }}>
   (function () {
     const LOG = "[---ADMIN-VOICE]";
+    const voiceDebug =
+      typeof window !== "undefined" && localStorage.getItem("adminVoiceDebug") === "1";
+    const debugLog = (...args) => {
+      if (voiceDebug) console.log(...args);
+    };
     let vapi = null;
     let isCallActive = false;
     let submissionPollInterval = null;
@@ -211,7 +216,7 @@ const currentUserRole = currentUser?.profile?.role || "Client";
     }
 
     function showConnectionError(showHint) {
-      console.log(LOG, "showConnectionError", { showHint });
+      debugLog(LOG, "showConnectionError", { showHint });
       setStatus("Connection failed", "bg-red-400");
       if (btnLabel) btnLabel.textContent = "Retry";
       if (startBtn) startBtn.disabled = false;
@@ -225,19 +230,19 @@ const currentUserRole = currentUser?.profile?.role || "Client";
 
     function announceToAgent(text) {
       if (!vapi || !isCallActive) {
-        console.log(LOG, "announceToAgent skipped (no vapi or call inactive)", {
+        debugLog(LOG, "announceToAgent skipped (no vapi or call inactive)", {
           hasVapi: !!vapi,
           isCallActive,
         });
         return;
       }
       try {
-        console.log(LOG, "announceToAgent sending", { text });
+        debugLog(LOG, "announceToAgent sending", { text });
         vapi.send({
           type: "add-message",
           message: { role: "system", content: text },
         });
-        console.log(LOG, "announceToAgent sent ok");
+        debugLog(LOG, "announceToAgent sent ok");
       } catch (e) {
         console.warn(LOG, "announce failed", e);
       }
@@ -277,13 +282,13 @@ const currentUserRole = currentUser?.profile?.role || "Client";
     async function pollNewSubmissions() {
       if (!lastPollTime) lastPollTime = new Date().toISOString();
       const url = `/api/admin/new-submissions?since=${encodeURIComponent(lastPollTime)}`;
-      console.log(LOG, "pollNewSubmissions start", { since: lastPollTime, url });
+      debugLog(LOG, "pollNewSubmissions start", { since: lastPollTime, url });
       try {
         const res = await fetch(url, { credentials: "include" });
-        console.log(LOG, "pollNewSubmissions response", { ok: res.ok, status: res.status });
+        debugLog(LOG, "pollNewSubmissions response", { ok: res.ok, status: res.status });
         if (!res.ok) return;
         const data = await res.json();
-        console.log(LOG, "pollNewSubmissions data", {
+        debugLog(LOG, "pollNewSubmissions data", {
           success: data.success,
           contactCount: data.contactSubmissions?.length ?? 0,
           mepCount: data.mepProjects?.length ?? 0,
@@ -304,7 +309,7 @@ const currentUserRole = currentUser?.profile?.role || "Client";
             action: "submitted a new contact form",
             timeIso: c.submittedAt || c.createdAt,
           });
-          console.log(LOG, "pollNewSubmissions new contact", { id: c.id, userName, msg });
+          debugLog(LOG, "pollNewSubmissions new contact", { id: c.id, userName, msg });
           announceToAgent(msg);
         }
 
@@ -320,7 +325,7 @@ const currentUserRole = currentUser?.profile?.role || "Client";
             projectName: p.title || undefined,
             address: p.address || undefined,
           });
-          console.log(LOG, "pollNewSubmissions new MEP", {
+          debugLog(LOG, "pollNewSubmissions new MEP", {
             id: p.id,
             userName,
             title: p.title,
@@ -332,7 +337,7 @@ const currentUserRole = currentUser?.profile?.role || "Client";
 
         if (contact.length > 0 || mep.length > 0) {
           lastPollTime = new Date().toISOString();
-          console.log(LOG, "pollNewSubmissions updated lastPollTime", {
+          debugLog(LOG, "pollNewSubmissions updated lastPollTime", {
             lastPollTime,
             contactCount: contact.length,
             mepCount: mep.length,
@@ -345,12 +350,12 @@ const currentUserRole = currentUser?.profile?.role || "Client";
 
     function startSubmissionPolling() {
       if (submissionPollInterval) {
-        console.log(LOG, "startSubmissionPolling already running");
+        debugLog(LOG, "startSubmissionPolling already running");
         return;
       }
       lastPollTime = new Date(Date.now() - 60 * 1000).toISOString();
       submissionPollInterval = setInterval(pollNewSubmissions, POLL_INTERVAL_MS);
-      console.log(LOG, "startSubmissionPolling", { intervalMs: POLL_INTERVAL_MS, lastPollTime });
+      debugLog(LOG, "startSubmissionPolling", { intervalMs: POLL_INTERVAL_MS, lastPollTime });
       pollNewSubmissions();
     }
 
@@ -358,12 +363,12 @@ const currentUserRole = currentUser?.profile?.role || "Client";
       if (submissionPollInterval) {
         clearInterval(submissionPollInterval);
         submissionPollInterval = null;
-        console.log(LOG, "stopSubmissionPolling");
+        debugLog(LOG, "stopSubmissionPolling");
       }
     }
 
     function initVapi() {
-      console.log(LOG, "initVapi", {
+      debugLog(LOG, "initVapi", {
         hasPublicKey: !!publicKey,
         hasAssistantId: !!assistantId,
         assistantIdLength: assistantId?.length,
@@ -378,7 +383,7 @@ const currentUserRole = currentUser?.profile?.role || "Client";
 
       try {
         vapi = new window.Vapi(publicKey);
-        console.log(LOG, "initVapi VAPI instance created");
+        debugLog(LOG, "initVapi VAPI instance created");
       } catch (e) {
         console.error(LOG, "VAPI init error", e);
         setStatus("Error", "bg-red-400");
@@ -387,7 +392,7 @@ const currentUserRole = currentUser?.profile?.role || "Client";
       }
 
       vapi.on("call-start", () => {
-        console.log(LOG, "vapi event call-start");
+        debugLog(LOG, "vapi event call-start");
         isCallActive = true;
         if (startBtn) startBtn.classList.add("hidden");
         if (stopBtn) {
@@ -399,7 +404,7 @@ const currentUserRole = currentUser?.profile?.role || "Client";
       });
 
       vapi.on("call-end", () => {
-        console.log(LOG, "vapi event call-end");
+        debugLog(LOG, "vapi event call-end");
         isCallActive = false;
         if (startBtn) startBtn.classList.remove("hidden");
         if (stopBtn) {
@@ -411,11 +416,11 @@ const currentUserRole = currentUser?.profile?.role || "Client";
       });
 
       vapi.on("speech-start", () => {
-        console.log(LOG, "vapi event speech-start");
+        debugLog(LOG, "vapi event speech-start");
         setStatus("Speaking...", "bg-purple-400");
       });
       vapi.on("speech-end", () => {
-        console.log(LOG, "vapi event speech-end");
+        debugLog(LOG, "vapi event speech-end");
         setStatus("Listening...", "bg-green-400");
       });
       vapi.on("error", (err) => {
@@ -426,19 +431,19 @@ const currentUserRole = currentUser?.profile?.role || "Client";
           (err?.message && String(err.message).toLowerCase().includes("fetch"));
         if (errorHint) errorHint.classList.toggle("hidden", !isNetworkError);
       });
-      console.log(LOG, "initVapi event listeners attached");
+      debugLog(LOG, "initVapi event listeners attached");
     }
 
     function closePanel() {
       if (!panel || !fab) return;
-      console.log(LOG, "closePanel");
+      debugLog(LOG, "closePanel");
       panel.classList.add("hidden");
       fab.classList.remove("hidden");
     }
 
     function openPanel() {
       if (!panel || !fab) return;
-      console.log(LOG, "openPanel");
+      debugLog(LOG, "openPanel");
       panel.classList.remove("hidden");
       fab.classList.add("hidden");
     }
@@ -446,7 +451,7 @@ const currentUserRole = currentUser?.profile?.role || "Client";
     function togglePanel() {
       if (!panel || !fab) return;
       const isHidden = panel.classList.contains("hidden");
-      console.log(LOG, "togglePanel", { isHidden, action: isHidden ? "open" : "close" });
+      debugLog(LOG, "togglePanel", { isHidden, action: isHidden ? "open" : "close" });
       if (isHidden) openPanel();
       else closePanel();
     }
@@ -454,13 +459,13 @@ const currentUserRole = currentUser?.profile?.role || "Client";
     function setupDraggable() {
       const dragHandle = document.getElementById("admin-voice-panel-drag");
       if (!dragHandle || !panel) {
-        console.log(LOG, "setupDraggable skipped", {
+        debugLog(LOG, "setupDraggable skipped", {
           hasDragHandle: !!dragHandle,
           hasPanel: !!panel,
         });
         return;
       }
-      console.log(LOG, "setupDraggable");
+      debugLog(LOG, "setupDraggable");
 
       let isDragging = false;
       let startX = 0;
@@ -498,7 +503,7 @@ const currentUserRole = currentUser?.profile?.role || "Client";
       }
 
       function endDrag() {
-        if (isDragging) console.log(LOG, "drag end");
+        if (isDragging) debugLog(LOG, "drag end");
         isDragging = false;
         panel.classList.remove("admin-voice-panel-dragging");
       }
@@ -556,13 +561,10 @@ const currentUserRole = currentUser?.profile?.role || "Client";
       const localhostHint = document.getElementById("admin-voice-localhost-hint");
       if (isLocal && localhostHint) {
         localhostHint.classList.remove("hidden");
-        console.log(
-          LOG,
-          "localhost detected – VAPI only tests online; use deployed site or tunnel"
-        );
+        debugLog(LOG, "localhost detected – VAPI only tests online; use deployed site or tunnel");
       }
 
-      console.log(LOG, "DOMContentLoaded", {
+      debugLog(LOG, "DOMContentLoaded", {
         hasFab: !!fab,
         hasPanel: !!panel,
         hasStartBtn: !!startBtn,
@@ -581,7 +583,7 @@ const currentUserRole = currentUser?.profile?.role || "Client";
         closeBtn.addEventListener("click", (e) => {
           e.preventDefault();
           e.stopPropagation();
-          console.log(LOG, "close button clicked");
+          debugLog(LOG, "close button clicked");
           closePanel();
         });
       }
@@ -603,14 +605,14 @@ const currentUserRole = currentUser?.profile?.role || "Client";
         ) {
           return;
         }
-        console.log(LOG, "outside click close");
+        debugLog(LOG, "outside click close");
         closePanel();
       });
 
       if (startBtn) {
         startBtn.addEventListener("click", async () => {
           if (!vapi) return;
-          console.log(LOG, "start button clicked", {
+          debugLog(LOG, "start button clicked", {
             assistantId: assistantId ? `${assistantId.slice(0, 8)}...` : "",
             metadata: { mode: "admin", userRole: currentUserRole },
           });
@@ -628,7 +630,7 @@ const currentUserRole = currentUser?.profile?.role || "Client";
                 sessionStarted: new Date().toISOString(),
               },
             });
-            console.log(LOG, "vapi.start resolved");
+            debugLog(LOG, "vapi.start resolved");
             if (btnLabel) btnLabel.textContent = "Start Voice Assistant";
           } catch (e) {
             const isNetworkError =
@@ -644,13 +646,13 @@ const currentUserRole = currentUser?.profile?.role || "Client";
 
       if (stopBtn) {
         stopBtn.addEventListener("click", () => {
-          console.log(LOG, "stop button clicked", { isCallActive });
+          debugLog(LOG, "stop button clicked", { isCallActive });
           if (vapi && isCallActive) vapi.stop();
         });
       }
 
       initVapi();
-      console.log(LOG, "DOMContentLoaded setup complete");
+      debugLog(LOG, "DOMContentLoaded setup complete");
     });
   })();
 </script>

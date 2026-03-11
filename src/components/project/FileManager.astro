@@ -195,6 +195,7 @@ const canDeleteFiles =
   let files = [];
   let currentProjectId = projectId;
   let currentUserId = currentUser?.id;
+  const trace = window.TraceLog;
 
   function initializeFileManager() {
     loadProjectFiles();
@@ -203,6 +204,10 @@ const canDeleteFiles =
 
   // Load files for the project
   async function loadProjectFiles() {
+    const traceCtx = trace?.start("ui.fileManager.loadProjectFiles", {
+      projectId: currentProjectId,
+      bucket,
+    });
     const url = `/api/files/get?projectId=${currentProjectId}&targetLocation=documents&bucketName=${bucket}&_t=${Date.now()}`;
     try {
       const response = await fetch(url, {
@@ -211,6 +216,9 @@ const canDeleteFiles =
           "Cache-Control": "no-cache, no-store, must-revalidate",
           Pragma: "no-cache",
           Expires: "0",
+          ...(traceCtx
+            ? trace.createTraceHeaders("ui.fileManager.loadProjectFiles.fetch", traceCtx.id)
+            : {}),
         },
       });
 
@@ -282,6 +290,7 @@ const canDeleteFiles =
           "24refWQ3reqfewc4Q#"
         );
       }
+      trace?.end(traceCtx, { ok: response.ok, fileCount: files.length });
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       console.error("❌ [FILE-MANAGER] Error loading files:", err);
@@ -295,6 +304,7 @@ const canDeleteFiles =
         "Error loading project files: " + err.message,
         "24refWQ3reqfewc4Q#"
       );
+      trace?.error(traceCtx, error, { projectId: currentProjectId });
     }
   }
   // Update file count display
@@ -835,7 +845,12 @@ const canDeleteFiles =
     let uploadInProgress = false;
 
     async function handleFileUpload(files) {
+      const traceCtx = trace?.start("ui.fileManager.handleFileUpload", {
+        projectId: currentProjectId,
+        fileCount: files?.length || 0,
+      });
       if (!files || files.length === 0) {
+        trace?.end(traceCtx, { skipped: "no-files" });
         return;
       }
 
@@ -857,6 +872,9 @@ const canDeleteFiles =
         uploadInProgress = false;
         console.error("❌ [FILE-MANAGER] File validation failed:", validationResult.errors);
         showError(`Upload failed: ${validationResult.errors.join(", ")}`);
+        trace?.error(traceCtx, "validation-failed", {
+          errors: validationResult.errors,
+        });
         return;
       }
 
@@ -896,7 +914,12 @@ const canDeleteFiles =
           // Upload using files system
           const response = await fetch("/api/files/upload", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              ...(traceCtx
+                ? trace.createTraceHeaders("ui.fileManager.handleFileUpload.fetch", traceCtx.id)
+                : {}),
+            },
             credentials: "include",
             body: JSON.stringify({
               mediaData: fileData,
@@ -979,6 +1002,7 @@ const canDeleteFiles =
         }
         // If all succeeded, individual success messages were already shown
       }, 1000);
+      trace?.end(traceCtx, { uploadedCount, failedCount, totalFiles });
     }
   }
 
@@ -1357,6 +1381,11 @@ const canDeleteFiles =
   let isDeletingFile = false; // Flag to prevent multiple delete operations
 
   window.deleteFile = function (fileId, fileName) {
+    const traceCtx = trace?.start("ui.fileManager.deleteFile", {
+      fileId,
+      fileName,
+      projectId: currentProjectId,
+    });
     // Prevent multiple delete operations
     if (isDeletingFile) {
       console.log("Delete operation already in progress, ignoring request");
@@ -1374,6 +1403,7 @@ const canDeleteFiles =
           5000
         );
       }
+      trace?.error(traceCtx, "invalid-file-id", { fileId });
       return;
     }
 
@@ -1415,6 +1445,9 @@ const canDeleteFiles =
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
+                  ...(traceCtx
+                    ? trace.createTraceHeaders("ui.fileManager.deleteFile.fetch", traceCtx.id)
+                    : {}),
                 },
                 credentials: "include",
                 body: JSON.stringify({
@@ -1461,6 +1494,7 @@ const canDeleteFiles =
                       updateFileManagementPanel();
                     }
                   }, 1000);
+                  trace?.end(traceCtx, { ok: true, fileId });
                 })
                 .catch((error) => {
                   console.error("❌ [FILE-MANAGER] Error deleting file:", error);
@@ -1482,6 +1516,7 @@ const canDeleteFiles =
                     deleteBtn.innerHTML =
                       '<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>';
                   }
+                  trace?.error(traceCtx, error, { fileId });
                 });
             },
           },

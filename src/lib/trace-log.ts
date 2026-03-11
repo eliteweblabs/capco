@@ -129,7 +129,10 @@ export const TraceLog = {
     };
   },
 
-  getTraceHeadersFromResponse(response: Response): { traceId: string | null; traceName: string | null } {
+  getTraceHeadersFromResponse(response: Response): {
+    traceId: string | null;
+    traceName: string | null;
+  } {
     return {
       traceId: response.headers.get(TRACE_HEADER_ID),
       traceName: response.headers.get(TRACE_HEADER_NAME),

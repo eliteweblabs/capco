@@ -7,6 +7,19 @@ import { supabaseAdmin } from "../../../lib/supabase-admin";
 import { getBaseUrl } from "../../../lib/url-utils";
 
 export const POST: APIRoute = async ({ request, cookies, redirect }) => {
+  const traceId =
+    request.headers.get("x-trace-id") ||
+    `auth-signin-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const traceName = request.headers.get("x-trace-name") || "api.auth.signin";
+  const json = (payload: Record<string, unknown>, status: number) =>
+    new Response(JSON.stringify(payload), {
+      status,
+      headers: {
+        "Content-Type": "application/json",
+        "x-trace-id": traceId,
+        "x-trace-name": traceName,
+      },
+    });
   // Check if Supabase is configured
   if (!supabase) {
     console.error("[---AUTH-SIGNIN] Supabase is not configured - check [---SUPABASE-CLIENT] logs");
@@ -42,15 +55,12 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
 
   if (!email || !password) {
     if (acceptsJson) {
-      return new Response(
-        JSON.stringify({
+      return json(
+        {
           success: false,
           error: "Please provide both email and password",
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
+        },
+        400
       );
     }
     return redirect("/auth/login?error=invalid_credentials");
@@ -129,15 +139,12 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
 
     // Return JSON error for fetch requests, redirect for form submissions
     if (acceptsJson) {
-      return new Response(
-        JSON.stringify({
+      return json(
+        {
           success: false,
           error: userMessage,
-        }),
-        {
-          status: 401,
-          headers: { "Content-Type": "application/json" },
-        }
+        },
+        401
       );
     }
     return redirect(
@@ -203,16 +210,13 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
 
   // Return JSON response for fetch requests, redirect for form submissions
   if (acceptsJson) {
-    return new Response(
-      JSON.stringify({
+    return json(
+      {
         success: true,
         message: "Login successful",
         redirect: redirectTo,
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }
+      },
+      200
     );
   }
   return redirect(redirectTo);

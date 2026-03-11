@@ -5,6 +5,7 @@ import { validatePhone, formatPhoneAsYouType } from "./phone-validation";
 import { getSupabaseClient } from "./supabase-client";
 import { parseFullNameToFirstAndLast } from "./multi-step-form-config";
 import { formFailureLog } from "./debug-logger";
+import { TraceLog } from "./trace-log";
 
 export interface MultiStepFormHandler {
   init: () => void;
@@ -42,6 +43,7 @@ export function createMultiStepFormHandler(
   const { initialData = {} } = options;
 
   const form = document.getElementById(formId) as HTMLFormElement;
+  const tracePrefix = `ui.form.${formId || "unknown"}`;
 
   /** Show form response inline above form (Alert-style) when responseType is "inline" */
   function showInlineFormResponse(type: "success" | "error", title: string, description: string) {
@@ -184,12 +186,16 @@ export function createMultiStepFormHandler(
 
   // Set active step when user focuses an input (e.g. after scrolling up to edit). No scroll or animation.
   function setActiveStepByFocus(stepNumber: number) {
-    console.log("[MULTISTEP-CLICK-DEBUG] setActiveStepByFocus() called", {
-      stepNumber,
-      formId,
-      currentStep,
-      stack: new Error().stack,
-    });
+    const multistepDebug =
+      typeof (window as any).__MULTISTEP_DEBUG !== "undefined" && (window as any).__MULTISTEP_DEBUG;
+    if (multistepDebug) {
+      console.log("[MULTISTEP-CLICK-DEBUG] setActiveStepByFocus() called", {
+        stepNumber,
+        formId,
+        currentStep,
+        stack: new Error().stack,
+      });
+    }
     const formEl = document.getElementById(formId) as HTMLFormElement;
     if (!formEl) return;
 
@@ -203,10 +209,12 @@ export function createMultiStepFormHandler(
 
     // Never advance the step via focus alone (errant click in a later step must not show that panel)
     if (stepNumber > currentStep) {
-      console.log("[MULTISTEP-CLICK-DEBUG] setActiveStepByFocus ignored (would advance)", {
-        stepNumber,
-        currentStep,
-      });
+      if (multistepDebug) {
+        console.log("[MULTISTEP-CLICK-DEBUG] setActiveStepByFocus ignored (would advance)", {
+          stepNumber,
+          currentStep,
+        });
+      }
       return;
     }
 
@@ -235,12 +243,16 @@ export function createMultiStepFormHandler(
 
   // Show specific step with animation (continuous scroll: previous steps stay visible, scroll to active)
   async function showStep(stepNumber: number, direction: "forward" | "backward" = "forward") {
-    console.log("[MULTISTEP-CLICK-DEBUG] showStep() called", {
-      stepNumber,
-      direction,
-      formId,
-      stack: new Error().stack,
-    });
+    const multistepDebug =
+      typeof (window as any).__MULTISTEP_DEBUG !== "undefined" && (window as any).__MULTISTEP_DEBUG;
+    if (multistepDebug) {
+      console.log("[MULTISTEP-CLICK-DEBUG] showStep() called", {
+        stepNumber,
+        direction,
+        formId,
+        stack: new Error().stack,
+      });
+    }
     const currentActiveStep = document.querySelector(
       `#${formId} .step-content.active`
     ) as HTMLElement;
@@ -1495,6 +1507,11 @@ export function createMultiStepFormHandler(
 
     // Handle form submission
     form.addEventListener("submit", async (e) => {
+      const submitTrace = TraceLog.start(`${tracePrefix}.submit`, {
+        currentStep,
+        action: form.action,
+        method: form.method,
+      });
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation();
@@ -1503,12 +1520,14 @@ export function createMultiStepFormHandler(
 
       if (isSubmitting) {
         console.log("[MULTISTEP-FORM] Already submitting, ignoring duplicate");
+        TraceLog.end(submitTrace, { ignored: "already-submitting" });
         return;
       }
 
       console.log("[MULTISTEP-FORM] Validating final step:", currentStep);
       if (!(await validateStep(currentStep))) {
         console.log("[MULTISTEP-FORM] Final step validation failed");
+        TraceLog.end(submitTrace, { validationFailed: true, currentStep });
         return;
       }
 
@@ -1574,6 +1593,7 @@ export function createMultiStepFormHandler(
             body: formData,
             headers: {
               Accept: "application/json",
+              ...TraceLog.createTraceHeaders(`${tracePrefix}.submit.fetch`, submitTrace.id),
             },
           });
 
@@ -1622,6 +1642,7 @@ export function createMultiStepFormHandler(
           setTimeout(() => {
             window.location.href = redirectUrl;
           }, 3000);
+          TraceLog.end(submitTrace, { ok: true, status: response.status, redirectUrl });
         }
       } catch (error) {
         console.error("[MULTISTEP-FORM] Submission error:", error);
@@ -1641,6 +1662,7 @@ export function createMultiStepFormHandler(
         setTimeout(() => {
           window.location.href = "/";
         }, 3000);
+        TraceLog.error(submitTrace, error, { currentStep, action: form.action });
       } finally {
         console.log("[MULTISTEP-FORM] Submission complete, resetting state");
         isSubmitting = false;
@@ -1826,7 +1848,9 @@ export function initializeMultiStepForm(
     formConfig?: any;
   } = {}
 ) {
+  const trace = TraceLog.start("ui.form.initializeMultiStepForm", { formId: form.id });
   if (form.hasAttribute("data-multistep-inited")) {
+    TraceLog.end(trace, { skipped: "already-initialized" });
     return;
   }
   form.setAttribute("data-multistep-inited", "1");
@@ -1978,6 +2002,7 @@ export function initializeMultiStepForm(
   (form as HTMLFormElement & { multiStepHandler?: MultiStepFormHandler }).multiStepHandler =
     handler;
 
+  TraceLog.end(trace, { ok: true, firstStep });
   return handler;
 }
 
@@ -2131,7 +2156,11 @@ export function initializeStandardForm(
   form: HTMLFormElement,
   options: { initialData?: Record<string, any>; formConfig?: any } = {}
 ) {
-  if (form.getAttribute("data-standard-form-inited") === "1") return;
+  const trace = TraceLog.start("ui.form.initializeStandardForm", { formId: form.id });
+  if (form.getAttribute("data-standard-form-inited") === "1") {
+    TraceLog.end(trace, { skipped: "already-initialized" });
+    return;
+  }
   form.setAttribute("data-standard-form-inited", "1");
   const { initialData = {}, formConfig } = options;
   const formId = form.id;
@@ -2151,12 +2180,22 @@ export function initializeStandardForm(
   let isSubmitting = false;
 
   form.addEventListener("submit", async (e) => {
+    const submitTrace = TraceLog.start(`ui.form.${formId || "unknown"}.standardSubmit`, {
+      action: form.action,
+      method: form.method,
+    });
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
 
-    if (isSubmitting) return;
-    if (!(await validateFormContainer(form, formConfig))) return;
+    if (isSubmitting) {
+      TraceLog.end(submitTrace, { ignored: "already-submitting" });
+      return;
+    }
+    if (!(await validateFormContainer(form, formConfig))) {
+      TraceLog.end(submitTrace, { validationFailed: true });
+      return;
+    }
 
     isSubmitting = true;
     const submitBtn = form.querySelector(
@@ -2181,7 +2220,13 @@ export function initializeStandardForm(
       const response = await fetch(form.action, {
         method: form.method,
         body: formData,
-        headers: { Accept: "application/json" },
+        headers: {
+          Accept: "application/json",
+          ...TraceLog.createTraceHeaders(
+            `ui.form.${formId || "unknown"}.standardSubmit.fetch`,
+            submitTrace.id
+          ),
+        },
       });
 
       if (!response.ok) {
@@ -2229,6 +2274,7 @@ export function initializeStandardForm(
 
       const redirectUrl = result.redirect || formConfig?.successRedirect || "/";
       setTimeout(() => (window.location.href = redirectUrl), 3000);
+      TraceLog.end(submitTrace, { ok: true, status: response.status, redirectUrl });
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : "An unexpected error occurred";
       formFailureLog({
@@ -2263,9 +2309,11 @@ export function initializeStandardForm(
       if (formId !== "login-form") {
         setTimeout(() => (window.location.href = "/"), 3000);
       }
+      TraceLog.error(submitTrace, error, { action: form.action });
     } finally {
       isSubmitting = false;
       if (submitBtn) submitBtn.disabled = false;
     }
   });
+  TraceLog.end(trace, { ok: true });
 }

@@ -41,6 +41,10 @@ let traceLogs: Array<{
   action: string;
   user: string;
   message: string;
+  traceId?: string;
+  phase?: string;
+  traceName?: string;
+  isError?: boolean;
   metadata?: Record<string, unknown> | null;
 }> = [];
 
@@ -76,6 +80,14 @@ if (supabaseAdmin) {
         action: entry?.action || "systemEvent",
         user: entry?.user || "System",
         message: entry?.message || "",
+        traceId: entry?.metadata?.traceId || "",
+        phase: entry?.metadata?.phase || "",
+        traceName: entry?.metadata?.name || "",
+        isError:
+          entry?.metadata?.phase === "error" ||
+          String(entry?.message || "")
+            .toLowerCase()
+            .includes("[trace][error]"),
         metadata: entry?.metadata || null,
       }));
   }
@@ -107,7 +119,24 @@ function formatDate(iso: string) {
     {secondaryTextClasses}
   />
 
-  <div class={globalCardStyle}>
+  <div class="mb-4 flex items-center gap-2">
+    <button
+      type="button"
+      id="diag-tab-form"
+      class="rounded border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 dark:border-gray-600 dark:text-gray-200"
+    >
+      Form Failures
+    </button>
+    <button
+      type="button"
+      id="diag-tab-trace"
+      class="rounded border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 dark:border-gray-600 dark:text-gray-200"
+    >
+      Trace Logs
+    </button>
+  </div>
+
+  <div class={globalCardStyle} id="diagnostic-form-section">
     {
       logs.length === 0 ? (
         <p class="py-8 text-center text-gray-500 dark:text-gray-400">
@@ -192,10 +221,45 @@ function formatDate(iso: string) {
     here.
   </p>
 
-  <div class={`${globalCardStyle} mt-6`}>
+  <div class={`${globalCardStyle} mt-6`} id="diagnostic-trace-section">
     <h3 class="mb-3 text-lg font-semibold text-gray-900 dark:text-white">
       Trace Logs (Toggleable)
     </h3>
+    <div class="mb-3 grid grid-cols-1 gap-2 md:grid-cols-5">
+      <input
+        id="trace-filter-text"
+        type="text"
+        class="rounded border border-gray-300 px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-900"
+        placeholder="Search message or trace name"
+      />
+      <input
+        id="trace-filter-id"
+        type="text"
+        class="rounded border border-gray-300 px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-900"
+        placeholder="traceId"
+      />
+      <input
+        id="trace-filter-feature"
+        type="text"
+        class="rounded border border-gray-300 px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-900"
+        placeholder="feature/name contains"
+      />
+      <select
+        id="trace-filter-phase"
+        class="rounded border border-gray-300 px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-900"
+      >
+        <option value="">All phases</option>
+        <option value="start">start</option>
+        <option value="end">end</option>
+        <option value="error">error</option>
+      </select>
+      <label
+        class="flex items-center gap-2 rounded border border-gray-300 px-2 py-1 text-sm dark:border-gray-700"
+      >
+        <input id="trace-filter-error-only" type="checkbox" />
+        Error only
+      </label>
+    </div>
     {
       traceLogs.length === 0 ? (
         <p class="py-4 text-sm text-gray-500 dark:text-gray-400">
@@ -224,7 +288,14 @@ function formatDate(iso: string) {
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
               {traceLogs.map((log) => (
-                <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                <tr
+                  class="trace-row hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                  data-trace-id={log.traceId || ""}
+                  data-trace-phase={log.phase || ""}
+                  data-trace-name={log.traceName || ""}
+                  data-trace-error={log.isError ? "1" : "0"}
+                  data-trace-message={log.message}
+                >
                   <td class="whitespace-nowrap px-4 py-2 text-sm text-gray-600 dark:text-gray-300">
                     {formatDate(log.timestamp)}
                   </td>
@@ -252,4 +323,58 @@ function formatDate(iso: string) {
       )
     }
   </div>
+
+  <script>
+    const formTab = document.getElementById("diag-tab-form");
+    const traceTab = document.getElementById("diag-tab-trace");
+    const formSection = document.getElementById("diagnostic-form-section");
+    const traceSection = document.getElementById("diagnostic-trace-section");
+
+    function showDiagnosticsTab(mode) {
+      if (!formSection || !traceSection) return;
+      formSection.classList.toggle("hidden", mode !== "form");
+      traceSection.classList.toggle("hidden", mode !== "trace");
+    }
+
+    formTab?.addEventListener("click", () => showDiagnosticsTab("form"));
+    traceTab?.addEventListener("click", () => showDiagnosticsTab("trace"));
+    showDiagnosticsTab("trace");
+
+    const textInput = document.getElementById("trace-filter-text");
+    const idInput = document.getElementById("trace-filter-id");
+    const featureInput = document.getElementById("trace-filter-feature");
+    const phaseSelect = document.getElementById("trace-filter-phase");
+    const errorOnly = document.getElementById("trace-filter-error-only");
+
+    function applyTraceFilters() {
+      const text = (textInput as HTMLInputElement)?.value?.toLowerCase() || "";
+      const traceId = (idInput as HTMLInputElement)?.value?.toLowerCase() || "";
+      const feature = (featureInput as HTMLInputElement)?.value?.toLowerCase() || "";
+      const phase = (phaseSelect as HTMLSelectElement)?.value || "";
+      const onlyErrors = (errorOnly as HTMLInputElement)?.checked || false;
+
+      document.querySelectorAll("tr.trace-row").forEach((row) => {
+        const el = row as HTMLElement;
+        const rowMessage = (el.dataset.traceMessage || "").toLowerCase();
+        const rowTraceId = (el.dataset.traceId || "").toLowerCase();
+        const rowTraceName = (el.dataset.traceName || "").toLowerCase();
+        const rowPhase = el.dataset.tracePhase || "";
+        const rowIsError = el.dataset.traceError === "1";
+
+        const passesText = !text || rowMessage.includes(text) || rowTraceName.includes(text);
+        const passesId = !traceId || rowTraceId.includes(traceId);
+        const passesFeature = !feature || rowTraceName.includes(feature);
+        const passesPhase = !phase || rowPhase === phase;
+        const passesError = !onlyErrors || rowIsError;
+        el.classList.toggle(
+          "hidden",
+          !(passesText && passesId && passesFeature && passesPhase && passesError)
+        );
+      });
+    }
+
+    [textInput, idInput, featureInput, phaseSelect, errorOnly].forEach((el) =>
+      el?.addEventListener("input", applyTraceFilters)
+    );
+  </script>
 </LayoutFullWidth>

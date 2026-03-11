@@ -48,6 +48,10 @@ const validateProjectUpdate = (data: ProjectUpdateFormData) => [];
 const mapFormDataToProject = (data: ProjectUpdateFormData) => data;
 
 export const POST: APIRoute = async ({ request, cookies }) => {
+  const traceId =
+    request.headers.get("x-trace-id") ||
+    `projects-upsert-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const traceName = request.headers.get("x-trace-name") || "api.projects.upsert.post";
   console.log("📝 [CREATE-PROJECT] API route called!");
 
   try {
@@ -200,6 +204,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
               headers: {
                 "Content-Type": "application/json",
                 Cookie: `sb-access-token=${cookies.get("sb-access-token")?.value}; sb-refresh-token=${cookies.get("sb-refresh-token")?.value}`,
+                "x-trace-id": traceId,
+                "x-trace-name": `${traceName}.createUser`,
               },
               body: JSON.stringify({
                 firstName: firstName.trim(),
@@ -379,6 +385,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         status: 201,
         headers: {
           "Content-Type": "application/json",
+          "x-trace-id": traceId,
+          "x-trace-name": traceName,
         },
       }
     );
@@ -389,6 +397,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 };
 
 export const PUT: APIRoute = async ({ request, cookies, params }) => {
+  const traceId =
+    request.headers.get("x-trace-id") ||
+    `projects-upsert-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const traceName = request.headers.get("x-trace-name") || "api.projects.upsert.put";
   console.log("🔧 [UPSERT-PROJECT] API called");
   try {
     const body = await request.json();
@@ -497,7 +509,11 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
       }),
       {
         status: 200,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-trace-id": traceId,
+          "x-trace-name": traceName,
+        },
       }
     );
   } catch (error) {

@@ -51,14 +51,24 @@ interface FileFilters {
 }
 
 export const GET: APIRoute = async ({ request, cookies, url }) => {
+  const traceId =
+    request.headers.get("x-trace-id") ||
+    `files-get-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const traceName = request.headers.get("x-trace-name") || "api.files.get";
+  const json = (payload: Record<string, unknown>, status: number) =>
+    new Response(JSON.stringify(payload), {
+      status,
+      headers: {
+        "Content-Type": "application/json",
+        "x-trace-id": traceId,
+        "x-trace-name": traceName,
+      },
+    });
   try {
     // Check authentication
     const { isAuth, currentUser } = await checkAuth(cookies);
     if (!isAuth || !currentUser) {
-      return new Response(JSON.stringify({ error: "Authentication required" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: "Authentication required" }, 401);
     }
 
     // console.log("📁 [FILES-GET] Processing GET request");
@@ -66,10 +76,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     // console.log("📁 [FILES-GET] Search params:", Object.fromEntries(url.searchParams.entries()));
 
     if (!supabase) {
-      return new Response(JSON.stringify({ error: "Database connection not available" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: "Database connection not available" }, 500);
     }
 
     // Parse URL parameters
@@ -104,14 +111,14 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     if (filters.projectId) {
       const projectIdNum = parseInt(filters.projectId);
       if (isNaN(projectIdNum)) {
-        return new Response(
-          JSON.stringify({
+        return json(
+          {
             error: "Invalid projectId",
             details: "projectId must be a valid integer",
             code: "INVALID_PROJECT_ID",
             hint: "Provide a numeric project ID",
-          }),
-          { status: 400, headers: { "Content-Type": "application/json" } }
+          },
+          400
         );
       }
     }
@@ -239,14 +246,14 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
 
     if (error) {
       console.error("❌ [FILES-GET] Database error:", error);
-      return new Response(
-        JSON.stringify({
+      return json(
+        {
           error: "Database query failed",
           details: error.message,
           code: error.code,
           hint: error.hint,
-        }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
+        },
+        500
       );
     }
 
@@ -367,8 +374,8 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     const filesWithUrls = filesWithUrlsRaw.filter((f): f is NonNullable<typeof f> => f != null);
 
     // Return response
-    return new Response(
-      JSON.stringify({
+    return json(
+      {
         success: true,
         data: filesWithUrls || [],
         pagination: {
@@ -389,33 +396,40 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
           sortBy: filters.sortBy,
           sortOrder: filters.sortOrder,
         },
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }
+      },
+      200
     );
   } catch (error) {
     console.error("❌ [FILES-GET] Unexpected error:", error);
-    return new Response(
-      JSON.stringify({
+    return json(
+      {
         error: "Internal server error",
         details: error instanceof Error ? error.message : "Unknown error",
-      }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      },
+      500
     );
   }
 };
 
 export const POST: APIRoute = async ({ request, cookies }) => {
+  const traceId =
+    request.headers.get("x-trace-id") ||
+    `files-get-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const traceName = request.headers.get("x-trace-name") || "api.files.get.post";
+  const json = (payload: Record<string, unknown>, status: number) =>
+    new Response(JSON.stringify(payload), {
+      status,
+      headers: {
+        "Content-Type": "application/json",
+        "x-trace-id": traceId,
+        "x-trace-name": traceName,
+      },
+    });
   try {
     // Check authentication
     const { isAuth, currentUser } = await checkAuth(cookies);
     if (!isAuth || !currentUser) {
-      return new Response(JSON.stringify({ error: "Authentication required" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: "Authentication required" }, 401);
     }
 
     // Parse request body and URL parameters
@@ -457,10 +471,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     console.log(`📁 [FILES-GET] Fetching files with filters:`, filters);
 
     if (!supabase) {
-      return new Response(JSON.stringify({ error: "Database connection not available" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: "Database connection not available" }, 500);
     }
 
     // Check if requesting specific file
@@ -472,18 +483,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         .single();
 
       if (error || !file) {
-        return new Response(JSON.stringify({ error: "File not found" }), {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        });
+        return json({ error: "File not found" }, 404);
       }
 
-      return new Response(
-        JSON.stringify({
+      return json(
+        {
           data: file,
           pagination: { limit: 1, offset: 0, total: 1, hasMore: false },
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
+        },
+        200
       );
     }
 
@@ -513,13 +521,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       const projectIdNum = parseInt(filters.projectId);
       if (isNaN(projectIdNum)) {
         console.error("❌ [FILES-GET] Invalid projectId:", filters.projectId);
-        return new Response(
-          JSON.stringify({
+        return json(
+          {
             error: "Invalid project ID",
             details: "Project ID must be a number",
             value: filters.projectId,
-          }),
-          { status: 400, headers: { "Content-Type": "application/json" } }
+          },
+          400
         );
       }
       query = query.eq("projectId", projectIdNum);
@@ -650,14 +658,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         details: error.details,
         hint: error.hint,
       });
-      return new Response(
-        JSON.stringify({
+      return json(
+        {
           error: "Failed to fetch files",
           details: error.message,
           code: error.code,
           hint: error.hint,
-        }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
+        },
+        500
       );
     }
 
@@ -724,8 +732,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     const hasMore = filesWithUrls.length === filters.limit || 20;
 
-    return new Response(
-      JSON.stringify({
+    return json(
+      {
         data: filesWithUrls || [],
         pagination: {
           limit: filters.limit || 20,
@@ -746,17 +754,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           sortBy: filters.sortBy,
           sortOrder: filters.sortOrder,
         },
-      }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
+      },
+      200
     );
   } catch (error: any) {
     console.error("❌ [FILES-GET] Unexpected error:", error);
-    return new Response(
-      JSON.stringify({
+    return json(
+      {
         error: "Internal server error",
         details: error instanceof Error ? error.message : "Unknown error",
-      }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      },
+      500
     );
   }
 };

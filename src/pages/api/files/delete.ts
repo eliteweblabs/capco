@@ -13,13 +13,21 @@ import { supabaseAdmin } from "../../../lib/supabase-admin";
  */
 
 export const POST: APIRoute = async ({ request, cookies }) => {
+  const traceId =
+    request.headers.get("x-trace-id") ||
+    `files-del-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const traceName = "api.files.delete";
   try {
     // Check authentication
     const { isAuth, currentUser } = await checkAuth(cookies);
     if (!isAuth || !currentUser) {
       return new Response(JSON.stringify({ error: "Authentication required" }), {
         status: 401,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-trace-id": traceId,
+          "x-trace-name": traceName,
+        },
       });
     }
 
@@ -29,7 +37,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (!fileId) {
       return new Response(JSON.stringify({ error: "File ID is required" }), {
         status: 400,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-trace-id": traceId,
+          "x-trace-name": traceName,
+        },
       });
     }
 
@@ -38,7 +50,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (!supabaseAdmin) {
       return new Response(JSON.stringify({ error: "Database connection not available" }), {
         status: 500,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-trace-id": traceId,
+          "x-trace-name": traceName,
+        },
       });
     }
 
@@ -52,7 +68,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (fileError || !file) {
       return new Response(JSON.stringify({ error: "File not found" }), {
         status: 404,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-trace-id": traceId,
+          "x-trace-name": traceName,
+        },
       });
     }
 
@@ -85,7 +105,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           error: "Failed to delete file",
           details: deleteError.message,
         }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
+        {
+          status: 500,
+          headers: {
+            "Content-Type": "application/json",
+            "x-trace-id": traceId,
+            "x-trace-name": traceName,
+          },
+        }
       );
     }
 
@@ -101,7 +128,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           projectId: file.projectId,
         },
       }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "x-trace-id": traceId,
+          "x-trace-name": traceName,
+        },
+      }
     );
   } catch (error) {
     console.error("❌ [FILES-DELETE] Unexpected error:", error);
@@ -110,19 +144,34 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         error: "Internal server error",
         details: error instanceof Error ? error.message : "Unknown error",
       }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+          "x-trace-id": traceId,
+          "x-trace-name": traceName,
+        },
+      }
     );
   }
 };
 
 export const DELETE: APIRoute = async ({ request, cookies }) => {
+  const traceId =
+    request.headers.get("x-trace-id") ||
+    `files-del-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const traceName = "api.files.delete";
   try {
     // Check authentication
     const { isAuth, currentUser } = await checkAuth(cookies);
     if (!isAuth || !currentUser) {
       return new Response(JSON.stringify({ error: "Authentication required" }), {
         status: 401,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-trace-id": traceId,
+          "x-trace-name": traceName,
+        },
       });
     }
 
@@ -132,7 +181,11 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     if (!id) {
       return new Response(JSON.stringify({ error: "File ID is required" }), {
         status: 400,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-trace-id": traceId,
+          "x-trace-name": traceName,
+        },
       });
     }
 
@@ -141,7 +194,11 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     if (!supabaseAdmin) {
       return new Response(JSON.stringify({ error: "Database connection not available" }), {
         status: 500,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-trace-id": traceId,
+          "x-trace-name": traceName,
+        },
       });
     }
 
@@ -155,7 +212,11 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     if (fileError || !file) {
       return new Response(JSON.stringify({ error: "File not found" }), {
         status: 404,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-trace-id": traceId,
+          "x-trace-name": traceName,
+        },
       });
     }
 
@@ -188,7 +249,14 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
           error: "Failed to delete file",
           details: deleteError.message,
         }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
+        {
+          status: 500,
+          headers: {
+            "Content-Type": "application/json",
+            "x-trace-id": traceId,
+            "x-trace-name": traceName,
+          },
+        }
       );
     }
 
@@ -204,7 +272,14 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
           projectId: file.projectId,
         },
       }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "x-trace-id": traceId,
+          "x-trace-name": traceName,
+        },
+      }
     );
   } catch (error) {
     console.error("❌ [FILES-DELETE] Unexpected error:", error);
@@ -213,7 +288,14 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
         error: "Internal server error",
         details: error instanceof Error ? error.message : "Unknown error",
       }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+          "x-trace-id": traceId,
+          "x-trace-name": traceName,
+        },
+      }
     );
   }
 };

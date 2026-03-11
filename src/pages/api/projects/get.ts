@@ -10,6 +10,24 @@ import { fetchPunchlistStats, fetchProjectById, fetchProjects } from "../../../l
  * but with the legacy URL structure that other pages expect.
  */
 export const GET: APIRoute = async ({ request, cookies, url }) => {
+  const traceId =
+    request.headers.get("x-trace-id") ||
+    `projects-get-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const traceName = request.headers.get("x-trace-name") || "api.projects.get";
+  const json = (
+    payload: Record<string, unknown>,
+    status: number,
+    extraHeaders: Record<string, string> = {}
+  ) =>
+    new Response(JSON.stringify(payload), {
+      status,
+      headers: {
+        "Content-Type": "application/json",
+        "x-trace-id": traceId,
+        "x-trace-name": traceName,
+        ...extraHeaders,
+      },
+    });
   try {
     const projectId = url.searchParams.get("id");
     const authorId = url.searchParams.get("authorId");
@@ -37,7 +55,11 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       console.log("🏗️ [PROJECTS-GET] Rejecting non-featured request without auth");
       return new Response(JSON.stringify({ error: "Authentication required" }), {
         status: 401,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-trace-id": traceId,
+          "x-trace-name": traceName,
+        },
       });
     }
 
@@ -47,10 +69,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
 
     // console.log("🏗️ [PROJECTS-GET] Project ID:", projectId, "Count only:", countOnly);
     if (!supabase || !supabaseAdmin) {
-      return new Response(JSON.stringify({ error: "Database connection not available" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: "Database connection not available" }, 500);
     }
 
     // NEW: Handle count-only requests
@@ -86,20 +105,13 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
 
       if (error) {
         console.error("Error fetching project count:", error);
-        return new Response(JSON.stringify({ error: "Failed to fetch project count" }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        });
+        return json({ error: "Failed to fetch project count" }, 500);
       }
 
-      return new Response(JSON.stringify({ count: count || 0 }), {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          "Cache-Control": "no-store, no-cache, must-revalidate",
-          Pragma: "no-cache",
-          Expires: "0",
-        },
+      return json({ count: count || 0 }, 200, {
+        "Cache-Control": "no-store, no-cache, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
       });
     }
 
@@ -112,25 +124,19 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
 
       if (!project) {
         console.error("🏗️ [PROJECTS-GET] Project not found");
-        return new Response(JSON.stringify({ error: "Project not found" }), {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        });
+        return json({ error: "Project not found" }, 404);
       }
 
-      return new Response(
-        JSON.stringify({
+      return json(
+        {
           data: project,
           pagination: { limit: 1, offset: 0, total: 1, hasMore: false },
-        }),
+        },
+        200,
         {
-          status: 200,
-          headers: {
-            "Content-Type": "application/json",
-            "Cache-Control": "no-store, no-cache, must-revalidate",
-            Pragma: "no-cache",
-            Expires: "0",
-          },
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
         }
       );
     }
@@ -175,10 +181,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
 
     if (error) {
       console.error("Error fetching projects:", error);
-      return new Response(JSON.stringify({ error: "Failed to fetch projects" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: "Failed to fetch projects" }, 500);
     }
 
     // Get project IDs for later queries
@@ -250,8 +253,8 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       };
     });
 
-    return new Response(
-      JSON.stringify({
+    return json(
+      {
         projects: projectsWithProfiles,
         pagination: {
           limit,
@@ -259,22 +262,16 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
           total: count,
           hasMore: projectsWithProfiles.length === limit,
         },
-      }),
+      },
+      200,
       {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          "Cache-Control": "no-store, no-cache, must-revalidate",
-          Pragma: "no-cache",
-          Expires: "0",
-        },
+        "Cache-Control": "no-store, no-cache, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
       }
     );
   } catch (error) {
     console.error("Unexpected error in get-project API:", error);
-    return new Response(
-      JSON.stringify({ error: "Internal server error", details: String(error) }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return json({ error: "Internal server error", details: String(error) }, 500);
   }
 };

@@ -19,7 +19,20 @@ import { isAdminOrSuperAdmin } from "../../../lib/user-utils";
  * - GET /api/notifications/get?unread_only=true - Get unread notifications
  * - GET /api/notifications/get?userId=123 (Admin only) - Get user's notifications
  */
-export const GET: APIRoute = async ({ cookies, url }) => {
+export const GET: APIRoute = async ({ request, cookies, url }) => {
+  const traceId =
+    request.headers.get("x-trace-id") ||
+    `notif-get-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const traceName = request.headers.get("x-trace-name") || "api.notifications.get";
+  const json = (payload: Record<string, unknown>, status: number) =>
+    new Response(JSON.stringify(payload), {
+      status,
+      headers: {
+        "Content-Type": "application/json",
+        "x-trace-id": traceId,
+        "x-trace-name": traceName,
+      },
+    });
   const limit = parseInt(url.searchParams.get("limit") || "20");
   const offset = parseInt(url.searchParams.get("offset") || "0");
   console.log("🔔 [NOTIFICATIONS-GET] Request: limit =", limit, "offset =", offset);
@@ -29,18 +42,12 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     const { isAuth, currentUser } = await checkAuth(cookies);
     console.log("🔔 [NOTIFICATIONS-GET] Auth: isAuth =", isAuth, "hasUser =", !!currentUser);
     if (!isAuth || !currentUser) {
-      return new Response(JSON.stringify({ error: "Authentication required" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: "Authentication required" }, 401);
     }
 
     if (!supabase) {
       console.error("🔔 [NOTIFICATIONS-GET] Supabase not configured");
-      return new Response(JSON.stringify({ error: "Database not configured" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: "Database not configured" }, 500);
     }
 
     // Parse query parameters
@@ -57,10 +64,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         .single();
 
       if (!profile || !isAdminOrSuperAdmin(profile.role)) {
-        return new Response(JSON.stringify({ error: "Unauthorized - Admin access required" }), {
-          status: 403,
-          headers: { "Content-Type": "application/json" },
-        });
+        return json({ error: "Unauthorized - Admin access required" }, 403);
       }
       targetUserId = requestedUserId;
     }
@@ -91,19 +95,16 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         console.warn(
           "🔔 [NOTIFICATIONS] Database connection timeout - returning empty notifications"
         );
-        return new Response(
-          JSON.stringify({
+        return json(
+          {
             success: true,
             notifications: [],
             unreadCount: 0,
             limit,
             offset,
             warning: "Database connection timeout - notifications temporarily unavailable",
-          }),
-          {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          }
+          },
+          200
         );
       }
       throw error;
@@ -127,8 +128,8 @@ export const GET: APIRoute = async ({ cookies, url }) => {
           error.message.includes('relation "public.notifications" does not exist') ||
           error.code === "42P01")
       ) {
-        return new Response(
-          JSON.stringify({
+        return json(
+          {
             error: "Notifications table not found. Please run the database migration.",
             migrationRequired: true,
             instructions: [
@@ -138,11 +139,8 @@ export const GET: APIRoute = async ({ cookies, url }) => {
               "   (This script will create the table if it doesn't exist)",
             ],
             sqlFile: "sql-queriers/sync-notifications-schema.sql",
-          }),
-          {
-            status: 503,
-            headers: { "Content-Type": "application/json" },
-          }
+          },
+          503
         );
       }
 
@@ -152,8 +150,8 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         error.message.includes("column") &&
         error.message.includes("does not exist")
       ) {
-        return new Response(
-          JSON.stringify({
+        return json(
+          {
             error: "Notifications table schema mismatch. Please sync the database schema.",
             migrationRequired: true,
             instructions: [
@@ -164,24 +162,18 @@ export const GET: APIRoute = async ({ cookies, url }) => {
             ],
             sqlFile: "sql-queriers/sync-notifications-schema.sql",
             errorDetails: error.message,
-          }),
-          {
-            status: 503,
-            headers: { "Content-Type": "application/json" },
-          }
+          },
+          503
         );
       }
 
-      return new Response(
-        JSON.stringify({
+      return json(
+        {
           error: "Failed to fetch notifications",
           errorDetails: error.message,
           errorCode: error.code,
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        }
+        },
+        500
       );
     }
 
@@ -211,24 +203,18 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       "notifications, unreadCount =",
       unreadCount
     );
-    return new Response(
-      JSON.stringify({
+    return json(
+      {
         success: true,
         notifications: notifications || [],
         unreadCount: unreadCount || 0,
         limit,
         offset,
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }
+      },
+      200
     );
   } catch (error) {
     console.error("❌ [NOTIFICATIONS] Error in GET:", error);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return json({ error: "Internal server error" }, 500);
   }
 };

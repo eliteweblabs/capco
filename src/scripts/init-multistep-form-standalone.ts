@@ -4,8 +4,10 @@
  * Handles both MultiStepForm and StandardForm to avoid Vite script 500 / import errors.
  */
 import { initializeMultiStepForm, initializeStandardForm } from "../lib/multi-step-form-handler";
+import { TraceLog } from "../lib/trace-log";
 
 function runStandardFormInit(): void {
+  const trace = TraceLog.start("ui.forms.runStandardFormInit");
   const wrappers = document.querySelectorAll("[data-standard-form]");
   wrappers.forEach((wrapper) => {
     if (wrapper.hasAttribute("data-skip-init")) return;
@@ -25,11 +27,16 @@ function runStandardFormInit(): void {
     if (!formId || !formConfig) return;
     initializeStandardForm(form, { initialData, formConfig });
   });
+  TraceLog.end(trace, { wrappers: wrappers.length });
 }
 
 function runMultiStepInit(): void {
+  const trace = TraceLog.start("ui.forms.runMultiStepInit");
   const forms = document.querySelectorAll("form[data-form-config]");
-  if (forms.length === 0) return;
+  if (forms.length === 0) {
+    TraceLog.end(trace, { forms: 0 });
+    return;
+  }
   forms.forEach((formEl) => {
     const form = formEl as HTMLFormElement;
     // Skip StandardForm (login, etc.) – it has no .step-content, MultiStepForm would break it
@@ -75,6 +82,7 @@ function runMultiStepInit(): void {
       formConfig,
     });
   });
+  TraceLog.end(trace, { forms: forms.length });
 }
 
 /** Mark steps with typewriter and listen for typewriter-complete so inputs/buttons cascade after title. */
@@ -226,6 +234,7 @@ function runAnimatedPlaceholderInit(): void {
 }
 
 function main(): void {
+  const trace = TraceLog.start("ui.forms.initStandaloneMain");
   if (typeof window !== "undefined" && (window as any).__jsOrderLog) {
     (window as any).__jsOrderLog("MultiStepForm standalone (script)");
   }
@@ -246,6 +255,7 @@ function main(): void {
   } else {
     runWithRetry();
   }
+  TraceLog.end(trace, { readyState: document.readyState });
 }
 
 main();

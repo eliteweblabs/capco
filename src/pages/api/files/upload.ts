@@ -20,23 +20,30 @@ import { supabaseAdmin } from "../../../lib/supabase-admin";
  */
 
 export const POST: APIRoute = async ({ request, cookies }) => {
+  const traceId =
+    request.headers.get("x-trace-id") ||
+    `files-upload-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const traceName = request.headers.get("x-trace-name") || "api.files.upload";
+  const json = (payload: Record<string, unknown>, status: number) =>
+    new Response(JSON.stringify(payload), {
+      status,
+      headers: {
+        "Content-Type": "application/json",
+        "x-trace-id": traceId,
+        "x-trace-name": traceName,
+      },
+    });
   try {
     // Check authentication
     const { isAuth, currentUser } = await checkAuth(cookies);
     if (!isAuth || !currentUser) {
-      return new Response(JSON.stringify({ error: "Authentication required" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: "Authentication required" }, 401);
     }
 
     console.log(`📁 [FILES-UPLOAD] Processing file upload request`);
 
     if (!supabaseAdmin) {
-      return new Response(JSON.stringify({ error: "Database connection not available" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ error: "Database connection not available" }, 500);
     }
 
     const contentType = request.headers.get("content-type") || "";
@@ -75,12 +82,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       } = body;
 
       if (!mediaData || !fileName) {
-        return new Response(
-          JSON.stringify({
+        return json(
+          {
             error: "Missing required fields",
             details: "mediaData and fileName are required for JSON uploads",
-          }),
-          { status: 400, headers: { "Content-Type": "application/json" } }
+          },
+          400
         );
       }
 
@@ -116,33 +123,33 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       useVersioning = true; // FileManager always uses versioning
       isPrivate = false; // Will be determined by project status
     } else {
-      return new Response(
-        JSON.stringify({
+      return json(
+        {
           error: "Unsupported content type",
           details: "Expected multipart/form-data or application/json",
-        }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        },
+        400
       );
     }
 
     // Validate required fields
     if (!file) {
-      return new Response(
-        JSON.stringify({
+      return json(
+        {
           error: "Missing required fields",
           details: "File is required",
-        }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        },
+        400
       );
     }
 
     if (!projectId) {
-      return new Response(
-        JSON.stringify({
+      return json(
+        {
           error: "Missing required fields",
           details: "projectId is required",
-        }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        },
+        400
       );
     }
 
@@ -171,8 +178,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       const { data: urlData } = supabaseAdmin.storage
         .from(dupBucket)
         .getPublicUrl(recentDuplicate.filePath);
-      return new Response(
-        JSON.stringify({
+      return json(
+        {
           success: true,
           data: {
             id: recentDuplicate.id,
@@ -188,8 +195,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             createdAt: recentDuplicate.uploadedAt,
           },
           message: "File already uploaded (duplicate prevented)",
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
+        },
+        200
       );
     }
 
@@ -286,12 +293,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (uploadError) {
       console.error("❌ [FILES-UPLOAD] Error uploading file to storage:", uploadError);
-      return new Response(
-        JSON.stringify({
+      return json(
+        {
           error: "Failed to upload file",
           details: uploadError.message,
-        }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
+        },
+        500
       );
     }
 
@@ -332,19 +339,19 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       // Clean up uploaded file if database insert fails
       await supabaseAdmin.storage.from(bucketName).remove([filePath]);
 
-      return new Response(
-        JSON.stringify({
+      return json(
+        {
           error: "Failed to create file record",
           details: dbError.message,
-        }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
+        },
+        500
       );
     }
 
     console.log(`✅ [FILES-UPLOAD] File record created successfully:`, dbFile.id);
 
-    return new Response(
-      JSON.stringify({
+    return json(
+      {
         success: true,
         data: {
           id: dbFile.id,
@@ -360,17 +367,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           createdAt: dbFile.createdAt,
         },
         message: "File uploaded successfully",
-      }),
-      { status: 201, headers: { "Content-Type": "application/json" } }
+      },
+      201
     );
   } catch (error) {
     console.error("❌ [FILES-UPLOAD] Unexpected error:", error);
-    return new Response(
-      JSON.stringify({
+    return json(
+      {
         error: "Internal server error",
         details: error instanceof Error ? error.message : "Unknown error",
-      }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      },
+      500
     );
   }
 };
