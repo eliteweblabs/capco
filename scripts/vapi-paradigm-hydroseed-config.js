@@ -166,7 +166,8 @@ Start with: "Thank you for calling ${COMPANY_NAME}. How may I help you today?"
 - Keep responses concise and clear for voice.
 - Ask one question at a time when collecting information for quote requests.
 - Do not make up pricing; direct to quote request form or offer callback.
-- Be proud of expertise, technology, and customized solutions when relevant.`,
+- Be proud of expertise, technology, and customized solutions when relevant.
+- Do not confuse reseeding with receding. `,
       },
     ],
     toolIds: [],
@@ -252,9 +253,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   main();
 }
 
-export {
-  createAssistant,
-  updateAssistant,
-  assistantConfig,
-  COMPANY_NAME,
-};
+export { createAssistant, updateAssistant, assistantConfig, COMPANY_NAME };

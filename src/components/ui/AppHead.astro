@@ -90,8 +90,15 @@ const ogImageType = ogImageSrc?.includes(".gif")
 
 const displayName =
   globalCompanyName && globalCompanyName !== "Company Name Not Set" ? globalCompanyName : "App";
-const titleWithBrand = globalCompanyName + " → " + safeTitle;
-const ogImageAlt = globalCompanyName + " - " + safeDescription;
+const normalizedTitle = safeTitle.trim();
+const normalizedDisplayName = displayName.trim();
+const titleContainsBrand =
+  normalizedDisplayName.length > 0 &&
+  normalizedTitle.toLowerCase().includes(normalizedDisplayName.toLowerCase());
+const titleWithBrand = titleContainsBrand
+  ? normalizedTitle
+  : `${normalizedDisplayName} | ${normalizedTitle}`;
+const ogImageAlt = `${normalizedDisplayName} - ${safeDescription}`;
 ---
 
 <CriticalColors
