@@ -27,6 +27,13 @@ export interface TraceHeaders {
   "x-trace-name": string;
 }
 
+export interface TraceInitOptions {
+  isDev?: boolean;
+  hostname?: string;
+  autoEnable?: boolean;
+  persist?: boolean;
+}
+
 function nowIso(): string {
   return new Date().toISOString();
 }
@@ -77,6 +84,18 @@ function shouldSample(): boolean {
   return sampleRate >= 1 || Math.random() < sampleRate;
 }
 
+function isLocalHostname(hostname: string): boolean {
+  if (!hostname) return false;
+  return (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "::1" ||
+    hostname.startsWith("192.168.") ||
+    hostname.startsWith("10.") ||
+    /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname)
+  );
+}
+
 async function persistTrace(event: {
   phase: "start" | "end" | "error";
   traceId: string;
@@ -119,6 +138,26 @@ export const TraceLog = {
     const clamped = Math.max(0, Math.min(1, rate));
     localStorage.setItem(TRACE_SAMPLE_RATE_KEY, String(clamped));
     console.log(`[TRACE] sample rate=${clamped}`);
+  },
+
+  initForEnvironment(options: TraceInitOptions = {}): void {
+    if (typeof window === "undefined") return;
+    if (isEnabled()) return; // Respect explicit opt-in (URL/localStorage).
+
+    const hostname = options.hostname || window.location.hostname || "";
+    const shouldEnable =
+      options.autoEnable !== undefined
+        ? options.autoEnable
+        : Boolean(options.isDev) || isLocalHostname(hostname);
+
+    if (!shouldEnable) return;
+
+    const persist = options.persist ?? false;
+    localStorage.setItem(TRACE_STORAGE_KEY, "1");
+    if (localStorage.getItem(TRACE_PERSIST_KEY) === null) {
+      localStorage.setItem(TRACE_PERSIST_KEY, persist ? "1" : "0");
+    }
+    console.log(`[TRACE] auto-enabled (persist=${persist}, host=${hostname || "unknown"})`);
   },
 
   createTraceHeaders(name: string, traceId?: string): TraceHeaders {

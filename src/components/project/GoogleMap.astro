@@ -4,12 +4,16 @@
 
 <!-- Google Maps Places API - Load only if API key is available -->
 <script>
+  const mapsApiKey = (window as any).GOOGLE_MAPS_API_KEY as string | undefined;
+  const googleMapDebug =
+    typeof window !== "undefined" && localStorage.getItem("googleMapDebug") === "1";
+
   // Wait for environment variables to be loaded, then load Google Maps
   function loadGoogleMaps() {
-    if (window.GOOGLE_MAPS_API_KEY && window.GOOGLE_MAPS_API_KEY.trim() !== "") {
+    if (mapsApiKey && mapsApiKey.trim() !== "") {
       // Check if script already exists
       if (document.getElementById("google-maps-script")) {
-        console.log("✅ [GoogleMaps] Google Maps API already loaded");
+        if (googleMapDebug) console.log("✅ [GoogleMaps] Google Maps API already loaded");
         return;
       }
 
@@ -17,12 +21,12 @@
       script.async = true;
       script.defer = true;
       // Use the stable version of Google Maps API with Places library
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${window.GOOGLE_MAPS_API_KEY}&libraries=places&loading=async`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${mapsApiKey}&libraries=places&loading=async`;
       script.id = "google-maps-script";
 
       // Add error handling
       script.onerror = function () {
-        console.error("❌ [GoogleMaps] Failed to load Google Maps API script");
+        if (googleMapDebug) console.error("❌ [GoogleMaps] Failed to load Google Maps API script");
       };
 
       script.onload = function () {
@@ -41,9 +45,11 @@
 
       document.head.appendChild(script);
     } else {
-      console.warn(
-        "❌ [GoogleMaps] Google Maps API key not found. Maps functionality will be disabled."
-      );
+      if (googleMapDebug) {
+        console.warn(
+          "❌ [GoogleMaps] Google Maps API key not found. Maps functionality will be disabled."
+        );
+      }
     }
   }
 

@@ -44,6 +44,8 @@ if (typeof window !== "undefined") {
   w.formatPhoneAsYouType = formatPhoneAsYouType;
   w.Debug = Debug;
   w.TraceLog = TraceLog;
+  // Auto-enable trace logs on local/dev by default (console-only, no persistence).
+  TraceLog.initForEnvironment({ isDev: import.meta.env.DEV, persist: false });
   w.formFailureLog = formFailureLog;
 }
 

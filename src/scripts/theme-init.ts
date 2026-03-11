@@ -6,15 +6,29 @@
 (function () {
   if (typeof window === "undefined") return;
 
-  (window as any).__jsOrder = 0;
-  (window as any).__jsOrderLog = function (label: string) {
-    (window as any).__jsOrder = ((window as any).__jsOrder || 0) + 1;
-    console.log("[JS-ORDER]", (window as any).__jsOrder, label);
+  const SEQ_TOKEN = "__SEQ__";
+  const originalConsoleLog = console.log.bind(console);
+  const seqOnlyLogs = localStorage.getItem("seqOnlyLogs") !== "0";
+
+  (window as any).__seqNum = 0;
+  (window as any).__seqLog = function () {
+    (window as any).__seqNum = ((window as any).__seqNum || 0) + 1;
+    console.log(SEQ_TOKEN, (window as any).__seqNum);
   };
-  (window as any).__traceNum = 0;
-  (window as any).__traceLog = function (m: string) {
-    (window as any).__traceNum = ((window as any).__traceNum || 0) + 1;
-    console.log("[TRACE " + (window as any).__traceNum + "] " + m);
+
+  if (seqOnlyLogs) {
+    console.log = (...args: any[]) => {
+      if (args[0] === SEQ_TOKEN) {
+        originalConsoleLog(args[1]);
+      }
+    };
+  }
+
+  (window as any).__jsOrderLog = function (_label: string) {
+    if ((window as any).__seqLog) (window as any).__seqLog();
+  };
+  (window as any).__traceLog = function (_m: string) {
+    if ((window as any).__seqLog) (window as any).__seqLog();
   };
   window.addEventListener("error", (e) => {
     if ((window as any).__traceLog)

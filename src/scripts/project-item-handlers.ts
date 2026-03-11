@@ -287,11 +287,16 @@ import { getFileIconSvg, getFileName } from "../lib/file-icon";
  * Render file icons with native browser tooltips
  */
 (window as any).renderFileIcons = function () {
-  console.log("📁 [RENDER-FILE-ICONS] Called");
+  const renderFileIconsDebug =
+    typeof window !== "undefined" && localStorage.getItem("renderFileIconsDebug") === "1";
+  const rfLog = (...args: unknown[]) => {
+    if (renderFileIconsDebug) console.log(...args);
+  };
+  rfLog("📁 [RENDER-FILE-ICONS] Called");
 
   // Find all project file containers
   const containers = document.querySelectorAll('[id^="project-files-"]');
-  console.log(`📁 [RENDER-FILE-ICONS] Found ${containers.length} file containers`);
+  rfLog(`📁 [RENDER-FILE-ICONS] Found ${containers.length} file containers`);
 
   containers.forEach((container) => {
     if (container.getAttribute("data-prerendered") === "true") {
@@ -303,7 +308,7 @@ import { getFileIconSvg, getFileName } from "../lib/file-icon";
     }
 
     const projectFiles = JSON.parse(projectFilesData);
-    console.log(
+    rfLog(
       `📁 [RENDER-FILE-ICONS] Container ${container.id} has ${projectFiles?.length || 0} files`
     );
 

@@ -260,6 +260,23 @@ function parseProps(propsString: string): Record<string, string> {
   // Match key="value" - key can include hyphens (cal-link), value can contain \" for escaped quotes
   const propRegex = /([\w-]+)=(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)'|([^\s>]+))/g;
 
+  const decodeHtmlEntities = (raw: string): string => {
+    // CMS content may be single-escaped (&lt;) or double-escaped (&amp;lt;).
+    // Decode a few passes so both forms become real HTML/text.
+    let decoded = raw;
+    for (let i = 0; i < 3; i++) {
+      const next = decoded
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'");
+      if (next === decoded) break;
+      decoded = next;
+    }
+    return decoded;
+  };
+
   let match;
   while ((match = propRegex.exec(propsString)) !== null) {
     const [, key, doubleQuoted, singleQuoted, unquoted] = match;
@@ -268,7 +285,7 @@ function parseProps(propsString: string): Record<string, string> {
       value = value.replace(/\\(.)/g, "$1"); // unescape \"
     }
     const camelKey = key.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
-    props[camelKey] = value;
+    props[camelKey] = decodeHtmlEntities(value);
   }
 
   return props;

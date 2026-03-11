@@ -112,6 +112,12 @@ const currentRole = currentUser?.profile?.role;
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
 <script>
+  const socketChatDebug =
+    typeof window !== "undefined" && localStorage.getItem("socketChatDebug") === "1";
+  const chatLog = (...args) => {
+    if (socketChatDebug) console.log(...args);
+  };
+
   // Declare global io variable for TypeScript
   declare const io: any;
   // Socket.io-based Chat Widget Functionality
@@ -127,34 +133,32 @@ const currentRole = currentUser?.profile?.role;
   // Initialize chat widget
   function initializeSocketChat() {
     if (isInitialized) {
-      console.log("🔔 [SOCKETIO-CHAT] Chat widget already initialized, skipping");
+      chatLog("🔔 [SOCKETIO-CHAT] Chat widget already initialized, skipping");
       return;
     }
-
-    console.log("🔔 [SOCKETIO-CHAT] Initializing Socket.io chat widget");
 
     // Check if user is Admin/Staff
     const chatWidget = document.getElementById("socket-chat-widget");
     if (!chatWidget) {
-      console.log("🔔 [SOCKETIO-CHAT] Chat widget element not found!");
       return;
     }
+    chatLog("🔔 [SOCKETIO-CHAT] Initializing Socket.io chat widget");
 
     const userRole = chatWidget.dataset.userRole || "Client";
     const userId = chatWidget.dataset.userId || "unknown";
     const userName = chatWidget.dataset.userName || "Unknown User";
 
-    console.log("🔔 [SOCKETIO-CHAT] User role:", userRole);
-    console.log("🔔 [SOCKETIO-CHAT] User ID:", userId);
-    console.log("🔔 [SOCKETIO-CHAT] User name:", userName);
+    chatLog("🔔 [SOCKETIO-CHAT] User role:", userRole);
+    chatLog("🔔 [SOCKETIO-CHAT] User ID:", userId);
+    chatLog("🔔 [SOCKETIO-CHAT] User name:", userName);
 
     if (userRole !== "Admin" && userRole !== "Staff") {
-      console.log("🔔 [SOCKETIO-CHAT] User not Admin/Staff, hiding chat widget");
+      chatLog("🔔 [SOCKETIO-CHAT] User not Admin/Staff, hiding chat widget");
       chatWidget.classList.add("hidden");
       return;
     }
 
-    console.log("🔔 [SOCKETIO-CHAT] User is Admin/Staff, showing chat widget");
+    chatLog("🔔 [SOCKETIO-CHAT] User is Admin/Staff, showing chat widget");
 
     // Get current user info
     currentUser = {
@@ -163,7 +167,7 @@ const currentRole = currentUser?.profile?.role;
       role: userRole,
     };
 
-    console.log("🔔 [SOCKETIO-CHAT] Current user:", currentUser);
+    chatLog("🔔 [SOCKETIO-CHAT] Current user:", currentUser);
 
     // Initialize Socket.io connection
     initializeSocket();
@@ -175,21 +179,21 @@ const currentRole = currentUser?.profile?.role;
     checkSocketChatStateFromCookie();
 
     isInitialized = true;
-    console.log("🔔 [SOCKETIO-CHAT] Socket.io chat widget initialization complete");
+    chatLog("🔔 [SOCKETIO-CHAT] Socket.io chat widget initialization complete");
   }
 
   // Initialize Socket.io connection
   function initializeSocket() {
     try {
       // Check if Socket.io is available
-      if (typeof window.io === "undefined") {
+      if (typeof (window as any).io === "undefined") {
         console.error("❌ [SOCKETIO-CHAT] Socket.io library not loaded");
         showConnectionStatus("Socket.io library not loaded", "error");
         return;
       }
 
       // Connect to Socket.io server
-      socket = window.io("http://localhost:3001", {
+      socket = (window as any).io("http://localhost:3001", {
         transports: ["websocket", "polling"],
         timeout: 20000,
         forceNew: true,
@@ -590,13 +594,15 @@ const currentRole = currentUser?.profile?.role;
 
   // Initialize when DOM is ready
   document.addEventListener("DOMContentLoaded", () => {
-    console.log("🔔 [SOCKETIO-CHAT] DOM Content Loaded");
+    if (!document.getElementById("socket-chat-widget")) return;
+    chatLog("🔔 [SOCKETIO-CHAT] DOM Content Loaded");
     setTimeout(initializeSocketChat, 1000);
   });
 
   // Also initialize when window loads (fallback)
   window.addEventListener("load", () => {
-    console.log("🔔 [SOCKETIO-CHAT] Window Loaded");
+    if (!document.getElementById("socket-chat-widget")) return;
+    chatLog("🔔 [SOCKETIO-CHAT] Window Loaded");
     if (!isInitialized) {
       setTimeout(initializeSocketChat, 500);
     }

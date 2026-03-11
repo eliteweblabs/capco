@@ -127,6 +127,20 @@ const {
 } = props;
 const containerClasses = getContainerWrapperClasses(maxWidth);
 
+const decodeHtmlEntities = (value?: string): string => {
+  if (!value) return "";
+  return value
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&");
+};
+
+const titleHtml = decodeHtmlEntities(title);
+const eyebrowHtml = decodeHtmlEntities(eyebrow);
+const descriptionHtml = decodeHtmlEntities(description);
+
 // Parse columns (handle string from CMS)
 const columns = typeof props.columns === "string" ? parseInt(props.columns) : (props.columns ?? 3);
 
@@ -198,14 +212,14 @@ const getColorClass = (color: string | undefined, index: number): string => {
           {eyebrow && (
             <p
               class="mb-3 text-sm font-semibold uppercase tracking-wider text-primary-600 dark:text-primary-400"
-              set:html={eyebrow}
+              set:html={eyebrowHtml}
             />
           )}
-          {title && <h2 class={globalTextH2} set:html={title} />}
+          {title && <h2 class={globalTextH2} set:html={titleHtml} />}
           {description && (
             <p
               class="mx-auto mt-4 max-w-3xl text-lg text-gray-600 dark:text-gray-300"
-              set:html={description}
+              set:html={descriptionHtml}
             />
           )}
         </div>

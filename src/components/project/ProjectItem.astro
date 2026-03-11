@@ -572,154 +572,169 @@ const statusColor = currentStatusColor || "gray";
   }
 
   <script>
-    // Set up a global listener for all deleteConfirmed events (runs once)
-    if (!(window as any).__projectDeleteListenerInitialized) {
-      (window as any).__projectDeleteListenerInitialized = true;
+    const projectItemDebug =
+      typeof window !== "undefined" && localStorage.getItem("projectItemDebug") === "1";
+    const piLog = (...args) => {
+      if (projectItemDebug) console.log(...args);
+    };
 
-      console.log("[ProjectItem] Setting up GLOBAL deleteConfirmed listener");
+    const hasProjectUi =
+      Boolean(document.querySelector(".delete-confirm-btn[data-project-id]")) ||
+      Boolean(document.querySelector("[data-live-timestamp]")) ||
+      Boolean(document.querySelector("[data-project-id][data-refresh]"));
 
-      document.addEventListener("deleteConfirmed", async (e: Event) => {
-        const customEvent = e as CustomEvent;
-        const button = customEvent.target as HTMLElement;
-        const projectId = button?.getAttribute("data-project-id");
+    if (!hasProjectUi) {
+      piLog("[ProjectItem] No project UI on page; skipping script init");
+    } else {
+      // Set up a global listener for all deleteConfirmed events (runs once)
+      if (!(window as any).__projectDeleteListenerInitialized) {
+        (window as any).__projectDeleteListenerInitialized = true;
 
-        console.log("[ProjectItem] ✅ GLOBAL deleteConfirmed event RECEIVED!");
-        console.log("[ProjectItem] Button:", button);
-        console.log("[ProjectItem] Project ID:", projectId);
+        piLog("[ProjectItem] Setting up GLOBAL deleteConfirmed listener");
 
-        if (!projectId) {
-          console.error("[ProjectItem] Missing projectId from button");
+        document.addEventListener("deleteConfirmed", async (e: Event) => {
+          const customEvent = e as CustomEvent;
+          const button = customEvent.target as HTMLElement;
+          const projectId = button?.getAttribute("data-project-id");
+
+          piLog("[ProjectItem] ✅ GLOBAL deleteConfirmed event RECEIVED!");
+          piLog("[ProjectItem] Button:", button);
+          piLog("[ProjectItem] Project ID:", projectId);
+
+          if (!projectId) {
+            console.error("[ProjectItem] Missing projectId from button");
+            return;
+          }
+
+          // Directly call delete API
+          piLog("[ProjectItem] Sending delete request for project:", projectId);
+
+          try {
+            const response = await fetch(`/api/projects/delete`, {
+              method: "DELETE",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ projectId }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+              throw new Error(data.error || "Failed to delete project");
+            }
+
+            // Show success notification
+            if (window.showNotice) {
+              window.showNotice(
+                "success",
+                "Project Deleted!",
+                data.message || "Project has been deleted successfully.",
+                1500
+              );
+            }
+
+            // Remove the project row from the DOM
+            document.querySelectorAll(`[data-project-id='${projectId}']`)?.forEach((element) => {
+              const row = element.closest("tr");
+              if (row) row.remove();
+            });
+
+            piLog("[ProjectItem] Project deleted successfully");
+          } catch (error) {
+            console.error("[ProjectItem] Error deleting project:", error);
+
+            // Show error notification
+            if (window.showNotice) {
+              window.showNotice(
+                "error",
+                "Delete Failed",
+                error.message || "Failed to delete project. Please try again.",
+                6000
+              );
+            }
+          }
+        });
+      }
+
+      // Get the parent TR for this specific project item
+      const currentScript = document.currentScript;
+      const parentTr = currentScript?.closest("tr");
+
+      piLog("[ProjectItem] currentScript:", currentScript);
+      piLog("[ProjectItem] parentTr:", parentTr);
+
+      const refreshElement = parentTr?.querySelector("[data-project-id][data-refresh]");
+      const deleteButtonElement = parentTr?.querySelector(".delete-confirm-btn[data-project-id]");
+      const deleteWrapperElement = parentTr?.querySelector(
+        ".delete-confirm-wrapper [data-project-id]"
+      );
+
+      piLog("[ProjectItem] refreshElement:", refreshElement);
+      piLog("[ProjectItem] deleteButtonElement:", deleteButtonElement);
+      piLog("[ProjectItem] deleteWrapperElement:", deleteWrapperElement);
+
+      const projectIdElement = refreshElement || deleteButtonElement || deleteWrapperElement;
+      const projectId = projectIdElement?.getAttribute("data-project-id");
+
+      piLog("[ProjectItem] Found projectId:", projectId);
+
+      // Initialize live "time ago" display for updatedAt field
+      const liveTimeElement = parentTr?.querySelector("[data-live-timestamp]");
+      if (liveTimeElement) {
+        const timestamp = liveTimeElement.getAttribute("data-live-timestamp");
+
+        function formatTimeAgo(seconds: number): string {
+          const minutes = Math.floor(seconds / 60);
+          const hours = Math.floor(minutes / 60);
+          const days = Math.floor(hours / 24);
+          const weeks = Math.floor(days / 7);
+          const months = Math.floor(days / 30);
+          const years = Math.floor(days / 365);
+
+          if (years > 0) return `${years} year${years > 1 ? "s" : ""} ago`;
+          if (months > 0) return `${months} month${months > 1 ? "s" : ""} ago`;
+          if (weeks > 0) return `${weeks} week${weeks > 1 ? "s" : ""} ago`;
+          if (days > 0) return `${days} day${days > 1 ? "s" : ""} ago`;
+          if (hours > 0) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+          if (minutes > 0) return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
+          return "Just now";
+        }
+
+        function updateLiveTime() {
+          if (!timestamp) return;
+          const now = Date.now();
+          const updated = new Date(timestamp).getTime();
+          const secondsAgo = Math.floor((now - updated) / 1000);
+          liveTimeElement.textContent = formatTimeAgo(secondsAgo);
+        }
+
+        // Update immediately
+        updateLiveTime();
+
+        // Then update every second for live ticking
+        setInterval(updateLiveTime, 1000);
+      }
+
+      // Render file icons for this project using global function
+      // Wait briefly for global script to load if not ready yet.
+      const tryRenderFileIcons = (attempt = 0) => {
+        if ((window as any).renderFileIcons) {
+          (window as any).renderFileIcons();
           return;
         }
-
-        // Directly call delete API
-        console.log("[ProjectItem] Sending delete request for project:", projectId);
-
-        try {
-          const response = await fetch(`/api/projects/delete`, {
-            method: "DELETE",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ projectId }),
-          });
-
-          const data = await response.json();
-
-          if (!response.ok) {
-            throw new Error(data.error || "Failed to delete project");
-          }
-
-          // Show success notification
-          if (window.showNotice) {
-            window.showNotice(
-              "success",
-              "Project Deleted!",
-              data.message || "Project has been deleted successfully.",
-              1500
-            );
-          }
-
-          // Remove the project row from the DOM
-          document.querySelectorAll(`[data-project-id='${projectId}']`)?.forEach((element) => {
-            const row = element.closest("tr");
-            if (row) row.remove();
-          });
-
-          console.log("[ProjectItem] Project deleted successfully");
-        } catch (error) {
-          console.error("[ProjectItem] Error deleting project:", error);
-
-          // Show error notification
-          if (window.showNotice) {
-            window.showNotice(
-              "error",
-              "Delete Failed",
-              error.message || "Failed to delete project. Please try again.",
-              6000
-            );
-          }
-        }
-      });
-    }
-
-    // Get the parent TR for this specific project item
-    const currentScript = document.currentScript;
-    const parentTr = currentScript?.closest("tr");
-
-    console.log("[ProjectItem] currentScript:", currentScript);
-    console.log("[ProjectItem] parentTr:", parentTr);
-
-    const refreshElement = parentTr?.querySelector("[data-project-id][data-refresh]");
-    const deleteButtonElement = parentTr?.querySelector(".delete-confirm-btn[data-project-id]");
-    const deleteWrapperElement = parentTr?.querySelector(
-      ".delete-confirm-wrapper [data-project-id]"
-    );
-
-    console.log("[ProjectItem] refreshElement:", refreshElement);
-    console.log("[ProjectItem] deleteButtonElement:", deleteButtonElement);
-    console.log("[ProjectItem] deleteWrapperElement:", deleteWrapperElement);
-
-    const projectIdElement = refreshElement || deleteButtonElement || deleteWrapperElement;
-    const projectId = projectIdElement?.getAttribute("data-project-id");
-
-    console.log("[ProjectItem] Found projectId:", projectId);
-
-    // Initialize live "time ago" display for updatedAt field
-    const liveTimeElement = parentTr?.querySelector("[data-live-timestamp]");
-    if (liveTimeElement) {
-      const timestamp = liveTimeElement.getAttribute("data-live-timestamp");
-
-      function formatTimeAgo(seconds: number): string {
-        const minutes = Math.floor(seconds / 60);
-        const hours = Math.floor(minutes / 60);
-        const days = Math.floor(hours / 24);
-        const weeks = Math.floor(days / 7);
-        const months = Math.floor(days / 30);
-        const years = Math.floor(days / 365);
-
-        if (years > 0) return `${years} year${years > 1 ? "s" : ""} ago`;
-        if (months > 0) return `${months} month${months > 1 ? "s" : ""} ago`;
-        if (weeks > 0) return `${weeks} week${weeks > 1 ? "s" : ""} ago`;
-        if (days > 0) return `${days} day${days > 1 ? "s" : ""} ago`;
-        if (hours > 0) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
-        if (minutes > 0) return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
-        return "Just now";
-      }
-
-      function updateLiveTime() {
-        if (!timestamp) return;
-        const now = Date.now();
-        const updated = new Date(timestamp).getTime();
-        const secondsAgo = Math.floor((now - updated) / 1000);
-        liveTimeElement.textContent = formatTimeAgo(secondsAgo);
-      }
-
-      // Update immediately
-      updateLiveTime();
-
-      // Then update every second for live ticking
-      setInterval(updateLiveTime, 1000);
-    }
-
-    // Render file icons for this project using global function
-    // Wait for global script to load if not ready yet
-    const tryRenderFileIcons = () => {
-      if ((window as any).renderFileIcons) {
-        (window as any).renderFileIcons();
-      } else {
-        // Global script not loaded yet, try again after a small delay
-        setTimeout(tryRenderFileIcons, 50);
-      }
-    };
-    tryRenderFileIcons();
-
-    // Create a project-specific wrapper for the staff icon update callback
-    // This just calls the global updateStaffIcon function with the projectId
-    if (projectId) {
-      window[`updateStaffIcon_${projectId}`] = function (result, assignedToId, staffName) {
-        (window as any).updateStaffIcon(projectId, result, assignedToId, staffName);
+        if (attempt >= 20) return;
+        setTimeout(() => tryRenderFileIcons(attempt + 1), 50);
       };
+      tryRenderFileIcons();
+
+      // Create a project-specific wrapper for the staff icon update callback
+      // This just calls the global updateStaffIcon function with the projectId
+      if (projectId) {
+        window[`updateStaffIcon_${projectId}`] = function (result, assignedToId, staffName) {
+          (window as any).updateStaffIcon(projectId, result, assignedToId, staffName);
+        };
+      }
     }
   </script>
 </tr>

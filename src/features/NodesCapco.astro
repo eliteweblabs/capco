@@ -296,6 +296,15 @@ const { currentUser } = await checkAuth(Astro.cookies);
   )
 }
 <script>
+  const nodesCapcoDebug =
+    typeof window !== "undefined" && localStorage.getItem("nodesCapcoDebug") === "1";
+  const ncLog = (...args) => {
+    if (nodesCapcoDebug) console.log(...args);
+  };
+  const ncWarn = (...args) => {
+    if (nodesCapcoDebug) console.warn(...args);
+  };
+
   // Type declaration for window.SimpleIcons
   declare global {
     interface Window {
@@ -1454,25 +1463,24 @@ const { currentUser } = await checkAuth(Astro.cookies);
 
   // Initialize when DOM is loaded OR immediately if already loaded
   async function initNodeEditor() {
-    console.log("🔧 [NodesCapco] Initializing NodesCapco component...");
-    console.log("🔧 [NodesCapco] Document ready state:", document.readyState);
-
     const canvas = document.getElementById("node-canvas");
     const svg = document.getElementById("connections-svg");
-    console.log("🔧 [NodesCapco] Canvas exists:", !!canvas);
-    console.log("🔧 [NodesCapco] SVG exists:", !!svg);
     if (!canvas || !svg) return;
+    ncLog("🔧 [NodesCapco] Initializing NodesCapco component...");
+    ncLog("🔧 [NodesCapco] Document ready state:", document.readyState);
+    ncLog("🔧 [NodesCapco] Canvas exists:", !!canvas);
+    ncLog("🔧 [NodesCapco] SVG exists:", !!svg);
 
     try {
-      console.log("🔧 [ICON] Loading custom icon system...");
+      ncLog("🔧 [ICON] Loading custom icon system...");
       await import("../lib/simple-icons.ts");
-      console.log("🔧 [ICON] Custom icon system loaded");
+      ncLog("🔧 [ICON] Custom icon system loaded");
     } catch (error) {
-      console.warn("Failed to load custom icon system:", error);
+      ncWarn("Failed to load custom icon system:", error);
     }
 
     const nodeEditor = new NodeEditor();
-    console.log("🔧 [NodesCapco] NodeEditor instance created:", !!nodeEditor);
+    ncLog("🔧 [NodesCapco] NodeEditor instance created:", !!nodeEditor);
 
     // Optional: Start continuous node addition to demonstrate center maintenance
     // Uncomment the line below to see the center maintenance in action
@@ -1480,10 +1488,8 @@ const { currentUser } = await checkAuth(Astro.cookies);
   }
 
   if (document.readyState === "loading") {
-    console.log("🔧 [NodesCapco] DOM still loading, waiting for DOMContentLoaded...");
     document.addEventListener("DOMContentLoaded", initNodeEditor);
   } else {
-    console.log("🔧 [NodesCapco] DOM already loaded, initializing immediately...");
     initNodeEditor();
   }
 </script>

@@ -102,6 +102,27 @@ export const blockRegistry: Record<string, BlockDefinition> = {
     },
   },
 
+  RothcoTitleText: {
+    name: "RothcoTitleText",
+    description: "Two-line title text block for Rothco pages",
+    props: {
+      line1: { type: "string", description: "Top line text" },
+      line2: { type: "string", description: "Bottom line text" },
+      maxWidth: {
+        type: "string",
+        default: "full",
+        description: "Container max width: sm, md, lg, xl, 2xl, full",
+      },
+      padding: {
+        type: "string",
+        default: "none",
+        description: "Section padding: none, small, medium, large",
+      },
+      className: { type: "string", description: "Additional section classes" },
+      id: { type: "string", description: "Optional section id" },
+    },
+  },
+
   TabberBlock: {
     name: "TabberBlock",
     description: "Sliding pill nav tabs with content panels",

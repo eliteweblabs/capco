@@ -30,6 +30,18 @@ const {
 </div>
 
 <script>
+  const adaptiveVideoDebug =
+    typeof window !== "undefined" && localStorage.getItem("adaptiveVideoDebug") === "1";
+  const avLog = (...args) => {
+    if (adaptiveVideoDebug) console.log(...args);
+  };
+  const avWarn = (...args) => {
+    if (adaptiveVideoDebug) console.warn(...args);
+  };
+  const avError = (...args) => {
+    if (adaptiveVideoDebug) console.error(...args);
+  };
+
   class AdaptiveVideoPlayer {
     private video: HTMLVideoElement | null;
     private connectionSpeed: string;
@@ -40,6 +52,8 @@ const {
       this.video = document.getElementById("adaptive-video") as HTMLVideoElement;
       this.connectionSpeed = "unknown";
       this.videoSource = videoSource;
+
+      if (!this.video) return;
 
       const isFullUrl = videoSource.startsWith("http://") || videoSource.startsWith("https://");
       this.videoQualities = isFullUrl
@@ -64,9 +78,7 @@ const {
       // Load the video
       this.loadVideo(selectedQuality);
 
-      console.log(
-        `🎬 [ADAPTIVE-VIDEO] Selected quality: ${selectedQuality} (${this.connectionSpeed})`
-      );
+      avLog(`🎬 [ADAPTIVE-VIDEO] Selected quality: ${selectedQuality} (${this.connectionSpeed})`);
     }
 
     async detectConnectionSpeed() {
@@ -91,14 +103,14 @@ const {
               this.connectionSpeed = "unknown" as any;
           }
 
-          console.log(`🌐 [ADAPTIVE-VIDEO] Connection type: ${effectiveType}`);
+          avLog(`🌐 [ADAPTIVE-VIDEO] Connection type: ${effectiveType}`);
           return;
         }
 
         // Fallback: Test download speed with a small image
         await this.testDownloadSpeed();
       } catch (error) {
-        console.warn("🌐 [ADAPTIVE-VIDEO] Could not detect connection speed:", error);
+        avWarn("🌐 [ADAPTIVE-VIDEO] Could not detect connection speed:", error);
         this.connectionSpeed = "unknown" as any;
       }
     }
@@ -127,7 +139,7 @@ const {
           }
         }
       } catch (error) {
-        console.warn("🌐 [ADAPTIVE-VIDEO] Speed test failed:", error);
+        avWarn("🌐 [ADAPTIVE-VIDEO] Speed test failed:", error);
         this.connectionSpeed = "unknown" as any;
       }
     }
@@ -168,7 +180,7 @@ const {
       const videoSrc = this.videoQualities[quality as keyof typeof this.videoQualities];
 
       if (!videoSrc) {
-        console.error("🎬 [ADAPTIVE-VIDEO] Invalid video quality:", quality);
+        avError("🎬 [ADAPTIVE-VIDEO] Invalid video quality:", quality);
         return;
       }
 
@@ -193,7 +205,7 @@ const {
       // Load the video
       this.video.load();
 
-      console.log(`🎬 [ADAPTIVE-VIDEO] Loading video: ${videoSrc}`);
+      avLog(`🎬 [ADAPTIVE-VIDEO] Loading video: ${videoSrc}`);
     }
   }
 
@@ -201,6 +213,7 @@ const {
   document.addEventListener("DOMContentLoaded", () => {
     // Get video source from data attribute
     const videoElement = document.getElementById("adaptive-video") as HTMLVideoElement;
+    if (!videoElement) return;
     const videoSource = videoElement?.getAttribute("data-video-source") || "uhd_30fps";
     new AdaptiveVideoPlayer(videoSource);
   });
