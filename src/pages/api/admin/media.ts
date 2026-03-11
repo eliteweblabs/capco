@@ -13,6 +13,21 @@ import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { isAdminOrSuperAdmin } from "../../../lib/user-utils";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
+import { SimpleProjectLogger } from "../../../lib/simple-logging";
+
+async function traceMediaDelete(
+  phase: "start" | "end" | "error",
+  traceId: string,
+  details: Record<string, unknown>
+) {
+  const label = phase === "error" ? "error" : phase;
+  await SimpleProjectLogger.addLogEntry(
+    0,
+    phase === "error" ? "error" : "systemEvent",
+    `[TRACE][${label}] api/admin/media DELETE (${traceId})`,
+    { trace: true, phase, ...details }
+  );
+}
 
 export const GET: APIRoute = async ({ cookies, url }) => {
   try {
@@ -281,9 +296,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 };
 
 export const DELETE: APIRoute = async ({ request, cookies }) => {
+  const traceId = `media-del-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   try {
     const { isAuth, currentUser } = await checkAuth(cookies);
     const currentRole = currentUser?.profile?.role;
+    await traceMediaDelete("start", traceId, {
+      currentUserId: currentUser?.id ?? null,
+      role: currentRole ?? null,
+    });
 
     if (!isAuth || !currentUser || !isAdminOrSuperAdmin(currentRole)) {
       return new Response(JSON.stringify({ success: false, error: "Admin access required" }), {
@@ -301,6 +321,12 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     const body = await request.json();
     const { fileId, source } = body;
+    await traceMediaDelete("start", traceId, {
+      step: "request-body",
+      fileId: fileId ?? null,
+      source: source ?? null,
+      fileIdType: typeof fileId,
+    });
 
     console.log("🗑️ [ADMIN-MEDIA] DELETE request received:", {
       fileId,
@@ -311,6 +337,10 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     if (!fileId) {
       console.error("❌ [ADMIN-MEDIA] No file ID provided in request");
+      await traceMediaDelete("error", traceId, {
+        step: "validate-fileId",
+        reason: "missing-fileId",
+      });
       return new Response(JSON.stringify({ success: false, error: "File ID required" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
@@ -355,6 +385,11 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     if (isNaN(fileIdInt)) {
       console.error("❌ [ADMIN-MEDIA] Invalid file ID - could not parse to integer:", fileId);
+      await traceMediaDelete("error", traceId, {
+        step: "parse-fileId",
+        reason: "invalid-file-id",
+        fileId,
+      });
       return new Response(JSON.stringify({ success: false, error: "Invalid file ID" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
@@ -377,6 +412,12 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     if (fetchError) {
       console.error("❌ [ADMIN-MEDIA] Error fetching file:", fetchError);
+      await traceMediaDelete("error", traceId, {
+        step: "fetch-file",
+        reason: "file-not-found",
+        fileIdInt,
+        fetchError: fetchError.message ?? String(fetchError),
+      });
       return new Response(JSON.stringify({ success: false, error: "File not found" }), {
         status: 404,
         headers: { "Content-Type": "application/json" },
@@ -391,6 +432,11 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
 
     if (deleteError) {
       console.error("❌ [ADMIN-MEDIA] Error deleting from files:", deleteError);
+      await traceMediaDelete("error", traceId, {
+        step: "delete-db-row",
+        fileIdInt,
+        deleteError: deleteError.message ?? String(deleteError),
+      });
       return new Response(
         JSON.stringify({ success: false, error: "Failed to delete from database" }),
         { status: 500, headers: { "Content-Type": "application/json" } }
@@ -410,6 +456,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     }
 
     console.log("✅ [ADMIN-MEDIA] File deleted:", fileIdInt);
+    await traceMediaDelete("end", traceId, { step: "complete", fileIdInt, source: source ?? null });
 
     return new Response(JSON.stringify({ success: true, message: "File deleted successfully" }), {
       status: 200,
@@ -417,6 +464,10 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     });
   } catch (error: any) {
     console.error("❌ [ADMIN-MEDIA] DELETE error:", error);
+    await traceMediaDelete("error", traceId, {
+      step: "catch",
+      error: error?.message ?? String(error),
+    });
     return new Response(JSON.stringify({ success: false, error: error.message }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

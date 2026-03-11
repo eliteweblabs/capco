@@ -175,7 +175,9 @@ top: -38px;
   }
 
   function setActiveTabIndex(buttons, index) {
-    const target = buttons.find((btn) => parseInt(btn.getAttribute("data-index") || "-1", 10) === index);
+    const target = buttons.find(
+      (btn) => parseInt(btn.getAttribute("data-index") || "-1", 10) === index
+    );
     if (!target || target.getAttribute("data-active") === "true") return false;
     target.click();
     return true;
@@ -239,7 +241,8 @@ top: -38px;
       }
 
       const now = Date.now();
-      if (now - lastStepTimestamp < tabberScrollCooldownMs) return { consumed: true, released: false };
+      if (now - lastStepTimestamp < tabberScrollCooldownMs)
+        return { consumed: true, released: false };
 
       const nextIndex = direction > 0 ? activeIndex + 1 : activeIndex - 1;
       if (nextIndex < 0 || nextIndex >= buttons.length) {
@@ -258,7 +261,8 @@ top: -38px;
         lastStepTimestamp = now;
         tabberDebug("step", [block.id || "tabber", activeIndex, nextIndex, lockedDirection]);
         const reachedBoundaryAfterStep =
-          (lockedDirection > 0 && nextIndex === lastIndex) || (lockedDirection < 0 && nextIndex === 0);
+          (lockedDirection > 0 && nextIndex === lastIndex) ||
+          (lockedDirection < 0 && nextIndex === 0);
         if (reachedBoundaryAfterStep) {
           unlock();
         }

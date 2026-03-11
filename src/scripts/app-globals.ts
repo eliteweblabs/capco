@@ -24,6 +24,7 @@ import { initFlowbite } from "flowbite";
 import { initPageSizeToggle } from "../lib/page-size-plugin";
 import { validatePhone, formatPhoneAsYouType } from "../lib/phone-validation";
 import { Debug, formFailureLog } from "../lib/debug-logger";
+import { TraceLog } from "../lib/trace-log";
 
 // Single source for global (window.*) functions. Components keep their own JS; only shared globals here.
 if (typeof window !== "undefined") {
@@ -42,6 +43,7 @@ if (typeof window !== "undefined") {
   w.validatePhone = validatePhone;
   w.formatPhoneAsYouType = formatPhoneAsYouType;
   w.Debug = Debug;
+  w.TraceLog = TraceLog;
   w.formFailureLog = formFailureLog;
 }
 
@@ -62,6 +64,8 @@ declare global {
     createButtonPartial?: (config: any) => Promise<HTMLElement | null>;
     /** Toggleable function-call debug logger. Usage: Debug.enable(), Debug.log("cat","fn",args), Debug.wrap(fn,{category}) */
     Debug?: import("../lib/debug-logger").DebugLogger;
+    /** Toggleable entry/exit/error trace logger. Usage: TraceLog.enable(); const t=TraceLog.start(name); TraceLog.end(t); */
+    TraceLog?: typeof import("../lib/trace-log").TraceLog;
     /** Always-on form failure logger. Call when form submit fails for monitoring. Usage: formFailureLog({ formId, formAction, error, context }) */
     formFailureLog?: (payload: import("../lib/debug-logger").FormFailurePayload) => void;
     deleteProject?: (projectId: any) => void;

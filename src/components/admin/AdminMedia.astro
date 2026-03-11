@@ -1089,6 +1089,11 @@ const stats = {
     async function deleteFile(card: HTMLElement) {
       const fileId = card.dataset.fileId;
       const source = card.dataset.fileSource;
+      const trace = window.TraceLog;
+      const traceCtx = trace?.start("admin-media.deleteFile", {
+        fileId: fileId ?? null,
+        source: source ?? null,
+      });
       
       console.log("🗑️ [MEDIA-DELETE] Delete initiated:", { 
         fileId, 
@@ -1099,6 +1104,7 @@ const stats = {
       
       if (!fileId) {
         console.error("❌ [MEDIA-DELETE] No file ID found in card dataset");
+        trace?.error(traceCtx!, "Missing fileId in card dataset");
         return;
       }
 
@@ -1144,12 +1150,19 @@ const stats = {
           if (window.showNotice) {
             window.showNotice("success", "Success", "File deleted successfully", 2000);
           }
+          trace?.end(traceCtx!, { ok: true, status: response.status, fileId });
         } else {
           console.error("❌ [MEDIA-DELETE] Delete failed:", result);
+          trace?.error(traceCtx!, `Delete failed: ${result.error || "Unknown error"}`, {
+            status: response.status,
+            result,
+            fileId,
+          });
           throw new Error(result.error || "Delete failed");
         }
       } catch (error) {
         console.error("❌ [MEDIA-DELETE] Delete error:", error);
+        trace?.error(traceCtx!, error, { fileId, source });
         alert(`Failed to delete file: ${error}`);
       }
     }
