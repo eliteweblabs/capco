@@ -367,7 +367,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
                 "relative z-50 min-h-0 flex-1 touch-pan-y overflow-y-auto bg-gray-100 scrollbar-hide dark:bg-gray-900",
                 layout === "fullform"
                   ? "touch-none overscroll-none overscroll-y-contain"
-                  : "overscroll-y-contain",
+                  : "overscroll-y-auto md:overscroll-y-contain",
               ]}
             >
               <div
@@ -473,6 +473,89 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
           )}
 
           {/* 15-17. scroll-animations, lazy-load-images, project-item-handlers - in app-page-scripts.js above */}
+
+          {/* Mobile hero video reliability: retry autoplay and prefer low bitrate on constrained networks */}
+          <script is:inline>
+            (() => {
+              const initHeroVideoAutoplayFallback = () => {
+                const videos = Array.from(document.querySelectorAll(".hero-adaptive-video"));
+
+                for (const el of videos) {
+                  if (!(el instanceof HTMLVideoElement)) continue;
+                  if (el.dataset.mobileAutoplayInit === "true") continue;
+                  el.dataset.mobileAutoplayInit = "true";
+
+                  el.muted = true;
+                  el.defaultMuted = true;
+                  el.playsInline = true;
+                  el.setAttribute("playsinline", "");
+                  el.setAttribute("webkit-playsinline", "");
+                  el.preload = "auto";
+
+                  try {
+                    const nav = navigator as Navigator & {
+                      connection?: { saveData?: boolean; effectiveType?: string };
+                    };
+                    const conn = nav.connection;
+                    const isConstrained =
+                      conn?.saveData === true ||
+                      conn?.effectiveType === "slow-2g" ||
+                      conn?.effectiveType === "2g" ||
+                      conn?.effectiveType === "3g";
+
+                    if (isConstrained) {
+                      const sourceEl = el.querySelector("source");
+                      const currentSrc =
+                        sourceEl?.getAttribute("src") || el.getAttribute("src") || "";
+                      if (currentSrc.includes("_medium.mp4")) {
+                        const lowSrc = currentSrc.replace("_medium.mp4", "_low.mp4");
+                        if (sourceEl) {
+                          sourceEl.setAttribute("src", lowSrc);
+                        } else {
+                          el.setAttribute("src", lowSrc);
+                        }
+                        el.load();
+                      }
+                    }
+                  } catch {
+                    // Ignore network capability detection issues.
+                  }
+
+                  const tryPlay = () => {
+                    const result = el.play();
+                    if (result && typeof result.catch === "function") {
+                      result.catch(() => {});
+                    }
+                  };
+
+                  if (el.readyState >= 2) tryPlay();
+                  el.addEventListener("canplay", tryPlay, { passive: true });
+                  document.addEventListener(
+                    "visibilitychange",
+                    () => {
+                      if (document.visibilityState === "visible") tryPlay();
+                    },
+                    { passive: true }
+                  );
+
+                  const unlockPlayback = () => {
+                    tryPlay();
+                  };
+                  document.addEventListener("touchstart", unlockPlayback, {
+                    passive: true,
+                    once: true,
+                  });
+                  document.addEventListener("click", unlockPlayback, {
+                    passive: true,
+                    once: true,
+                  });
+                }
+              };
+
+              document.addEventListener("DOMContentLoaded", initHeroVideoAutoplayFallback);
+              document.addEventListener("astro:page-load", initHeroVideoAutoplayFallback);
+            })();
+          </script>
 
           {/* Custom JS from CMS (runs after other scripts) */}
           {customJs?.trim() && (
