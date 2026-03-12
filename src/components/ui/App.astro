@@ -493,15 +493,19 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
                   el.preload = "auto";
 
                   try {
-                    const nav = navigator as Navigator & {
-                      connection?: { saveData?: boolean; effectiveType?: string };
-                    };
-                    const conn = nav.connection;
+                    const conn =
+                      navigator && "connection" in navigator
+                        ? Reflect.get(navigator, "connection")
+                        : null;
+                    const effectiveType =
+                      conn && typeof conn === "object" ? Reflect.get(conn, "effectiveType") : null;
+                    const saveData =
+                      conn && typeof conn === "object" ? Reflect.get(conn, "saveData") : false;
                     const isConstrained =
-                      conn?.saveData === true ||
-                      conn?.effectiveType === "slow-2g" ||
-                      conn?.effectiveType === "2g" ||
-                      conn?.effectiveType === "3g";
+                      saveData === true ||
+                      effectiveType === "slow-2g" ||
+                      effectiveType === "2g" ||
+                      effectiveType === "3g";
 
                     if (isConstrained) {
                       const sourceEl = el.querySelector("source");
@@ -528,8 +532,31 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
                     }
                   };
 
+                  const fallbackImg = el.querySelector("img");
+                  const hideFallback = () => {
+                    if (!fallbackImg) return;
+                    fallbackImg.style.opacity = "0";
+                    fallbackImg.style.pointerEvents = "none";
+                    fallbackImg.setAttribute("aria-hidden", "true");
+                  };
+                  const showFallback = () => {
+                    if (!fallbackImg) return;
+                    fallbackImg.style.opacity = "1";
+                    fallbackImg.style.pointerEvents = "";
+                    fallbackImg.removeAttribute("aria-hidden");
+                  };
+                  const onPlaying = () => {
+                    hideFallback();
+                    // iOS can keep poster visible until first frame; removing it after play avoids "stuck cover".
+                    el.removeAttribute("poster");
+                  };
+
                   if (el.readyState >= 2) tryPlay();
+                  el.addEventListener("loadeddata", hideFallback, { passive: true });
                   el.addEventListener("canplay", tryPlay, { passive: true });
+                  el.addEventListener("playing", onPlaying, { passive: true });
+                  el.addEventListener("timeupdate", hideFallback, { passive: true });
+                  el.addEventListener("error", showFallback, { passive: true });
                   document.addEventListener(
                     "visibilitychange",
                     () => {

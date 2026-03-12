@@ -24,12 +24,17 @@ const env = { ...process.env, ...loaded };
 // https://astro.build/config
 export default defineConfig({
   // preserveScriptOrder was added in Astro 5.5; removed for Astro 4
-  // When RAILWAY_PUBLIC_DOMAIN is unset (local dev) use localhost so URLs never switch to production
-  site: env.RAILWAY_PUBLIC_DOMAIN
-    ? env.RAILWAY_PUBLIC_DOMAIN.startsWith("http")
-      ? env.RAILWAY_PUBLIC_DOMAIN
-      : `https://${env.RAILWAY_PUBLIC_DOMAIN}`
-    : "http://localhost:4321",
+  // Prefer explicit PUBLIC_URL for canonical host; fall back to Railway injected domain.
+  // When both are unset (local dev), use localhost so URLs never switch to production.
+  site: env.PUBLIC_URL
+    ? env.PUBLIC_URL.startsWith("http")
+      ? env.PUBLIC_URL
+      : `https://${env.PUBLIC_URL}`
+    : env.RAILWAY_PUBLIC_DOMAIN
+      ? env.RAILWAY_PUBLIC_DOMAIN.startsWith("http")
+        ? env.RAILWAY_PUBLIC_DOMAIN
+        : `https://${env.RAILWAY_PUBLIC_DOMAIN}`
+      : "http://localhost:4321",
   output: "server",
   adapter: node({
     mode: "standalone",
