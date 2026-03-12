@@ -58,7 +58,7 @@ const filteredItems = items.filter((item) => {
 
 <nav
   id={navId}
-  class={`scrollbar-hide pb-0 relative flex gap-2 overflow-x-scroll overflow-y-hidden whitespace-nowrap mb-0 ${navClass}`}
+  class={`scrollbar-hide pb-0 relative flex gap-2 overflow-x-scroll overflow-y-hidden whitespace-nowrap mb-0 touch-pan-x ${navClass}`}
   data-active-item={activeItem}
   data-url-param={urlParam || ""}
   data-switch-handler={switchHandler}
@@ -66,9 +66,10 @@ const filteredItems = items.filter((item) => {
   <!-- Sliding tabs indicator: visible on server when activeItem is 0 so tabbing works before hydration -->
   <div
     data-sliding-tabs-indicator
-    class={`color-background absolute shadow-lg transition-all duration-300 ease-out bottom-0 left-0 ${
+    class={`color-background pointer-events-none absolute bottom-0 left-0 z-0 shadow-lg transition-all duration-300 ease-out ${
       compact ? "h-10" : "h-10"
     }`}
+    aria-hidden="true"
     style={activeItem === 0 ? "left: 0; width: 8rem;" : "width: 0; left: 0;"}
   >
   </div>
@@ -82,7 +83,7 @@ const filteredItems = items.filter((item) => {
           id={item.id}
           variant={item.variant ?? "tab"}
           size="sm"
-          class={compact ? "px-4 py-2" : "px-5 py-2.5"}
+          class={compact ? "relative z-10 px-4 py-2" : "relative z-10 px-5 py-2.5"}
           data-active={index === activeItem ? "true" : "false"}
           dataAttributes={{
             ...(item.dataAttributes || {}),
@@ -115,6 +116,8 @@ const filteredItems = items.filter((item) => {
   function initializeSlidingTabs(navId) {
     const nav = document.getElementById(navId);
     if (!nav) return;
+    if (nav.getAttribute("data-sliding-tabs-initialized") === "true") return;
+    nav.setAttribute("data-sliding-tabs-initialized", "true");
 
     const tabsIndicator = nav.querySelector("[data-sliding-tabs-indicator]");
     const buttons = nav.querySelectorAll("button[data-index], button[id], a[data-index], a[id]");
