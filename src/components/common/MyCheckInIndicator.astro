@@ -85,6 +85,7 @@ const canCheckIn = currentUser && isAdminOrStaffOrSuperAdmin(currentUser.profile
     const STORAGE_KEY = "location-checkin-state";
     const TIME_ENTRY_KEY = "location-checkin-time-entry-id";
     const POLL_MS = 30000; // Poll every 30s to reduce API load; was 15s
+    const IDLE_MS = 3 * 60 * 1000;
 
     const container = document.getElementById("my-checkin-indicator");
     const durationEl = document.getElementById("my-checkin-duration");
@@ -95,6 +96,23 @@ const canCheckIn = currentUser && isAdminOrStaffOrSuperAdmin(currentUser.profile
     let entry = null;
     let tickInterval = null;
     let pingInterval = null;
+    let loadInterval = null;
+    let idleTimer = null;
+    let isIdle = false;
+
+    function canRunBackgroundWork() {
+      return !document.hidden && !isIdle;
+    }
+
+    function resetIdleTimer() {
+      isIdle = false;
+      if (idleTimer) clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => {
+        isIdle = true;
+        stopLoadInterval();
+        stopPingInterval();
+      }, IDLE_MS);
+    }
 
     function formatDuration(ms) {
       const mins = Math.floor(ms / 60000);
@@ -132,7 +150,7 @@ const canCheckIn = currentUser && isAdminOrStaffOrSuperAdmin(currentUser.profile
     function startPingInterval() {
       if (!entry) return;
       const sendPing = () => {
-        if (!entry) return;
+        if (!entry || !canRunBackgroundWork()) return;
         getPosition()
           .then((pos) =>
             fetch("/api/location/ping", {
@@ -161,6 +179,21 @@ const canCheckIn = currentUser && isAdminOrStaffOrSuperAdmin(currentUser.profile
       }
     }
 
+    function startLoadInterval() {
+      if (loadInterval) return;
+      loadInterval = setInterval(() => {
+        if (!canRunBackgroundWork()) return;
+        load();
+      }, POLL_MS);
+    }
+
+    function stopLoadInterval() {
+      if (loadInterval) {
+        clearInterval(loadInterval);
+        loadInterval = null;
+      }
+    }
+
     function show(e) {
       entry = e;
       if (container) container.classList.remove("hidden");
@@ -168,7 +201,7 @@ const canCheckIn = currentUser && isAdminOrStaffOrSuperAdmin(currentUser.profile
       if (notesInput && "value" in notesInput) notesInput.value = e.notes || "";
       tick();
       tickInterval = setInterval(tick, 1000);
-      startPingInterval();
+      if (canRunBackgroundWork()) startPingInterval();
     }
 
     function hide() {
@@ -243,10 +276,37 @@ const canCheckIn = currentUser && isAdminOrStaffOrSuperAdmin(currentUser.profile
       // Skip fetch/poll when not logged in as Admin/Staff (avoids 401 noise)
       if (container.dataset.canCheckIn === "true") {
         load();
-        setInterval(load, POLL_MS);
+        startLoadInterval();
         window.addEventListener("checkInStarted", () => load());
       }
       stopBtn.addEventListener("click", handleStop);
+
+      const markActive = () => {
+        resetIdleTimer();
+        startLoadInterval();
+        if (entry) startPingInterval();
+      };
+
+      ["pointerdown", "keydown", "scroll", "touchstart"].forEach((evt) => {
+        document.addEventListener(evt, markActive, { passive: true });
+      });
+
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+          stopLoadInterval();
+          stopPingInterval();
+          return;
+        }
+        markActive();
+        load();
+      });
+
+      resetIdleTimer();
+      window.addEventListener("beforeunload", () => {
+        stopLoadInterval();
+        stopPingInterval();
+        if (idleTimer) clearTimeout(idleTimer);
+      });
     }
 
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

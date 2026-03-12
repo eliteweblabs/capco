@@ -33,7 +33,7 @@ import Button from "../common/Button.astro";
   <!-- Panel body: data-dropdown-id passed so script can find panel/triggers (Navbar uses id="notifications") -->
   <div class="min-h-0 flex-1 overflow-y-auto" data-dropdown-id={id}>
     <!-- Header with Mark all read and Archive all -->
-    <div id="notification-actions" class="flex hidden items-center justify-between gap-2">
+    <div id="notification-actions" class="hidden items-center justify-between gap-2">
       <Button type="button" id="mark-all-read" variant="secondary" size="sm">
         Mark all read
       </Button>
@@ -92,6 +92,10 @@ import Button from "../common/Button.astro";
     hasMore: boolean = true;
     panelId: string;
     trace: any;
+    idleTimer: ReturnType<typeof setTimeout> | null = null;
+    isIdle: boolean = false;
+    readonly POLL_MS: number = 120000;
+    readonly IDLE_MS: number = 3 * 60 * 1000;
 
     constructor() {
       const dropdownContainer = document.querySelector("[data-dropdown-id]");
@@ -128,8 +132,44 @@ import Button from "../common/Button.astro";
         "🔔 [NOTIFICATIONS-DROPDOWN] init() starting: bindEvents, loadNotifications, startPolling"
       );
       this.bindEvents();
+      this.setupActivityAwarePolling();
       await this.loadNotifications();
       this.startPolling();
+    }
+
+    setupActivityAwarePolling() {
+      const markActive = () => {
+        if (this.isIdle) {
+          this.isIdle = false;
+          this.startPolling();
+          if (!this.isOpen && !document.hidden) {
+            this.loadNotifications().then(() => this.refreshBellCount());
+          }
+        }
+        if (this.idleTimer) clearTimeout(this.idleTimer);
+        this.idleTimer = setTimeout(() => {
+          this.isIdle = true;
+          this.stopPolling();
+        }, this.IDLE_MS);
+      };
+
+      ["pointerdown", "keydown", "scroll", "touchstart"].forEach((evt) => {
+        document.addEventListener(evt, markActive, { passive: true });
+      });
+
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+          this.stopPolling();
+          return;
+        }
+        markActive();
+      });
+
+      markActive();
+    }
+
+    shouldPoll() {
+      return !this.isOpen && !this.isIdle && !document.hidden;
     }
 
     bindEvents() {
@@ -359,10 +399,12 @@ import Button from "../common/Button.astro";
       if (this.notifications.length === 0) {
         empty?.classList.remove("hidden");
         actions?.classList.add("hidden");
+        actions?.classList.remove("flex");
         return;
       }
 
       actions?.classList.remove("hidden");
+      actions?.classList.add("flex");
 
       list.innerHTML = "";
 
@@ -842,6 +884,7 @@ import Button from "../common/Button.astro";
       empty?.classList.add("hidden");
       list?.classList.add("hidden");
       actions?.classList.add("hidden");
+      actions?.classList.remove("flex");
     }
 
     showEmpty() {
@@ -854,6 +897,7 @@ import Button from "../common/Button.astro";
       empty?.classList.remove("hidden");
       list?.classList.add("hidden");
       actions?.classList.add("hidden");
+      actions?.classList.remove("flex");
     }
 
     showMigrationRequired(instructions: string[]) {
@@ -885,13 +929,20 @@ import Button from "../common/Button.astro";
     }
 
     startPolling() {
-      // Poll for new notifications every 2 minutes when dropdown is closed.
+      if (this.pollingInterval) return;
+      // Poll for new notifications every 2 minutes when dropdown is closed and page is active.
       // loadNotifications() updates list and badge (bell count); refreshBellCount() keeps bell server-authoritative.
       this.pollingInterval = setInterval(() => {
-        if (!this.isOpen) {
+        if (this.shouldPoll()) {
           this.loadNotifications().then(() => this.refreshBellCount());
         }
-      }, 120000);
+      }, this.POLL_MS);
+    }
+
+    stopPolling() {
+      if (!this.pollingInterval) return;
+      clearInterval(this.pollingInterval);
+      this.pollingInterval = null;
     }
 
     formatTimeAgo(dateString: string) {

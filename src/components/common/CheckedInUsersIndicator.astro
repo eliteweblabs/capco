@@ -30,9 +30,26 @@ const showCheckedIn = isAdminOrSuperAdmin(currentRole);
 
 <script>
   (function () {
+    const POLL_MS = 30000;
+    const IDLE_MS = 3 * 60 * 1000;
+
     function init() {
       const container = document.getElementById("checked-in-users-list");
       if (!container) return;
+      let pollInterval = null;
+      let idleTimer = null;
+      let isIdle = false;
+
+      const canPoll = () => !document.hidden && !isIdle;
+
+      const resetIdleTimer = () => {
+        isIdle = false;
+        if (idleTimer) clearTimeout(idleTimer);
+        idleTimer = setTimeout(() => {
+          isIdle = true;
+          stopPolling();
+        }, IDLE_MS);
+      };
 
       async function fetchCheckedIn() {
         try {
@@ -70,12 +87,48 @@ const showCheckedIn = isAdminOrSuperAdmin(currentRole);
       }
 
       async function load() {
+        if (!canPoll()) return;
         const users = await fetchCheckedIn();
         render(users);
       }
 
+      function startPolling() {
+        if (pollInterval) return;
+        pollInterval = setInterval(load, POLL_MS);
+      }
+
+      function stopPolling() {
+        if (!pollInterval) return;
+        clearInterval(pollInterval);
+        pollInterval = null;
+      }
+
       load();
-      setInterval(load, 30000);
+      startPolling();
+
+      const markActive = () => {
+        resetIdleTimer();
+        startPolling();
+      };
+
+      ["pointerdown", "keydown", "scroll", "touchstart"].forEach((evt) => {
+        document.addEventListener(evt, markActive, { passive: true });
+      });
+
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+          stopPolling();
+          return;
+        }
+        markActive();
+        load();
+      });
+
+      resetIdleTimer();
+      window.addEventListener("beforeunload", () => {
+        stopPolling();
+        if (idleTimer) clearTimeout(idleTimer);
+      });
     }
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", init);
