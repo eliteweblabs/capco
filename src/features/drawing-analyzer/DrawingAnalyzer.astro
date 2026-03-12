@@ -280,7 +280,9 @@ const { projectId } = Astro.props;
 </style>
 
 <script src="/js/pdf.min.js" defer></script>
-<script define:vars={{ projectId: projectId ?? null }}>
+<script type="module" define:vars={{ projectId: projectId ?? null }}>
+  import { TraceLog } from "../../lib/trace-log";
+
   const dropzone = document.getElementById("drawing-dropzone");
   const fileInput = document.getElementById("drawing-file-input");
   const stage = document.getElementById("drawing-stage");
@@ -324,6 +326,8 @@ const { projectId } = Astro.props;
   let selectionShape = "square";
   let symbolLibrary = [];
   let zoomLevel = 1;
+  let libraryMutationVersion = 0;
+  let libraryLoadRequestId = 0;
   const currentProjectId = projectId != null ? Number(projectId) : null;
 
   window.switchDrawingAnalyzerTab = function (tabId) {
@@ -356,6 +360,18 @@ const { projectId } = Astro.props;
       indicator.style.width = `${btnRect.width}px`;
     }
   };
+
+  function markLibraryMutated(reason, payload = {}) {
+    libraryMutationVersion += 1;
+    if (TraceLog.enabled()) {
+      const ctx = TraceLog.start("drawingAnalyzer.library.mutated", {
+        reason,
+        mutationVersion: libraryMutationVersion,
+        ...payload,
+      });
+      TraceLog.end(ctx);
+    }
+  }
 
   function showStatus(message, isError = false) {
     if (!statusEl) return;
@@ -581,6 +597,13 @@ const { projectId } = Astro.props;
   }
 
   async function loadLibraryItems() {
+    const requestId = ++libraryLoadRequestId;
+    const startMutationVersion = libraryMutationVersion;
+    const ctx = TraceLog.start("drawingAnalyzer.library.load", {
+      requestId,
+      projectId: currentProjectId,
+      startMutationVersion,
+    });
     try {
       const params = new URLSearchParams();
       if (currentProjectId && !Number.isNaN(currentProjectId)) {
@@ -590,7 +613,24 @@ const { projectId } = Astro.props;
         credentials: "include",
       });
       const data = await res.json();
-      if (!res.ok || !data.success) return;
+      if (!res.ok || !data.success) {
+        TraceLog.end(ctx, { requestId, ok: false, status: res.status, reason: "non-success response" });
+        return;
+      }
+      if (requestId !== libraryLoadRequestId) {
+        TraceLog.end(ctx, { requestId, ok: true, skipped: "stale-request" });
+        return;
+      }
+      if (libraryMutationVersion !== startMutationVersion) {
+        TraceLog.end(ctx, {
+          requestId,
+          ok: true,
+          skipped: "local-library-mutated-during-load",
+          startMutationVersion,
+          endMutationVersion: libraryMutationVersion,
+        });
+        return;
+      }
       symbolLibrary = (data.items || []).map((item) => ({
         id: item.id,
         clientId: `db-${item.id}`,
@@ -604,13 +644,28 @@ const { projectId } = Astro.props;
         dependencies: Array.isArray(item.dependencies) ? item.dependencies : [],
       }));
       renderLibraryList();
+      TraceLog.end(ctx, {
+        requestId,
+        ok: true,
+        loadedCount: symbolLibrary.length,
+        mutationVersion: libraryMutationVersion,
+      });
     } catch (error) {
       console.error("[DrawingAnalyzer] failed to load library", error);
+      TraceLog.error(ctx, error, { requestId });
     }
   }
 
   async function saveLibraryItem(item) {
-    if (!item || !item.uploadedUrl) return;
+    const ctx = TraceLog.start("drawingAnalyzer.library.saveItem", {
+      hasId: Boolean(item?.id),
+      clientId: item?.clientId,
+      projectId: currentProjectId,
+    });
+    if (!item || !item.uploadedUrl) {
+      TraceLog.end(ctx, { ok: false, reason: "missing-item-or-upload-url" });
+      return;
+    }
     const payload = {
       projectId: currentProjectId,
       name: item.name,
@@ -628,6 +683,7 @@ const { projectId } = Astro.props;
         body: JSON.stringify({ id: item.id, ...payload }),
       });
       if (!res.ok) throw new Error("Failed to update library item");
+      TraceLog.end(ctx, { ok: true, mode: "update", id: item.id });
       return item.id;
     }
     const res = await fetch("/api/drawing-library/items", {
@@ -640,6 +696,7 @@ const { projectId } = Astro.props;
     if (!res.ok || !data?.item?.id) throw new Error("Failed to create library item");
     item.id = data.item.id;
     item.clientId = `db-${item.id}`;
+    TraceLog.end(ctx, { ok: true, mode: "create", id: item.id });
     return item.id;
   }
 
@@ -838,7 +895,16 @@ const { projectId } = Astro.props;
   }
 
   async function captureSymbolFromSelection() {
-    if (!imgEl || !overlay || !viableArea) return;
+    const traceCtx = TraceLog.start("drawingAnalyzer.captureSymbolFromSelection", {
+      hasImage: Boolean(imgEl?.src),
+      hasOverlay: Boolean(overlay),
+      hasViableArea: Boolean(viableArea),
+      selectionShape,
+    });
+    if (!imgEl || !overlay || !viableArea) {
+      TraceLog.end(traceCtx, { ok: false, reason: "missing-image-overlay-or-viable-area" });
+      return;
+    }
     const displayWidth = overlay.clientWidth || 1;
     const displayHeight = overlay.clientHeight || 1;
     const naturalWidth = imgEl.naturalWidth || displayWidth;
@@ -881,6 +947,10 @@ const { projectId } = Astro.props;
         priority: symbolLibrary.length + 1,
       },
     ];
+    markLibraryMutated("symbol-captured-local", {
+      clientId: id,
+      libraryCount: symbolLibrary.length,
+    });
     renderLibraryList();
     showStatus(`Symbol captured. Library count: ${symbolLibrary.length}`);
     // Immediate feedback: jump to library so user can see result.
@@ -893,12 +963,30 @@ const { projectId } = Astro.props;
           item.uploadedUrl = uploadedUrl;
           item.imageUrl = uploadedUrl;
           await saveLibraryItem(item);
+          markLibraryMutated("symbol-uploaded-and-saved", {
+            clientId: id,
+            itemId: item.id,
+          });
+        } else {
+          TraceLog.end(traceCtx, {
+            ok: false,
+            reason: "captured-item-missing-before-save",
+            clientId: id,
+            libraryCount: symbolLibrary.length,
+          });
         }
       } catch (error) {
         console.warn("[DrawingAnalyzer] symbol upload failed", error);
+        TraceLog.error(traceCtx, error, { clientId: id });
       }
     }
     renderLibraryList();
+    TraceLog.end(traceCtx, {
+      ok: true,
+      clientId: id,
+      selectionShape,
+      libraryCount: symbolLibrary.length,
+    });
   }
 
   async function rescanForLibrarySymbols() {
@@ -1044,13 +1132,23 @@ const { projectId } = Astro.props;
 
   overlay?.addEventListener("pointerup", (e) => {
     if (!overlay || !viableArea) return;
+    const ctx = TraceLog.start("drawingAnalyzer.overlay.pointerup", {
+      width: viableArea.width,
+      height: viableArea.height,
+      selectionPurpose,
+      selectionShape,
+    });
     overlay.releasePointerCapture(e.pointerId);
     if (viableArea.width < 8 || viableArea.height < 8) {
       setFullViableArea();
+      TraceLog.end(ctx, { action: "reset-full-viable-area", reason: "selection-too-small" });
     } else {
       updateReadout();
       if (selectionPurpose === "symbol") {
         captureSymbolFromSelection();
+        TraceLog.end(ctx, { action: "capture-symbol" });
+      } else {
+        TraceLog.end(ctx, { action: "selection-no-capture", selectionPurpose });
       }
       // Viable-area focus is intentionally disabled for now.
       // if (selectionPurpose === "viable") focusViableArea();
@@ -1155,5 +1253,6 @@ const { projectId } = Astro.props;
   });
 
   setZoom(1);
+  TraceLog.initForEnvironment({ isDev: import.meta.env.DEV });
   loadLibraryItems();
 </script>

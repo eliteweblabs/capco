@@ -325,19 +325,57 @@ const heroMinHeight =
                     : "medium";
           }
 
-          const src = videoQualities[quality];
-          if (!src) return;
-          const source = document.createElement("source");
-          source.src = src;
-          source.type = "video/mp4";
-          videoEl.innerHTML = "";
-          videoEl.appendChild(source);
-          const img = document.createElement("img");
-          img.src = posterUrl;
-          img.alt = videoEl.getAttribute("data-alt") || "Hero background";
-          img.className = "absolute inset-0 h-full w-full object-cover";
-          videoEl.appendChild(img);
-          videoEl.load();
+          const qualityFallbackOrder =
+            quality === "low"
+              ? ["low", "medium", "high", "original"]
+              : quality === "medium"
+                ? ["medium", "low", "high", "original"]
+                : quality === "high"
+                  ? ["high", "medium", "low", "original"]
+                  : ["original", "high", "medium", "low"];
+
+          const sourceQueue = qualityFallbackOrder
+            .map((key) => videoQualities[key])
+            .filter(Boolean)
+            .filter((src, idx, arr) => arr.indexOf(src) === idx);
+
+          if (!sourceQueue.length) return;
+
+          // Re-assert autoplay constraints for iOS/WebKit.
+          videoEl.defaultMuted = true;
+          videoEl.muted = true;
+          videoEl.setAttribute("muted", "");
+          videoEl.setAttribute("playsinline", "");
+          videoEl.setAttribute("webkit-playsinline", "");
+
+          const fallbackImg = document.createElement("img");
+          fallbackImg.src = posterUrl;
+          fallbackImg.alt = videoEl.getAttribute("data-alt") || "Hero background";
+          fallbackImg.className = "absolute inset-0 h-full w-full object-cover";
+
+          let queueIndex = 0;
+          const tryNextSource = () => {
+            if (queueIndex >= sourceQueue.length) return;
+            const nextSrc = sourceQueue[queueIndex++];
+            const source = document.createElement("source");
+            source.src = nextSrc;
+            source.type = "video/mp4";
+            videoEl.innerHTML = "";
+            videoEl.appendChild(source);
+            videoEl.appendChild(fallbackImg.cloneNode(true));
+            videoEl.load();
+            videoEl.play?.().catch(() => {});
+          };
+
+          videoEl.addEventListener(
+            "error",
+            () => {
+              tryNextSource();
+            },
+            { once: false }
+          );
+
+          tryNextSource();
         };
 
         document.addEventListener("DOMContentLoaded", () => {
