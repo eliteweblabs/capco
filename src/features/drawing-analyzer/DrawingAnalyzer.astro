@@ -40,6 +40,9 @@ const { projectId } = Astro.props;
         label: "Workspace",
         variant: "tab",
         showLabel: true,
+        dataAttributes: {
+          "data-switch-target": "drawing-workspace-content",
+        },
         onclick: "window.switchDrawingAnalyzerTab('drawing-workspace-content')",
       },
       {
@@ -47,6 +50,9 @@ const { projectId } = Astro.props;
         label: "Graphics Library",
         variant: "tab",
         showLabel: true,
+        dataAttributes: {
+          "data-switch-target": "drawing-library-content",
+        },
         onclick: "window.switchDrawingAnalyzerTab('drawing-library-content')",
       },
     ]}
@@ -281,7 +287,17 @@ const { projectId } = Astro.props;
 
 <script src="/js/pdf.min.js" defer></script>
 <script type="module" define:vars={{ projectId: projectId ?? null }}>
-  import { TraceLog } from "../../lib/trace-log";
+  const TraceLog = window.TraceLog || {
+    initForEnvironment() {},
+    enabled() {
+      return false;
+    },
+    start() {
+      return null;
+    },
+    end() {},
+    error() {},
+  };
 
   const dropzone = document.getElementById("drawing-dropzone");
   const fileInput = document.getElementById("drawing-file-input");
@@ -614,7 +630,12 @@ const { projectId } = Astro.props;
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        TraceLog.end(ctx, { requestId, ok: false, status: res.status, reason: "non-success response" });
+        TraceLog.end(ctx, {
+          requestId,
+          ok: false,
+          status: res.status,
+          reason: "non-success response",
+        });
         return;
       }
       if (requestId !== libraryLoadRequestId) {

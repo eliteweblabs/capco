@@ -119,8 +119,10 @@ const filteredItems = items.filter((item) => {
     if (nav.getAttribute("data-sliding-tabs-initialized") === "true") return;
     nav.setAttribute("data-sliding-tabs-initialized", "true");
 
-    const tabsIndicator = nav.querySelector("[data-sliding-tabs-indicator]");
-    const buttons = nav.querySelectorAll("button[data-index], button[id], a[data-index], a[id]");
+    const tabsIndicator = nav.querySelector<HTMLElement>("[data-sliding-tabs-indicator]");
+    const buttons = nav.querySelectorAll<HTMLElement>(
+      "button[data-index], button[id], a[data-index], a[id]"
+    );
 
     // Update active button data attributes only (styling handled by parent component)
     function updateActiveButton(activeButton) {
@@ -174,6 +176,15 @@ const filteredItems = items.filter((item) => {
     // Handle button clicks - update indicator position
     buttons.forEach((button) => {
       button.addEventListener("click", function () {
+        // Prefer declarative target switching to avoid relying only on inline onclick handlers.
+        const switchTarget = this.getAttribute("data-switch-target");
+        if (switchTarget) {
+          const handlerName = nav.getAttribute("data-switch-handler") || "switchTab";
+          const fn = window[handlerName];
+          if (typeof fn === "function") {
+            fn(switchTarget);
+          }
+        }
         updateActiveButton(this);
         updateSlidingTabsIndicator(this);
       });
