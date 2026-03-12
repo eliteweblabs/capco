@@ -44,10 +44,12 @@ function isStaticAsset(pathname: string): boolean {
   return STATIC_CACHE_PATTERNS.some((p) => p.test(pathname));
 }
 
-/** Disable browser cache while allowing CDN/proxy caches. Browsers must revalidate every time; shared caches may store. */
+/** Disable caching for dynamic HTML/API responses so CMS edits show immediately on live. */
 function withNoBrowserCache(response: Response): Response {
   const headers = new Headers(response.headers);
-  headers.set("Cache-Control", "public, s-maxage=3600, max-age=0, must-revalidate");
+  headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  headers.set("CDN-Cache-Control", "no-store");
+  headers.set("Surrogate-Control", "no-store");
   headers.set("Pragma", "no-cache");
   headers.set("Expires", "0");
   return new Response(response.body, {
