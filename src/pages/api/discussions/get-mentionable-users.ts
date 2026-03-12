@@ -46,10 +46,15 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         .single();
 
       if (projectError || !project) {
-        return new Response(JSON.stringify({ success: false, error: "Project not found" }), {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        });
+        // Stale client state can request mentionable users for a project that no longer exists.
+        // Return empty users so the UI does not hard-fail.
+        return new Response(
+          JSON.stringify({ success: true, users: [], warning: "Project not found" }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
       }
 
       projectAuthorId = project.authorId;

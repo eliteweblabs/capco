@@ -8,7 +8,8 @@
 
   const SEQ_TOKEN = "__SEQ__";
   const originalConsoleLog = console.log.bind(console);
-  const seqOnlyLogs = localStorage.getItem("seqOnlyLogs") !== "0";
+  // Default to full logs. Set localStorage.seqOnlyLogs = "1" for sequence-only mode.
+  const seqOnlyLogs = localStorage.getItem("seqOnlyLogs") === "1";
 
   (window as any).__seqNum = 0;
   (window as any).__seqLog = function () {
@@ -24,11 +25,17 @@
     };
   }
 
-  (window as any).__jsOrderLog = function (_label: string) {
+  (window as any).__jsOrderLog = function (label: string) {
     if ((window as any).__seqLog) (window as any).__seqLog();
+    if (!seqOnlyLogs) {
+      originalConsoleLog(`[JS-ORDER] ${label}`);
+    }
   };
-  (window as any).__traceLog = function (_m: string) {
+  (window as any).__traceLog = function (message: string) {
     if ((window as any).__seqLog) (window as any).__seqLog();
+    if (!seqOnlyLogs) {
+      originalConsoleLog(`[TRACE] ${message}`);
+    }
   };
   window.addEventListener("error", (e) => {
     if ((window as any).__traceLog)

@@ -524,6 +524,49 @@ export async function getSiteConfig(): Promise<SiteConfig> {
     }
   }
 
+  // Fallback: if aside navigation is missing (common when SITE_CONFIG JSON omits asideNav),
+  // load navigation.aside from config-[slug].json / config.json.
+  const currentAside = (config.navigation as any)?.aside;
+  if (!Array.isArray(currentAside) || currentAside.length === 0) {
+    const slugify = (s: string) =>
+      s
+        .toLowerCase()
+        .replace(/[^a-z0-9-]/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "")
+        .trim();
+    const companyName = companyData?.globalCompanyName || "";
+    const companySlug =
+      companyName && companyName !== "Company Name Not Set" ? slugify(companyName) : "";
+    const railwaySlug = slugify(process.env.RAILWAY_PROJECT_NAME || "");
+    const dataDir = join(process.cwd(), "public", "data");
+    const distDataDir = join(process.cwd(), "dist", "client", "data");
+    const dirs = [dataDir, distDataDir];
+    const fallbackCandidates: string[] = [];
+    if (railwaySlug) fallbackCandidates.push(`config-${railwaySlug}.json`);
+    if (companySlug && companySlug !== railwaySlug) fallbackCandidates.push(`config-${companySlug}.json`);
+    fallbackCandidates.push("config.json");
+    for (const dir of dirs) {
+      for (const name of fallbackCandidates) {
+        const p = join(dir, name);
+        if (existsSync(p)) {
+          try {
+            const dataConfig = JSON.parse(readFileSync(p, "utf-8"));
+            const asideFromFile = dataConfig?.asideNav ?? dataConfig?.navigation?.aside;
+            if (Array.isArray(asideFromFile) && asideFromFile.length > 0) {
+              (config.navigation as any).aside = asideFromFile;
+              break;
+            }
+          } catch {
+            /* ignore */
+          }
+        }
+      }
+      if (Array.isArray((config.navigation as any)?.aside) && (config.navigation as any).aside.length > 0)
+        break;
+    }
+  }
+
   cache.set(cacheKey, config);
   siteConfigCacheTimestamp = now;
   return config;

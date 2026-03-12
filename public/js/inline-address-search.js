@@ -26,6 +26,28 @@ export function initializeAddressSearch(config) {
   }
   let searchTimeout;
   let selectedIndex = -1;
+
+  function getResultLabel(result) {
+    return (
+      result?.[labelField] ||
+      result?.formatted_address ||
+      result?.label ||
+      result?.description ||
+      result?.name ||
+      ""
+    );
+  }
+
+  function getResultValue(result) {
+    return (
+      result?.[valueField] ||
+      result?.place_id ||
+      result?.id ||
+      result?.formatted_address ||
+      result?.description ||
+      ""
+    );
+  }
   
   // Helper function to update button visibility based on input state
   function updateButtonVisibility() {
@@ -116,11 +138,10 @@ export function initializeAddressSearch(config) {
           populateResults(resultsArray);
           // Auto-select the first result
           const firstResult = resultsArray[0];
-          const firstAddress =
-            firstResult[labelField] || firstResult.label || firstResult.description;
+          const firstAddress = getResultLabel(firstResult);
           const cleanedAddress = cleanAddress(firstAddress);
           searchInput.value = cleanedAddress;
-          hiddenInput.value = firstResult[valueField] || firstResult.value || firstResult.place_id;
+          hiddenInput.value = getResultValue(firstResult);
           console.log(`✅ [INLINE-ADDRESS] Auto-selected: ${cleanedAddress}`);
           updateButtonVisibility();
         }
@@ -171,10 +192,10 @@ export function initializeAddressSearch(config) {
     }`;
     li.style.cssText = "user-select: none; -webkit-user-select: none;";
     li.dataset.index = String(index);
-    li.dataset.value = result[valueField] || result.value || result.place_id || result.id;
+    li.dataset.value = getResultValue(result);
     
     // Clean the label to remove ", USA"
-    const rawLabel = result[labelField] || result.label || result.description;
+    const rawLabel = getResultLabel(result);
     const cleanedLabel = cleanAddress(rawLabel);
     li.dataset.label = cleanedLabel;
     

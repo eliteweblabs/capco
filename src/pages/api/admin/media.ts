@@ -414,27 +414,63 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    // Get file info and delete from unified files table
+    // Get file info from primary/legacy tables, then delete from matching table
     console.log("🔍 [ADMIN-MEDIA] Fetching file record for ID:", fileIdInt);
-    const { data: file, error: fetchError } = await supabaseAdmin
+    let fileRecord: { filePath?: string | null; bucketName?: string | null } | null = null;
+    let sourceTable: "files" | "filesGlobal" | "files_global" | null = null;
+
+    const { data: unifiedFile, error: unifiedFetchError } = await supabaseAdmin
       .from("files")
       .select("filePath, bucketName")
       .eq("id", fileIdInt)
       .single();
 
+    if (!unifiedFetchError && unifiedFile) {
+      fileRecord = unifiedFile;
+      sourceTable = "files";
+    } else if (source === "global") {
+      // Legacy fallback for older global media rows
+      const { data: legacyCamel, error: legacyCamelError } = await supabaseAdmin
+        .from("filesGlobal")
+        .select("filePath, bucketName")
+        .eq("id", fileIdInt)
+        .single();
+
+      if (!legacyCamelError && legacyCamel) {
+        fileRecord = legacyCamel;
+        sourceTable = "filesGlobal";
+      } else {
+        const { data: legacySnake, error: legacySnakeError } = await supabaseAdmin
+          .from("files_global")
+          .select("filePath, bucketName")
+          .eq("id", fileIdInt)
+          .single();
+
+        if (!legacySnakeError && legacySnake) {
+          fileRecord = legacySnake;
+          sourceTable = "files_global";
+        }
+      }
+    }
+
     console.log("📄 [ADMIN-MEDIA] File fetch result:", {
-      file,
-      fetchError,
-      fileExists: !!file,
+      fileRecord,
+      sourceTable,
+      fileExists: !!fileRecord,
+      unifiedFetchError,
     });
 
-    if (fetchError) {
-      console.error("❌ [ADMIN-MEDIA] Error fetching file:", fetchError);
+    if (!fileRecord || !sourceTable) {
+      console.error("❌ [ADMIN-MEDIA] Error fetching file across known tables:", {
+        unifiedFetchError,
+        fileIdInt,
+        source,
+      });
       await traceMediaDelete("error", traceId, {
         step: "fetch-file",
         reason: "file-not-found",
         fileIdInt,
-        fetchError: fetchError.message ?? String(fetchError),
+        source: source ?? null,
       });
       return new Response(JSON.stringify({ success: false, error: "File not found" }), {
         status: 404,
@@ -446,16 +482,20 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    const filePath = file?.filePath;
-    const bucketName = file?.bucketName || "project-media";
+    const filePath = fileRecord.filePath;
+    const bucketName = fileRecord.bucketName || "project-media";
 
-    // Delete from database
-    const { error: deleteError } = await supabaseAdmin.from("files").delete().eq("id", fileIdInt);
+    // Delete from the table where the record actually exists
+    const { error: deleteError } = await supabaseAdmin
+      .from(sourceTable)
+      .delete()
+      .eq("id", fileIdInt);
 
     if (deleteError) {
       console.error("❌ [ADMIN-MEDIA] Error deleting from files:", deleteError);
       await traceMediaDelete("error", traceId, {
         step: "delete-db-row",
+        sourceTable,
         fileIdInt,
         deleteError: deleteError.message ?? String(deleteError),
       });

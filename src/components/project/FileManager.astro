@@ -192,12 +192,19 @@ const canDeleteFiles =
   }}
   is:inline
 >
+  const LOG_PREFIX = "📁 [FILE-MANAGER]";
   let files = [];
   let currentProjectId = projectId;
   let currentUserId = currentUser?.id;
   const trace = window.TraceLog;
+  let uploadListenersBound = false;
 
   function initializeFileManager() {
+    console.log(`${LOG_PREFIX} initializeFileManager()`, {
+      projectId: currentProjectId,
+      currentUserId,
+      currentRole,
+    });
     loadProjectFiles();
     // No need to load staff users for simplified workflow
   }
@@ -729,8 +736,13 @@ const canDeleteFiles =
 
   // Upload functionality with extensive debugging
   function initializeUpload() {
+    console.log(`${LOG_PREFIX} initializeUpload()`, {
+      canUploadFiles,
+      projectId: currentProjectId,
+    });
     // Only initialize upload if allowed
     if (!canUploadFiles) {
+      console.log(`${LOG_PREFIX} Upload disabled by project status`, { projectStatus });
       return;
     }
 
@@ -740,22 +752,36 @@ const canDeleteFiles =
     const statusText = document.getElementById("upload-status");
 
     if (!dropzone) {
-      console.error("❌ [FILE-MANAGER] Dropzone not found");
+      console.warn("⚠️ [FILE-MANAGER] Dropzone not found; skipping upload initialization");
+      return;
+    }
+
+    if (uploadListenersBound) {
+      console.log(`${LOG_PREFIX} Upload listeners already bound; skipping duplicate bind`);
       return;
     }
 
     // Listen for files selected from the Dropzone component
     dropzone.addEventListener("dropzone-files-selected", (e) => {
+      console.log(`${LOG_PREFIX} dropzone-files-selected event received`, {
+        dropzoneId: e?.detail?.dropzoneId,
+        fileCount: e?.detail?.files?.length || 0,
+      });
       const files = Array.from(e.detail.files);
       if (files.length > 0) {
         handleFileUpload(files);
+      } else {
+        console.warn(`${LOG_PREFIX} Event received with no files`);
       }
     });
 
     // Listen for errors from the Dropzone component
     dropzone.addEventListener("dropzone-error", (e) => {
+      console.error(`${LOG_PREFIX} dropzone-error event received`, e?.detail);
       showError(e.detail.error);
     });
+    uploadListenersBound = true;
+    console.log(`${LOG_PREFIX} Upload listeners bound successfully`);
 
     // File validation function
     function validateFiles(files) {
@@ -845,6 +871,10 @@ const canDeleteFiles =
     let uploadInProgress = false;
 
     async function handleFileUpload(files) {
+      console.log(`${LOG_PREFIX} handleFileUpload() start`, {
+        fileCount: files?.length || 0,
+        files: (files || []).map((f) => ({ name: f.name, type: f.type, size: f.size })),
+      });
       const traceCtx = trace?.start("ui.fileManager.handleFileUpload", {
         projectId: currentProjectId,
         fileCount: files?.length || 0,
@@ -892,6 +922,11 @@ const canDeleteFiles =
         const file = files[i];
 
         try {
+          console.log(`${LOG_PREFIX} Uploading file ${i + 1}/${files.length}`, {
+            name: file.name,
+            type: file.type,
+            size: file.size,
+          });
           statusText.textContent = `Uploading ${file.name}...`;
 
           // Convert file to base64
@@ -933,6 +968,12 @@ const canDeleteFiles =
             }),
           });
 
+          console.log(`${LOG_PREFIX} Upload API response received`, {
+            fileName: file.name,
+            status: response.status,
+            ok: response.ok,
+          });
+
           if (!response.ok) {
             const errorData = await response.json();
             console.error("❌ [FILE-MANAGER] Upload failed:", errorData);
@@ -940,6 +981,11 @@ const canDeleteFiles =
           }
 
           const result = await response.json();
+          console.log(`${LOG_PREFIX} Upload API success payload`, {
+            fileName: file.name,
+            success: result?.success,
+            message: result?.message,
+          });
 
           uploadedCount++;
           const progress = (uploadedCount / totalFiles) * 100;
@@ -1003,6 +1049,11 @@ const canDeleteFiles =
         // If all succeeded, individual success messages were already shown
       }, 1000);
       trace?.end(traceCtx, { uploadedCount, failedCount, totalFiles });
+      console.log(`${LOG_PREFIX} handleFileUpload() complete`, {
+        uploadedCount,
+        failedCount,
+        totalFiles,
+      });
     }
   }
 
@@ -1820,11 +1871,21 @@ const canDeleteFiles =
     }
   };
 
-  // Initialize when DOM is ready
-  document.addEventListener("DOMContentLoaded", () => {
+  function initFileManagerScripts() {
+    console.log(`${LOG_PREFIX} initFileManagerScripts() triggered`, {
+      readyState: document.readyState,
+    });
     initializeFileManager();
     initializeUpload();
-  });
+  }
+
+  // Initialize immediately when possible, and re-run on Astro client navigation.
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initFileManagerScripts, { once: true });
+  } else {
+    initFileManagerScripts();
+  }
+  document.addEventListener("astro:page-load", initFileManagerScripts);
 </script>
 
 <style is:global>

@@ -207,23 +207,43 @@ const browseBtnId = `${id}-browse-btn`;
       if (accept && accept !== "*/*") {
         const acceptTypes = accept.split(",").map((type) => type.trim());
         const fileArray = Array.from(files);
+        const extToMimeMap = {
+          ".pdf": ["application/pdf", "application/x-pdf", "text/pdf", "text/x-pdf"],
+          ".doc": ["application/msword"],
+          ".docx": ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+          ".jpg": ["image/jpeg"],
+          ".jpeg": ["image/jpeg"],
+          ".png": ["image/png"],
+          ".gif": ["image/gif"],
+          ".webp": ["image/webp"],
+        };
 
         for (const file of fileArray) {
+          const fileName = (file.name || "").toLowerCase();
+          const fileType = (file.type || "").toLowerCase();
           const isValidType = acceptTypes.some((acceptType) => {
             if (acceptType.startsWith(".")) {
-              // Extension match
-              return file.name.toLowerCase().endsWith(acceptType.toLowerCase());
+              // Extension match, with MIME fallback for files that lack/lose extension.
+              const ext = acceptType.toLowerCase();
+              if (fileName.endsWith(ext)) return true;
+              const mappedMimes = extToMimeMap[ext] || [];
+              return mappedMimes.some((mime) => fileType === mime);
             } else if (acceptType.includes("/*")) {
               // MIME type wildcard match
               const baseType = acceptType.split("/")[0];
-              return file.type.startsWith(baseType + "/");
+              return fileType.startsWith(baseType + "/");
             } else {
               // Exact MIME type match
-              return file.type === acceptType;
+              return fileType === acceptType.toLowerCase();
             }
           });
 
           if (!isValidType) {
+            console.warn("[Dropzone] Rejected file by type validation", {
+              fileName: file.name,
+              fileType: file.type,
+              accepted: accept,
+            });
             const errorMsg = `File "${file.name}" is not an accepted file type. Accepted types: ${accept}`;
             if (onError) {
               onError(errorMsg);

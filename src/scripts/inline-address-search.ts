@@ -10,6 +10,7 @@ export interface AddressSearchConfig {
   valueField?: string;
   labelField?: string;
   onSelect?: (value: string, label: string, data: any) => void;
+  currentLocation?: boolean;
 }
 
 export function initializeAddressSearch(config: AddressSearchConfig) {
@@ -20,6 +21,7 @@ export function initializeAddressSearch(config: AddressSearchConfig) {
     valueField = "description",
     labelField = "description",
     onSelect,
+    currentLocation = false,
   } = config;
 
   const searchInput = document.getElementById(`${id}-search-input`) as HTMLInputElement;
@@ -27,14 +29,44 @@ export function initializeAddressSearch(config: AddressSearchConfig) {
   const hiddenInput = document.getElementById(`${id}-value`) as HTMLInputElement;
   const emptyState = document.getElementById(`${id}-empty-state`) as HTMLDivElement;
   const dropdown = document.getElementById(`${id}-dropdown`) as HTMLDivElement;
+  const useLocationBtn = document.getElementById(
+    `${id}-use-location-btn`
+  ) as HTMLButtonElement | null;
 
   if (!searchInput || !resultsList || !hiddenInput || !emptyState || !dropdown) {
     console.error(`[INLINE-ADDRESS] Required elements not found for ${id}`);
     return;
   }
 
+  if (searchInput.dataset.inlineAddressInitialized === "true") {
+    return;
+  }
+  searchInput.dataset.inlineAddressInitialized = "true";
+
   let searchTimeout: NodeJS.Timeout;
   let selectedIndex = -1;
+
+  function getResultLabel(result: any): string {
+    return (
+      result?.[labelField] ||
+      result?.formatted_address ||
+      result?.label ||
+      result?.description ||
+      result?.name ||
+      ""
+    );
+  }
+
+  function getResultValue(result: any): string {
+    return (
+      result?.[valueField] ||
+      result?.place_id ||
+      result?.id ||
+      result?.formatted_address ||
+      result?.description ||
+      ""
+    );
+  }
 
   // Helper function to show dropdown
   function showDropdown() {
@@ -61,10 +93,10 @@ export function initializeAddressSearch(config: AddressSearchConfig) {
     }`;
     li.style.cssText = "user-select: none; -webkit-user-select: none;";
     li.dataset.index = String(index);
-    li.dataset.value = result[valueField] || result.value || result.place_id || result.id;
+    li.dataset.value = getResultValue(result);
 
     // Format the label to remove USA
-    const rawLabel = result[labelField] || result.label || result.description;
+    const rawLabel = getResultLabel(result);
     const formattedLabel = formatAddress(rawLabel);
     li.dataset.label = formattedLabel;
 
@@ -98,6 +130,35 @@ export function initializeAddressSearch(config: AddressSearchConfig) {
       // Don't show dropdown if there are no results
       hideDropdown();
     }
+  }
+
+  function extractResultsArray(data: any): any[] {
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.predictions)) return data.predictions;
+    if (data && Array.isArray(data.results)) return data.results;
+    if (data && data.data && Array.isArray(data.data)) return data.data;
+    return [];
+  }
+
+  function selectResult(value: string, label: string, resultData: any) {
+    hiddenInput.value = value;
+    searchInput.value = label;
+    hideDropdown();
+
+    if (onSelect) {
+      onSelect(value, label, resultData);
+    }
+
+    window.dispatchEvent(
+      new CustomEvent("inline-address-select", {
+        detail: {
+          componentId: id,
+          value,
+          label,
+          data: resultData,
+        },
+      })
+    );
   }
 
   // Handle search input
@@ -140,19 +201,7 @@ export function initializeAddressSearch(config: AddressSearchConfig) {
           const data = await response.json();
           console.log(`[INLINE-ADDRESS] Search results:`, data);
 
-          // Handle different data formats
-          let resultsArray = [];
-          if (Array.isArray(data)) {
-            resultsArray = data;
-          } else if (data && Array.isArray(data.predictions)) {
-            // Google Places format
-            resultsArray = data.predictions;
-          } else if (data && Array.isArray(data.results)) {
-            resultsArray = data.results;
-          } else if (data && data.data && Array.isArray(data.data)) {
-            resultsArray = data.data;
-          }
-
+          const resultsArray = extractResultsArray(data);
           console.log(`[INLINE-ADDRESS] Results array:`, resultsArray);
           populateResults(resultsArray);
         } catch (error) {
@@ -173,14 +222,8 @@ export function initializeAddressSearch(config: AddressSearchConfig) {
 
       console.log(`[INLINE-ADDRESS] Selected: ${label} (${value})`);
 
-      // Update hidden input
-      hiddenInput.value = value;
-
-      // Update search input to show selected value
-      searchInput.value = label;
-
-      // Hide dropdown after selection
-      hideDropdown();
+      const selectedData = li.dataset.json ? JSON.parse(li.dataset.json) : null;
+      selectResult(value, label, selectedData);
 
       // Update selection styling
       const allItems = resultsList.querySelectorAll("li");
@@ -191,26 +234,74 @@ export function initializeAddressSearch(config: AddressSearchConfig) {
       li.classList.add("bg-gray-100", "dark:bg-gray-600");
 
       selectedIndex = parseInt(li.dataset.index!);
-
-      // Call custom onSelect callback if provided
-      if (onSelect) {
-        const data = li.dataset.json ? JSON.parse(li.dataset.json) : null;
-        onSelect(value, label, data);
-      }
-
-      // Dispatch custom event for other components to listen to
-      window.dispatchEvent(
-        new CustomEvent("inline-address-select", {
-          detail: {
-            componentId: id,
-            value,
-            label,
-            data: li.dataset.json ? JSON.parse(li.dataset.json) : null,
-          },
-        })
-      );
     }
   });
+
+  if (currentLocation && useLocationBtn) {
+    useLocationBtn.addEventListener("click", async () => {
+      const originalHtml = useLocationBtn.innerHTML;
+      useLocationBtn.disabled = true;
+      useLocationBtn.innerHTML =
+        '<svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>';
+
+      try {
+        if (!navigator.geolocation) {
+          throw new Error("Geolocation is not supported by your browser");
+        }
+
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0,
+          });
+        });
+
+        const { latitude, longitude } = position.coords;
+        console.log(`[INLINE-ADDRESS] Got current coordinates: ${latitude}, ${longitude}`);
+
+        const response = await fetch(`/api/google/geocode?latlng=${latitude},${longitude}`, {
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          throw new Error(`Geocode failed with status ${response.status}`);
+        }
+
+        const geocodeData = await response.json();
+        const resultsArray = extractResultsArray(geocodeData);
+        console.log(`[INLINE-ADDRESS] Geocode results:`, resultsArray);
+
+        if (!resultsArray.length) {
+          throw new Error("No address found for current location");
+        }
+
+        populateResults(resultsArray);
+
+        const first = resultsArray[0];
+        const value = getResultValue(first);
+        const rawLabel = getResultLabel(first);
+        const label = formatAddress(rawLabel);
+        selectResult(value, label, first);
+      } catch (error: any) {
+        console.error(`[INLINE-ADDRESS] Current location error:`, error);
+        if (window.showNotice) {
+          let message = "Unable to get your location. Please search manually.";
+          if (typeof error?.code === "number") {
+            if (error.code === 1) message = "Location access denied. Please allow location access.";
+            if (error.code === 2) message = "Location unavailable. Please try again.";
+            if (error.code === 3) message = "Location request timed out. Please try again.";
+          } else if (error?.message) {
+            message = error.message;
+          }
+          window.showNotice("error", "Location Error", message, 5000);
+        }
+      } finally {
+        useLocationBtn.disabled = false;
+        useLocationBtn.innerHTML = originalHtml;
+      }
+    });
+  }
 
   // Handle keyboard navigation
   searchInput.addEventListener("keydown", (e) => {
