@@ -114,7 +114,7 @@ if (projectId && supabase) {
 
 function getStatusAlert() {
   // Client status messages
-  if (currentRole === "Client") {
+  if (currentRole === "Client" || currentRole === "superAdmin") {
     if (Number(projectStatus) < 55) {
       return "Deposit payment will be available after proposal is signed off";
     }
@@ -180,7 +180,7 @@ const statusAlert = getStatusAlert();
   }
 
   {
-    projectStatus >= 50 && currentRole === "Client" && (
+    projectStatus >= 50 && (currentRole === "Client" || currentRole === "superAdmin") && (
       <PaymentForm
         invoiceId={invoiceId && invoiceId !== "0" ? parseInt(invoiceId) : null}
         amount={totalAmount / 2}

@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { supabase } from "../../../lib/supabase";
 import { getApiBaseUrl } from "../../../lib/url-utils";
+import { isClientOrSuperAdmin } from "../../../lib/user-utils";
 
 /**
  * Standardized Discussions UPSERT API
@@ -71,7 +72,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     });
 
     // Force internal = false for clients (only Admin/Staff can create internal comments)
-    const isClient = currentRole === "Client";
+    const isClient = isClientOrSuperAdmin(currentRole);
     if (isClient) {
       internal = false;
     }
@@ -111,6 +112,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       const canUpdate =
         currentRole === "Admin" ||
         currentRole === "Staff" ||
+        currentRole === "superAdmin" ||
         existingDiscussion.authorId === currentUser.id;
       if (!canUpdate) {
         return new Response(
@@ -279,7 +281,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         // Get admin and staff emails using reusable API
         const baseUrl = getApiBaseUrl(request);
         const adminAndStaffResponse = await fetch(
-          `${baseUrl}/api/users/get?role=Admin&role=Staff`,
+          `${baseUrl}/api/users/get?role=Admin&role=Staff&role=superAdmin`,
           {
             method: "GET",
             headers: { "Content-Type": "application/json" },

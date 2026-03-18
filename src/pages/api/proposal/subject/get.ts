@@ -34,7 +34,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     // Handle column check request (Admin/Staff only)
     const checkColumn = url.searchParams.get("checkColumn") === "true";
     if (checkColumn) {
-      if (!["Admin", "Staff"].includes(currentRole || "")) {
+      if (!["Admin", "Staff", "superAdmin"].includes(currentRole || "")) {
         return createErrorResponse("Admin access required", 403);
       }
 
@@ -75,7 +75,8 @@ export const GET: APIRoute = async ({ url, cookies }) => {
 
       // Check permissions
       const hasAccess =
-        project.authorId === currentUser.id || ["Admin", "Staff"].includes(currentRole || "");
+        project.authorId === currentUser.id ||
+        ["Admin", "Staff", "superAdmin"].includes(currentRole || "");
       if (!hasAccess) {
         return createErrorResponse("Access denied", 403);
       }

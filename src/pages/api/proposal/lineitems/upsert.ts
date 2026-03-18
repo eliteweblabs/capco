@@ -154,7 +154,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Handle creating/updating catalog item (Admin/Staff only)
     if (name && description && unitPrice !== undefined) {
-      if (!["Admin", "Staff"].includes(currentRole || "")) {
+      if (!["Admin", "Staff", "superAdmin"].includes(currentRole || "")) {
         return createErrorResponse("Admin/Staff access required", 403);
       }
 

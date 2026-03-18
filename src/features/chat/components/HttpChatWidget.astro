@@ -1,6 +1,6 @@
 ---
 // HTTP-based Chat Widget Component - Fixed bottom-right floating chat
-// Only visible to Admin/Staff users
+// Only visible to Admin/Staff/superAdmin users
 
 interface Props {
   currentUser?: {
@@ -16,7 +16,9 @@ interface Props {
 }
 import SimpleIcon from "../../../components/common/SimpleIcon.astro";
 const { currentUser, globalInputClasses, currentRole } = Astro.props;
-const showChat = currentUser && (currentRole === "Admin" || currentRole === "Staff");
+const showChat =
+  currentUser &&
+  (currentRole === "Admin" || currentRole === "Staff" || currentRole === "superAdmin");
 
 // // Debug logging
 // console.log("🔧 [HTTP-CHAT-WIDGET] Current user object:", currentUser);
@@ -91,7 +93,7 @@ const showChat = currentUser && (currentRole === "Admin" || currentRole === "Sta
 
     console.log("🔔 [HTTP-CHAT] Initializing HTTP chat widget");
 
-    // Check if user is Admin/Staff
+    // Check if user is Admin/Staff/superAdmin
     const chatWidget = document.getElementById("chat-widget");
     if (!chatWidget) {
       console.log("🔔 [HTTP-CHAT] Chat widget element not found!");
@@ -106,13 +108,13 @@ const showChat = currentUser && (currentRole === "Admin" || currentRole === "Sta
     console.log("🔔 [HTTP-CHAT] User ID:", userId);
     console.log("🔔 [HTTP-CHAT] User name:", userName);
 
-    if (userRole !== "Admin" && userRole !== "Staff") {
-      console.log("🔔 [HTTP-CHAT] User not Admin/Staff, hiding chat widget");
+    if (userRole !== "Admin" && userRole !== "Staff" && userRole !== "superAdmin") {
+      console.log("🔔 [HTTP-CHAT] User not Admin/Staff/superAdmin, hiding chat widget");
       chatWidget.classList.add("hidden");
       return;
     }
 
-    console.log("🔔 [HTTP-CHAT] User is Admin/Staff, showing chat widget");
+    console.log("🔔 [HTTP-CHAT] User is Admin/Staff/superAdmin, showing chat widget");
 
     // Get current user info
     currentUser = {

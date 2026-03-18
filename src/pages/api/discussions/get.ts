@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { replacePlaceholders, type PlaceholderData } from "../../../lib/placeholder-utils";
 import { supabase } from "../../../lib/supabase";
+import { isAdminOrSuperAdmin, isClientOrSuperAdmin } from "../../../lib/user-utils";
 
 /**
  * Standardized Discussions GET API
@@ -54,8 +55,8 @@ export const GET: APIRoute = async ({ url, cookies, request }) => {
       );
     }
 
-    const isClient = currentRole === "Client";
-    const isAdmin = currentRole === "Admin";
+    const isClient = isClientOrSuperAdmin(currentRole);
+    const isAdmin = isAdminOrSuperAdmin(currentRole);
 
     // Parse query parameters
     const filters: DiscussionFilters = {

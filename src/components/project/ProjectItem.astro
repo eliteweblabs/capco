@@ -118,7 +118,9 @@ const description = project?.description || "No description";
 // }
 
 const statusSlugOrId =
-  currentRole && currentRole === "Client" ? currentStatusTab : currentStatusInt;
+  currentRole && (currentRole === "Client" || currentRole === "superAdmin")
+    ? currentStatusTab
+    : currentStatusInt;
 // Debug logging removed for performance
 
 // Function to limit description to 200 words
@@ -326,7 +328,7 @@ const statusColor = currentStatusColor || "gray";
                   class="relative block min-w-0 truncate font-medium"
                 >
                   {project.address || project.title || "No address"}
-                  {currentRole !== "Client" && projectAlertIconCount > 0 && (
+                  {currentRole !== "Client" && currentRole !== "superAdmin" && projectAlertIconCount > 0 && (
                     <span class="font-large absolute right-0 top-0 z-1 mb-4 cursor-pointer">
                       {Array.from({ length: projectAlertIconCount }, () => (
                         <svg
@@ -555,7 +557,11 @@ const statusColor = currentStatusColor || "gray";
                 <NumberStepper
                   entityId={project.id}
                   value={project?.dueDate ?? ""}
-                  showStepper={currentRole === "Admin" || currentRole === "Staff"}
+                  showStepper={
+                    currentRole === "Admin" ||
+                    currentRole === "Staff" ||
+                    currentRole === "superAdmin"
+                  }
                   onIncrement={`adjustDueDate(${project.id}, 1)`}
                   onDecrement={`adjustDueDate(${project.id}, -1)`}
                   meta="dueDate"

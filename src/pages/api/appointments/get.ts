@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
+import { isClientOrSuperAdmin } from "../../../lib/user-utils";
 
 /**
  * Get Appointments API
@@ -44,7 +45,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       .eq("id", currentUser.id)
       .single();
 
-    if (profile?.role === "Client") {
+    if (isClientOrSuperAdmin(profile?.role)) {
       // Clients can only see their own appointments
       query = query.eq("organizerId", currentUser.id);
     }

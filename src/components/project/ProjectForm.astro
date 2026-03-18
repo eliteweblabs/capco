@@ -36,6 +36,8 @@ const {
 } = Astro.props;
 
 const currentRole = currentUser?.profile?.role;
+const normalizedRole = (currentRole || "").toLowerCase().replace(/[^a-z]/g, "");
+const canManageClientSelection = ["admin", "staff", "superadmin"].includes(normalizedRole);
 const projectId = project?.id;
 const globalClassesResult = globalClasses();
 const globalFormClasses = globalClassesResult.globalFormClasses;
@@ -163,7 +165,7 @@ function fieldForRenderer(
                         data-scrap="true"
                       />
                     )}
-                    {isNewProject && (currentRole === "Admin" || currentRole === "Staff") && (
+                    {isNewProject && canManageClientSelection && (
                       <IsNewOrExistingClient
                         globalInputClasses={globalInputClasses ?? themeInputClasses}
                         secondaryTextClasses={secondaryTextClasses}
@@ -236,7 +238,7 @@ function fieldForRenderer(
                       data-scrap="true"
                     />
                   )}
-                  {isNewProject && (currentRole === "Admin" || currentRole === "Staff") && (
+                  {isNewProject && canManageClientSelection && (
                     <IsNewOrExistingClient
                       globalInputClasses={globalInputClasses}
                       secondaryTextClasses={secondaryTextClasses}
@@ -519,13 +521,24 @@ function fieldForRenderer(
   document.addEventListener("DOMContentLoaded", async function () {
     const form = document.querySelector("form[data-project-id]");
     if (!form) return;
-    const projectId = form.getAttribute("data-project-id");
-    const isNewProject = form.getAttribute("data-is-new-project") === "true";
-    const currentRole = form.getAttribute("data-current-role");
+    const pageProjectId = form.getAttribute("data-project-id") || "";
+    const pageIsNewProjectAttr = (form.getAttribute("data-is-new-project") || "").toLowerCase();
+    const pageIsNewProject =
+      form.hasAttribute("data-is-new-project") &&
+      !["false", "0", "no"].includes(pageIsNewProjectAttr);
 
     // Form submission handler
     async function handleFormSubmit(event) {
-      const form = event.target;
+      const form = event.currentTarget;
+      if (!(form instanceof HTMLFormElement)) return;
+
+      const formProjectId = form.getAttribute("data-project-id") || "";
+      const isNewProjectAttr = (form.getAttribute("data-is-new-project") || "").toLowerCase();
+      const isNewProject =
+        form.hasAttribute("data-is-new-project") &&
+        !["false", "0", "no"].includes(isNewProjectAttr);
+      const hasPersistedProjectId = /^\d+$/.test(formProjectId);
+      const shouldCreateProject = isNewProject || !hasPersistedProjectId;
 
       // Check form validity before preventing default
       if (!form.checkValidity()) {
@@ -572,7 +585,7 @@ function fieldForRenderer(
       }
 
       try {
-        const submitBtn = form.querySelector('button[type="submit"]');
+        const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement | null;
         if (submitBtn) {
           submitBtn.disabled = true;
           const loaderIcon =
@@ -585,7 +598,7 @@ function fieldForRenderer(
         window.showNotice("info", "Verifying project data...", projectData["address"], 10000);
 
         let response;
-        if (isNewProject) {
+        if (shouldCreateProject) {
           // Create new project
           // console.log("📝 [ProjectForm] Creating new project");
           response = await fetch("/api/projects/upsert", {
@@ -597,7 +610,7 @@ function fieldForRenderer(
           });
         } else {
           // Update existing project
-          console.log("📝 [ProjectForm] Updating existing project:", projectId, projectData);
+          console.log("📝 [ProjectForm] Updating existing project:", formProjectId, projectData);
 
           // Include the project ID in the body for the PUT handler
           response = await fetch(`/api/projects/upsert`, {
@@ -605,7 +618,7 @@ function fieldForRenderer(
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ ...projectData, id: projectId }),
+            body: JSON.stringify({ ...projectData, id: formProjectId }),
           });
         }
 
@@ -626,7 +639,7 @@ function fieldForRenderer(
         const result = await response.json();
 
         if (result.success) {
-          if (isNewProject) {
+          if (shouldCreateProject) {
             // For new projects, update status to 1 (Under Review) to trigger database-driven notifications
 
             try {
@@ -697,15 +710,16 @@ function fieldForRenderer(
       } catch (error) {
         console.error("📝 [ProjectForm] Error saving project:", error);
         if (window.showNotice) {
-          window.showNotice(
-            "Error",
-            error instanceof Error ? error.message : "Failed to save project",
-            "error"
-          );
+          window.showNotice({
+            type: "error",
+            title: "Project Save Failed",
+            message: error instanceof Error ? error.message : "Failed to save project",
+            duration: 6000,
+          });
         }
       } finally {
         // Reset button state
-        const submitBtn = form.querySelector('button[type="submit"]');
+        const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement | null;
         if (submitBtn) {
           submitBtn.disabled = false;
           const saveIcon =
@@ -721,10 +735,10 @@ function fieldForRenderer(
     form.addEventListener("submit", handleFormSubmit);
 
     // Note: Delete button is handled by the action button system below
-    if (!isNewProject) {
+    if (!pageIsNewProject) {
       const deleteBtn = document.getElementById("delete-project");
       deleteBtn?.addEventListener("click", () => {
-        window.deleteProject(projectId);
+        window.deleteProject(pageProjectId);
       });
     }
 
@@ -804,27 +818,27 @@ function fieldForRenderer(
     window.resetForm = resetForm;
 
     // Square footage numeric filtering
-    const sqFtInputs = document.querySelectorAll('input[name="sqFt"]');
+    const sqFtInputs = document.querySelectorAll<HTMLInputElement>('input[name="sqFt"]');
 
     sqFtInputs.forEach((input) => {
       // Prevent non-numeric characters on keypress
-      input.addEventListener("keypress", (e) => {
+      input.addEventListener("keypress", (e: KeyboardEvent) => {
         if (!/[0-9]/.test(e.key)) {
           e.preventDefault();
         }
       });
 
       // Handle paste events to filter out non-numeric characters
-      input.addEventListener("paste", (e) => {
+      input.addEventListener("paste", (e: ClipboardEvent) => {
         e.preventDefault();
-        const paste = (e.clipboardData || window.clipboardData).getData("text");
+        const paste = (e.clipboardData || window.clipboardData)?.getData("text") || "";
         const numericOnly = paste.replace(/[^0-9]/g, "");
         input.value = numericOnly;
       });
 
       // Handle input events to remove any non-numeric characters
-      input.addEventListener("input", (e) => {
-        const target = e.target;
+      input.addEventListener("input", (e: Event) => {
+        const target = e.target as HTMLInputElement | null;
         if (target) {
           target.value = target.value.replace(/[^0-9]/g, "");
         }

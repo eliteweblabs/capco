@@ -99,7 +99,7 @@ export const GET: APIRoute = async ({ request, cookies }): Promise<Response> => 
       .from("profiles")
       .select("id, firstName, lastName, role")
       .in("id", userIds)
-      .in("role", ["Admin", "Staff"]);
+      .in("role", ["Admin", "Staff", "superAdmin"]);
 
     if (profilesError) console.error("❌ [LOCATION-LIVE] Error fetching profiles:", profilesError);
 

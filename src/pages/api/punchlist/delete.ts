@@ -3,6 +3,11 @@ import { checkAuth } from "../../../lib/auth";
 import { SimpleProjectLogger } from "../../../lib/simple-logging";
 import { supabase } from "../../../lib/supabase";
 
+function isElevatedRole(role?: string | null): boolean {
+  const normalizedRole = role?.toLowerCase().replace(/[^a-z]/g, "") ?? "";
+  return ["admin", "staff", "superadmin"].includes(normalizedRole);
+}
+
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     // Check authentication
@@ -16,13 +21,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    // Only Admin/Staff can delete punchlist items
-    const canDelete = currentRole === "Admin" || currentRole === "Staff";
+    // Only Admin/Staff/superAdmin can delete punchlist items
+    const canDelete = isElevatedRole(currentRole);
 
     if (!canDelete) {
       return new Response(
         JSON.stringify({
-          error: "Permission denied - only Admin/Staff can delete punchlist items",
+          error: "Permission denied - only Admin/Staff/superAdmin can delete punchlist items",
         }),
         {
           status: 403,

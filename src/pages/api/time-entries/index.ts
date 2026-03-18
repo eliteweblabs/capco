@@ -31,7 +31,7 @@ export const GET: APIRoute = async ({ request, cookies }): Promise<Response> => 
     }
 
     const role = (currentUser as any)?.profile?.role;
-    const isAdmin = role === "Admin";
+    const isAdmin = role === "Admin" || role === "superAdmin";
     const url = new URL(request.url);
     const fromParam = url.searchParams.get("from");
     const toParam = url.searchParams.get("to");

@@ -59,7 +59,7 @@ try {
 
 function getStatusAlert() {
   // Client status messages
-  if (currentRole === "Client") {
+  if (currentRole === "Client" || currentRole === "superAdmin") {
     if (Number(projectStatus) < 20) {
       return `Submit your project documents first <a class="" href='/project/${projectId}?status=files'>in Files</a>.`;
     }
@@ -78,7 +78,7 @@ function getStatusAlert() {
   }
 
   // Admin status messages
-  if (currentRole === "Admin" || currentRole === "Staff") {
+  if (currentRole === "Admin" || currentRole === "Staff" || currentRole === "superAdmin") {
     if (Number(projectStatus) < 20) {
       return `<b>${clientName}</b> has not submit any documents. Press the "Finished" button to unlock proposal or wait for the client to submit their documents.`;
     }
@@ -108,7 +108,7 @@ const statusAlert = getStatusAlert();
   {statusAlert && <Alert type="info" title={statusAlert} />}
 
   {
-    currentRole === "Client" ? (
+    currentRole === "Client" || currentRole === "superAdmin" ? (
       <ProposalManager
         projectId={projectId}
         project={project}

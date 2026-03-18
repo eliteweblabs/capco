@@ -6,6 +6,7 @@ import { supabase } from "../../../lib/supabase";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
 import { getApiBaseUrl } from "../../../lib/url-utils";
 import { applyProjectTemplates } from "../../../lib/apply-project-templates";
+import { isClientOrSuperAdmin, isNotClientOrSuperAdmin } from "../../../lib/user-utils";
 
 interface ProjectData {
   id?: number;
@@ -47,6 +48,11 @@ const sanitizeFormData = (data: ProjectUpdateFormData) => data;
 const validateProjectUpdate = (data: ProjectUpdateFormData) => [];
 const mapFormDataToProject = (data: ProjectUpdateFormData) => data;
 
+const isElevatedRole = (role?: string | null) => {
+  const normalizedRole = role?.toLowerCase().replace(/[^a-z]/g, "") ?? "";
+  return ["admin", "staff", "superadmin"].includes(normalizedRole);
+};
+
 export const POST: APIRoute = async ({ request, cookies }) => {
   const traceId =
     request.headers.get("x-trace-id") ||
@@ -78,7 +84,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     let projectAuthorId: string;
 
     // Determine project author based on user role
-    if (userProfile.role === "Client" && !body.authorId) {
+    if (isClientOrSuperAdmin(userProfile.role) && !body.authorId) {
       // If current user is a client, they are the project author
       projectAuthorId = userId;
     } else {
@@ -271,13 +277,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       return createErrorResponse("Failed to verify project author role", 500);
     }
 
-    if (authorProfile.role !== "Client") {
+    if (isNotClientOrSuperAdmin(authorProfile.role)) {
       return createErrorResponse("Project author must be a client", 400);
     }
 
     // Use supabaseAdmin for Admin/Staff users to bypass RLS, regular supabase for Clients
-    const isAdminOrStaff = userProfile.role === "Admin" || userProfile.role === "Staff";
-    const dbClient = isAdminOrStaff && supabaseAdmin ? supabaseAdmin : supabase;
+    const hasElevatedAccess = isElevatedRole(userProfile.role);
+    const dbClient = hasElevatedAccess && supabaseAdmin ? supabaseAdmin : supabase;
 
     if (!dbClient) {
       return createErrorResponse("Database connection not available", 500);
@@ -426,8 +432,8 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
 
     const userRole = currentUser.profile?.role?.toLowerCase();
 
-    // Check permissions - only Admin and Staff can update projects
-    if (userRole !== "admin" && userRole !== "staff") {
+    // Check permissions - only elevated roles can update projects
+    if (!isElevatedRole(userRole)) {
       return createErrorResponse("Access denied", 403);
     }
 
@@ -463,8 +469,7 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
     // Note: updatedAt is automatically set by PostgreSQL trigger
 
     // Use supabaseAdmin for Admin/Staff users to bypass RLS
-    const dbClient =
-      (userRole === "admin" || userRole === "staff") && supabaseAdmin ? supabaseAdmin : supabase;
+    const dbClient = isElevatedRole(userRole) && supabaseAdmin ? supabaseAdmin : supabase;
 
     if (!dbClient) {
       return createErrorResponse("Database connection not available", 500);

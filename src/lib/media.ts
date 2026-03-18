@@ -590,7 +590,7 @@ export async function getMedia(params: GetMediaParams): Promise<{
     // console.log("🔧 [MEDIA] User role for file filtering:", userRole);
 
     // If user is not Admin or Staff, filter out private files
-    if (userRole !== "Admin" && userRole !== "Staff") {
+    if (userRole !== "Admin" && userRole !== "Staff" && userRole !== "superAdmin") {
       // console.log("🔧 [MEDIA] Filtering out private files for client user");
       // Only filter if isPrivate column exists (for backward compatibility)
       query = query.or("isPrivate.is.null,isPrivate.eq.false");

@@ -63,7 +63,7 @@ const [companyData, statusData, projectsData] = await Promise.all([
 
     try {
       const apiUrl = new URL("/api/projects/get", Astro.url.origin);
-      if (currentRole === "Client") {
+      if (currentRole === "Client" || currentRole === "superAdmin") {
         apiUrl.searchParams.set("authorId", currentUser.id);
       }
       apiUrl.searchParams.set("limit", "50");
@@ -197,7 +197,12 @@ import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
   async function runDashboardInit() {
     if (!enableAutoRefresh) return;
     if (!window.location.pathname.startsWith("/project")) return;
-    if (currentUserRole !== "Admin" && currentUserRole !== "Staff") return;
+    if (
+      currentUserRole !== "Admin" &&
+      currentUserRole !== "Staff" &&
+      currentUserRole !== "superAdmin"
+    )
+      return;
     const refreshManager = await waitForRefreshManager();
     if (!refreshManager) return; // refresh-manager not loaded — polling disabled, no console spam
     try {

@@ -65,7 +65,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Check if user has permission to create/update payments
     const userRole = currentUser.profile?.role;
-    if (userRole === "Client") {
+    if (userRole === "Client" || userRole === "superAdmin") {
       // Clients can only create payments for their own projects
       // Check if the invoice belongs to a project they own
       const { data: invoice, error: invoiceError } = await supabaseAdmin
@@ -136,7 +136,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
 
       // Check permissions for update
-      if (userRole === "Client" && existingPayment.createdBy !== currentUser.id) {
+      if (
+        (userRole === "Client" || userRole === "superAdmin") &&
+        existingPayment.createdBy !== currentUser.id
+      ) {
         return new Response(
           JSON.stringify({
             error: "Unauthorized to update this payment",

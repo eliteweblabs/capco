@@ -248,6 +248,14 @@ const { globalCardStyle, globalFormLabel, mutedTextSmClasses, primaryTextClasses
   const layerShowNoiseEl = document.getElementById("lab-layer-show-noise");
   const layerShowTextEl = document.getElementById("lab-layer-show-text");
   const layerShowContourEl = document.getElementById("lab-layer-show-contour");
+  const LAB_ROUTE_PATH = "/admin/drawing-analyzer-lab-client-safe";
+  const isLabRoute =
+    typeof window !== "undefined" && window.location.pathname.startsWith(LAB_ROUTE_PATH);
+  const hasLabDom =
+    drawingFileInput instanceof HTMLInputElement &&
+    drawingCanvas instanceof HTMLCanvasElement &&
+    drawingOverlay instanceof HTMLCanvasElement;
+  const shouldBootLab = isLabRoute && hasLabDom;
 
   const DEFAULT_DRAWING_FILE_NAME = "demo-plan.pdf";
   const DEFAULT_DRAWING_PUBLIC_PATH = `/${DEFAULT_DRAWING_FILE_NAME}`;
@@ -1861,6 +1869,7 @@ const { globalCardStyle, globalFormLabel, mutedTextSmClasses, primaryTextClasses
   }
 
   async function autoLoadDefaultDrawing() {
+    if (!shouldBootLab) return;
     if (drawingState) return;
     try {
       const resp = await fetch(DEFAULT_DRAWING_PUBLIC_PATH, { cache: "no-store" });
@@ -2239,6 +2248,8 @@ const { globalCardStyle, globalFormLabel, mutedTextSmClasses, primaryTextClasses
   if (benchmarkHeaderEl instanceof HTMLElement) benchmarkHeaderEl.style.cursor = "grab";
   updateUndoUi();
   updateBaselineReadout();
-  void loadLibraryFromFolder();
-  void autoLoadDefaultDrawing();
+  if (shouldBootLab) {
+    void loadLibraryFromFolder();
+    void autoLoadDefaultDrawing();
+  }
 </script>

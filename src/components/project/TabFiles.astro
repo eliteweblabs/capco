@@ -24,6 +24,13 @@ const {
 } = Astro.props;
 
 const projectId = project?.id;
+const normalizedProjectStatus = Number(projectStatus ?? project?.status ?? 0);
+const normalizedRole = String(currentUser?.profile?.role || "")
+  .trim()
+  .toLowerCase();
+const canSubmitFilesForReview =
+  normalizedProjectStatus === 10 &&
+  ["client", "admin", "staff", "superadmin"].includes(normalizedRole);
 ---
 
 <div
@@ -36,7 +43,7 @@ const projectId = project?.id;
     projectId={project.id}
     {currentUser}
     currentRole={currentUser?.profile?.role}
-    {projectStatus}
+    projectStatus={normalizedProjectStatus}
     {secondaryTextClasses}
     {primaryTextClasses}
     {globalInputClasses}
@@ -45,7 +52,7 @@ const projectId = project?.id;
 
   <!-- All Files Uploaded Button (Clients Only) -->
   {
-    projectStatus === 10 && (
+    canSubmitFilesForReview && (
       <StickyActions columns="1">
         <Button
           id="all-files-uploaded-btn"
@@ -67,7 +74,8 @@ const projectId = project?.id;
   define:vars={{
     project,
     projectId,
-    projectStatus,
+    normalizedProjectStatus,
+    canSubmitFilesForReview,
     globalInputClasses,
     secondaryTextClasses,
     primaryTextClasses,
@@ -76,14 +84,14 @@ const projectId = project?.id;
   is:inline
 >
   console.log("🔍 [TAB-Files] statusData:", statusData);
-  // Only initialize if the button exists (projectStatus === 10)
-  if (projectStatus === 10) {
+  // Only initialize when this view can submit files for review.
+  if (canSubmitFilesForReview) {
     class PDFUpload {
       constructor() {
         this.allFilesUploadedBtn = document.getElementById("all-files-uploaded-btn");
         this.project = project;
         this.projectId = projectId;
-        this.projectStatus = projectStatus;
+        this.projectStatus = normalizedProjectStatus;
         this.initialized = false;
         this.statusData = statusData;
         this.init();

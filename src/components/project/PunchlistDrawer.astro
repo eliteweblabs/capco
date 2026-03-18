@@ -14,7 +14,7 @@ interface Props {
 const { currentUser, project, supabaseUrl, id } = Astro.props;
 const currentRole = currentUser?.profile?.role;
 
-const showPunchlist = project && project.id && currentRole !== "Client";
+const showPunchlist = project && project.id && currentRole !== "Client" && currentRole !== "superAdmin";
 const projectId = project?.id;
 const drawerId = id || "punchlist-drawer";
 const drawerTitle = showPunchlist ? (project.title || project.address || "Project") + " Punchlist" : "";
@@ -27,7 +27,7 @@ const drawerTitle = showPunchlist ? (project.title || project.address || "Projec
     <div id="punchlist-container" class="flex min-h-0 flex-1 flex-col" data-project-id={projectId}>
       {/* Add Punchlist Item Button - Admin Only */}
       {
-        currentRole === "Admin" && (
+        (currentRole === "Admin" || currentRole === "superAdmin") && (
           <div class="mb-4 shrink-0">
             <FormActionButton
               action="new"
@@ -167,7 +167,8 @@ const drawerTitle = showPunchlist ? (project.title || project.address || "Projec
 
     // Load toggles for all items that can be toggled
     punchlistItems.forEach((item) => {
-      const canToggleCompleted = currentRole === "Admin" || currentRole === "Staff";
+      const canToggleCompleted =
+        currentRole === "Admin" || currentRole === "Staff" || currentRole === "superAdmin";
 
       if (canToggleCompleted) {
         loadToggleForPunchlistItem(item.id, item.markCompleted, true);
@@ -180,7 +181,8 @@ const drawerTitle = showPunchlist ? (project.title || project.address || "Projec
       // Compute all values in the parent component
       const isInternal = item.internal;
       const isAuthor = item.authorId === currentUserId;
-      const canToggleCompleted = currentRole === "Admin" || currentRole === "Staff";
+      const canToggleCompleted =
+        currentRole === "Admin" || currentRole === "Staff" || currentRole === "superAdmin";
 
       const marginLeft = depth > 0 ? `ml-${Math.min(depth * 8, 32)}` : "";
       const borderLeft = depth > 0 ? "border-l-2 border-gray-200 dark:border-gray-600 pl-4" : "";
@@ -365,9 +367,9 @@ const drawerTitle = showPunchlist ? (project.title || project.address || "Projec
     // Initialize delete confirm buttons
     initDeleteConfirmButtons();
 
-    // Add Punchlist Item functionality (Admin only)
+    // Add Punchlist Item functionality (Admin/superAdmin only)
     const addPunchlistBtn = document.getElementById("add-punchlist-item-btn");
-    if (addPunchlistBtn && currentRole === "Admin") {
+    if (addPunchlistBtn && (currentRole === "Admin" || currentRole === "superAdmin")) {
       console.log("🔔 [PUNCHLIST] Add button found, attaching event listener");
       addPunchlistBtn.addEventListener("click", async () => {
         console.log("🔔 [PUNCHLIST] Add button clicked");
@@ -418,7 +420,7 @@ const drawerTitle = showPunchlist ? (project.title || project.address || "Projec
         }
       });
     } else {
-      console.log("🔔 [PUNCHLIST] Add button not found or user not Admin");
+      console.log("🔔 [PUNCHLIST] Add button not found or user lacks elevated role");
     }
   });
 

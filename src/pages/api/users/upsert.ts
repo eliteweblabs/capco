@@ -155,7 +155,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // 1. Creating Admin role AND no admins exist (initial setup), OR
     // 2. Creating Admin role AND request is from setup page (additional admin creation)
     const isSetupScenario =
-      !userData.id && userData.role === "Admin" && (!hasAdmins || isFromSetupPage);
+      !userData.id &&
+      (userData.role === "Admin" || userData.role === "superAdmin") &&
+      (!hasAdmins || isFromSetupPage);
 
     if (!isAuth || !currentUser) {
       if (!isSetupScenario) {
@@ -326,7 +328,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         .select("value")
         .eq(
           "key",
-          userData.role === "Client" ? "welcomeClientEmailContent" : "welcomeStaffEmailContent"
+          userData.role === "Client" || userData.role === "superAdmin"
+            ? "welcomeClientEmailContent"
+            : "welcomeStaffEmailContent"
         )
         .single();
 
@@ -428,7 +432,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       try {
         const adminEmailPayload = {
           method: "internal",
-          rolesToNotify: ["Admin", "Staff"],
+          rolesToNotify: ["Admin", "Staff", "superAdmin"],
           emailSubject: `New User → ${displayName} → ${userData.role}`,
           emailContent: adminEmailContent,
           buttonText: "View Users",

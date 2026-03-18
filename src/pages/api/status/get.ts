@@ -26,6 +26,11 @@ export function getStatusData(
   return statuses[statusCode]?.[role] || null;
 }
 
+function isElevatedRole(role?: string | null): boolean {
+  const normalizedRole = role?.toLowerCase().replace(/[^a-z]/g, "") ?? "";
+  return ["admin", "staff", "superadmin"].includes(normalizedRole);
+}
+
 export const GET: APIRoute = async ({ request, cookies, url }) => {
   try {
     const { currentUser } = await checkAuth(cookies);
@@ -209,8 +214,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
 
     // Debug: Log the current user's role
     // console.log("🔍 [PROJECT-STATUSES-API] Current user role:", currentUser?.profile?.role);
-    const isAdminOrStaff =
-      currentUser?.profile?.role === "Admin" || currentUser?.profile?.role === "Staff";
+    const isAdminOrStaff = isElevatedRole(currentUser?.profile?.role);
     // console.log("🔍 [PROJECT-STATUSES-API] Is admin or staff:", isAdminOrStaff);
 
     // Get admin and staff emails using reusable API
@@ -405,8 +409,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Determine user role for status display
-    const isAdminOrStaff =
-      currentUser?.profile?.role === "Admin" || currentUser?.profile?.role === "Staff";
+    const isAdminOrStaff = isElevatedRole(currentUser?.profile?.role);
 
     // Fetch all project statuses from database
     const { data: statusesData, error: statusesError } = await supabaseAdmin
@@ -451,7 +454,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Get admin and staff emails using reusable API (same as GET route)
     const adminAndStaffResponse = await fetch(
-      `${getApiBaseUrl(request)}/api/users/get?role=Admin&role=Staff`,
+      `${getApiBaseUrl(request)}/api/users/get?role=Admin&role=Staff&role=superAdmin`,
       {
         method: "GET",
         headers: { "Content-Type": "application/json" },

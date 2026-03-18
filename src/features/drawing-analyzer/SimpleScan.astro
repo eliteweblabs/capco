@@ -703,10 +703,16 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     step5: true,
     step6: true,
   };
-  let stepOverlayTransforms: Record<
-    string,
-    { x: number; y: number; scale: number; rotationDeg: number; opacity: number }
-  > = {
+  type OverlayTransform = {
+    x: number;
+    y: number;
+    scale: number;
+    scaleX?: number;
+    scaleY?: number;
+    rotationDeg: number;
+    opacity: number;
+  };
+  let stepOverlayTransforms: Record<string, OverlayTransform> = {
     step3: { x: 0, y: 0, scale: 1, rotationDeg: 0, opacity: 1 },
     step4: { x: 0, y: 0, scale: 1, rotationDeg: 0, opacity: 1 },
     step5: { x: 0, y: 0, scale: 1, rotationDeg: 0, opacity: 1 },
@@ -718,6 +724,16 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     startY: number;
     baseX: number;
     baseY: number;
+  } | null = null;
+  let overlayHandleDragState: {
+    key: string;
+    anchor: string;
+    startX: number;
+    startY: number;
+    baseScaleX: number;
+    baseScaleY: number;
+    regionWidthPx: number;
+    regionHeightPx: number;
   } | null = null;
   let step1RegionClipByKey: Record<
     string,
@@ -744,6 +760,7 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
   }> = [];
   let step55Endpoints: Array<{ x: number; y: number; idx: number }> = [];
   let activeStep1LayerKey: string | null = null;
+  let overlayTargetingConfirmed = false;
   let layerFlowState = {
     step2ToStep3: true,
     step2ToStep4: true,
@@ -780,14 +797,27 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     if (!stepOverlayTransforms[key]) {
       stepOverlayTransforms[key] = { x: 0, y: 0, scale: 1, rotationDeg: 0, opacity: 1 };
     }
-    return stepOverlayTransforms[key];
+    const t = stepOverlayTransforms[key];
+    if (typeof t.scaleX !== "number") t.scaleX = t.scale;
+    if (typeof t.scaleY !== "number") t.scaleY = t.scale;
+    return t;
   };
   const resetOverlayTransform = (key: string) => {
-    stepOverlayTransforms[key] = { x: 0, y: 0, scale: 1, rotationDeg: 0, opacity: 1 };
+    stepOverlayTransforms[key] = {
+      x: 0,
+      y: 0,
+      scale: 1,
+      scaleX: 1,
+      scaleY: 1,
+      rotationDeg: 0,
+      opacity: 1,
+    };
   };
   const overlayTransformStyle = (key: string) => {
     const t = ensureOverlayTransform(key);
     const step1Layer = key.startsWith("step1-r");
+    const scaleX = step1Layer ? t.scaleX || t.scale : t.scale;
+    const scaleY = step1Layer ? t.scaleY || t.scale : t.scale;
     const pointerEvents = step1Layer ? "auto" : "auto";
     const zIndex = step1Layer && key === activeStep1LayerKey ? 14 : 8;
     const cursor = step1Layer ? (overlayDragState?.key === key ? "grabbing" : "grab") : "default";
@@ -800,7 +830,7 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
       step1Layer && key === activeStep1LayerKey
         ? "box-shadow:0 0 0 1.5px rgba(59,130,246,0.95) inset;"
         : "";
-    return `display:${isOverlayVisible(key) ? "block" : "none"};transform:translate(${t.x}px, ${t.y}px) scale(${t.scale}) rotate(${t.rotationDeg}deg);transform-origin:center center;opacity:${t.opacity};pointer-events:${pointerEvents};z-index:${zIndex};cursor:${cursor};${clipStyle}${activeOutline}`;
+    return `display:${isOverlayVisible(key) ? "block" : "none"};transform:translate(${t.x}px, ${t.y}px) scale(${scaleX}, ${scaleY}) rotate(${t.rotationDeg}deg);transform-origin:center center;opacity:${t.opacity};pointer-events:${pointerEvents};z-index:${zIndex};cursor:${cursor};${clipStyle}${activeOutline}`;
   };
   function updateStep1ActiveLayerUi() {
     if (!pipelineStepsEl) return;
@@ -821,10 +851,17 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
       `.simple-scan-overlay-layer[data-overlay-key="${key}"]`
     ) as HTMLImageElement | null;
     if (layer) layer.style.cssText = overlayTransformStyle(key);
+    const controls = pipelineStepsEl.querySelector(
+      `[data-overlay-controls-key="${key}"]`
+    ) as HTMLElement | null;
+    if (controls) {
+      const shouldShow = key === activeStep1LayerKey && isOverlayVisible(key);
+      controls.classList.toggle("hidden", !shouldShow);
+    }
     const scaleVal = pipelineStepsEl.querySelector(
       `[data-overlay-scale-val="${key}"]`
     ) as HTMLSpanElement | null;
-    if (scaleVal) scaleVal.textContent = `${Math.round(t.scale * 100)}%`;
+    if (scaleVal) scaleVal.textContent = `${Math.round(((t.scaleX || t.scale) * 100 + (t.scaleY || t.scale) * 100) / 2)}%`;
     const rotateVal = pipelineStepsEl.querySelector(
       `[data-overlay-rotate-val="${key}"]`
     ) as HTMLSpanElement | null;
@@ -2325,16 +2362,17 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     selectedRegionIndexes,
     matchSummary: pipelineMatchSummary = null,
     matchDetections = [],
+    targetingOnly = false,
   }) {
     if (!pipelineStepsEl) return;
     step1RegionClipByKey = {};
     const viableBaseUrl = maskedSourceToDataUrl(sourceImageData, selectedRegions);
     const fullPlanRegion = [{ x: 0, y: 0, w: sourceImageData.width, h: sourceImageData.height }];
-    const step3BaseUrl = maskedImageByMaskToDataUrl(sourceImageData, step3SourceMask);
-    const step4BaseUrl = maskedImageByMaskToDataUrl(sourceImageData, step4SourceMask);
-    const step5BaseUrl = maskedImageByMaskToDataUrl(sourceImageData, step5SourceMask);
-    const step6BaseUrl = maskedImageByMaskToDataUrl(sourceImageData, step6SourceMask);
-    const step7BaseUrl = maskedImageByMaskToDataUrl(sourceImageData, step7SourceMask);
+    const step3BaseUrl = targetingOnly ? "" : maskedImageByMaskToDataUrl(sourceImageData, step3SourceMask);
+    const step4BaseUrl = targetingOnly ? "" : maskedImageByMaskToDataUrl(sourceImageData, step4SourceMask);
+    const step5BaseUrl = targetingOnly ? "" : maskedImageByMaskToDataUrl(sourceImageData, step5SourceMask);
+    const step6BaseUrl = targetingOnly ? "" : maskedImageByMaskToDataUrl(sourceImageData, step6SourceMask);
+    const step7BaseUrl = targetingOnly ? "" : maskedImageByMaskToDataUrl(sourceImageData, step7SourceMask);
     const step3OverlayRegions = layerFlowState.step2ToStep3 ? selectedRegions : fullPlanRegion;
     const step4PlusOverlayRegions = layerFlowState.step2ToStep4 ? selectedRegions : fullPlanRegion;
     const steps = [
@@ -2357,62 +2395,66 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
         detail: "Everything outside selected viable area is removed before the heavier steps",
         imageUrl: viableBaseUrl,
       },
-      {
-        key: "step3",
-        title: "Step 3: Identify Colored Lines (Remember Only)",
-        detail: `${colorPixelCount} color pixel(s) identified (${layerFlowState.step2ToStep3 ? "input: Step 2 bounds" : "input: full canvas"}) | non-black luma>=${COLOR_LINE_MIN_LUMA}, color-diff>=${Math.round(runtimeColorLineMinSpread)}`,
-        baseImageUrl: step3BaseUrl,
-        overlayImageUrl: colorMaskLayerToDataUrl(
-          sourceImageData,
-          step3OverlayRegions,
-          colorLineDeltaMask,
-          [16, 185, 129],
-          true
-        ),
-      },
-      {
-        key: "step4",
-        title: "Step 4: Identify + Remove Hairlines",
-        detail: HAIRLINE_STEP_PAUSED
-          ? "Paused: passthrough only (kept as placeholder step; no hairlines removed)"
-          : `${hairlineRemovedCount} hairline component(s) removed (continuous thinnest linear class; width<=${hairlineWidthThreshold}px, ink>=${Math.round(runtimeHairlineMinInkStrength)}, run>=${Math.round(runtimeHairlineMinRun)}px, seg>=${Math.round(runtimeHairlineComponentMinLongSide)}px)`,
-        baseImageUrl: step4BaseUrl,
-        overlayImageUrl: colorMaskLayerToDataUrl(
-          sourceImageData,
-          step4PlusOverlayRegions,
-          hairlineRemovedDeltaMask,
-          [147, 51, 234]
-        ),
-      },
-      {
-        key: "step5",
-        title: "Step 5: Isolate + Hide Dashed Lines Layer",
-        detail: `${lineDashedCount} dashed component(s) converted to linear dashed items + ${lineJunctionCount} corner junction(s) isolated (${layerFlowState.step2ToStep4 ? "Step 2 included" : "Step 2 excluded"}; ${layerFlowState.step3ExcludeFromStep4 ? "Step 3 excluded" : "Step 3 not excluded"}; rectangles only, weak side>=2 dashes to keep closed loops, 3-of-4 sides need >=${DASH_RECT_MIN_SIDE_DASH_LENGTHS} dashes and are force-closed)`,
-        baseImageUrl: step5BaseUrl,
-        overlayImageUrl: colorMaskLayerToDataUrl(
-          sourceImageData,
-          step4PlusOverlayRegions,
-          lineRemovedDeltaMask,
-          [249, 115, 22]
-        ),
-      },
-      {
-        key: "step6",
-        title: "Step 6: Identify + Remove Alphanumeric Characters",
-        detail: `${textRemovedCount} text-like component(s) removed from post-linear cleanup mask`,
-        baseImageUrl: step6BaseUrl,
-        overlayImageUrl: colorMaskLayerToDataUrl(
-          sourceImageData,
-          step4PlusOverlayRegions,
-          textRemovedDeltaMask,
-          [236, 72, 153]
-        ),
-      },
-      {
-        title: "Step 7: Post-Step-6 Output (Current Final)",
-        detail: "Current handoff preview: this is the mask output after Step 6",
-        imageUrl: step7BaseUrl,
-      },
+      ...(targetingOnly
+        ? []
+        : [
+            {
+              key: "step3",
+              title: "Step 3: Identify Colored Lines (Remember Only)",
+              detail: `${colorPixelCount} color pixel(s) identified (${layerFlowState.step2ToStep3 ? "input: Step 2 bounds" : "input: full canvas"}) | non-black luma>=${COLOR_LINE_MIN_LUMA}, color-diff>=${Math.round(runtimeColorLineMinSpread)}`,
+              baseImageUrl: step3BaseUrl,
+              overlayImageUrl: colorMaskLayerToDataUrl(
+                sourceImageData,
+                step3OverlayRegions,
+                colorLineDeltaMask,
+                [16, 185, 129],
+                true
+              ),
+            },
+            {
+              key: "step4",
+              title: "Step 4: Identify + Remove Hairlines",
+              detail: HAIRLINE_STEP_PAUSED
+                ? "Paused: passthrough only (kept as placeholder step; no hairlines removed)"
+                : `${hairlineRemovedCount} hairline component(s) removed (continuous thinnest linear class; width<=${hairlineWidthThreshold}px, ink>=${Math.round(runtimeHairlineMinInkStrength)}, run>=${Math.round(runtimeHairlineMinRun)}px, seg>=${Math.round(runtimeHairlineComponentMinLongSide)}px)`,
+              baseImageUrl: step4BaseUrl,
+              overlayImageUrl: colorMaskLayerToDataUrl(
+                sourceImageData,
+                step4PlusOverlayRegions,
+                hairlineRemovedDeltaMask,
+                [147, 51, 234]
+              ),
+            },
+            {
+              key: "step5",
+              title: "Step 5: Isolate + Hide Dashed Lines Layer",
+              detail: `${lineDashedCount} dashed component(s) converted to linear dashed items + ${lineJunctionCount} corner junction(s) isolated (${layerFlowState.step2ToStep4 ? "Step 2 included" : "Step 2 excluded"}; ${layerFlowState.step3ExcludeFromStep4 ? "Step 3 excluded" : "Step 3 not excluded"}; rectangles only, weak side>=2 dashes to keep closed loops, 3-of-4 sides need >=${DASH_RECT_MIN_SIDE_DASH_LENGTHS} dashes and are force-closed)`,
+              baseImageUrl: step5BaseUrl,
+              overlayImageUrl: colorMaskLayerToDataUrl(
+                sourceImageData,
+                step4PlusOverlayRegions,
+                lineRemovedDeltaMask,
+                [249, 115, 22]
+              ),
+            },
+            {
+              key: "step6",
+              title: "Step 6: Identify + Remove Alphanumeric Characters",
+              detail: `${textRemovedCount} text-like component(s) removed from post-linear cleanup mask`,
+              baseImageUrl: step6BaseUrl,
+              overlayImageUrl: colorMaskLayerToDataUrl(
+                sourceImageData,
+                step4PlusOverlayRegions,
+                textRemovedDeltaMask,
+                [236, 72, 153]
+              ),
+            },
+            {
+              title: "Step 7: Post-Step-6 Output (Current Final)",
+              detail: "Current handoff preview: this is the mask output after Step 6",
+              imageUrl: step7BaseUrl,
+            },
+          ]),
     ];
     const cards = steps.map((step) => {
       const step1SelectedRegionEntries =
@@ -2455,7 +2497,17 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
           ? `<div id="simple-scan-step55-controls-slot" class="mb-2"></div>`
           : "";
       const step1RegionControls = "";
-      const step1LayerTransforms = "";
+      const step1LayerTransforms =
+        step.key === "step1" && step1SelectedRegionEntries.length > 0
+          ? `<div class="mb-2 flex flex-wrap items-center gap-2">
+               <p class="text-[11px] text-gray-500 dark:text-gray-400">Illustrator-style controls enabled: click a region to activate, drag to move, and drag corner/edge handles to resize.</p>
+               ${
+                 targetingOnly
+                   ? `<button type="button" id="simple-scan-confirm-overlay-targeting" class="${selectedRegions.length === 0 ? "cursor-not-allowed rounded bg-gray-400 px-2 py-1 text-[11px] font-semibold text-white" : "rounded bg-emerald-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-emerald-700"}" ${selectedRegions.length === 0 ? "disabled aria-disabled='true'" : ""}>Confirm Step 1 & run Steps 2-7</button>`
+                   : ""
+               }
+             </div>`
+          : "";
       const overlayControls =
         step.overlayImageUrl && step.key
           ? (() => {
@@ -2469,7 +2521,7 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
                   >
                     ${isOverlayVisible(String(step.key)) ? "Show source" : "Show identified only"}
                   </button>
-                  ${isStep1MaskTransform ? `<span class="text-[11px] font-semibold text-gray-700 dark:text-gray-300">Drag overlays directly. Use mouse wheel to scale, Shift + wheel to rotate.</span>` : ""}
+                  ${isStep1MaskTransform ? `<span class="text-[11px] font-semibold text-gray-700 dark:text-gray-300">Drag overlays directly. Drag corner/edge handles to resize. Shift + wheel rotates.</span>` : ""}
                 </div>
                 ${
                   isStep1MaskTransform
@@ -2565,7 +2617,7 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
                             );
                             step1RegionClipByKey[layerKey] = { top, right, bottom, left };
                             const delLeftPct = clamp(
-                              ((region.x + region.w - 10) / Math.max(1, step.sourceWidth)) * 100,
+                              ((region.x + 4) / Math.max(1, step.sourceWidth)) * 100,
                               0,
                               99
                             );
@@ -2595,6 +2647,17 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
                                 >
                                   ×
                                 </button>
+                                <div data-overlay-controls-key="${layerKey}" class="simple-scan-overlay-controls absolute inset-0 z-40">
+                                  <span class="pointer-events-none absolute border border-sky-400/90" style="left:${left}%;top:${top}%;right:${right}%;bottom:${bottom}%;"></span>
+                                  <span data-overlay-handle-key="${layerKey}" data-overlay-handle-anchor="nw" class="simple-scan-overlay-handle absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-sm border border-sky-100 bg-sky-500 shadow" style="left:${left}%;top:${top}%;cursor:nwse-resize;"></span>
+                                  <span data-overlay-handle-key="${layerKey}" data-overlay-handle-anchor="n" class="simple-scan-overlay-handle absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-sm border border-sky-100 bg-sky-500 shadow" style="left:${(left + (100 - right)) / 2}%;top:${top}%;cursor:ns-resize;"></span>
+                                  <span data-overlay-handle-key="${layerKey}" data-overlay-handle-anchor="ne" class="simple-scan-overlay-handle absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-sm border border-sky-100 bg-sky-500 shadow" style="left:${100 - right}%;top:${top}%;cursor:nesw-resize;"></span>
+                                  <span data-overlay-handle-key="${layerKey}" data-overlay-handle-anchor="e" class="simple-scan-overlay-handle absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-sm border border-sky-100 bg-sky-500 shadow" style="left:${100 - right}%;top:${(top + (100 - bottom)) / 2}%;cursor:ew-resize;"></span>
+                                  <span data-overlay-handle-key="${layerKey}" data-overlay-handle-anchor="se" class="simple-scan-overlay-handle absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-sm border border-sky-100 bg-sky-500 shadow" style="left:${100 - right}%;top:${100 - bottom}%;cursor:nwse-resize;"></span>
+                                  <span data-overlay-handle-key="${layerKey}" data-overlay-handle-anchor="s" class="simple-scan-overlay-handle absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-sm border border-sky-100 bg-sky-500 shadow" style="left:${(left + (100 - right)) / 2}%;top:${100 - bottom}%;cursor:ns-resize;"></span>
+                                  <span data-overlay-handle-key="${layerKey}" data-overlay-handle-anchor="sw" class="simple-scan-overlay-handle absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-sm border border-sky-100 bg-sky-500 shadow" style="left:${left}%;top:${100 - bottom}%;cursor:nesw-resize;"></span>
+                                  <span data-overlay-handle-key="${layerKey}" data-overlay-handle-anchor="w" class="simple-scan-overlay-handle absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-sm border border-sky-100 bg-sky-500 shadow" style="left:${left}%;top:${(top + (100 - bottom)) / 2}%;cursor:ew-resize;"></span>
+                                </div>
                               </div>
                             `;
                           })
@@ -2618,61 +2681,63 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
         </div>
       `;
     });
-    const matchDetected = Array.isArray(matchDetections) ? matchDetections : [];
-    const matchTotal = Number(pipelineMatchSummary?.totalMatches || 0);
-    const matchCandidates = Number(pipelineMatchSummary?.candidateCount || 0);
-    const matchDetailText =
-      matchDetected.length > 0
-        ? `${matchTotal} match(es) from ${matchCandidates} candidate(s). Rings mark detected library items.`
-        : "Run matching here after Step 7. Results and markers will appear below.";
-    const step8MarkerRings = matchDetected
-      .map((d, idx) => {
-        const x = clamp(Number(d?.x || 0), 0, sourceImageData.width - 1);
-        const y = clamp(Number(d?.y || 0), 0, sourceImageData.height - 1);
-        const ringRadiusPx = clamp(Number(d?.radius || 10), 6, 44);
-        const diameterPct = clamp(
-          (ringRadiusPx * 2 * 100) / Math.max(1, sourceImageData.width),
-          0.8,
-          12
-        );
-        const leftPct = clamp((x / Math.max(1, sourceImageData.width)) * 100, 0, 100);
-        const topPct = clamp((y / Math.max(1, sourceImageData.height)) * 100, 0, 100);
-        const color = String(d?.color || "rgba(251,191,36,0.95)");
-        const label = String(d?.label || `match-${idx + 1}`);
-        return `<span class="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full" title="${label}" style="left:${leftPct}%;top:${topPct}%;width:${diameterPct}%;height:${diameterPct}%;border:2px solid ${color};background:transparent;"></span>`;
-      })
-      .join("");
-    cards.push(`
-      <div class="rounded border border-gray-200 p-2 dark:border-gray-700">
-        <p class="text-xs font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-300">Step 8: Match Targeted Library Items</p>
-        <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">${matchDetailText}</p>
-        <div id="simple-scan-step8-controls-slot" class="mb-2 rounded border border-gray-200 p-2 dark:border-gray-700"></div>
-        <div class="relative overflow-hidden rounded border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
-          <img src="${step7BaseUrl}" alt="Step 8 final canvas with match rings" class="block w-full" />
-          ${step8MarkerRings}
+    if (!targetingOnly) {
+      const matchDetected = Array.isArray(matchDetections) ? matchDetections : [];
+      const matchTotal = Number(pipelineMatchSummary?.totalMatches || 0);
+      const matchCandidates = Number(pipelineMatchSummary?.candidateCount || 0);
+      const matchDetailText =
+        matchDetected.length > 0
+          ? `${matchTotal} match(es) from ${matchCandidates} candidate(s). Rings mark detected library items.`
+          : "Run matching here after Step 7. Results and markers will appear below.";
+      const step8MarkerRings = matchDetected
+        .map((d, idx) => {
+          const x = clamp(Number(d?.x || 0), 0, sourceImageData.width - 1);
+          const y = clamp(Number(d?.y || 0), 0, sourceImageData.height - 1);
+          const ringRadiusPx = clamp(Number(d?.radius || 10), 6, 44);
+          const diameterPct = clamp(
+            (ringRadiusPx * 2 * 100) / Math.max(1, sourceImageData.width),
+            0.8,
+            12
+          );
+          const leftPct = clamp((x / Math.max(1, sourceImageData.width)) * 100, 0, 100);
+          const topPct = clamp((y / Math.max(1, sourceImageData.height)) * 100, 0, 100);
+          const color = String(d?.color || "rgba(251,191,36,0.95)");
+          const label = String(d?.label || `match-${idx + 1}`);
+          return `<span class="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full" title="${label}" style="left:${leftPct}%;top:${topPct}%;width:${diameterPct}%;height:${diameterPct}%;border:2px solid ${color};background:transparent;"></span>`;
+        })
+        .join("");
+      cards.push(`
+        <div class="rounded border border-gray-200 p-2 dark:border-gray-700">
+          <p class="text-xs font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-300">Step 8: Match Targeted Library Items</p>
+          <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">${matchDetailText}</p>
+          <div id="simple-scan-step8-controls-slot" class="mb-2 rounded border border-gray-200 p-2 dark:border-gray-700"></div>
+          <div class="relative overflow-hidden rounded border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+            <img src="${step7BaseUrl}" alt="Step 8 final canvas with match rings" class="block w-full" />
+            ${step8MarkerRings}
+          </div>
         </div>
-      </div>
-    `);
-    cards.splice(
-      2,
-      0,
-      `<div id="simple-scan-step3-controls-slot" class="rounded border border-gray-200 p-2 dark:border-gray-700"></div>`
-    );
-    cards.splice(
-      4,
-      0,
-      `<div id="simple-scan-step4-controls-slot" class="rounded border border-gray-200 p-2 dark:border-gray-700"></div>`
-    );
-    cards.splice(
-      6,
-      0,
-      `<div id="simple-scan-step5-controls-slot" class="rounded border border-gray-200 p-2 dark:border-gray-700"></div>`
-    );
-    cards.splice(
-      8,
-      0,
-      `<div id="simple-scan-step6-controls-slot" class="rounded border border-gray-200 p-2 dark:border-gray-700"></div>`
-    );
+      `);
+      cards.splice(
+        2,
+        0,
+        `<div id="simple-scan-step3-controls-slot" class="rounded border border-gray-200 p-2 dark:border-gray-700"></div>`
+      );
+      cards.splice(
+        4,
+        0,
+        `<div id="simple-scan-step4-controls-slot" class="rounded border border-gray-200 p-2 dark:border-gray-700"></div>`
+      );
+      cards.splice(
+        6,
+        0,
+        `<div id="simple-scan-step5-controls-slot" class="rounded border border-gray-200 p-2 dark:border-gray-700"></div>`
+      );
+      cards.splice(
+        8,
+        0,
+        `<div id="simple-scan-step6-controls-slot" class="rounded border border-gray-200 p-2 dark:border-gray-700"></div>`
+      );
+    }
     pipelineStepsEl.innerHTML = cards.join("");
     const step3ControlsSlot = document.getElementById("simple-scan-step3-controls-slot");
     const step4ControlsSlot = document.getElementById("simple-scan-step4-controls-slot");
@@ -2691,31 +2756,31 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     ) {
       activeStep1LayerKey = step1LayerKeys[0];
     }
-    if (step3ControlsSlot && layerFlowControlsEl) {
+    if (!targetingOnly && step3ControlsSlot && layerFlowControlsEl) {
       step3ControlsSlot.appendChild(layerFlowControlsEl);
       layerFlowControlsEl.classList.remove("hidden");
     }
-    if (step3ControlsSlot && step3ControlsEl) {
+    if (!targetingOnly && step3ControlsSlot && step3ControlsEl) {
       step3ControlsSlot.appendChild(step3ControlsEl);
       step3ControlsEl.classList.remove("hidden");
     }
-    if (step4ControlsSlot && step4ControlsEl && !HAIRLINE_STEP_PAUSED) {
+    if (!targetingOnly && step4ControlsSlot && step4ControlsEl && !HAIRLINE_STEP_PAUSED) {
       step4ControlsSlot.appendChild(step4ControlsEl);
       step4ControlsEl.classList.remove("hidden");
     }
-    if (step5ControlsSlot && step5ControlsEl) {
+    if (!targetingOnly && step5ControlsSlot && step5ControlsEl) {
       step5ControlsSlot.appendChild(step5ControlsEl);
       step5ControlsEl.classList.remove("hidden");
     }
-    if (step6ControlsSlot && step6ControlsEl) {
+    if (!targetingOnly && step6ControlsSlot && step6ControlsEl) {
       step6ControlsSlot.appendChild(step6ControlsEl);
       step6ControlsEl.classList.remove("hidden");
     }
-    if (step55ControlsSlot && step55ControlsEl) {
+    if (!targetingOnly && step55ControlsSlot && step55ControlsEl) {
       step55ControlsSlot.appendChild(step55ControlsEl);
       step55ControlsEl.classList.remove("hidden");
     }
-    if (step8ControlsSlot && step8ControlsEl) {
+    if (!targetingOnly && step8ControlsSlot && step8ControlsEl) {
       step8ControlsSlot.appendChild(step8ControlsEl);
       step8ControlsEl.classList.remove("hidden");
       renderMatchSummaryUi();
@@ -2738,10 +2803,12 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     ) as HTMLButtonElement | null;
     resetRemovedRegionsBtn?.addEventListener("click", () => {
       excludedRegionIndexes.clear();
+      overlayTargetingConfirmed = false;
       if (drawingState) renderProcessingOnlyView();
     });
     removeAllRegionsBtn?.addEventListener("click", () => {
       (baselineRegions || []).forEach((_, idx) => excludedRegionIndexes.add(idx));
+      overlayTargetingConfirmed = false;
       if (drawingState) renderProcessingOnlyView();
     });
     pipelineStepsEl.querySelectorAll(".simple-scan-remove-region-btn").forEach((btn) => {
@@ -2751,6 +2818,7 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
         const idx = Number(btn.getAttribute("data-remove-region-idx"));
         if (!Number.isFinite(idx) || idx < 0) return;
         excludedRegionIndexes.add(idx);
+        overlayTargetingConfirmed = false;
         if (drawingState) renderProcessingOnlyView();
       });
     });
@@ -2759,6 +2827,7 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
         const idx = Number(btn.getAttribute("data-region-remove-idx"));
         if (!Number.isFinite(idx) || idx < 0) return;
         excludedRegionIndexes.add(idx);
+        overlayTargetingConfirmed = false;
         if (drawingState) renderProcessingOnlyView();
       });
     });
@@ -2767,8 +2836,18 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
         const idx = Number(btn.getAttribute("data-region-readd-idx"));
         if (!Number.isFinite(idx) || idx < 0) return;
         excludedRegionIndexes.delete(idx);
+        overlayTargetingConfirmed = false;
         if (drawingState) renderProcessingOnlyView();
       });
+    });
+    const confirmOverlayTargetingBtn = document.getElementById(
+      "simple-scan-confirm-overlay-targeting"
+    ) as HTMLButtonElement | null;
+    confirmOverlayTargetingBtn?.addEventListener("click", () => {
+      if (!drawingState) return;
+      overlayTargetingConfirmed = true;
+      setStatus("Step 1 confirmed. Running Steps 2-7...");
+      renderProcessingOnlyView();
     });
     pipelineStepsEl.querySelectorAll("[data-overlay-active-key]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -2784,6 +2863,8 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
         if (!key) return;
         const t = ensureOverlayTransform(key);
         t.scale = clamp(Number((input as HTMLInputElement).value) / 100, 0.5, 2.6);
+        t.scaleX = t.scale;
+        t.scaleY = t.scale;
         applyOverlayTransformUi(key);
       });
     });
@@ -2864,23 +2945,14 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
       step1LayerKeys.forEach((k) => applyOverlayTransformUi(k));
     }
     pipelineStepsEl.querySelectorAll(".simple-scan-overlay-layer").forEach((layer) => {
-      layer.addEventListener("wheel", (event) => {
-        const key = layer.getAttribute("data-overlay-key");
-        if (!key || !key.startsWith("step1-r")) return;
-        event.preventDefault();
-        activeStep1LayerKey = key;
-        const t = ensureOverlayTransform(key);
-        if ((event as WheelEvent).shiftKey) {
-          t.rotationDeg = clamp(t.rotationDeg + (event as WheelEvent).deltaY * 0.12, -180, 180);
-        } else {
-          const factor = Math.exp(-(event as WheelEvent).deltaY * 0.0015);
-          t.scale = clamp(t.scale * factor, 0.45, 3.2);
-        }
-        step1LayerKeys.forEach((k) => applyOverlayTransformUi(k));
-      });
       layer.addEventListener("pointerdown", (event) => {
         const targetEl = event.target as HTMLElement | null;
-        if (targetEl?.closest("button, input, select, textarea, a, label")) return;
+        if (
+          targetEl?.closest(
+            "button, input, select, textarea, a, label, [data-overlay-handle-anchor]"
+          )
+        )
+          return;
         const key = layer.getAttribute("data-overlay-key");
         if (!key) return;
         if (!key.startsWith("step1-r")) return;
@@ -2897,6 +2969,39 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
         };
         (layer as HTMLElement).setPointerCapture(pointerEvent.pointerId);
         pointerEvent.preventDefault();
+      });
+    });
+    pipelineStepsEl.querySelectorAll("[data-overlay-handle-key]").forEach((handle) => {
+      handle.addEventListener("pointerdown", (event) => {
+        const targetEl = event.currentTarget as HTMLElement | null;
+        const key = targetEl?.getAttribute("data-overlay-handle-key") || "";
+        const anchor = targetEl?.getAttribute("data-overlay-handle-anchor") || "";
+        if (!key || !key.startsWith("step1-r") || !anchor) return;
+        const pointerEvent = event as PointerEvent;
+        const t = ensureOverlayTransform(key);
+        activeStep1LayerKey = key;
+        step1LayerKeys.forEach((k) => applyOverlayTransformUi(k));
+        const layerEl = pipelineStepsEl.querySelector(
+          `.simple-scan-overlay-layer[data-overlay-key="${key}"]`
+        ) as HTMLElement | null;
+        if (!layerEl) return;
+        const rect = layerEl.getBoundingClientRect();
+        const clip = step1RegionClipByKey[key];
+        const widthRatio = clip ? Math.max(0.05, 1 - (clip.left + clip.right) / 100) : 1;
+        const heightRatio = clip ? Math.max(0.05, 1 - (clip.top + clip.bottom) / 100) : 1;
+        overlayHandleDragState = {
+          key,
+          anchor,
+          startX: pointerEvent.clientX,
+          startY: pointerEvent.clientY,
+          baseScaleX: t.scaleX || t.scale,
+          baseScaleY: t.scaleY || t.scale,
+          regionWidthPx: Math.max(18, rect.width * widthRatio),
+          regionHeightPx: Math.max(18, rect.height * heightRatio),
+        };
+        targetEl?.setPointerCapture(pointerEvent.pointerId);
+        pointerEvent.preventDefault();
+        pointerEvent.stopPropagation();
       });
     });
   }
@@ -3593,6 +3698,55 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     const { regionsSource, selectedRegions, selectedRegionIndexes } =
       getActiveRegionSelection(drawingState);
     const selectedState = getMaskedByRegions(drawingState, selectedRegions);
+    if (!overlayTargetingConfirmed) {
+      const emptyMask = new Uint8Array(selectedState.mask.length);
+      const previewPayload = {
+        sourceImageData: drawingState.imageData,
+        step3SourceMask: selectedState.mask,
+        step4SourceMask: selectedState.mask,
+        step5SourceMask: selectedState.mask,
+        step6SourceMask: selectedState.mask,
+        step7SourceMask: selectedState.mask,
+        colorLineDeltaMask: emptyMask,
+        colorPixelCount: 0,
+        hairlineRemovedDeltaMask: emptyMask,
+        hairlineRemovedCount: 0,
+        hairlineWidthThreshold: runtimeHairlineMaxThickness,
+        lineRemovedDeltaMask: emptyMask,
+        lineDashedCount: 0,
+        lineJunctionCount: 0,
+        lineMagneticSeedCount: 0,
+        lineLoopClosedCount: 0,
+        textRemovedDeltaMask: emptyMask,
+        textRemovedCount: 0,
+        regions: regionsSource,
+        selectedRegions,
+        selectedRegionIndexes,
+        matchSummary: null,
+        matchDetections: [],
+        targetingOnly: true,
+      };
+      lastPipelineSnapshot = previewPayload;
+      renderPipelineSteps(previewPayload);
+      drawOverlay();
+      if (resultsEl) {
+        resultsEl.textContent = JSON.stringify(
+          {
+            mode: "step1-targeting",
+            note: "Confirm Step 1 overlay targeting before running Steps 2-7.",
+            regionsDetected: baselineRegions.length,
+            regionsSelected: selectedRegions.length,
+            regionsRemoved: excludedRegionIndexes.size,
+          },
+          null,
+          2
+        );
+      }
+      setStatus(
+        `Step 1 ready. ${selectedRegions.length} viable region(s) selected. Confirm overlay targeting to run Steps 2-7.`
+      );
+      return;
+    }
     const step2BoundsMask = buildRegionBoundsMask(
       drawingState.width,
       drawingState.height,
@@ -3968,6 +4122,10 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
 
   async function runSimpleScan() {
     if (!drawingState) return;
+    if (!overlayTargetingConfirmed) {
+      setStatus("Confirm Step 1 overlay targeting before running matching.");
+      return;
+    }
     setStatus("Scanning...");
     if (matchMetaEl) matchMetaEl.textContent = "Matching in progress...";
     stopPlayback();
@@ -4348,6 +4506,7 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     );
     baselineRegions = extractBaselineRegions(drawingState);
     excludedRegionIndexes.clear();
+    overlayTargetingConfirmed = false;
     renderProcessingOnlyView();
   }
 
@@ -4532,6 +4691,33 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     });
   };
   const handleOverlayPointerMove = (event: PointerEvent) => {
+    if (overlayHandleDragState) {
+      const t = ensureOverlayTransform(overlayHandleDragState.key);
+      const dx = event.clientX - overlayHandleDragState.startX;
+      const dy = event.clientY - overlayHandleDragState.startY;
+      const anchor = overlayHandleDragState.anchor;
+      const horizontal = anchor.includes("e") ? 1 : anchor.includes("w") ? -1 : 0;
+      const vertical = anchor.includes("s") ? 1 : anchor.includes("n") ? -1 : 0;
+      const widthRef = Math.max(
+        24,
+        overlayHandleDragState.regionWidthPx * Math.max(0.1, overlayHandleDragState.baseScaleX)
+      );
+      const heightRef = Math.max(
+        24,
+        overlayHandleDragState.regionHeightPx * Math.max(0.1, overlayHandleDragState.baseScaleY)
+      );
+      if (horizontal !== 0) {
+        const scaleDeltaX = horizontal * (dx / widthRef);
+        t.scaleX = clamp(overlayHandleDragState.baseScaleX * (1 + scaleDeltaX * 1.35), 0.45, 3.2);
+      }
+      if (vertical !== 0) {
+        const scaleDeltaY = vertical * (dy / heightRef);
+        t.scaleY = clamp(overlayHandleDragState.baseScaleY * (1 + scaleDeltaY * 1.35), 0.45, 3.2);
+      }
+      t.scale = ((t.scaleX || t.scale) + (t.scaleY || t.scale)) / 2;
+      applyOverlayTransformUi(overlayHandleDragState.key);
+      return;
+    }
     if (!overlayDragState) return;
     const t = ensureOverlayTransform(overlayDragState.key);
     t.x = overlayDragState.baseX + (event.clientX - overlayDragState.startX);
@@ -4539,6 +4725,7 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     applyOverlayTransformUi(overlayDragState.key);
   };
   const handleOverlayPointerUp = () => {
+    overlayHandleDragState = null;
     overlayDragState = null;
   };
   colorSpreadInput?.addEventListener("input", handleColorTuningInput);

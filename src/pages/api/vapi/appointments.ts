@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
 import { getApiBaseUrl } from "../../../lib/url-utils";
+import { isClientOrSuperAdmin } from "../../../lib/user-utils";
 
 /**
  * Vapi.ai Appointments Integration (Internal System)
@@ -114,7 +115,7 @@ async function handleReadAppointments(
         .eq("id", currentUser.id)
         .single();
 
-      if (profile?.role === "Client") {
+      if (isClientOrSuperAdmin(profile?.role)) {
         query = query.eq("organizerId", currentUser.id);
       }
 

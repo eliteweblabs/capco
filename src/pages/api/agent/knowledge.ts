@@ -54,7 +54,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       .eq("id", currentUser.id)
       .single();
 
-    const isAdmin = profile?.role === "Admin";
+    const isAdmin = profile?.role === "Admin" || profile?.role === "superAdmin";
 
     // Build query - include user's own entries even if inactive, and all active entries
     let query = supabaseAdmin
@@ -221,7 +221,7 @@ export const PUT: APIRoute = async ({ request, cookies }) => {
       .eq("id", currentUser.id)
       .single();
 
-    const isAdmin = profile?.role === "Admin";
+    const isAdmin = profile?.role === "Admin" || profile?.role === "superAdmin";
 
     if (!isAdmin) {
       // Verify ownership
@@ -313,7 +313,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
       .eq("id", currentUser.id)
       .single();
 
-    const isAdmin = profile?.role === "Admin";
+    const isAdmin = profile?.role === "Admin" || profile?.role === "superAdmin";
 
     if (!isAdmin) {
       // Verify ownership

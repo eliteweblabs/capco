@@ -162,7 +162,7 @@ async function createBookingNotification(appointment: any, eventType: string) {
     const { data: adminStaffUsers } = await supabaseAdmin
       .from("profiles")
       .select("id, email, firstName, lastName")
-      .in("role", ["Admin", "Staff"]);
+      .in("role", ["Admin", "Staff", "superAdmin"]);
 
     if (!adminStaffUsers || adminStaffUsers.length === 0) {
       console.warn("⚠️ [CAL-WEBHOOK] No admin/staff users found for notification");

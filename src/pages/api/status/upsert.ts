@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { supabase } from "../../../lib/supabase";
+import { supabaseAdmin } from "../../../lib/supabase-admin";
 import { SimpleProjectLogger } from "../../../lib/simple-logging";
 import { getSiteConfig } from "../../../lib/content";
 
@@ -11,6 +12,11 @@ async function getStatusName(statusCode: number): Promise<string> {
   const statusArray = statusesData?.[0]?.json_agg || [];
   const status = statusArray.find((s: any) => s.statusCode === statusCode);
   return status?.adminStatusName || `Status ${statusCode}`;
+}
+
+function isElevatedRole(role?: string | null): boolean {
+  const normalizedRole = role?.toLowerCase().replace(/[^a-z]/g, "") ?? "";
+  return ["admin", "staff", "superadmin"].includes(normalizedRole);
 }
 
 export const OPTIONS: APIRoute = async () => {
@@ -72,7 +78,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    const { data: updatedProject, error: updateError } = await supabase
+    const dbClient = isElevatedRole(currentUser?.profile?.role) && supabaseAdmin ? supabaseAdmin : supabase;
+
+    const { data: updatedProject, error: updateError } = await dbClient
       .from("projects")
       .update({
         status: newStatus,
@@ -84,10 +92,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (updateError) {
       console.error("📊 [UPDATE-STATUS] Database update failed:", updateError);
-      return new Response(JSON.stringify({ error: "Failed to update project status" }), {
+      return new Response(
+        JSON.stringify({
+          error: "Failed to update project status",
+          details: updateError.message,
+        }),
+        {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      });
+        }
+      );
     }
 
     // Attach the author profile to the project object

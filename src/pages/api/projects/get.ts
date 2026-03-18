@@ -96,7 +96,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       // Apply role-based filtering
       if (!isFeaturedRequest && currentUser) {
         const userRole = currentUser.profile?.role;
-        if (userRole === "Client") {
+        if (userRole === "Client" || userRole === "superAdmin") {
           countQuery = countQuery.eq("authorId", currentUser.id);
         }
       }
@@ -165,7 +165,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
     // Apply role-based filtering (skip for featured projects)
     if (!isFeaturedRequest && currentUser) {
       const userRole = currentUser.profile?.role;
-      if (userRole === "Client") {
+      if (userRole === "Client" || userRole === "superAdmin") {
         // Clients can only see their own projects
         query = query.eq("authorId", currentUser.id);
       }

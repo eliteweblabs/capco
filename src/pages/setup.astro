@@ -43,8 +43,11 @@ console.log("[SETUP] Final state:", {
   role: currentUser?.profile?.role,
 });
 
-// Only redirect if user is already an admin
-if (currentUser && currentUser.profile?.role === "Admin") {
+// Only redirect if user is already an elevated admin role
+if (
+  currentUser &&
+  (currentUser.profile?.role === "Admin" || currentUser.profile?.role === "superAdmin")
+) {
   console.log("[SETUP] User is already admin, redirecting to /admin");
   return Astro.redirect("/admin");
 }

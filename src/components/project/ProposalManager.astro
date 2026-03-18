@@ -34,14 +34,15 @@ const currentRole = currentUser?.profile?.role;
 const authorProfile = project?.authorProfile;
 import StickyActions from "./StickyActions.astro";
 
-// Only show to Admin/Staff users
-const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
+// Only show to Admin/Staff/superAdmin users
+const canManageProposals =
+  currentRole === "Admin" || currentRole === "Staff" || currentRole === "superAdmin";
 
 // Check if there's already an invoice for this project
 ---
 
 {
-  (canManageProposals || (currentRole === "Client" && projectStatus > 20)) && (
+  (canManageProposals || ((currentRole === "Client" || currentRole === "superAdmin") && projectStatus > 20)) && (
     <div id="proposal-content">
       {/* NumberStepper script is used by quantity cells in line items; one hidden instance loads it */}
       <div class="hidden" aria-hidden="true">
@@ -234,7 +235,10 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
         </StickyActions>
       )}
 
-      {projectStatus >= 30 && currentRole === "Client" && projectStatus < 45 && existingInvoice && (
+      {projectStatus >= 30 &&
+        (currentRole === "Client" || currentRole === "superAdmin") &&
+        projectStatus < 45 &&
+        existingInvoice && (
         // make this container sticky to the bottom of the page and release when it gets to its original position
 
         <div class="fixed bottom-0 left-0 z-50 h-16 w-full border-t border-gray-200 bg-gray-100 dark:border-gray-600 dark:bg-gray-700">
@@ -264,7 +268,9 @@ const canManageProposals = currentRole === "Admin" || currentRole === "Staff";
   )
 }
 
-{(projectStatus < 20 && currentRole === "Client") || currentRole === "Admin" && (
+{((projectStatus < 20 && (currentRole === "Client" || currentRole === "superAdmin")) ||
+  currentRole === "Admin" ||
+  currentRole === "superAdmin") && (
 
 <script
   type="module"

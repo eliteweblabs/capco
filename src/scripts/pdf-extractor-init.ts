@@ -2,7 +2,11 @@ document.addEventListener("DOMContentLoaded", function () {
   const formForPDF = document.querySelector("form[data-project-id]");
   if (formForPDF) {
     const currentRoleForPDF = formForPDF.getAttribute("data-current-role");
-    if (currentRoleForPDF === "Admin" || currentRoleForPDF === "Staff") {
+    if (
+      currentRoleForPDF === "Admin" ||
+      currentRoleForPDF === "Staff" ||
+      currentRoleForPDF === "superAdmin"
+    ) {
       const dropzone = document.getElementById("project-form-pdf-dropzone");
       const dropzoneContainer = document.getElementById("project-form-pdf-dropzone-container");
       const viewerSection = document.getElementById("project-form-pdf-viewer-section");

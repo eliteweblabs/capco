@@ -1,6 +1,6 @@
 ---
 // Socket.io-based Chat Widget Component - Real-time chat with WebSocket connections
-// Only visible to Admin/Staff users
+// Only visible to Admin/Staff/superAdmin users
 
 import SimpleIcon from "../../../components/common/SimpleIcon.astro";
 
@@ -10,7 +10,8 @@ interface Props {
 
 const { currentUser } = Astro.props;
 const currentRole = currentUser?.profile?.role;
-const showSocketChat = currentRole === "Admin" || currentRole === "Staff";
+const showSocketChat =
+  currentRole === "Admin" || currentRole === "Staff" || currentRole === "superAdmin";
 ---
 
 {showSocketChat && (
@@ -117,7 +118,7 @@ const showSocketChat = currentRole === "Admin" || currentRole === "Staff";
 
       console.log("🔔 [SOCKETIO-CHAT] Initializing Socket.io chat widget");
 
-      // Check if user is Admin/Staff
+      // Check if user is Admin/Staff/superAdmin
       const chatWidget = document.getElementById("socket-chat-widget");
       if (!chatWidget) {
         console.log("🔔 [SOCKETIO-CHAT] Chat widget element not found!");
@@ -132,13 +133,13 @@ const showSocketChat = currentRole === "Admin" || currentRole === "Staff";
       console.log("🔔 [SOCKETIO-CHAT] User ID:", userId);
       console.log("🔔 [SOCKETIO-CHAT] User name:", userName);
 
-      if (userRole !== "Admin" && userRole !== "Staff") {
-        console.log("🔔 [SOCKETIO-CHAT] User not Admin/Staff, hiding chat widget");
+      if (userRole !== "Admin" && userRole !== "Staff" && userRole !== "superAdmin") {
+        console.log("🔔 [SOCKETIO-CHAT] User not Admin/Staff/superAdmin, hiding chat widget");
         chatWidget.classList.add("hidden");
         return;
       }
 
-      console.log("🔔 [SOCKETIO-CHAT] User is Admin/Staff, showing chat widget");
+      console.log("🔔 [SOCKETIO-CHAT] User is Admin/Staff/superAdmin, showing chat widget");
 
       // Get current user info
       currentUser = {

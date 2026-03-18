@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { supabase } from "../../../lib/supabase";
+import { isClientOrSuperAdmin } from "../../../lib/user-utils";
 
 // 🚧 DEAD STOP - 2024-12-19: Potentially unused API endpoint
 // If you see this log after a few days, this endpoint can likely be deleted
@@ -82,7 +83,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     let users = [];
 
     // If user is a client, they can only mention themselves (project author) or all users in global discussions
-    if (currentUserRole === "Client") {
+    if (isClientOrSuperAdmin(currentUserRole)) {
       if (isGlobal) {
         // For global discussions, clients can mention all users
         const { data: allProfiles, error: allProfilesError } = await supabase
@@ -122,7 +123,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         users = [clientProfile];
       }
     } else {
-      // For Admin/Staff, get all mentionable users (Admin, Staff, or project author)
+      // For Admin/Staff/superAdmin, get all mentionable users (Admin, Staff, superAdmin, or project author)
       const { data: allProfiles, error: allProfilesError } = await supabase
         .from("profiles")
         .select("id, companyName, role, firstName, lastName, email, avatarUrl");
@@ -135,14 +136,17 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       }
 
       if (isGlobal) {
-        // For global discussions, Admin/Staff can mention all users
+        // For global discussions, Admin/Staff/superAdmin can mention all users
         users = allProfiles || [];
       } else {
-        // For project discussions, Admin/Staff can mention Admin, Staff, or project author
+        // For project discussions, Admin/Staff/superAdmin can mention Admin, Staff, superAdmin, or project author
         users =
           allProfiles?.filter(
             (profile) =>
-              profile.role === "Admin" || profile.role === "Staff" || profile.id === projectAuthorId
+              profile.role === "Admin" ||
+              profile.role === "Staff" ||
+              profile.role === "superAdmin" ||
+              profile.id === projectAuthorId
           ) || [];
       }
     }

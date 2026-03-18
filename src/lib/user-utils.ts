@@ -143,12 +143,26 @@ export function isStaff(userInfo: UserInfo): boolean {
 }
 
 /**
- * Check if user is client
+ * Check if role has client-level access (Client or superAdmin).
+ */
+export function isClientOrSuperAdmin(role: string | null | undefined): boolean {
+  return role === "Client" || role === "superAdmin";
+}
+
+/**
+ * Check if role is explicitly not client-level access (neither Client nor superAdmin).
+ */
+export function isNotClientOrSuperAdmin(role: string | null | undefined): boolean {
+  return role !== "Client" && role !== "superAdmin";
+}
+
+/**
+ * Check if user is client (or superAdmin for access gates)
  * @param userInfo - User information object
- * @returns boolean - True if user is client
+ * @returns boolean - True if user is Client or superAdmin
  */
 export function isClient(userInfo: UserInfo): boolean {
-  return userInfo.role === "Client";
+  return isClientOrSuperAdmin(userInfo.role);
 }
 
 /**

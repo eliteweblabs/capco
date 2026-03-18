@@ -113,7 +113,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Admin can update another user via targetUserId
-    const isAdmin = currentUser?.profile?.role === "Admin";
+    const isAdmin =
+      currentUser?.profile?.role === "Admin" || currentUser?.profile?.role === "superAdmin";
     const userId =
       isAdmin && targetUserId && typeof targetUserId === "string" ? targetUserId : currentUser.id;
 

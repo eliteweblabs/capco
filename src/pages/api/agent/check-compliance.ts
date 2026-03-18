@@ -64,7 +64,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .eq("id", currentUser.id)
       .single();
 
-    const isAdmin = profile?.role === "Admin";
+    const isAdmin = profile?.role === "Admin" || profile?.role === "superAdmin";
     const isAuthor = project.authorId === currentUser.id;
 
     if (!isAdmin && !isAuthor) {

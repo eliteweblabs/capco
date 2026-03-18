@@ -33,6 +33,11 @@ interface UserFilters {
   includeTotal?: boolean;
 }
 
+const isElevatedRole = (role?: string | null) => {
+  const normalizedRole = role?.toLowerCase().replace(/[^a-z]/g, "") ?? "";
+  return ["admin", "staff", "superadmin"].includes(normalizedRole);
+};
+
 export const GET: APIRoute = async ({ url, cookies }) => {
   try {
     // Check authentication
@@ -43,6 +48,13 @@ export const GET: APIRoute = async ({ url, cookies }) => {
         headers: { "Content-Type": "application/json" },
       });
     }
+
+    console.log("📡 [USERS-GET] Authenticated request:", {
+      userId: currentUser.id,
+      role: currentUser.profile?.role,
+      path: url.pathname,
+      search: url.search,
+    });
 
     // Parse query parameters
     const filters: UserFilters = {
@@ -90,6 +102,12 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
       const displayName = fullName || user.companyName || "Unknown User";
 
+      console.log("📡 [USERS-GET] Single user result:", {
+        id: user.id,
+        role: user.role,
+        displayName,
+      });
+
       return new Response(
         JSON.stringify({
           data: { ...user, displayName },
@@ -99,8 +117,19 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       );
     }
 
+    // Use admin client for elevated roles so role-based listings are not blocked by RLS
+    const dbClient =
+      isElevatedRole(currentUser.profile?.role) && supabaseAdmin ? supabaseAdmin : supabase;
+
+    if (!dbClient) {
+      return new Response(JSON.stringify({ error: "Database connection not available" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     // Build query for multiple users
-    let query = supabase!.from("profiles").select("*");
+    let query = dbClient.from("profiles").select("*");
 
     // Apply filters
     if (filters.role) {
@@ -129,7 +158,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     // Get total count if requested
     let totalCount = null;
     if (filters.includeTotal) {
-      const { count } = await supabase
+      const { count } = await dbClient
         .from("profiles")
         .select("*", { count: "exact", head: true })
         .eq("role", filters.role || "Client");
@@ -150,11 +179,29 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       );
     }
 
-    const hasMore = users.length === filters.limit || 20;
+    const safeUsers = users || [];
+    const usersWithDisplayName = safeUsers.map((user) => {
+      const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
+      const displayName = user.companyName || fullName || user.email || "Unknown User";
+      return { ...user, displayName };
+    });
+
+    console.log("📡 [USERS-GET] List result:", {
+      roleFilter: filters.role,
+      search: filters.search || "",
+      returnedCount: usersWithDisplayName.length,
+      sample: usersWithDisplayName.slice(0, 5).map((u) => ({
+        id: u.id,
+        role: u.role,
+        displayName: u.displayName,
+      })),
+    });
+
+    const hasMore = safeUsers.length === (filters.limit || 20);
 
     return new Response(
       JSON.stringify({
-        data: users || [],
+        data: usersWithDisplayName,
         pagination: {
           limit: filters.limit || 20,
           offset: filters.offset || 0,

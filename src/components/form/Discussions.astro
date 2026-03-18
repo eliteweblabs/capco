@@ -62,7 +62,7 @@ const isGlobalDiscussion = !project;
 
   <!-- Internal/Public Toggle (Admin/Staff only) -->
   {
-    currentRole === "Admin" || currentRole === "Staff" ? (
+    currentRole === "Admin" || currentRole === "Staff" || currentRole === "superAdmin" ? (
       <div class="mb-4 flex items-center gap-4">
         <label class="relative inline-flex cursor-pointer items-center">
           <input type="checkbox" id="internal-discussion" class="peer sr-only" />
@@ -335,8 +335,12 @@ const isGlobalDiscussion = !project;
     const isInternal = discussion.internal;
     const isCompleted = discussion.markCompleted;
     const isReply = discussion.parentId;
-    const canEdit = currentUserId === discussion.authorId || currentRole === "Admin";
-    const canMarkCompleted = currentRole === "Admin" || currentRole === "Staff";
+    const canEdit =
+      currentUserId === discussion.authorId ||
+      currentRole === "Admin" ||
+      currentRole === "superAdmin";
+    const canMarkCompleted =
+      currentRole === "Admin" || currentRole === "Staff" || currentRole === "superAdmin";
 
     return `
       <article class="rounded-lg bg-white p-6 text-base dark:bg-gray-900 ${isInternal ? "border-l-4 border-orange-500 bg-orange-50 dark:bg-orange-900/10" : ""} ${isCompleted ? "opacity-75" : ""}" data-discussion-id="${discussion.id}">

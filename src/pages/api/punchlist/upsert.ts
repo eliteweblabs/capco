@@ -3,6 +3,11 @@ import { checkAuth } from "../../../lib/auth";
 import { SimpleProjectLogger } from "../../../lib/simple-logging";
 import { supabase } from "../../../lib/supabase";
 
+function isElevatedRole(role?: string | null): boolean {
+  const normalizedRole = role?.toLowerCase().replace(/[^a-z]/g, "") ?? "";
+  return ["admin", "staff", "superadmin"].includes(normalizedRole);
+}
+
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     // Check authentication
@@ -66,13 +71,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         );
       }
 
-      // Check permissions - Admin/Staff can update any
-      const canUpdate = currentRole === "Admin" || currentRole === "Staff";
+      // Check permissions - Admin/Staff/superAdmin can update any
+      const canUpdate = isElevatedRole(currentRole);
 
       if (!canUpdate) {
         return new Response(
           JSON.stringify({
-            error: "Permission denied - only Admin/Staff can update punchlist items",
+            error: "Permission denied - only Admin/Staff/superAdmin can update punchlist items",
           }),
           {
             status: 403,
@@ -129,13 +134,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         });
       }
 
-      // Only Admin/Staff can create punchlist items
-      const canCreate = currentRole === "Admin" || currentRole === "Staff";
+      // Only Admin/Staff/superAdmin can create punchlist items
+      const canCreate = isElevatedRole(currentRole);
 
       if (!canCreate) {
         return new Response(
           JSON.stringify({
-            error: "Permission denied - only Admin/Staff can create punchlist items",
+            error: "Permission denied - only Admin/Staff/superAdmin can create punchlist items",
           }),
           {
             status: 403,

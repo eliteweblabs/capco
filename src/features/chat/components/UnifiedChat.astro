@@ -11,7 +11,8 @@ interface Props {
 
 const { currentUser } = Astro.props;
 const currentRole = currentUser?.profile?.role;
-const showUnifiedChat = currentRole === "Admin" || currentRole === "Staff";
+const showUnifiedChat =
+  currentRole === "Admin" || currentRole === "Staff" || currentRole === "superAdmin";
 
 // Debug logging
 console.log("🔧 [UNIFIED-CHAT] Current user object:", currentUser);
@@ -235,8 +236,8 @@ console.log("🔧 [UNIFIED-CHAT] Company name:", currentUser?.profile?.companyNa
       userName: widget.dataset.userName,
     });
 
-    if (userRole !== "Admin" && userRole !== "Staff") {
-      console.log("💬 [UNIFIED-CHAT] User not Admin/Staff, hiding widget");
+    if (userRole !== "Admin" && userRole !== "Staff" && userRole !== "superAdmin") {
+      console.log("💬 [UNIFIED-CHAT] User not Admin/Staff/superAdmin, hiding widget");
       widget.classList.add("hidden");
       return;
     }
@@ -515,7 +516,7 @@ console.log("🔧 [UNIFIED-CHAT] Company name:", currentUser?.profile?.companyNa
   // Direct messaging functions
   async function loadUsers() {
     try {
-      const response = await fetch("/api/users/get?role=Admin&role=Staff", {
+      const response = await fetch("/api/users/get?role=Admin&role=Staff&role=superAdmin", {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });

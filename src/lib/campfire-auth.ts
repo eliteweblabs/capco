@@ -108,8 +108,8 @@ export async function authenticateCampfire(
 
 /**
  * Check if user should be auto-authenticated to Campfire
- * Only Staff and Admin roles should be auto-authenticated
+ * Only Staff, Admin, and superAdmin roles should be auto-authenticated
  */
 export function shouldAutoAuthCampfire(role: string | null | undefined): boolean {
-  return role === "Admin" || role === "Staff";
+  return role === "Admin" || role === "Staff" || role === "superAdmin";
 }

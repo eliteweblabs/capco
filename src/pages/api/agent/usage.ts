@@ -27,7 +27,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
       });
     }
 
-    const isAdmin = currentRole === "Admin";
+    const isAdmin = currentRole === "Admin" || currentRole === "superAdmin";
     const startDate = url.searchParams.get("startDate");
     const endDate = url.searchParams.get("endDate");
 

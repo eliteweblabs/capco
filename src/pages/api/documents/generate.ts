@@ -67,7 +67,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Check if user has access to this project (Admin or project author)
     const userRole = currentUser.profile?.role;
-    const isAdmin = userRole === "Admin";
+    const isAdmin = userRole === "Admin" || userRole === "superAdmin";
     const isAuthor = project.authorId === currentUser.id;
 
     if (!isAdmin && !isAuthor) {

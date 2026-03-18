@@ -36,7 +36,13 @@ import { globalClasses } from "../../pages/api/global/global-classes";
 
 const { globalTextH3 } = globalClasses();
 
-// Only show for Admin/Staff
+const normalizedRole = String(currentRole || "")
+  .trim()
+  .toLowerCase();
+const isAdminOrStaffOrSuperAdmin = ["admin", "staff", "superadmin"].includes(normalizedRole);
+const isClient = normalizedRole === "client";
+const normalizedProjectStatus = Number(projectStatus ?? 0);
+
 // Storage bucket configuration
 const bucket = "project-media";
 
@@ -105,17 +111,14 @@ const allowedFileTypes = [
   ".application/gzip",
 ];
 // Project status-based restrictions
-const canCheckoutFiles = projectStatus > 10 && (currentRole === "Admin" || currentRole === "Staff");
-const canUploadFiles = projectStatus >= 10;
-const canDeleteFiles =
-  currentRole === "Admin" ||
-  currentRole === "Staff" ||
-  (currentRole === "Client" && projectStatus <= 10); // Clients can delete at initial status (10)
+const canCheckoutFiles = normalizedProjectStatus > 10 && isAdminOrStaffOrSuperAdmin;
+const canUploadFiles = normalizedProjectStatus >= 10 || isAdminOrStaffOrSuperAdmin;
+const canDeleteFiles = isAdminOrStaffOrSuperAdmin || (isClient && normalizedProjectStatus <= 10); // Clients can delete at initial status (10)
 ---
 
 <div id="file-manager">
   <!-- Header -->
-  <div class="flex hidden h-64 items-center justify-between">
+  <div class="hidden h-64 items-center justify-between">
     <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Project Files</h3>
     <div class="hidden text-sm text-gray-500 dark:text-gray-400">
       <span id="file-count">Loading...</span>
@@ -124,9 +127,7 @@ const canDeleteFiles =
 
   <!-- Upload Section (Clients only, status <= 40) -->
   {
-    (currentRole === "Client" && projectStatus < 41) ||
-    currentRole === "Admin" ||
-    currentRole === "Staff" ? (
+    (isClient && normalizedProjectStatus < 41) || isAdminOrStaffOrSuperAdmin ? (
       <div id="file-manager-dropzone-container" class="mb-6">
         <Dropzone
           id="file-manager-dropzone"
@@ -180,7 +181,7 @@ const canDeleteFiles =
     currentUser,
     currentRole,
     canCheckoutFiles,
-    projectStatus,
+    projectStatus: normalizedProjectStatus,
     canUploadFiles,
     canDeleteFiles,
     globalInputClasses,
@@ -554,7 +555,7 @@ const canDeleteFiles =
         </div>
 
         ${
-          role === "Admin" || role === "Staff"
+          role === "Admin" || role === "Staff" || role === "superAdmin"
             ? `
         
         <!-- Private Toggle using SlideToggle partial structure -->
