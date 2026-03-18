@@ -21,6 +21,7 @@ interface Props {
 
 const { left, right, middle = "&", tagline, description, class: className = "" } = Astro.props;
 const archId = `hero-arch-${Math.random().toString(36).slice(2, 10)}`;
+const archFilterId = `hero-arch-depth-${Math.random().toString(36).slice(2, 10)}`;
 ---
 
 <span class={`hero-split-title flex flex-col items-center gap-0 w-full ${className}`}>
@@ -30,8 +31,17 @@ const archId = `hero-arch-${Math.random().toString(36).slice(2, 10)}`;
         <svg class="w-full" viewBox="0 0 400 80" aria-hidden="true">
           <defs>
             <path id={archId} d="M0,80s190-78,400,0" />
+            <filter id={archFilterId} x="-10%" y="-10%" width="120%" height="130%">
+              <feDropShadow dx="0" dy="1.5" stdDeviation="0.6" flood-opacity="0.35" />
+              <feDropShadow dx="0" dy="3" stdDeviation="1.1" flood-opacity="0.2" />
+            </filter>
           </defs>
-          <text fill="currentColor" font-size="46" text-anchor="middle">
+          <text
+            fill="currentColor"
+            font-size="46"
+            text-anchor="middle"
+            filter={`url(#${archFilterId})`}
+          >
             <textPath href={`#${archId}`} startOffset="50%">
               {tagline}
             </textPath>

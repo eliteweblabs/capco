@@ -583,12 +583,39 @@ label {
 .hero-split-title-right {
   font-size: clamp(1.5rem, 2vw + 1.25rem, 3.75rem);
   line-height: 1;
+  /* Outer-only stroke effect (doesn't eat into glyph fill like text-stroke). */
+  text-shadow:
+    0.75px 0 #ffffff,
+    -0.75px 0 #ffffff,
+    0 0.75px #ffffff,
+    0 -0.75px #ffffff,
+    0.75px 0.75px #ffffff,
+    -0.75px 0.75px #ffffff,
+    0.75px -0.75px #ffffff,
+    -0.75px -0.75px #ffffff;
+}
+.dark .hero-split-title-left,
+.dark .hero-split-title-right {
+  text-shadow:
+    0.75px 0 #000000,
+    -0.75px 0 #000000,
+    0 0.75px #000000,
+    0 -0.75px #000000,
+    0.75px 0.75px #000000,
+    -0.75px 0.75px #000000,
+    0.75px -0.75px #000000,
+    -0.75px -0.75px #000000;
 }
 .hero-split-title-amp {
   z-index: -1;
 }
 .hero-split-title-middle {
   min-height: 20px;
+}
+@media (max-width: 767px) {
+  .hero-split-title-middle .hero-split-title-amp {
+    filter: blur(0.6px);
+  }
 }
 
 /* ============================================
@@ -1793,13 +1820,46 @@ select.is-valid:focus {
   }
 } */
 
-/* Arbitrary bottom values and z-index for CMS content - not tree-shaken (classes in DB aren't seen by Tailwind) */
+/* Arbitrary position values and z-index for CMS content - not tree-shaken (classes in DB aren't seen by Tailwind) */
 .z-\[-1\],
 [class*="z-[-1]"] {
   z-index: -1;
 }
 
+/* Base top offsets used in CMS blocks */
+.-top-\[1rem\],
+[class~="-top-[1rem]"] {
+  top: -1rem !important;
+}
+.top-\[1rem\],
+[class~="top-[1rem]"] {
+  top: 1rem !important;
+}
+
+@media (min-width: 640px) {
+  .sm\:-top-\[1rem\],
+  [class~="sm:-top-[1rem]"] {
+    top: -1rem !important;
+  }
+}
+
 @media (min-width: 768px) {
+  .md\:-top-\[1rem\],
+  [class~="md:-top-[1rem]"] {
+    top: -1rem !important;
+  }
+  .md\:-top-\[1\.5rem\],
+  [class~="md:-top-[1.5rem]"] {
+    top: -1.5rem !important;
+  }
+  .md\:-top-\[2rem\],
+  [class~="md:-top-[2rem]"] {
+    top: -2rem !important;
+  }
+  .md\:-top-\[3rem\],
+  [class~="md:-top-[3rem]"] {
+    top: -3rem !important;
+  }
   .md\:-bottom-\[1\.5rem\],
   [class*="md:-bottom-[1.5rem\]"] {
     bottom: -1.5rem !important;
@@ -1807,5 +1867,12 @@ select.is-valid:focus {
   .md\:-bottom-\[3rem\],
   [class*="md:-bottom-[3rem\]"] {
     bottom: -3rem !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .lg\:-top-\[1rem\],
+  [class~="lg:-top-[1rem]"] {
+    top: -1rem !important;
   }
 }

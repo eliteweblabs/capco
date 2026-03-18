@@ -181,7 +181,7 @@ const heroMinHeight =
       <!-- Main Headline -->
 
       <h1
-        class={`${primaryTextClasses || ""} relative md:text-6xl sm:text-3xl text-2xl font-bold ${hasBackground ? "text-white" : ""}`}
+        class={`${primaryTextClasses || ""} relative top-[-29px] z-[-1] md:text-6xl sm:text-3xl text-2xl font-bold ${hasBackground ? "text-white" : ""}`}
         {...titleRefreshField && {
           "data-refresh": titleRefreshField,
           "data-meta-value": titleRefreshValue ?? title ?? "",
@@ -245,7 +245,6 @@ const heroMinHeight =
           const posterUrl = videoEl.getAttribute("data-poster") || "/hero.png";
 
           const isFullUrl = videoSource.startsWith("http://") || videoSource.startsWith("https://");
-          const defaultLocalSource = "architectural-drawings-black-background";
           const videoQualities = isFullUrl
             ? { low: videoSource, medium: videoSource, high: videoSource, original: videoSource }
             : {
@@ -319,17 +318,7 @@ const heroMinHeight =
             .filter(Boolean)
             .filter((src, idx, arr) => arr.indexOf(src) === idx);
 
-          const fallbackVideoQueue = isFullUrl
-            ? qualityFallbackOrder
-                .map((key) => `/videos/${defaultLocalSource}${key === "original" ? "" : `_${key}`}.mp4`)
-                .filter((src, idx, arr) => arr.indexOf(src) === idx)
-            : [];
-
-          const playbackQueue = [...sourceQueue, ...fallbackVideoQueue].filter(
-            (src, idx, arr) => arr.indexOf(src) === idx
-          );
-
-          if (!playbackQueue.length) return;
+          if (!sourceQueue.length) return;
 
           // Re-assert autoplay constraints for iOS/WebKit.
           videoEl.defaultMuted = true;
@@ -345,8 +334,8 @@ const heroMinHeight =
 
           let queueIndex = 0;
           const tryNextSource = () => {
-            if (queueIndex >= playbackQueue.length) return;
-            const nextSrc = playbackQueue[queueIndex++];
+            if (queueIndex >= sourceQueue.length) return;
+            const nextSrc = sourceQueue[queueIndex++];
             const source = document.createElement("source");
             source.src = nextSrc;
             source.type = "video/mp4";

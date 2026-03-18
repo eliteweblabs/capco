@@ -746,6 +746,85 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
       true
     );
 
+    // iOS Safari does not open keyboard from delayed/timer focus.
+    // Arm each active step so the first direct touch gesture focuses its first field.
+    const isIOSDevice = (() => {
+      const ua = window.navigator.userAgent;
+      return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    })();
+    const IOS_FOCUS_ARM_ATTR = "data-ios-gesture-focus-armed";
+    const fieldSelector = "input:not([type=hidden]):not([readonly]), textarea, select";
+
+    const getActiveStep = (): HTMLElement | null => {
+      const wrapper = document.querySelector("[data-multi-step-form]");
+      return (wrapper?.querySelector(".step-content.active") as HTMLElement | null) ?? null;
+    };
+
+    const armIOSGestureFocus = () => {
+      if (!isIOSDevice) return;
+      const step = getActiveStep();
+      if (!step) return;
+      step.setAttribute(IOS_FOCUS_ARM_ATTR, "true");
+    };
+
+    const disarmIOSGestureFocus = (step?: HTMLElement | null) => {
+      const targetStep = step ?? getActiveStep();
+      targetStep?.removeAttribute(IOS_FOCUS_ARM_ATTR);
+    };
+
+    const handleIOSGestureFocus = (e: Event) => {
+      if (!isIOSDevice) return;
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      if (target.closest("button, a")) return;
+
+      const formRoot = document.querySelector("[data-multi-step-form]");
+      if (!formRoot?.contains(target)) return;
+
+      const step = target.closest(".step-content.active") as HTMLElement | null;
+      if (!step || step.getAttribute(IOS_FOCUS_ARM_ATTR) !== "true") return;
+
+      // If user tapped directly on a real field, let native behavior happen.
+      if (target.closest("input, textarea, select")) {
+        setTimeout(() => disarmIOSGestureFocus(step), 0);
+        return;
+      }
+
+      const firstInput = step.querySelector(fieldSelector) as
+        | HTMLInputElement
+        | HTMLTextAreaElement
+        | HTMLSelectElement
+        | null;
+      if (!firstInput?.focus) return;
+
+      firstInput.focus({ preventScroll: true });
+      if ((firstInput instanceof HTMLInputElement || firstInput instanceof HTMLTextAreaElement) && firstInput.value) {
+        const end = firstInput.value.length;
+        firstInput.setSelectionRange?.(end, end);
+      }
+      disarmIOSGestureFocus(step);
+    };
+
+    armIOSGestureFocus();
+    document.addEventListener("multistep-step-change", () => {
+      disarmIOSGestureFocus();
+      setTimeout(armIOSGestureFocus, 0);
+      setTimeout(armIOSGestureFocus, 350);
+    });
+    document.addEventListener("touchend", handleIOSGestureFocus, true);
+    document.addEventListener("pointerup", handleIOSGestureFocus, true);
+    document.addEventListener(
+      "focus",
+      (e) => {
+        if (!isIOSDevice) return;
+        const target = e.target as HTMLElement | null;
+        if (!target) return;
+        const step = target.closest(".step-content.active") as HTMLElement | null;
+        if (step) disarmIOSGestureFocus(step);
+      },
+      true
+    );
+
     // Type-to-focus fallback: if focus is in the form but not on an input and user types, focus first field in active step (fixes autofocus race)
     document.addEventListener(
       "keydown",
