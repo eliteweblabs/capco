@@ -1,0 +1,4627 @@
+---
+import { globalClasses } from "../../pages/api/global/global-classes";
+
+const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasses();
+---
+
+<section class="space-y-3">
+  <p class={`text-sm font-semibold ${primaryTextClasses}`}>Simple Scan</p>
+  <p class={mutedTextSmClasses}>
+    Barebones section scan + item-library matching on the default plan.
+  </p>
+
+  <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+    <div class="rounded border border-gray-300 p-2 dark:border-gray-700">
+      <p
+        class="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300"
+      >
+        Template (target object)
+      </p>
+      <img
+        id="simple-scan-template-preview"
+        alt="Current template preview"
+        class="h-52 w-full rounded border border-gray-200 bg-gray-50 object-contain dark:border-gray-700 dark:bg-gray-900"
+      />
+    </div>
+    <div class="rounded border border-gray-300 p-2 dark:border-gray-700">
+      <p
+        class="mb-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300"
+      >
+        <span>Machine view (candidate mask)</span>
+        <span
+          id="simple-scan-machine-vote"
+          class="inline-flex min-w-14 items-center justify-center rounded border border-gray-300 px-1.5 py-0.5 text-[10px] font-bold dark:border-gray-600"
+          >-</span
+        >
+      </p>
+      <img
+        id="simple-scan-machine-preview"
+        alt="Current machine candidate preview"
+        class="h-52 w-full rounded border border-gray-200 bg-gray-50 object-contain dark:border-gray-700 dark:bg-gray-900"
+      />
+    </div>
+  </div>
+
+  <div
+    class="flex flex-wrap items-center gap-2 rounded border border-gray-300 p-2 dark:border-gray-700"
+  >
+    <button
+      id="simple-scan-play"
+      type="button"
+      class="rounded bg-gray-700 px-3 py-1.5 text-xs font-semibold text-white dark:bg-gray-600"
+    >
+      Play
+    </button>
+    <button
+      id="simple-scan-pause"
+      type="button"
+      class="rounded bg-gray-700 px-3 py-1.5 text-xs font-semibold text-white dark:bg-gray-600"
+    >
+      Pause
+    </button>
+    <button
+      id="simple-scan-next"
+      type="button"
+      class="rounded bg-gray-700 px-3 py-1.5 text-xs font-semibold text-white dark:bg-gray-600"
+    >
+      Next
+    </button>
+    <p id="simple-scan-frame-meta" class={mutedTextSmClasses}>Frame: none</p>
+  </div>
+
+  <div>
+    <label for="simple-scan-file" class={globalFormLabel}>Drawing (optional override)</label>
+    <input id="simple-scan-file" type="file" accept=".pdf,image/*" class="block w-full text-sm" />
+  </div>
+
+  <div class="flex items-center gap-2">
+    <button
+      id="simple-scan-run"
+      type="button"
+      class="rounded bg-primary-600 px-3 py-1.5 text-sm text-white"
+    >
+      Refresh Processing
+    </button>
+    <p id="simple-scan-status" class={mutedTextSmClasses}>Loading default drawing...</p>
+  </div>
+
+  <div
+    id="simple-scan-library-controls"
+    class="rounded border border-gray-300 p-3 dark:border-gray-700"
+  >
+    <div class="mb-2 flex flex-wrap items-center gap-2">
+      <p class="text-xs font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-300">
+        Library Targeting
+      </p>
+      <button
+        id="simple-scan-library-refresh"
+        type="button"
+        class="rounded bg-gray-700 px-2 py-1 text-[11px] font-semibold text-white dark:bg-gray-600"
+      >
+        Refresh Library
+      </button>
+      <button
+        id="simple-scan-library-select-all"
+        type="button"
+        class="rounded bg-gray-700 px-2 py-1 text-[11px] font-semibold text-white dark:bg-gray-600"
+      >
+        Select All
+      </button>
+      <button
+        id="simple-scan-library-clear-all"
+        type="button"
+        class="rounded bg-gray-700 px-2 py-1 text-[11px] font-semibold text-white dark:bg-gray-600"
+      >
+        Clear All
+      </button>
+    </div>
+    <p id="simple-scan-library-meta" class={`mb-2 text-xs ${mutedTextSmClasses}`}>
+      Loading library...
+    </p>
+    <div id="simple-scan-library-list" class="flex flex-wrap gap-2"></div>
+  </div>
+
+  <div
+    id="simple-scan-layer-flow-controls"
+    class="hidden rounded border border-gray-300 p-3 dark:border-gray-700"
+  >
+    <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-300">
+      Layer Flow Controls
+    </p>
+    <div class="mb-3 space-y-1">
+      <label class={`flex items-center gap-2 text-xs ${mutedTextSmClasses}`}>
+        <input id="simple-scan-flow-step2-step3" type="checkbox" checked />
+        Include Step 2 viable-area layer in Step 3
+      </label>
+      <label class={`flex items-center gap-2 text-xs ${mutedTextSmClasses}`}>
+        <input id="simple-scan-flow-step2-step4" type="checkbox" checked />
+        Include Step 2 viable-area layer in Step 4
+      </label>
+      <label class={`flex items-center gap-2 text-xs ${mutedTextSmClasses}`}>
+        <input id="simple-scan-flow-step3-step4" type="checkbox" />
+        Exclude Step 3 colored layer from Step 4 input
+      </label>
+    </div>
+  </div>
+
+  <div
+    id="simple-scan-step3-controls"
+    class="hidden rounded border border-gray-300 p-3 dark:border-gray-700"
+  >
+    <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-300">
+      Step 3 Color-Line Controls
+    </p>
+    <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
+      <label class={`text-xs ${mutedTextSmClasses}`}>
+        Color difference from grayscale
+        <span id="simple-scan-color-spread-val" class="ml-1 font-semibold">38</span>
+        <input
+          id="simple-scan-color-spread"
+          type="range"
+          min="4"
+          max="90"
+          step="1"
+          value="38"
+          class="mt-1 w-full"
+        />
+      </label>
+    </div>
+  </div>
+
+  <div
+    id="simple-scan-step4-controls"
+    class="hidden rounded border border-gray-300 p-3 dark:border-gray-700"
+  >
+    <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-300">
+      Step 4 Hairline Controls
+    </p>
+    <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
+      <label class={`text-xs ${mutedTextSmClasses}`}>
+        Hairline max width
+        <span id="simple-scan-hairline-width-val" class="ml-1 font-semibold">2.6</span>
+        <input
+          id="simple-scan-hairline-width"
+          type="range"
+          min="1.2"
+          max="4.0"
+          step="0.1"
+          value="2.6"
+          class="mt-1 w-full"
+        />
+      </label>
+      <label class={`text-xs ${mutedTextSmClasses}`}>
+        Hairline min ink strength
+        <span id="simple-scan-hairline-ink-val" class="ml-1 font-semibold">6</span>
+        <input
+          id="simple-scan-hairline-ink"
+          type="range"
+          min="1"
+          max="40"
+          step="1"
+          value="6"
+          class="mt-1 w-full"
+        />
+      </label>
+      <label class={`text-xs ${mutedTextSmClasses}`}>
+        Hairline min run length
+        <span id="simple-scan-hairline-run-val" class="ml-1 font-semibold">12</span>
+        <input
+          id="simple-scan-hairline-run"
+          type="range"
+          min="4"
+          max="24"
+          step="1"
+          value="12"
+          class="mt-1 w-full"
+        />
+      </label>
+      <label class={`text-xs ${mutedTextSmClasses}`}>
+        Hairline min segment length
+        <span id="simple-scan-hairline-length-val" class="ml-1 font-semibold">20</span>
+        <input
+          id="simple-scan-hairline-length"
+          type="range"
+          min="6"
+          max="48"
+          step="1"
+          value="20"
+          class="mt-1 w-full"
+        />
+      </label>
+    </div>
+  </div>
+
+  <div
+    id="simple-scan-step5-controls"
+    class="hidden rounded border border-gray-300 p-3 dark:border-gray-700"
+  >
+    <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-300">
+      Step 5 Dashed-Layer Control
+    </p>
+    <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
+      <label class={`text-xs ${mutedTextSmClasses}`}>
+        Minimum dashed run length
+        <span id="simple-scan-dash-neighbors-val" class="ml-1 font-semibold">3</span>
+        <input
+          id="simple-scan-dash-neighbors"
+          type="range"
+          min="3"
+          max="8"
+          step="1"
+          value="3"
+          class="mt-1 w-full"
+        />
+      </label>
+    </div>
+  </div>
+
+  <div
+    id="simple-scan-step6-controls"
+    class="hidden rounded border border-gray-300 p-3 dark:border-gray-700"
+  >
+    <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-300">
+      Step 6 Alphanumeric Controls
+    </p>
+    <label class={`flex items-center gap-2 text-xs ${mutedTextSmClasses}`}>
+      <input id="simple-scan-text-ocr-toggle" type="checkbox" />
+      Use OCR-based alphanumeric detection (experimental)
+    </label>
+    <p id="simple-scan-text-ocr-meta" class={`mt-1 text-xs ${mutedTextSmClasses}`}>
+      Text mode: proximity grouping
+    </p>
+  </div>
+
+  <div
+    id="simple-scan-step55-controls"
+    class="hidden rounded border border-gray-300 p-3 dark:border-gray-700"
+  >
+    <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-300">
+      Step 5.5 Human Repair
+    </p>
+    <p class={`mb-2 text-xs ${mutedTextSmClasses}`}>
+      Cleanup: click fragment/orphan to remove. Connect: click two endpoints to draw repair.
+    </p>
+    <div class="flex flex-wrap items-center gap-2">
+      <button
+        id="simple-scan-step55-mode-off"
+        type="button"
+        class="rounded bg-gray-700 px-2 py-1 text-[11px] font-semibold text-white dark:bg-gray-600"
+      >
+        Off
+      </button>
+      <button
+        id="simple-scan-step55-mode-cleanup"
+        type="button"
+        class="rounded bg-gray-700 px-2 py-1 text-[11px] font-semibold text-white dark:bg-gray-600"
+      >
+        Cleanup
+      </button>
+      <button
+        id="simple-scan-step55-mode-connect"
+        type="button"
+        class="rounded bg-gray-700 px-2 py-1 text-[11px] font-semibold text-white dark:bg-gray-600"
+      >
+        Connect
+      </button>
+      <button
+        id="simple-scan-step55-clear"
+        type="button"
+        class="rounded bg-red-700 px-2 py-1 text-[11px] font-semibold text-white dark:bg-red-600"
+      >
+        Clear Repairs
+      </button>
+    </div>
+    <p id="simple-scan-step55-meta" class={`mt-2 text-xs ${mutedTextSmClasses}`}>
+      Human repair off.
+    </p>
+  </div>
+
+  <div
+    id="simple-scan-step8-controls"
+    class="hidden rounded border border-gray-300 p-3 dark:border-gray-700"
+  >
+    <div class="flex flex-wrap items-center gap-2">
+      <button
+        id="simple-scan-run-match"
+        type="button"
+        class="rounded bg-emerald-600 px-3 py-1.5 text-sm text-white"
+      >
+        Run Match (Targeted Library)
+      </button>
+      <p id="simple-scan-match-meta" class={mutedTextSmClasses}>
+        Run matching after preprocessing to populate final results.
+      </p>
+    </div>
+    <div class="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
+      <label class={`text-xs ${mutedTextSmClasses}`}>
+        Match threshold
+        <span id="simple-scan-match-threshold-val" class="ml-1 font-semibold">0.82</span>
+        <input
+          id="simple-scan-match-threshold"
+          type="range"
+          min="0.45"
+          max="0.98"
+          step="0.01"
+          value="0.82"
+          class="mt-1 w-full"
+        />
+      </label>
+      <label class={`text-xs ${mutedTextSmClasses}`}>
+        Min overlap
+        <span id="simple-scan-match-overlap-val" class="ml-1 font-semibold">0.40</span>
+        <input
+          id="simple-scan-match-overlap"
+          type="range"
+          min="0.10"
+          max="0.95"
+          step="0.01"
+          value="0.40"
+          class="mt-1 w-full"
+        />
+      </label>
+      <label class={`text-xs ${mutedTextSmClasses}`}>
+        Ambiguity margin
+        <span id="simple-scan-match-ambiguous-val" class="ml-1 font-semibold">0.03</span>
+        <input
+          id="simple-scan-match-ambiguous"
+          type="range"
+          min="0.00"
+          max="0.20"
+          step="0.005"
+          value="0.03"
+          class="mt-1 w-full"
+        />
+      </label>
+      <label class={`text-xs ${mutedTextSmClasses}`}>
+        Black gate: max luma
+        <span id="simple-scan-black-luma-val" class="ml-1 font-semibold">130</span>
+        <input
+          id="simple-scan-black-luma"
+          type="range"
+          min="60"
+          max="220"
+          step="1"
+          value="130"
+          class="mt-1 w-full"
+        />
+      </label>
+      <label class={`text-xs ${mutedTextSmClasses}`}>
+        Black gate: max spread
+        <span id="simple-scan-black-spread-val" class="ml-1 font-semibold">36</span>
+        <input
+          id="simple-scan-black-spread"
+          type="range"
+          min="8"
+          max="90"
+          step="1"
+          value="36"
+          class="mt-1 w-full"
+        />
+      </label>
+      <label class={`text-xs ${mutedTextSmClasses}`}>
+        Black gate: min ratio
+        <span id="simple-scan-black-ratio-val" class="ml-1 font-semibold">0.42</span>
+        <input
+          id="simple-scan-black-ratio"
+          type="range"
+          min="0.10"
+          max="0.95"
+          step="0.01"
+          value="0.42"
+          class="mt-1 w-full"
+        />
+      </label>
+    </div>
+    <div id="simple-scan-match-counts" class="mt-2 flex flex-wrap gap-2"></div>
+  </div>
+
+  <canvas
+    id="simple-scan-canvas"
+    class="block max-w-full rounded border border-gray-300 dark:border-gray-700"></canvas>
+  <pre
+    id="simple-scan-results"
+    class="max-h-[42vh] overflow-auto rounded border border-gray-300 bg-gray-50 p-3 text-xs dark:border-gray-700 dark:bg-gray-900">
+  </pre>
+
+  <div class="rounded border border-gray-300 p-3 dark:border-gray-700">
+    <p class="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
+      Preprocessing Timeline
+    </p>
+    <div id="simple-scan-pipeline-steps" class="space-y-3"></div>
+  </div>
+</section>
+
+<script src="/js/pdf.min.js" defer></script>
+<script>
+  const drawingFileInput = document.getElementById("simple-scan-file") as HTMLInputElement | null;
+  const runScanBtn = document.getElementById("simple-scan-run") as HTMLButtonElement | null;
+  const runMatchBtn = document.getElementById("simple-scan-run-match") as HTMLButtonElement | null;
+  const statusEl = document.getElementById("simple-scan-status") as HTMLParagraphElement | null;
+  const canvas = document.getElementById("simple-scan-canvas") as HTMLCanvasElement | null;
+  const resultsEl = document.getElementById("simple-scan-results") as HTMLPreElement | null;
+  const templatePreviewEl = document.getElementById(
+    "simple-scan-template-preview"
+  ) as HTMLImageElement | null;
+  const machinePreviewEl = document.getElementById(
+    "simple-scan-machine-preview"
+  ) as HTMLImageElement | null;
+  const machineVoteEl = document.getElementById(
+    "simple-scan-machine-vote"
+  ) as HTMLSpanElement | null;
+  const frameMetaEl = document.getElementById(
+    "simple-scan-frame-meta"
+  ) as HTMLParagraphElement | null;
+  const playBtn = document.getElementById("simple-scan-play") as HTMLButtonElement | null;
+  const pauseBtn = document.getElementById("simple-scan-pause") as HTMLButtonElement | null;
+  const nextBtn = document.getElementById("simple-scan-next") as HTMLButtonElement | null;
+  const pipelineStepsEl = document.getElementById(
+    "simple-scan-pipeline-steps"
+  ) as HTMLDivElement | null;
+  const layerFlowControlsEl = document.getElementById(
+    "simple-scan-layer-flow-controls"
+  ) as HTMLDivElement | null;
+  const step3ControlsEl = document.getElementById(
+    "simple-scan-step3-controls"
+  ) as HTMLDivElement | null;
+  const step4ControlsEl = document.getElementById(
+    "simple-scan-step4-controls"
+  ) as HTMLDivElement | null;
+  const step5ControlsEl = document.getElementById(
+    "simple-scan-step5-controls"
+  ) as HTMLDivElement | null;
+  const step6ControlsEl = document.getElementById(
+    "simple-scan-step6-controls"
+  ) as HTMLDivElement | null;
+  const step55ControlsEl = document.getElementById(
+    "simple-scan-step55-controls"
+  ) as HTMLDivElement | null;
+  const step8ControlsEl = document.getElementById(
+    "simple-scan-step8-controls"
+  ) as HTMLDivElement | null;
+  const matchMetaEl = document.getElementById(
+    "simple-scan-match-meta"
+  ) as HTMLParagraphElement | null;
+  const matchCountsEl = document.getElementById(
+    "simple-scan-match-counts"
+  ) as HTMLDivElement | null;
+  const matchThresholdInput = document.getElementById(
+    "simple-scan-match-threshold"
+  ) as HTMLInputElement | null;
+  const matchThresholdVal = document.getElementById(
+    "simple-scan-match-threshold-val"
+  ) as HTMLSpanElement | null;
+  const matchOverlapInput = document.getElementById(
+    "simple-scan-match-overlap"
+  ) as HTMLInputElement | null;
+  const matchOverlapVal = document.getElementById(
+    "simple-scan-match-overlap-val"
+  ) as HTMLSpanElement | null;
+  const matchAmbiguousInput = document.getElementById(
+    "simple-scan-match-ambiguous"
+  ) as HTMLInputElement | null;
+  const matchAmbiguousVal = document.getElementById(
+    "simple-scan-match-ambiguous-val"
+  ) as HTMLSpanElement | null;
+  const blackLumaInput = document.getElementById(
+    "simple-scan-black-luma"
+  ) as HTMLInputElement | null;
+  const blackLumaVal = document.getElementById(
+    "simple-scan-black-luma-val"
+  ) as HTMLSpanElement | null;
+  const blackSpreadInput = document.getElementById(
+    "simple-scan-black-spread"
+  ) as HTMLInputElement | null;
+  const blackSpreadVal = document.getElementById(
+    "simple-scan-black-spread-val"
+  ) as HTMLSpanElement | null;
+  const blackRatioInput = document.getElementById(
+    "simple-scan-black-ratio"
+  ) as HTMLInputElement | null;
+  const blackRatioVal = document.getElementById(
+    "simple-scan-black-ratio-val"
+  ) as HTMLSpanElement | null;
+  const colorSpreadInput = document.getElementById(
+    "simple-scan-color-spread"
+  ) as HTMLInputElement | null;
+  const colorSpreadVal = document.getElementById(
+    "simple-scan-color-spread-val"
+  ) as HTMLSpanElement | null;
+  const dashNeighborsInput = document.getElementById(
+    "simple-scan-dash-neighbors"
+  ) as HTMLInputElement | null;
+  const dashNeighborsVal = document.getElementById(
+    "simple-scan-dash-neighbors-val"
+  ) as HTMLSpanElement | null;
+  const step55ModeOffBtn = document.getElementById(
+    "simple-scan-step55-mode-off"
+  ) as HTMLButtonElement | null;
+  const step55ModeCleanupBtn = document.getElementById(
+    "simple-scan-step55-mode-cleanup"
+  ) as HTMLButtonElement | null;
+  const step55ModeConnectBtn = document.getElementById(
+    "simple-scan-step55-mode-connect"
+  ) as HTMLButtonElement | null;
+  const step55ClearBtn = document.getElementById(
+    "simple-scan-step55-clear"
+  ) as HTMLButtonElement | null;
+  const step55MetaEl = document.getElementById(
+    "simple-scan-step55-meta"
+  ) as HTMLParagraphElement | null;
+  const hairlineWidthInput = document.getElementById(
+    "simple-scan-hairline-width"
+  ) as HTMLInputElement | null;
+  const hairlineWidthVal = document.getElementById(
+    "simple-scan-hairline-width-val"
+  ) as HTMLSpanElement | null;
+  const hairlineInkInput = document.getElementById(
+    "simple-scan-hairline-ink"
+  ) as HTMLInputElement | null;
+  const hairlineInkVal = document.getElementById(
+    "simple-scan-hairline-ink-val"
+  ) as HTMLSpanElement | null;
+  const hairlineRunInput = document.getElementById(
+    "simple-scan-hairline-run"
+  ) as HTMLInputElement | null;
+  const hairlineRunVal = document.getElementById(
+    "simple-scan-hairline-run-val"
+  ) as HTMLSpanElement | null;
+  const hairlineLengthInput = document.getElementById(
+    "simple-scan-hairline-length"
+  ) as HTMLInputElement | null;
+  const hairlineLengthVal = document.getElementById(
+    "simple-scan-hairline-length-val"
+  ) as HTMLSpanElement | null;
+  const flowStep2Step3Input = document.getElementById(
+    "simple-scan-flow-step2-step3"
+  ) as HTMLInputElement | null;
+  const flowStep2Step4Input = document.getElementById(
+    "simple-scan-flow-step2-step4"
+  ) as HTMLInputElement | null;
+  const flowStep3Step4Input = document.getElementById(
+    "simple-scan-flow-step3-step4"
+  ) as HTMLInputElement | null;
+  const textOcrToggleInput = document.getElementById(
+    "simple-scan-text-ocr-toggle"
+  ) as HTMLInputElement | null;
+  const textOcrMetaEl = document.getElementById(
+    "simple-scan-text-ocr-meta"
+  ) as HTMLParagraphElement | null;
+  const libraryRefreshBtn = document.getElementById(
+    "simple-scan-library-refresh"
+  ) as HTMLButtonElement | null;
+  const librarySelectAllBtn = document.getElementById(
+    "simple-scan-library-select-all"
+  ) as HTMLButtonElement | null;
+  const libraryClearAllBtn = document.getElementById(
+    "simple-scan-library-clear-all"
+  ) as HTMLButtonElement | null;
+  const libraryMetaEl = document.getElementById(
+    "simple-scan-library-meta"
+  ) as HTMLParagraphElement | null;
+  const libraryListEl = document.getElementById(
+    "simple-scan-library-list"
+  ) as HTMLDivElement | null;
+
+  const DEFAULT_DRAWING_PUBLIC_PATH = "/demo-plan.pdf";
+  const DRAWING_RENDER_MAX_SIDE = 10000;
+  const PDF_RENDER_SCALE_FALLBACKS = [14, 12, 10, 8, 6, 4, 3];
+  const MATCH_THRESHOLD = 0.82;
+  const BASE_GRID_SIZE = 28;
+  const MIN_PUZZLE_OVERLAP = 0.4;
+  const DETAIL_BINS = 48;
+  const AMBIGUOUS_MARGIN = 0.03;
+  const BLACK_INK_MAX_LUMA = 130;
+  const BLACK_INK_MAX_SPREAD = 36;
+  const BLACK_INK_MIN_RATIO = 0.42;
+  const MAX_REGIONS_TO_SCAN = 4;
+  const AXIS_ALIGNMENT_TOLERANCE_PERCENT = 0.01;
+  const LINE_COMPONENT_MIN_AREA = 3;
+  const HAIRLINE_STEP_PAUSED = false;
+  const HAIRLINE_NS_MIN_RUN = 12;
+  const HAIRLINE_EW_MIN_RUN = 12;
+  const HAIRLINE_MAX_THICKNESS = 2.6;
+  const HAIRLINE_MAX_GAP = 2;
+  const HAIRLINE_FALLBACK_MIN_INK_STRENGTH = 6;
+  const HAIRLINE_FALLBACK_MAX_SPREAD = 80;
+  const HAIRLINE_COMPONENT_MIN_LONG_SIDE = 20;
+  const HAIRLINE_COMPONENT_MAX_SHORT_SIDE = 3;
+  const SOLID_LINE_MIN_LONG_SIDE = 14;
+  const SOLID_LINE_MAX_SHORT_SIDE = 8;
+  const SOLID_LINE_MIN_ASPECT = 5.2;
+  const HAIRLINE_MIN_LONG_SIDE = 10;
+  const HAIRLINE_MAX_SHORT_SIDE = 2;
+  const HAIRLINE_MIN_ASPECT = 6.5;
+  const DASH_SEED_MIN_LONG_SIDE = 4;
+  const DASH_SEED_MAX_LONG_SIDE = 72;
+  const DASH_SEED_MAX_SHORT_SIDE = 9;
+  const DASH_SEED_MIN_ASPECT = 1.4;
+  const DASH_SEED_MIN_AREA = 3;
+  const DASH_SEED_MAX_AREA = 520;
+  const DASH_PRIMARY_GAP_MULTIPLIER = 4.8;
+  const DASH_SECONDARY_GAP_MULTIPLIER = 3.4;
+  const DASH_MIN_RUN_LENGTH = 3;
+  const DASH_MAX_CLUSTERS_PER_REGION = 3;
+  const DASH_AXIS_ALIGNMENT_TOLERANCE_PERCENT = 0.06;
+  const DASH_SEED_EQUAL_SPACING_TOLERANCE = 0.42;
+  const DASH_MAGNETIC_PRIMARY_GAP_MULTIPLIER = 1.65;
+  const DASH_MAGNETIC_SECONDARY_GAP_MULTIPLIER = 1.45;
+  const DASH_LOOP_CLOSURE_ENABLED = true;
+  const DASH_LOOP_CLOSURE_AXIS_TOLERANCE_MULTIPLIER = 3.2;
+  const DASH_LOOP_CLOSURE_MAX_DISTANCE_MULTIPLIER = 10;
+  const DASH_RECT_MIN_SIDE_DASH_LENGTHS = 3;
+  const DASH_RECT_MIN_AREA_MULTIPLIER = 1.5;
+  const DASH_JUNCTION_MAX_AREA = 900;
+  const COLOR_LINE_MIN_SPREAD = 24;
+  const COLOR_LINE_MIN_LUMA = 70;
+  const IDENTIFIED_OVERLAY_STROKE_RADIUS = 2;
+  const CANDIDATE_MIN_FILL = 0.08;
+  const CANDIDATE_MAX_FILL = 0.97;
+  const CANDIDATE_MIN_ASPECT = 0.45;
+  const CANDIDATE_MAX_ASPECT = 2.1;
+
+  let drawingState = null;
+  let baselineRegions = [];
+  let itemLibrary = [];
+  let targetedLibraryFileNames = new Set<string>();
+  let excludedRegionIndexes = new Set<number>();
+  let templateSignatureCache = new Map();
+  let detections: Array<{ x: number; y: number; radius: number; color: string; label: string }> =
+    [];
+  let lastPipelineSnapshot: any = null;
+  let matchSummary: {
+    totalMatches: number;
+    candidateCount: number;
+    regions: number;
+    itemCounts: Array<{ fileName: string; count: number }>;
+  } | null = null;
+  let colorLineCandidatePool = [];
+  let lineCandidatePool = [];
+  let traceFrames = [];
+  let traceCursor = -1;
+  let traceTimer: number | null = null;
+  let processingRenderToken = 0;
+  let lastPdfRenderScale = 0;
+  let runtimeColorLineMinSpread = COLOR_LINE_MIN_SPREAD;
+  let runtimeHairlineMaxThickness = HAIRLINE_MAX_THICKNESS;
+  let runtimeHairlineMinInkStrength = HAIRLINE_FALLBACK_MIN_INK_STRENGTH;
+  let runtimeHairlineMinRun = HAIRLINE_NS_MIN_RUN;
+  let runtimeHairlineComponentMinLongSide = HAIRLINE_COMPONENT_MIN_LONG_SIDE;
+  let runtimeDashNeighborMin = DASH_MIN_RUN_LENGTH;
+  let runtimeMatchThreshold = MATCH_THRESHOLD;
+  let runtimeMinPuzzleOverlap = MIN_PUZZLE_OVERLAP;
+  let runtimeAmbiguousMargin = AMBIGUOUS_MARGIN;
+  let runtimeBlackInkMaxLuma = BLACK_INK_MAX_LUMA;
+  let runtimeBlackInkMaxSpread = BLACK_INK_MAX_SPREAD;
+  let runtimeBlackInkMinRatio = BLACK_INK_MIN_RATIO;
+  let tuningRenderTimer: number | null = null;
+  let useOcrTextDetection = false;
+  let tesseractLoaderPromise: Promise<unknown> | null = null;
+  let stepOverlayVisibility: Record<string, boolean> = {
+    step1: true,
+    step3: true,
+    step4: true,
+    step5: true,
+    step6: true,
+  };
+  let stepOverlayTransforms: Record<
+    string,
+    { x: number; y: number; scale: number; rotationDeg: number; opacity: number }
+  > = {
+    step3: { x: 0, y: 0, scale: 1, rotationDeg: 0, opacity: 1 },
+    step4: { x: 0, y: 0, scale: 1, rotationDeg: 0, opacity: 1 },
+    step5: { x: 0, y: 0, scale: 1, rotationDeg: 0, opacity: 1 },
+    step6: { x: 0, y: 0, scale: 1, rotationDeg: 0, opacity: 1 },
+  };
+  let overlayDragState: {
+    key: string;
+    startX: number;
+    startY: number;
+    baseX: number;
+    baseY: number;
+  } | null = null;
+  let step1RegionClipByKey: Record<
+    string,
+    { top: number; right: number; bottom: number; left: number }
+  > = {};
+  let step55Mode: "off" | "cleanup" | "connect" = "off";
+  let step55RemovedIndexes = new Set<number>();
+  let step55AddedSegments: Array<{
+    x0: number;
+    y0: number;
+    x1: number;
+    y1: number;
+    thickness: number;
+  }> = [];
+  let step55SelectedEndpoint: { x: number; y: number } | null = null;
+  let step55EditableComps: Array<{
+    idx: number;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    orientation: "horizontal" | "vertical";
+    thickness: number;
+  }> = [];
+  let step55Endpoints: Array<{ x: number; y: number; idx: number }> = [];
+  let activeStep1LayerKey: string | null = null;
+  let layerFlowState = {
+    step2ToStep3: true,
+    step2ToStep4: true,
+    step3ExcludeFromStep4: false,
+  };
+  type MatchScore = {
+    totalScore: number;
+    puzzleScore: number;
+    detailScore: number;
+    aspectScore: number;
+    fillScore: number;
+    diamScore: number;
+  };
+
+  const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+  const getPdfLib = () => window["pdfjsLib"];
+  const getCtx = () =>
+    canvas instanceof HTMLCanvasElement
+      ? canvas.getContext("2d", { willReadFrequently: true })
+      : null;
+  const setStatus = (text) => statusEl && (statusEl.textContent = text);
+  const setPreviewSrc = (el: HTMLImageElement | null, src: string) => {
+    if (!el) return;
+    el.src = src || "";
+  };
+  const isOverlayVisible = (key: string) => {
+    if (key.startsWith("step1-r")) return Boolean(stepOverlayVisibility.step1);
+    return Boolean(stepOverlayVisibility[key]);
+  };
+  const setOverlayVisible = (key: string, visible: boolean) => {
+    stepOverlayVisibility[key] = visible;
+  };
+  const ensureOverlayTransform = (key: string) => {
+    if (!stepOverlayTransforms[key]) {
+      stepOverlayTransforms[key] = { x: 0, y: 0, scale: 1, rotationDeg: 0, opacity: 1 };
+    }
+    return stepOverlayTransforms[key];
+  };
+  const resetOverlayTransform = (key: string) => {
+    stepOverlayTransforms[key] = { x: 0, y: 0, scale: 1, rotationDeg: 0, opacity: 1 };
+  };
+  const overlayTransformStyle = (key: string) => {
+    const t = ensureOverlayTransform(key);
+    const step1Layer = key.startsWith("step1-r");
+    const pointerEvents = step1Layer ? "auto" : "auto";
+    const zIndex = step1Layer && key === activeStep1LayerKey ? 14 : 8;
+    const cursor = step1Layer ? (overlayDragState?.key === key ? "grabbing" : "grab") : "default";
+    const clip = step1RegionClipByKey[key];
+    const clipStyle =
+      step1Layer && clip
+        ? `clip-path:inset(${clip.top}% ${clip.right}% ${clip.bottom}% ${clip.left}%);`
+        : "";
+    const activeOutline =
+      step1Layer && key === activeStep1LayerKey
+        ? "box-shadow:0 0 0 1.5px rgba(59,130,246,0.95) inset;"
+        : "";
+    return `display:${isOverlayVisible(key) ? "block" : "none"};transform:translate(${t.x}px, ${t.y}px) scale(${t.scale}) rotate(${t.rotationDeg}deg);transform-origin:center center;opacity:${t.opacity};pointer-events:${pointerEvents};z-index:${zIndex};cursor:${cursor};${clipStyle}${activeOutline}`;
+  };
+  function updateStep1ActiveLayerUi() {
+    if (!pipelineStepsEl) return;
+    pipelineStepsEl.querySelectorAll("[data-overlay-active-key]").forEach((btn) => {
+      const key = btn.getAttribute("data-overlay-active-key") || "";
+      const active = key === activeStep1LayerKey;
+      (btn as HTMLButtonElement).classList.toggle("bg-primary-600", active);
+      (btn as HTMLButtonElement).classList.toggle("dark:bg-primary-500", active);
+      (btn as HTMLButtonElement).classList.toggle("bg-gray-700", !active);
+      (btn as HTMLButtonElement).classList.toggle("dark:bg-gray-600", !active);
+      (btn as HTMLButtonElement).textContent = active ? "Active" : "Set Active";
+    });
+  }
+  function applyOverlayTransformUi(key: string) {
+    if (!pipelineStepsEl) return;
+    const t = ensureOverlayTransform(key);
+    const layer = pipelineStepsEl.querySelector(
+      `.simple-scan-overlay-layer[data-overlay-key="${key}"]`
+    ) as HTMLImageElement | null;
+    if (layer) layer.style.cssText = overlayTransformStyle(key);
+    const scaleVal = pipelineStepsEl.querySelector(
+      `[data-overlay-scale-val="${key}"]`
+    ) as HTMLSpanElement | null;
+    if (scaleVal) scaleVal.textContent = `${Math.round(t.scale * 100)}%`;
+    const rotateVal = pipelineStepsEl.querySelector(
+      `[data-overlay-rotate-val="${key}"]`
+    ) as HTMLSpanElement | null;
+    if (rotateVal) rotateVal.textContent = `${Math.round(t.rotationDeg)}deg`;
+    const xVal = pipelineStepsEl.querySelector(
+      `[data-overlay-x-val="${key}"]`
+    ) as HTMLSpanElement | null;
+    if (xVal) xVal.textContent = `${Math.round(t.x)}px`;
+    const yVal = pipelineStepsEl.querySelector(
+      `[data-overlay-y-val="${key}"]`
+    ) as HTMLSpanElement | null;
+    if (yVal) yVal.textContent = `${Math.round(t.y)}px`;
+    const opacityVal = pipelineStepsEl.querySelector(
+      `[data-overlay-opacity-val="${key}"]`
+    ) as HTMLSpanElement | null;
+    if (opacityVal) opacityVal.textContent = `${Math.round(t.opacity * 100)}%`;
+    updateStep1ActiveLayerUi();
+  }
+
+  function colorFromLabel(label: string) {
+    let hash = 0;
+    for (let i = 0; i < label.length; i += 1) hash = (hash * 31 + label.charCodeAt(i)) | 0;
+    const hue = Math.abs(hash) % 360;
+    return `hsla(${hue}, 90%, 58%, 0.96)`;
+  }
+
+  function renderMatchSummaryUi() {
+    if (matchMetaEl) {
+      matchMetaEl.textContent = matchSummary
+        ? `${matchSummary.totalMatches} match(es) from ${matchSummary.candidateCount} candidate(s) across ${matchSummary.regions} region(s).`
+        : "Run matching after preprocessing to populate final results.";
+    }
+    if (!matchCountsEl) return;
+    if (
+      !matchSummary ||
+      !Array.isArray(matchSummary.itemCounts) ||
+      matchSummary.itemCounts.length === 0
+    ) {
+      matchCountsEl.innerHTML = "";
+      return;
+    }
+    matchCountsEl.innerHTML = matchSummary.itemCounts
+      .map((x) => {
+        const color = colorFromLabel(String(x.fileName || "item"));
+        return `<span class="inline-flex items-center gap-1 rounded border border-gray-300 px-2 py-1 text-xs dark:border-gray-600"><span class="inline-block h-2.5 w-2.5 rounded-full" style="background:${color}"></span><span class="font-semibold">${x.fileName}</span><span class="text-gray-500 dark:text-gray-400">x${x.count}</span></span>`;
+      })
+      .join("");
+  }
+
+  function syncDashControlLabels() {
+    if (colorSpreadVal) colorSpreadVal.textContent = String(Math.round(runtimeColorLineMinSpread));
+    if (hairlineWidthVal) hairlineWidthVal.textContent = runtimeHairlineMaxThickness.toFixed(1);
+    if (hairlineInkVal)
+      hairlineInkVal.textContent = String(Math.round(runtimeHairlineMinInkStrength));
+    if (hairlineRunVal) hairlineRunVal.textContent = String(Math.round(runtimeHairlineMinRun));
+    if (hairlineLengthVal)
+      hairlineLengthVal.textContent = String(Math.round(runtimeHairlineComponentMinLongSide));
+    if (dashNeighborsVal) dashNeighborsVal.textContent = String(Math.round(runtimeDashNeighborMin));
+  }
+
+  function syncMatchControlLabels() {
+    if (matchThresholdVal) matchThresholdVal.textContent = runtimeMatchThreshold.toFixed(2);
+    if (matchOverlapVal) matchOverlapVal.textContent = runtimeMinPuzzleOverlap.toFixed(2);
+    if (matchAmbiguousVal) matchAmbiguousVal.textContent = runtimeAmbiguousMargin.toFixed(3);
+    if (blackLumaVal) blackLumaVal.textContent = String(Math.round(runtimeBlackInkMaxLuma));
+    if (blackSpreadVal) blackSpreadVal.textContent = String(Math.round(runtimeBlackInkMaxSpread));
+    if (blackRatioVal) blackRatioVal.textContent = runtimeBlackInkMinRatio.toFixed(2);
+  }
+
+  function syncLayerFlowStateFromInputs() {
+    layerFlowState = {
+      step2ToStep3: flowStep2Step3Input?.checked ?? true,
+      step2ToStep4: flowStep2Step4Input?.checked ?? true,
+      step3ExcludeFromStep4: flowStep3Step4Input?.checked ?? false,
+    };
+  }
+
+  function renderLibraryTargetingUi() {
+    if (libraryMetaEl) {
+      const selected = Array.from(targetedLibraryFileNames).length;
+      const total = itemLibrary.length;
+      const selectedNames = itemLibrary
+        .filter((item) => targetedLibraryFileNames.has(String(item?.fileName || "")))
+        .map((item) => String(item?.displayName || item?.fileName || ""))
+        .filter(Boolean)
+        .join(", ");
+      libraryMetaEl.textContent =
+        total === 0
+          ? "No items found in /drawing-analyzer-lab/item-library."
+          : `Loaded ${total} item(s). Targeting ${selected}: ${selectedNames || "none"}`;
+    }
+    if (libraryListEl) {
+      if (itemLibrary.length === 0) {
+        libraryListEl.innerHTML =
+          '<p class="text-xs text-gray-500 dark:text-gray-400">No library items available.</p>';
+      } else {
+        libraryListEl.innerHTML = itemLibrary
+          .map((item) => {
+            const fileName = String(item?.fileName || "");
+            const label = String(item?.displayName || fileName || "Unnamed item");
+            const checked = targetedLibraryFileNames.has(fileName) ? "checked" : "";
+            return `<label class="inline-flex items-center gap-1 rounded border border-gray-300 px-2 py-1 text-xs dark:border-gray-700"><input type="checkbox" data-library-target-file="${fileName}" ${checked} />${label}</label>`;
+          })
+          .join("");
+      }
+      libraryListEl.querySelectorAll("[data-library-target-file]").forEach((el) => {
+        el.addEventListener("change", () => {
+          const fileName = el.getAttribute("data-library-target-file") || "";
+          const checked = (el as HTMLInputElement).checked;
+          if (!fileName) return;
+          if (checked) targetedLibraryFileNames.add(fileName);
+          else targetedLibraryFileNames.delete(fileName);
+          renderLibraryTargetingUi();
+        });
+      });
+    }
+  }
+
+  async function refreshItemLibrary(forceReload = false) {
+    if (!forceReload && itemLibrary.length > 0) return itemLibrary;
+    try {
+      const res = await fetch("/api/drawing-analyzer/item-library", { cache: "no-store" });
+      const payload = await res.json().catch(() => ({}));
+      itemLibrary = Array.isArray(payload?.items) ? payload.items : [];
+      const validSet = new Set(
+        itemLibrary.map((item) => String(item?.fileName || "")).filter(Boolean)
+      );
+      if (targetedLibraryFileNames.size === 0) {
+        itemLibrary.forEach((item) => {
+          const fileName = String(item?.fileName || "");
+          if (fileName) targetedLibraryFileNames.add(fileName);
+        });
+      } else {
+        targetedLibraryFileNames = new Set(
+          Array.from(targetedLibraryFileNames).filter((fileName) => validSet.has(fileName))
+        );
+        if (targetedLibraryFileNames.size === 0) {
+          validSet.forEach((fileName) => targetedLibraryFileNames.add(fileName));
+        }
+      }
+      renderLibraryTargetingUi();
+      return itemLibrary;
+    } catch (error) {
+      void error;
+      if (libraryMetaEl)
+        libraryMetaEl.textContent =
+          "Failed to load item library from /api/drawing-analyzer/item-library.";
+      renderLibraryTargetingUi();
+      return [];
+    }
+  }
+
+  function updateTextOcrUiMeta(extra = "") {
+    if (!textOcrMetaEl) return;
+    const base = useOcrTextDetection ? "Text mode: OCR-based" : "Text mode: proximity grouping";
+    textOcrMetaEl.textContent = extra ? `${base} | ${extra}` : base;
+  }
+
+  async function loadTesseractGlobal() {
+    if (window["Tesseract"]) return window["Tesseract"];
+    if (!tesseractLoaderPromise) {
+      tesseractLoaderPromise = new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+        script.async = true;
+        script.onload = () => resolve(window["Tesseract"]);
+        script.onerror = () => reject(new Error("Failed to load Tesseract.js"));
+        document.head.appendChild(script);
+      });
+    }
+    await tesseractLoaderPromise;
+    return window["Tesseract"];
+  }
+
+  async function detectTextLikeComponentIndexesOcr(
+    comps,
+    imageData,
+    mask,
+    width,
+    height,
+    renderToken = 0
+  ) {
+    const tesseract = await loadTesseractGlobal();
+    if (!tesseract || !Array.isArray(comps) || !imageData) {
+      return { indexes: new Set<number>(), boxes: 0, words: 0 };
+    }
+    if (renderToken && renderToken !== processingRenderToken) {
+      return { indexes: new Set<number>(), boxes: 0, words: 0 };
+    }
+    const sourceCanvas = document.createElement("canvas");
+    sourceCanvas.width = width;
+    sourceCanvas.height = height;
+    const sourceCtx = sourceCanvas.getContext("2d");
+    if (!sourceCtx) return { indexes: new Set<number>(), boxes: 0, words: 0 };
+    const out = new ImageData(new Uint8ClampedArray(imageData.data), width, height);
+    for (let p = 0; p < mask.length; p += 1) {
+      if (mask[p]) continue;
+      const i = p * 4;
+      out.data[i] = 255;
+      out.data[i + 1] = 255;
+      out.data[i + 2] = 255;
+      out.data[i + 3] = 255;
+    }
+    sourceCtx.putImageData(out, 0, 0);
+
+    const maxSide = Math.max(width, height);
+    const scale = maxSide > 1900 ? 1900 / maxSide : 1;
+    const scanCanvas = document.createElement("canvas");
+    scanCanvas.width = Math.max(1, Math.round(width * scale));
+    scanCanvas.height = Math.max(1, Math.round(height * scale));
+    const scanCtx = scanCanvas.getContext("2d");
+    if (!scanCtx) return { indexes: new Set<number>(), boxes: 0, words: 0 };
+    scanCtx.drawImage(sourceCanvas, 0, 0, scanCanvas.width, scanCanvas.height);
+
+    const tesseractAny = tesseract as any;
+    const result = await tesseractAny.recognize(scanCanvas, "eng", {
+      logger: () => undefined,
+    });
+    if (renderToken && renderToken !== processingRenderToken) {
+      return { indexes: new Set<number>(), boxes: 0, words: 0 };
+    }
+    const words = Array.isArray((result as any)?.data?.words) ? (result as any).data.words : [];
+    const inv = scale > 0 ? 1 / scale : 1;
+    const boxes = words
+      .map((w) => {
+        const text = String(w?.text || "").trim();
+        if (!text) return null;
+        const hasAlnum = /[A-Za-z0-9]/.test(text);
+        if (!hasAlnum) return null;
+        const conf = Number(w?.confidence ?? 0);
+        if (Number.isFinite(conf) && conf < 35) return null;
+        const x0 = Math.round(Number(w?.bbox?.x0 ?? 0) * inv);
+        const y0 = Math.round(Number(w?.bbox?.y0 ?? 0) * inv);
+        const x1 = Math.round(Number(w?.bbox?.x1 ?? 0) * inv);
+        const y1 = Math.round(Number(w?.bbox?.y1 ?? 0) * inv);
+        return { x0, y0, x1, y1 };
+      })
+      .filter(Boolean);
+    const textIndexes = new Set<number>();
+    const overlapRatio = (c, b) => {
+      const ix0 = Math.max(c.x, b.x0);
+      const iy0 = Math.max(c.y, b.y0);
+      const ix1 = Math.min(c.x + c.w - 1, b.x1);
+      const iy1 = Math.min(c.y + c.h - 1, b.y1);
+      if (ix1 < ix0 || iy1 < iy0) return 0;
+      const inter = (ix1 - ix0 + 1) * (iy1 - iy0 + 1);
+      const compArea = Math.max(1, c.w * c.h);
+      return inter / compArea;
+    };
+    for (let i = 0; i < comps.length; i += 1) {
+      const c = comps[i];
+      if (!c) continue;
+      if (
+        boxes.some((b) => {
+          const centerX = c.x + c.w / 2;
+          const centerY = c.y + c.h / 2;
+          const centerIn = centerX >= b.x0 && centerX <= b.x1 && centerY >= b.y0 && centerY <= b.y1;
+          return centerIn || overlapRatio(c, b) >= 0.22;
+        })
+      ) {
+        textIndexes.add(i);
+      }
+    }
+    return { indexes: textIndexes, boxes: boxes.length, words: words.length };
+  }
+
+  function setStep55Mode(nextMode: "off" | "cleanup" | "connect") {
+    step55Mode = nextMode;
+    if (step55Mode !== "connect") step55SelectedEndpoint = null;
+    updateStep55Ui();
+  }
+
+  function updateStep55Ui() {
+    const applyActiveState = (btn: HTMLButtonElement | null, active: boolean) => {
+      if (!btn) return;
+      btn.classList.toggle("bg-primary-600", active);
+      btn.classList.toggle("dark:bg-primary-500", active);
+      btn.classList.toggle("bg-gray-700", !active);
+      btn.classList.toggle("dark:bg-gray-600", !active);
+    };
+    applyActiveState(step55ModeOffBtn, step55Mode === "off");
+    applyActiveState(step55ModeCleanupBtn, step55Mode === "cleanup");
+    applyActiveState(step55ModeConnectBtn, step55Mode === "connect");
+    if (canvas) canvas.style.cursor = step55Mode === "off" ? "default" : "crosshair";
+    if (pipelineStepsEl) {
+      pipelineStepsEl.querySelectorAll("[data-step55-hit]").forEach((el) => {
+        (el as HTMLElement).style.cursor = step55Mode === "off" ? "default" : "crosshair";
+      });
+    }
+    if (step55MetaEl) {
+      const connectHint =
+        step55Mode === "connect" && step55SelectedEndpoint
+          ? ` | selected endpoint: (${Math.round(step55SelectedEndpoint.x)}, ${Math.round(step55SelectedEndpoint.y)})`
+          : "";
+      step55MetaEl.textContent = `Mode: ${step55Mode} | removed fragments: ${step55RemovedIndexes.size} | added connections: ${step55AddedSegments.length}${connectHint}`;
+    }
+  }
+
+  function getCanvasPointFromEvent(event: MouseEvent) {
+    if (!canvas || !drawingState) return null;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return null;
+    const scaleX = drawingState.width / rect.width;
+    const scaleY = drawingState.height / rect.height;
+    return {
+      x: clamp((event.clientX - rect.left) * scaleX, 0, drawingState.width - 1),
+      y: clamp((event.clientY - rect.top) * scaleY, 0, drawingState.height - 1),
+    };
+  }
+
+  function findNearestStep55Component(x: number, y: number, tolerance = 18) {
+    let best: { idx: number; dist: number } | null = null;
+    for (const c of step55EditableComps) {
+      const cx = c.x + c.w / 2;
+      const cy = c.y + c.h / 2;
+      const dx = x - cx;
+      const dy = y - cy;
+      const dist = Math.hypot(dx, dy);
+      if (dist > tolerance) continue;
+      if (!best || dist < best.dist) best = { idx: c.idx, dist };
+    }
+    return best?.idx ?? null;
+  }
+
+  function findNearestStep55Endpoint(x: number, y: number, tolerance = 20) {
+    let best: { endpoint: { x: number; y: number; idx: number }; dist: number } | null = null;
+    for (const ep of step55Endpoints) {
+      const dist = Math.hypot(x - ep.x, y - ep.y);
+      if (dist > tolerance) continue;
+      if (!best || dist < best.dist) best = { endpoint: ep, dist };
+    }
+    return best?.endpoint ?? null;
+  }
+
+  function rebuildStep55InteractiveGeometry(lineInputComps, step5Indexes: Set<number>) {
+    step55EditableComps = lineInputComps
+      .map((c, idx) => ({ c, idx }))
+      .filter((x) => step5Indexes.has(x.idx))
+      .map(({ c, idx }) => {
+        const orientation = c.w >= c.h ? "horizontal" : "vertical";
+        return {
+          idx,
+          x: c.x,
+          y: c.y,
+          w: c.w,
+          h: c.h,
+          orientation,
+          thickness: Math.max(1, Math.round(Math.min(c.w, c.h))),
+        };
+      });
+    step55Endpoints = [];
+    step55EditableComps.forEach((c) => {
+      if (c.orientation === "horizontal") {
+        const y = c.y + c.h / 2;
+        step55Endpoints.push({ x: c.x, y, idx: c.idx });
+        step55Endpoints.push({ x: c.x + c.w - 1, y, idx: c.idx });
+      } else {
+        const x = c.x + c.w / 2;
+        step55Endpoints.push({ x, y: c.y, idx: c.idx });
+        step55Endpoints.push({ x, y: c.y + c.h - 1, idx: c.idx });
+      }
+    });
+    updateStep55Ui();
+  }
+
+  function getActiveRegionSelection(state) {
+    const fallback = [{ x: 0, y: 0, w: state.width, h: state.height }];
+    const regionsSource = baselineRegions.length ? baselineRegions : fallback;
+    const selectedWithIndex = regionsSource
+      .map((region, idx) => ({ region, idx }))
+      .filter((entry) => !excludedRegionIndexes.has(entry.idx))
+      .slice(0, MAX_REGIONS_TO_SCAN);
+    return {
+      regionsSource,
+      selectedRegions: selectedWithIndex.map((entry) => entry.region),
+      selectedRegionIndexes: new Set<number>(selectedWithIndex.map((entry) => entry.idx)),
+    };
+  }
+
+  function regionsOverlayToDataUrl(
+    imageData,
+    regions,
+    selectedRegions = [],
+    excludedIndexes: Set<number> = new Set<number>()
+  ) {
+    const c = document.createElement("canvas");
+    c.width = imageData.width;
+    c.height = imageData.height;
+    const ctx = c.getContext("2d");
+    if (!ctx) return "";
+    ctx.putImageData(imageData, 0, 0);
+    ctx.lineWidth = 2;
+    regions.forEach((r, idx) => {
+      if (excludedIndexes.has(idx)) return;
+      ctx.strokeStyle = "rgba(56,189,248,0.95)";
+      ctx.strokeRect(r.x, r.y, r.w, r.h);
+      ctx.fillStyle = "rgba(56,189,248,0.14)";
+      ctx.fillRect(r.x, r.y, r.w, r.h);
+      ctx.fillStyle = "rgba(12,74,110,0.95)";
+      ctx.font = "12px sans-serif";
+      ctx.fillText(`R${idx + 1}`, r.x + 4, r.y + 14);
+    });
+    selectedRegions.forEach((r) => {
+      ctx.strokeStyle = "rgba(251,191,36,0.98)";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(r.x, r.y, r.w, r.h);
+    });
+    return c.toDataURL("image/png");
+  }
+
+  function imageDataToDataUrl(imageData) {
+    const c = document.createElement("canvas");
+    c.width = imageData.width;
+    c.height = imageData.height;
+    const ctx = c.getContext("2d");
+    if (!ctx) return "";
+    ctx.putImageData(imageData, 0, 0);
+    return c.toDataURL("image/png");
+  }
+
+  function regionsMaskLayerToDataUrl(
+    imageData,
+    regions,
+    selectedRegions = [],
+    excludedIndexes: Set<number> = new Set<number>()
+  ) {
+    const c = document.createElement("canvas");
+    c.width = imageData.width;
+    c.height = imageData.height;
+    const ctx = c.getContext("2d");
+    if (!ctx) return "";
+    ctx.clearRect(0, 0, c.width, c.height);
+    ctx.lineWidth = 2;
+    regions.forEach((r, idx) => {
+      if (excludedIndexes.has(idx)) return;
+      ctx.strokeStyle = "rgba(56,189,248,0.95)";
+      ctx.strokeRect(r.x, r.y, r.w, r.h);
+      ctx.fillStyle = "rgba(56,189,248,0.14)";
+      ctx.fillRect(r.x, r.y, r.w, r.h);
+      ctx.fillStyle = "rgba(12,74,110,0.95)";
+      ctx.font = "12px sans-serif";
+      ctx.fillText(`R${idx + 1}`, r.x + 4, r.y + 14);
+    });
+    selectedRegions.forEach((r) => {
+      ctx.strokeStyle = "rgba(251,191,36,0.98)";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(r.x, r.y, r.w, r.h);
+    });
+    return c.toDataURL("image/png");
+  }
+
+  function regionMaskLayerToDataUrl(imageData, region, regionIndex = 0) {
+    if (!region) return "";
+    const c = document.createElement("canvas");
+    c.width = imageData.width;
+    c.height = imageData.height;
+    const ctx = c.getContext("2d");
+    if (!ctx) return "";
+    ctx.clearRect(0, 0, c.width, c.height);
+    ctx.strokeStyle = "rgba(56,189,248,0.95)";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(region.x, region.y, region.w, region.h);
+    ctx.fillStyle = "rgba(56,189,248,0.14)";
+    ctx.fillRect(region.x, region.y, region.w, region.h);
+    ctx.strokeStyle = "rgba(251,191,36,0.98)";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(region.x, region.y, region.w, region.h);
+    ctx.fillStyle = "rgba(12,74,110,0.95)";
+    ctx.font = "12px sans-serif";
+    ctx.fillText(`R${regionIndex + 1}`, region.x + 4, region.y + 14);
+    return c.toDataURL("image/png");
+  }
+
+  function maskedSourceToDataUrl(imageData, selectedRegions = []) {
+    const c = document.createElement("canvas");
+    c.width = imageData.width;
+    c.height = imageData.height;
+    const ctx = c.getContext("2d");
+    if (!ctx) return "";
+    const out = new ImageData(
+      new Uint8ClampedArray(imageData.data),
+      imageData.width,
+      imageData.height
+    );
+    if (Array.isArray(selectedRegions) && selectedRegions.length > 0) {
+      for (let y = 0; y < out.height; y += 1) {
+        const row = y * out.width;
+        for (let x = 0; x < out.width; x += 1) {
+          const inside = selectedRegions.some(
+            (r) => x >= r.x && y >= r.y && x < r.x + r.w && y < r.y + r.h
+          );
+          if (inside) continue;
+          const i = (row + x) * 4;
+          out.data[i] = 255;
+          out.data[i + 1] = 255;
+          out.data[i + 2] = 255;
+          out.data[i + 3] = 255;
+        }
+      }
+    }
+    ctx.putImageData(out, 0, 0);
+    return c.toDataURL("image/png");
+  }
+
+  function maskedImageByMaskToDataUrl(imageData, mask) {
+    if (!imageData || !mask || mask.length !== imageData.width * imageData.height) return "";
+    const c = document.createElement("canvas");
+    c.width = imageData.width;
+    c.height = imageData.height;
+    const ctx = c.getContext("2d");
+    if (!ctx) return "";
+    const out = new ImageData(
+      new Uint8ClampedArray(imageData.data),
+      imageData.width,
+      imageData.height
+    );
+    for (let p = 0; p < mask.length; p += 1) {
+      if (mask[p]) continue;
+      const i = p * 4;
+      out.data[i] = 255;
+      out.data[i + 1] = 255;
+      out.data[i + 2] = 255;
+      out.data[i + 3] = 255;
+    }
+    ctx.putImageData(out, 0, 0);
+    return c.toDataURL("image/png");
+  }
+
+  function diffRemovedMask(beforeMask, afterMask) {
+    const len = Math.min(beforeMask?.length || 0, afterMask?.length || 0);
+    const out = new Uint8Array(len);
+    for (let i = 0; i < len; i += 1) out[i] = beforeMask[i] && !afterMask[i] ? 1 : 0;
+    return out;
+  }
+
+  function dilateMask(mask, width, height, radius = IDENTIFIED_OVERLAY_STROKE_RADIUS) {
+    if (!mask || radius <= 0) return mask;
+    const out = new Uint8Array(mask.length);
+    for (let y = 0; y < height; y += 1) {
+      const row = y * width;
+      for (let x = 0; x < width; x += 1) {
+        const p = row + x;
+        if (!mask[p]) continue;
+        const y0 = Math.max(0, y - radius);
+        const y1 = Math.min(height - 1, y + radius);
+        const x0 = Math.max(0, x - radius);
+        const x1 = Math.min(width - 1, x + radius);
+        for (let yy = y0; yy <= y1; yy += 1) {
+          const r = yy * width;
+          for (let xx = x0; xx <= x1; xx += 1) out[r + xx] = 1;
+        }
+      }
+    }
+    return out;
+  }
+
+  function lineSegmentsToMask(segments, width, height) {
+    const out = new Uint8Array(width * height);
+    const stamp = (x, y, radius) => {
+      const x0 = Math.max(0, x - radius);
+      const x1 = Math.min(width - 1, x + radius);
+      const y0 = Math.max(0, y - radius);
+      const y1 = Math.min(height - 1, y + radius);
+      for (let yy = y0; yy <= y1; yy += 1) {
+        const row = yy * width;
+        for (let xx = x0; xx <= x1; xx += 1) out[row + xx] = 1;
+      }
+    };
+    for (const seg of segments || []) {
+      let x0 = Math.round(seg.x0);
+      let y0 = Math.round(seg.y0);
+      const x1 = Math.round(seg.x1);
+      const y1 = Math.round(seg.y1);
+      const radius = Math.max(0, Math.round((Number(seg.thickness || 1) - 1) / 2));
+      const dx = Math.abs(x1 - x0);
+      const sx = x0 < x1 ? 1 : -1;
+      const dy = -Math.abs(y1 - y0);
+      const sy = y0 < y1 ? 1 : -1;
+      let err = dx + dy;
+      while (true) {
+        if (x0 >= 0 && y0 >= 0 && x0 < width && y0 < height) stamp(x0, y0, radius);
+        if (x0 === x1 && y0 === y1) break;
+        const e2 = 2 * err;
+        if (e2 >= dy) {
+          err += dy;
+          x0 += sx;
+        }
+        if (e2 <= dx) {
+          err += dx;
+          y0 += sy;
+        }
+      }
+    }
+    return out;
+  }
+
+  function colorMaskLayerToDataUrl(
+    imageData,
+    selectedRegions,
+    removedMask,
+    highlight = [239, 68, 68],
+    useSourceColors = false
+  ) {
+    const c = document.createElement("canvas");
+    c.width = imageData.width;
+    c.height = imageData.height;
+    const ctx = c.getContext("2d");
+    if (!ctx) return "";
+    const out = new Uint8ClampedArray(imageData.width * imageData.height * 4);
+    const displayMask = dilateMask(
+      removedMask,
+      imageData.width,
+      imageData.height,
+      IDENTIFIED_OVERLAY_STROKE_RADIUS
+    );
+    for (let y = 0; y < imageData.height; y += 1) {
+      const row = y * imageData.width;
+      for (let x = 0; x < imageData.width; x += 1) {
+        const p = row + x;
+        const i = p * 4;
+        const inside = selectedRegions.some(
+          (r) => x >= r.x && y >= r.y && x < r.x + r.w && y < r.y + r.h
+        );
+        if (!inside) {
+          out[i] = 255;
+          out[i + 1] = 255;
+          out[i + 2] = 255;
+          out[i + 3] = 255;
+          continue;
+        }
+        if (displayMask[p]) {
+          if (useSourceColors) {
+            out[i] = imageData.data[i];
+            out[i + 1] = imageData.data[i + 1];
+            out[i + 2] = imageData.data[i + 2];
+          } else {
+            out[i] = highlight[0];
+            out[i + 1] = highlight[1];
+            out[i + 2] = highlight[2];
+          }
+          out[i + 3] = 255;
+          continue;
+        }
+        out[i] = 245;
+        out[i + 1] = 245;
+        out[i + 2] = 245;
+        out[i + 3] = 255;
+      }
+    }
+    ctx.putImageData(new ImageData(out, imageData.width, imageData.height), 0, 0);
+    return c.toDataURL("image/png");
+  }
+
+  function removeComponentBoxesFromMask(mask, width, height, comps, indexesToRemove) {
+    const out = new Uint8Array(mask);
+    if (!Array.isArray(comps) || !(indexesToRemove instanceof Set) || indexesToRemove.size === 0)
+      return out;
+    indexesToRemove.forEach((idx) => {
+      const comp = comps[idx];
+      if (!comp) return;
+      const xStart = Math.max(0, comp.x);
+      const yStart = Math.max(0, comp.y);
+      const xEnd = Math.min(width - 1, comp.x + comp.w - 1);
+      const yEnd = Math.min(height - 1, comp.y + comp.h - 1);
+      for (let y = yStart; y <= yEnd; y += 1) {
+        const row = y * width;
+        for (let x = xStart; x <= xEnd; x += 1) out[row + x] = 0;
+      }
+    });
+    return out;
+  }
+
+  function estimateComponentAxisOffAngleDeg(comp, mask, width, height) {
+    let count = 0;
+    let sumX = 0;
+    let sumY = 0;
+    const xStart = Math.max(0, comp.x);
+    const yStart = Math.max(0, comp.y);
+    const xEnd = Math.min(width - 1, comp.x + comp.w - 1);
+    const yEnd = Math.min(height - 1, comp.y + comp.h - 1);
+    for (let y = yStart; y <= yEnd; y += 1) {
+      const row = y * width;
+      for (let x = xStart; x <= xEnd; x += 1) {
+        if (!mask[row + x]) continue;
+        count += 1;
+        sumX += x;
+        sumY += y;
+      }
+    }
+    if (count < 10) return Number.POSITIVE_INFINITY;
+    const meanX = sumX / count;
+    const meanY = sumY / count;
+    let covXX = 0;
+    let covYY = 0;
+    let covXY = 0;
+    for (let y = yStart; y <= yEnd; y += 1) {
+      const row = y * width;
+      for (let x = xStart; x <= xEnd; x += 1) {
+        if (!mask[row + x]) continue;
+        const dx = x - meanX;
+        const dy = y - meanY;
+        covXX += dx * dx;
+        covYY += dy * dy;
+        covXY += dx * dy;
+      }
+    }
+    const theta = 0.5 * Math.atan2(2 * covXY, covXX - covYY);
+    const deg = (Math.abs(theta) * 180) / Math.PI;
+    const canonical = deg > 45 ? 90 - deg : deg;
+    return Math.abs(canonical);
+  }
+
+  function detectColoredPixelsWithinAllowedMask(imageData, allowedMask = null) {
+    const { width, height } = imageData;
+    const colorMask = new Uint8Array(width * height);
+    let coloredPixelCount = 0;
+    for (let p = 0; p < colorMask.length; p += 1) {
+      if (allowedMask && !allowedMask[p]) continue;
+      const i = p * 4;
+      const r = imageData.data[i];
+      const g = imageData.data[i + 1];
+      const b = imageData.data[i + 2];
+      const a = imageData.data[i + 3];
+      if (a < 16) continue;
+      const luma = r * 0.299 + g * 0.587 + b * 0.114;
+      if (luma < COLOR_LINE_MIN_LUMA) continue; // Ignore black/near-black ink.
+      const spread = Math.max(r, g, b) - Math.min(r, g, b);
+      if (spread < runtimeColorLineMinSpread) continue;
+      colorMask[p] = 1;
+      coloredPixelCount += 1;
+    }
+    return {
+      colorMask,
+      coloredPixelCount,
+    };
+  }
+
+  function getComponentLongestAxisRunAndCoverage(comp, mask, width, height) {
+    const xStart = Math.max(0, comp.x);
+    const yStart = Math.max(0, comp.y);
+    const xEnd = Math.min(width - 1, comp.x + comp.w - 1);
+    const yEnd = Math.min(height - 1, comp.y + comp.h - 1);
+    if (xStart > xEnd || yStart > yEnd) return { longestRun: 0, runCoverage: 0 };
+    let maxHorizontalRun = 0;
+    let maxVerticalRun = 0;
+    for (let y = yStart; y <= yEnd; y += 1) {
+      let run = 0;
+      const row = y * width;
+      for (let x = xStart; x <= xEnd; x += 1) {
+        if (mask[row + x]) {
+          run += 1;
+          if (run > maxHorizontalRun) maxHorizontalRun = run;
+        } else {
+          run = 0;
+        }
+      }
+    }
+    for (let x = xStart; x <= xEnd; x += 1) {
+      let run = 0;
+      for (let y = yStart; y <= yEnd; y += 1) {
+        if (mask[y * width + x]) {
+          run += 1;
+          if (run > maxVerticalRun) maxVerticalRun = run;
+        } else {
+          run = 0;
+        }
+      }
+    }
+    const longSide = Math.max(1, Math.max(comp.w, comp.h));
+    const longestRun = Math.max(maxHorizontalRun, maxVerticalRun);
+    const runCoverage = longestRun / longSide;
+    return { longestRun, runCoverage };
+  }
+
+  function detectHairlineMaskOrthogonalPasses(mask, imageData, width, height) {
+    const nsMask = new Uint8Array(width * height);
+    const ewMask = new Uint8Array(width * height);
+    const candidateMask = new Uint8Array(mask);
+
+    // Faint-ink fallback: include very light grayscale strokes that the upstream binary mask may miss.
+    for (let p = 0; p < candidateMask.length; p += 1) {
+      if (candidateMask[p]) continue;
+      const i = p * 4;
+      const a = imageData.data[i + 3];
+      if (a < 16) continue;
+      const r = imageData.data[i];
+      const g = imageData.data[i + 1];
+      const b = imageData.data[i + 2];
+      const luma = r * 0.299 + g * 0.587 + b * 0.114;
+      const inkStrength = 255 - luma;
+      const spread = Math.max(r, g, b) - Math.min(r, g, b);
+      if (inkStrength >= runtimeHairlineMinInkStrength && spread <= HAIRLINE_FALLBACK_MAX_SPREAD) {
+        candidateMask[p] = 1;
+      }
+    }
+
+    const horizontalThicknessAt = (x, y) => {
+      let left = x;
+      let right = x;
+      while (left - 1 >= 0 && candidateMask[y * width + (left - 1)]) left -= 1;
+      while (right + 1 < width && candidateMask[y * width + (right + 1)]) right += 1;
+      return right - left + 1;
+    };
+    const verticalThicknessAt = (x, y) => {
+      let top = y;
+      let bottom = y;
+      while (top - 1 >= 0 && candidateMask[(top - 1) * width + x]) top -= 1;
+      while (bottom + 1 < height && candidateMask[(bottom + 1) * width + x]) bottom += 1;
+      return bottom - top + 1;
+    };
+
+    // North/South pass (gap tolerant, so faint broken lines still count as continuous paths).
+    for (let x = 0; x < width; x += 1) {
+      let y = 0;
+      while (y < height) {
+        while (y < height && !candidateMask[y * width + x]) y += 1;
+        if (y >= height) break;
+        let end = y;
+        let startInk = y;
+        let lastInk = y;
+        let gap = 0;
+        let thicknessSum = 0;
+        let count = 0;
+        while (end < height) {
+          const on = candidateMask[end * width + x];
+          if (on) {
+            if (count === 0) startInk = end;
+            lastInk = end;
+            thicknessSum += horizontalThicknessAt(x, end);
+            count += 1;
+            gap = 0;
+            end += 1;
+            continue;
+          }
+          if (gap < HAIRLINE_MAX_GAP) {
+            gap += 1;
+            end += 1;
+            continue;
+          }
+          break;
+        }
+        const runLen = Math.max(0, lastInk - startInk + 1);
+        const avgThickness = count > 0 ? thicknessSum / count : Number.POSITIVE_INFINITY;
+        if (runLen >= runtimeHairlineMinRun && avgThickness <= runtimeHairlineMaxThickness) {
+          for (let yy = startInk; yy <= lastInk; yy += 1) {
+            if (candidateMask[yy * width + x]) nsMask[yy * width + x] = 1;
+          }
+        }
+        y = Math.max(lastInk + 1, end);
+      }
+    }
+
+    // East/West pass (same gap-tolerant logic).
+    for (let y = 0; y < height; y += 1) {
+      let x = 0;
+      while (x < width) {
+        while (x < width && !candidateMask[y * width + x]) x += 1;
+        if (x >= width) break;
+        let end = x;
+        let startInk = x;
+        let lastInk = x;
+        let gap = 0;
+        let thicknessSum = 0;
+        let count = 0;
+        while (end < width) {
+          const on = candidateMask[y * width + end];
+          if (on) {
+            if (count === 0) startInk = end;
+            lastInk = end;
+            thicknessSum += verticalThicknessAt(end, y);
+            count += 1;
+            gap = 0;
+            end += 1;
+            continue;
+          }
+          if (gap < HAIRLINE_MAX_GAP) {
+            gap += 1;
+            end += 1;
+            continue;
+          }
+          break;
+        }
+        const runLen = Math.max(0, lastInk - startInk + 1);
+        const avgThickness = count > 0 ? thicknessSum / count : Number.POSITIVE_INFINITY;
+        if (runLen >= runtimeHairlineMinRun && avgThickness <= runtimeHairlineMaxThickness) {
+          for (let xx = startInk; xx <= lastInk; xx += 1) {
+            if (candidateMask[y * width + xx]) ewMask[y * width + xx] = 1;
+          }
+        }
+        x = Math.max(lastInk + 1, end);
+      }
+    }
+
+    const hairlineMask = new Uint8Array(width * height);
+    let nsPixels = 0;
+    let ewPixels = 0;
+    let combinedPixels = 0;
+    for (let p = 0; p < hairlineMask.length; p += 1) {
+      if (nsMask[p]) nsPixels += 1;
+      if (ewMask[p]) ewPixels += 1;
+      if (nsMask[p] || ewMask[p]) {
+        hairlineMask[p] = 1;
+        combinedPixels += 1;
+      }
+    }
+    const comps = getComponents(hairlineMask, width, height, LINE_COMPONENT_MIN_AREA, 20000);
+    const filteredHairlineMask = new Uint8Array(width * height);
+    let keptComponents = 0;
+    for (const c of comps) {
+      const longSide = Math.max(c.w, c.h);
+      const shortSide = Math.min(c.w, c.h);
+      if (longSide < runtimeHairlineComponentMinLongSide) continue;
+      if (shortSide > HAIRLINE_COMPONENT_MAX_SHORT_SIDE) continue;
+      keptComponents += 1;
+      const x0 = Math.max(0, c.x);
+      const y0 = Math.max(0, c.y);
+      const x1 = Math.min(width - 1, c.x + c.w - 1);
+      const y1 = Math.min(height - 1, c.y + c.h - 1);
+      for (let yy = y0; yy <= y1; yy += 1) {
+        const row = yy * width;
+        for (let xx = x0; xx <= x1; xx += 1) {
+          const p = row + xx;
+          if (!hairlineMask[p]) continue;
+          filteredHairlineMask[p] = 1;
+        }
+      }
+    }
+    return {
+      hairlineMask: filteredHairlineMask,
+      hairlineCount: keptComponents,
+      nsPixels,
+      ewPixels,
+      combinedPixels,
+      nsMinRun: runtimeHairlineMinRun,
+      ewMinRun: runtimeHairlineMinRun,
+      maxThickness: runtimeHairlineMaxThickness,
+      maxGap: HAIRLINE_MAX_GAP,
+      fallbackMinInkStrength: runtimeHairlineMinInkStrength,
+      fallbackMaxSpread: HAIRLINE_FALLBACK_MAX_SPREAD,
+    };
+  }
+
+  function detectLineAndDashedComponentIndexes(comps, mask, width, height, regions = []) {
+    const out = new Set<number>();
+    const solidIndexes = new Set<number>();
+    const hairlineIndexes = new Set<number>();
+    const dashedIndexes = new Set<number>();
+    let solidCount = 0;
+    let hairlineCount = 0;
+    let dashedCount = 0;
+    let axisRejectedCount = 0;
+    const maxOffAxisDeg = 90 * AXIS_ALIGNMENT_TOLERANCE_PERCENT;
+    const maxDashOffAxisDeg = 90 * DASH_AXIS_ALIGNMENT_TOLERANCE_PERCENT;
+    const axisMetaByIndex = new Map<number, number>();
+    const dashedLineSegments: Array<{
+      idx: number;
+      x0: number;
+      y0: number;
+      x1: number;
+      y1: number;
+      thickness: number;
+      horizontal: boolean;
+    }> = [];
+    const dashedSeeds: Array<{
+      idx: number;
+      horizontal: boolean;
+      cx: number;
+      cy: number;
+      sizePrimary: number;
+      sizeSecondary: number;
+      x: number;
+      y: number;
+      w: number;
+      h: number;
+    }> = [];
+    const seedByIdx = new Map<number, (typeof dashedSeeds)[number]>();
+    for (let i = 0; i < comps.length; i += 1) {
+      const c = comps[i];
+      const w = Math.max(1, c.w);
+      const h = Math.max(1, c.h);
+      const longSide = Math.max(w, h);
+      const shortSide = Math.min(w, h);
+      const aspect = longSide / shortSide;
+      const fill = c.area / Math.max(1, w * h);
+      const isSolidLine =
+        longSide >= SOLID_LINE_MIN_LONG_SIDE &&
+        shortSide <= SOLID_LINE_MAX_SHORT_SIDE &&
+        aspect >= SOLID_LINE_MIN_ASPECT &&
+        fill > 0.1 &&
+        fill < 0.92;
+      const isHairline =
+        longSide >= HAIRLINE_MIN_LONG_SIDE &&
+        shortSide <= HAIRLINE_MAX_SHORT_SIDE &&
+        aspect >= HAIRLINE_MIN_ASPECT &&
+        fill > 0.05 &&
+        fill < 0.98;
+      if (isSolidLine || isHairline) {
+        const offAxisDeg = estimateComponentAxisOffAngleDeg(c, mask, width, height);
+        if (!Number.isFinite(offAxisDeg) || offAxisDeg > maxOffAxisDeg) {
+          axisRejectedCount += 1;
+          continue;
+        }
+        axisMetaByIndex.set(i, offAxisDeg);
+        out.add(i);
+        solidIndexes.add(i);
+        solidCount += 1;
+        if (isHairline) {
+          hairlineCount += 1;
+          hairlineIndexes.add(i);
+        }
+        continue;
+      }
+      const isDashSeed =
+        longSide >= DASH_SEED_MIN_LONG_SIDE &&
+        longSide <= DASH_SEED_MAX_LONG_SIDE &&
+        shortSide <= DASH_SEED_MAX_SHORT_SIDE &&
+        aspect >= DASH_SEED_MIN_ASPECT &&
+        c.area >= DASH_SEED_MIN_AREA &&
+        c.area <= DASH_SEED_MAX_AREA;
+      if (isDashSeed) {
+        const offAxisDeg = estimateComponentAxisOffAngleDeg(c, mask, width, height);
+        if (!Number.isFinite(offAxisDeg) || offAxisDeg > maxDashOffAxisDeg) {
+          axisRejectedCount += 1;
+          continue;
+        }
+        axisMetaByIndex.set(i, offAxisDeg);
+        dashedSeeds.push({
+          idx: i,
+          horizontal: w >= h,
+          cx: c.x + w / 2,
+          cy: c.y + h / 2,
+          sizePrimary: longSide,
+          sizeSecondary: shortSide,
+          x: c.x,
+          y: c.y,
+          w,
+          h,
+        });
+        seedByIdx.set(i, dashedSeeds[dashedSeeds.length - 1]);
+      }
+    }
+    const adjacency = new Map<number, Set<number>>();
+    const looseAdjacency = new Map<number, Set<number>>();
+    const sameAxisNeighbors = new Map<
+      number,
+      Array<{ idx: number; signedPrimary: number; absPrimary: number; secondary: number }>
+    >();
+    dashedSeeds.forEach((s) => {
+      adjacency.set(s.idx, new Set<number>());
+      looseAdjacency.set(s.idx, new Set<number>());
+      sameAxisNeighbors.set(s.idx, []);
+    });
+    const connect = (map: Map<number, Set<number>>, aIdx: number, bIdx: number) => {
+      map.get(aIdx)?.add(bIdx);
+      map.get(bIdx)?.add(aIdx);
+    };
+    for (let i = 0; i < dashedSeeds.length; i += 1) {
+      const a = dashedSeeds[i];
+      for (let j = i + 1; j < dashedSeeds.length; j += 1) {
+        const b = dashedSeeds[j];
+        const maxPrimaryGap = Math.max(
+          48,
+          Math.max(a.sizePrimary, b.sizePrimary) * DASH_PRIMARY_GAP_MULTIPLIER
+        );
+        const maxSecondaryGap = Math.max(
+          8,
+          Math.max(a.sizeSecondary, b.sizeSecondary) * DASH_SECONDARY_GAP_MULTIPLIER
+        );
+        const maxPrimaryGapLoose = maxPrimaryGap * DASH_MAGNETIC_PRIMARY_GAP_MULTIPLIER;
+        const maxSecondaryGapLoose = maxSecondaryGap * DASH_MAGNETIC_SECONDARY_GAP_MULTIPLIER;
+        if (a.horizontal === b.horizontal) {
+          const signedPrimary = a.horizontal ? b.cx - a.cx : b.cy - a.cy;
+          const deltaPrimary = Math.abs(signedPrimary);
+          const deltaSecondary = a.horizontal ? Math.abs(a.cy - b.cy) : Math.abs(a.cx - b.cx);
+          if (deltaPrimary <= maxPrimaryGap && deltaSecondary <= maxSecondaryGap) {
+            connect(adjacency, a.idx, b.idx);
+            sameAxisNeighbors.get(a.idx)?.push({
+              idx: b.idx,
+              signedPrimary,
+              absPrimary: deltaPrimary,
+              secondary: deltaSecondary,
+            });
+            sameAxisNeighbors.get(b.idx)?.push({
+              idx: a.idx,
+              signedPrimary: -signedPrimary,
+              absPrimary: deltaPrimary,
+              secondary: deltaSecondary,
+            });
+          }
+          if (deltaPrimary <= maxPrimaryGapLoose && deltaSecondary <= maxSecondaryGapLoose) {
+            connect(looseAdjacency, a.idx, b.idx);
+          }
+          continue;
+        }
+        // Allow orthogonal continuity so dashed runs can turn at 90 degrees.
+        const aX0 = a.x;
+        const aY0 = a.y;
+        const aX1 = a.x + a.w - 1;
+        const aY1 = a.y + a.h - 1;
+        const bX0 = b.x;
+        const bY0 = b.y;
+        const bX1 = b.x + b.w - 1;
+        const bY1 = b.y + b.h - 1;
+        const gapX = Math.max(0, Math.max(aX0 - bX1, bX0 - aX1));
+        const gapY = Math.max(0, Math.max(aY0 - bY1, bY0 - aY1));
+        const centerNearBase =
+          Math.abs(a.cx - b.cx) <= maxPrimaryGap && Math.abs(a.cy - b.cy) <= maxPrimaryGap;
+        const nearTurnBase = gapX <= maxSecondaryGap * 2 && gapY <= maxSecondaryGap * 2;
+        if (nearTurnBase && centerNearBase) connect(adjacency, a.idx, b.idx);
+        const centerNearLoose =
+          Math.abs(a.cx - b.cx) <= maxPrimaryGapLoose &&
+          Math.abs(a.cy - b.cy) <= maxPrimaryGapLoose;
+        const nearTurnLoose = gapX <= maxSecondaryGapLoose * 2 && gapY <= maxSecondaryGapLoose * 2;
+        if (nearTurnLoose && centerNearLoose) connect(looseAdjacency, a.idx, b.idx);
+      }
+    }
+
+    // Pass 1: find reliable 3-dash seeds with roughly equal spacing.
+    const magneticSeedSet = new Set<number>();
+    dashedSeeds.forEach((seed) => {
+      const neighbors = sameAxisNeighbors.get(seed.idx) || [];
+      const left = neighbors.filter((n) => n.signedPrimary < 0);
+      const right = neighbors.filter((n) => n.signedPrimary > 0);
+      for (const l of left) {
+        for (const r of right) {
+          const d1 = l.absPrimary;
+          const d2 = r.absPrimary;
+          const maxD = Math.max(d1, d2, 1);
+          const spacingDelta = Math.abs(d1 - d2) / maxD;
+          const secondaryGate =
+            Math.max(l.secondary, r.secondary) <= Math.max(8, seed.sizeSecondary * 2.4);
+          if (spacingDelta > DASH_SEED_EQUAL_SPACING_TOLERANCE || !secondaryGate) continue;
+          magneticSeedSet.add(seed.idx);
+          magneticSeedSet.add(l.idx);
+          magneticSeedSet.add(r.idx);
+        }
+      }
+    });
+
+    // Pass 2: magnetic follow from seed triples; fallback to base graph if no seeds found.
+    const magneticReachable = new Set<number>();
+    if (magneticSeedSet.size > 0) {
+      const queue = Array.from(magneticSeedSet);
+      queue.forEach((idx) => magneticReachable.add(idx));
+      while (queue.length) {
+        const cur = queue.shift() as number;
+        const neighbors = looseAdjacency.get(cur);
+        if (!neighbors) continue;
+        neighbors.forEach((n) => {
+          if (magneticReachable.has(n)) return;
+          magneticReachable.add(n);
+          queue.push(n);
+        });
+      }
+    }
+    const candidateDashIds =
+      magneticSeedSet.size > 0 ? magneticReachable : new Set(dashedSeeds.map((s) => s.idx));
+
+    const graphForClusters = magneticSeedSet.size > 0 ? looseAdjacency : adjacency;
+    const visited = new Set<number>();
+    const qualifyingClusters: Array<{
+      ids: number[];
+      size: number;
+      area: number;
+      cx: number;
+      cy: number;
+      score: number;
+    }> = [];
+    candidateDashIds.forEach((startIdx) => {
+      if (visited.has(startIdx)) return;
+      const stack = [startIdx];
+      visited.add(startIdx);
+      const cluster: number[] = [];
+      while (stack.length) {
+        const cur = stack.pop() as number;
+        cluster.push(cur);
+        const neighbors = graphForClusters.get(cur);
+        if (!neighbors) continue;
+        neighbors.forEach((n) => {
+          if (!candidateDashIds.has(n) || visited.has(n)) return;
+          visited.add(n);
+          stack.push(n);
+        });
+      }
+      if (cluster.length < runtimeDashNeighborMin) return;
+      const metrics = cluster.reduce(
+        (acc, idx) => {
+          const c = comps[idx];
+          const s = seedByIdx.get(idx);
+          if (c) acc.area += Number(c.area || 0);
+          if (s) {
+            acc.cx += s.cx;
+            acc.cy += s.cy;
+            acc.n += 1;
+          }
+          return acc;
+        },
+        { area: 0, cx: 0, cy: 0, n: 0 }
+      );
+      const centerX = metrics.n > 0 ? metrics.cx / metrics.n : 0;
+      const centerY = metrics.n > 0 ? metrics.cy / metrics.n : 0;
+      qualifyingClusters.push({
+        ids: cluster,
+        size: cluster.length,
+        area: metrics.area,
+        cx: centerX,
+        cy: centerY,
+        score: cluster.length * 1000 + metrics.area,
+      });
+    });
+
+    let droppedDashClustersBySectionCap = 0;
+    let keptClusters = qualifyingClusters;
+    if (Array.isArray(regions) && regions.length > 0) {
+      const byRegion = new Map<number, typeof qualifyingClusters>();
+      const unassigned: typeof qualifyingClusters = [];
+      for (const cluster of qualifyingClusters) {
+        const regionIdx = regions.findIndex(
+          (r) =>
+            cluster.cx >= r.x &&
+            cluster.cy >= r.y &&
+            cluster.cx < r.x + r.w &&
+            cluster.cy < r.y + r.h
+        );
+        if (regionIdx === -1) {
+          unassigned.push(cluster);
+          continue;
+        }
+        if (!byRegion.has(regionIdx)) byRegion.set(regionIdx, []);
+        byRegion.get(regionIdx)?.push(cluster);
+      }
+      keptClusters = [...unassigned];
+      byRegion.forEach((clusters) => {
+        const sorted = [...clusters].sort((a, b) => b.score - a.score);
+        const kept = sorted.slice(0, DASH_MAX_CLUSTERS_PER_REGION);
+        keptClusters.push(...kept);
+        droppedDashClustersBySectionCap += Math.max(
+          0,
+          sorted.length - DASH_MAX_CLUSTERS_PER_REGION
+        );
+      });
+    }
+
+    const loopClosureSegments: Array<{
+      x0: number;
+      y0: number;
+      x1: number;
+      y1: number;
+      thickness: number;
+    }> = [];
+    let loopClosedClusterCount = 0;
+    let droppedNonClosedDashClusters = 0;
+    const rectangleClusters: typeof keptClusters = [];
+    const rectangleMeta: Array<{
+      minX: number;
+      minY: number;
+      maxX: number;
+      maxY: number;
+      sideTol: number;
+      avgDashLen: number;
+      avgThickness: number;
+    }> = [];
+    if (DASH_LOOP_CLOSURE_ENABLED) {
+      keptClusters.forEach((cluster) => {
+        if (!cluster?.ids?.length || cluster.ids.length < 3) return;
+        const seeds = cluster.ids
+          .map((idx) => seedByIdx.get(idx))
+          .filter((s): s is NonNullable<typeof s> => Boolean(s));
+        if (seeds.length < 3) return;
+        const minX = Math.min(...seeds.map((s) => s.x));
+        const minY = Math.min(...seeds.map((s) => s.y));
+        const maxX = Math.max(...seeds.map((s) => s.x + s.w - 1));
+        const maxY = Math.max(...seeds.map((s) => s.y + s.h - 1));
+        const avgDashLen =
+          seeds.reduce((sum, s) => sum + Number(s.sizePrimary || 0), 0) / Math.max(1, seeds.length);
+        const avgThickness =
+          seeds.reduce((sum, s) => sum + Number(s.sizeSecondary || 0), 0) /
+          Math.max(1, seeds.length);
+        const minSideCoverage = avgDashLen * DASH_RECT_MIN_SIDE_DASH_LENGTHS;
+        const sideTol = Math.max(
+          3,
+          Math.round(Math.max(1, avgThickness) * DASH_LOOP_CLOSURE_AXIS_TOLERANCE_MULTIPLIER)
+        );
+        let topCoverage = 0;
+        let rightCoverage = 0;
+        let bottomCoverage = 0;
+        let leftCoverage = 0;
+        let topSegments = 0;
+        let rightSegments = 0;
+        let bottomSegments = 0;
+        let leftSegments = 0;
+        seeds.forEach((s) => {
+          const segLen = Number(s.sizePrimary || 0);
+          if (s.horizontal && Math.abs(s.cy - minY) <= sideTol) {
+            topCoverage += segLen;
+            topSegments += 1;
+          }
+          if (s.horizontal && Math.abs(s.cy - maxY) <= sideTol) {
+            bottomCoverage += segLen;
+            bottomSegments += 1;
+          }
+          if (!s.horizontal && Math.abs(s.cx - minX) <= sideTol) {
+            leftCoverage += segLen;
+            leftSegments += 1;
+          }
+          if (!s.horizontal && Math.abs(s.cx - maxX) <= sideTol) {
+            rightCoverage += segLen;
+            rightSegments += 1;
+          }
+        });
+        const minWeakCoverage = minSideCoverage * 0.6;
+        const sideWeak = [
+          topSegments >= 2 || topCoverage >= minWeakCoverage,
+          rightSegments >= 2 || rightCoverage >= minWeakCoverage,
+          bottomSegments >= 2 || bottomCoverage >= minWeakCoverage,
+          leftSegments >= 2 || leftCoverage >= minWeakCoverage,
+        ];
+        const sideStrong = [
+          topSegments >= DASH_RECT_MIN_SIDE_DASH_LENGTHS || topCoverage >= minSideCoverage,
+          rightSegments >= DASH_RECT_MIN_SIDE_DASH_LENGTHS || rightCoverage >= minSideCoverage,
+          bottomSegments >= DASH_RECT_MIN_SIDE_DASH_LENGTHS || bottomCoverage >= minSideCoverage,
+          leftSegments >= DASH_RECT_MIN_SIDE_DASH_LENGTHS || leftCoverage >= minSideCoverage,
+        ];
+        const presentCount = sideWeak.filter(Boolean).length;
+        const strongCount = sideStrong.filter(Boolean).length;
+        if (presentCount < 3) {
+          droppedNonClosedDashClusters += 1;
+          return;
+        }
+        const rectArea = Math.max(1, (maxX - minX + 1) * (maxY - minY + 1));
+        const minRectArea = avgDashLen * avgDashLen * DASH_RECT_MIN_AREA_MULTIPLIER;
+        if (rectArea < minRectArea) {
+          droppedNonClosedDashClusters += 1;
+          return;
+        }
+        if (presentCount === 3) {
+          if (strongCount < 3) {
+            droppedNonClosedDashClusters += 1;
+            return;
+          }
+          const thickness = Math.max(1, Math.round(avgThickness || 1));
+          if (!sideWeak[0])
+            loopClosureSegments.push({ x0: minX, y0: minY, x1: maxX, y1: minY, thickness });
+          else if (!sideWeak[1])
+            loopClosureSegments.push({ x0: maxX, y0: minY, x1: maxX, y1: maxY, thickness });
+          else if (!sideWeak[2])
+            loopClosureSegments.push({ x0: minX, y0: maxY, x1: maxX, y1: maxY, thickness });
+          else loopClosureSegments.push({ x0: minX, y0: minY, x1: minX, y1: maxY, thickness });
+          loopClosedClusterCount += 1;
+        }
+        rectangleClusters.push(cluster);
+        rectangleMeta.push({
+          minX,
+          minY,
+          maxX,
+          maxY,
+          sideTol,
+          avgDashLen,
+          avgThickness,
+        });
+      });
+    } else {
+      rectangleClusters.push(...keptClusters);
+    }
+
+    const junctionIndexes = new Set<number>();
+    const dashedIndexSet = new Set<number>();
+    rectangleClusters.forEach((cluster) => {
+      cluster.ids.forEach((idx) => {
+        out.add(idx);
+        dashedIndexSet.add(idx);
+        dashedIndexes.add(idx);
+        dashedCount += 1;
+        const seed = seedByIdx.get(idx);
+        if (!seed) return;
+        const thickness = Math.max(1, Math.round(Number(seed.sizeSecondary || 1)));
+        if (seed.horizontal) {
+          const y = Math.round(seed.cy);
+          dashedLineSegments.push({
+            idx,
+            x0: seed.x,
+            y0: y,
+            x1: seed.x + seed.w - 1,
+            y1: y,
+            thickness,
+            horizontal: true,
+          });
+          return;
+        }
+        const x = Math.round(seed.cx);
+        dashedLineSegments.push({
+          idx,
+          x0: x,
+          y0: seed.y,
+          x1: x,
+          y1: seed.y + seed.h - 1,
+          thickness,
+          horizontal: false,
+        });
+      });
+    });
+    for (let i = 0; i < comps.length; i += 1) {
+      if (dashedIndexSet.has(i)) continue;
+      const c = comps[i];
+      if (!c) continue;
+      const area = Number(c.area || 0);
+      if (area <= 0 || area > DASH_JUNCTION_MAX_AREA) continue;
+      const w = Math.max(1, Number(c.w || 0));
+      const h = Math.max(1, Number(c.h || 0));
+      const longSide = Math.max(w, h);
+      const shortSide = Math.min(w, h);
+      const aspect = longSide / Math.max(1, shortSide);
+      if (aspect > 6.2 && shortSide <= 3) continue;
+      const cx = c.x + w / 2;
+      const cy = c.y + h / 2;
+      let nearCornerJunction = false;
+      for (const meta of rectangleMeta) {
+        const cornerTol = Math.max(
+          6,
+          Math.round(Math.max(meta.avgThickness * 4, meta.avgDashLen * 0.33))
+        );
+        const corners = [
+          { x: meta.minX, y: meta.minY },
+          { x: meta.maxX, y: meta.minY },
+          { x: meta.maxX, y: meta.maxY },
+          { x: meta.minX, y: meta.maxY },
+        ];
+        const intersectsVertical = (x: number) =>
+          c.x <= x + meta.sideTol && c.x + w - 1 >= x - meta.sideTol;
+        const intersectsHorizontal = (y: number) =>
+          c.y <= y + meta.sideTol && c.y + h - 1 >= y - meta.sideTol;
+        for (const corner of corners) {
+          if (Math.abs(cx - corner.x) > cornerTol || Math.abs(cy - corner.y) > cornerTol) continue;
+          if (intersectsVertical(corner.x) && intersectsHorizontal(corner.y)) {
+            nearCornerJunction = true;
+            break;
+          }
+        }
+        if (nearCornerJunction) break;
+      }
+      if (!nearCornerJunction) continue;
+      junctionIndexes.add(i);
+      out.add(i);
+    }
+    const junctionCount = junctionIndexes.size;
+
+    const totalQualifyingDashClusters = qualifyingClusters.length;
+    const keptDashClusters = rectangleClusters.length;
+    const magneticSeedCount = magneticSeedSet.size;
+    const magneticReachableCount = magneticReachable.size;
+    return {
+      indexes: out,
+      solidIndexes,
+      hairlineIndexes,
+      dashedIndexes,
+      solidCount,
+      hairlineCount,
+      dashedCount,
+      totalQualifyingDashClusters,
+      keptDashClusters,
+      droppedDashClustersBySectionCap,
+      droppedNonClosedDashClusters,
+      magneticSeedCount,
+      magneticReachableCount,
+      loopClosureSegments,
+      loopClosedClusterCount,
+      junctionIndexes,
+      junctionCount,
+      axisRejectedCount,
+      maxOffAxisDeg,
+      maxDashOffAxisDeg,
+      axisMetaByIndex,
+      dashedLineSegments,
+    };
+  }
+
+  function renderPipelineSteps({
+    sourceImageData,
+    step3SourceMask,
+    step4SourceMask,
+    step5SourceMask,
+    step6SourceMask,
+    step7SourceMask,
+    colorLineDeltaMask,
+    colorPixelCount,
+    hairlineRemovedDeltaMask,
+    hairlineRemovedCount,
+    hairlineWidthThreshold,
+    lineRemovedDeltaMask,
+    lineDashedCount,
+    lineJunctionCount,
+    lineMagneticSeedCount,
+    lineLoopClosedCount,
+    textRemovedDeltaMask,
+    textRemovedCount,
+    regions,
+    selectedRegions,
+    selectedRegionIndexes,
+    matchSummary: pipelineMatchSummary = null,
+    matchDetections = [],
+  }) {
+    if (!pipelineStepsEl) return;
+    step1RegionClipByKey = {};
+    const viableBaseUrl = maskedSourceToDataUrl(sourceImageData, selectedRegions);
+    const fullPlanRegion = [{ x: 0, y: 0, w: sourceImageData.width, h: sourceImageData.height }];
+    const step3BaseUrl = maskedImageByMaskToDataUrl(sourceImageData, step3SourceMask);
+    const step4BaseUrl = maskedImageByMaskToDataUrl(sourceImageData, step4SourceMask);
+    const step5BaseUrl = maskedImageByMaskToDataUrl(sourceImageData, step5SourceMask);
+    const step6BaseUrl = maskedImageByMaskToDataUrl(sourceImageData, step6SourceMask);
+    const step7BaseUrl = maskedImageByMaskToDataUrl(sourceImageData, step7SourceMask);
+    const step3OverlayRegions = layerFlowState.step2ToStep3 ? selectedRegions : fullPlanRegion;
+    const step4PlusOverlayRegions = layerFlowState.step2ToStep4 ? selectedRegions : fullPlanRegion;
+    const steps = [
+      {
+        key: "step1",
+        title: "Step 1: Viable Area Detection",
+        detail: `${regions.length} candidate region(s) detected, ${selectedRegions.length} selected, ${excludedRegionIndexes.size} removed`,
+        baseImageUrl: imageDataToDataUrl(sourceImageData),
+        overlayImageUrl: regionsMaskLayerToDataUrl(
+          sourceImageData,
+          regions,
+          selectedRegions,
+          excludedRegionIndexes
+        ),
+        sourceWidth: sourceImageData.width,
+        sourceHeight: sourceImageData.height,
+      },
+      {
+        title: "Step 2: Viable Area Applied",
+        detail: "Everything outside selected viable area is removed before the heavier steps",
+        imageUrl: viableBaseUrl,
+      },
+      {
+        key: "step3",
+        title: "Step 3: Identify Colored Lines (Remember Only)",
+        detail: `${colorPixelCount} color pixel(s) identified (${layerFlowState.step2ToStep3 ? "input: Step 2 bounds" : "input: full canvas"}) | non-black luma>=${COLOR_LINE_MIN_LUMA}, color-diff>=${Math.round(runtimeColorLineMinSpread)}`,
+        baseImageUrl: step3BaseUrl,
+        overlayImageUrl: colorMaskLayerToDataUrl(
+          sourceImageData,
+          step3OverlayRegions,
+          colorLineDeltaMask,
+          [16, 185, 129],
+          true
+        ),
+      },
+      {
+        key: "step4",
+        title: "Step 4: Identify + Remove Hairlines",
+        detail: HAIRLINE_STEP_PAUSED
+          ? "Paused: passthrough only (kept as placeholder step; no hairlines removed)"
+          : `${hairlineRemovedCount} hairline component(s) removed (continuous thinnest linear class; width<=${hairlineWidthThreshold}px, ink>=${Math.round(runtimeHairlineMinInkStrength)}, run>=${Math.round(runtimeHairlineMinRun)}px, seg>=${Math.round(runtimeHairlineComponentMinLongSide)}px)`,
+        baseImageUrl: step4BaseUrl,
+        overlayImageUrl: colorMaskLayerToDataUrl(
+          sourceImageData,
+          step4PlusOverlayRegions,
+          hairlineRemovedDeltaMask,
+          [147, 51, 234]
+        ),
+      },
+      {
+        key: "step5",
+        title: "Step 5: Isolate + Hide Dashed Lines Layer",
+        detail: `${lineDashedCount} dashed component(s) converted to linear dashed items + ${lineJunctionCount} corner junction(s) isolated (${layerFlowState.step2ToStep4 ? "Step 2 included" : "Step 2 excluded"}; ${layerFlowState.step3ExcludeFromStep4 ? "Step 3 excluded" : "Step 3 not excluded"}; rectangles only, weak side>=2 dashes to keep closed loops, 3-of-4 sides need >=${DASH_RECT_MIN_SIDE_DASH_LENGTHS} dashes and are force-closed)`,
+        baseImageUrl: step5BaseUrl,
+        overlayImageUrl: colorMaskLayerToDataUrl(
+          sourceImageData,
+          step4PlusOverlayRegions,
+          lineRemovedDeltaMask,
+          [249, 115, 22]
+        ),
+      },
+      {
+        key: "step6",
+        title: "Step 6: Identify + Remove Alphanumeric Characters",
+        detail: `${textRemovedCount} text-like component(s) removed from post-linear cleanup mask`,
+        baseImageUrl: step6BaseUrl,
+        overlayImageUrl: colorMaskLayerToDataUrl(
+          sourceImageData,
+          step4PlusOverlayRegions,
+          textRemovedDeltaMask,
+          [236, 72, 153]
+        ),
+      },
+      {
+        title: "Step 7: Post-Step-6 Output (Current Final)",
+        detail: "Current handoff preview: this is the mask output after Step 6",
+        imageUrl: step7BaseUrl,
+      },
+    ];
+    const cards = steps.map((step) => {
+      const step1SelectedRegionEntries =
+        step.key === "step1" && Array.isArray(regions) && regions.length > 0
+          ? regions
+              .map((region, idx) => ({ region, idx }))
+              .filter((entry) => !excludedRegionIndexes.has(entry.idx))
+              .slice(0, MAX_REGIONS_TO_SCAN)
+          : [];
+      const step1RemoveButtons =
+        step.key === "step1" &&
+        step1SelectedRegionEntries.length > 0 &&
+        step.sourceWidth > 0 &&
+        step.sourceHeight > 0
+          ? step1SelectedRegionEntries
+              .map(({ region: r, idx }) => {
+                const leftPct = clamp(((r.x + r.w - 12) / step.sourceWidth) * 100, 0, 98);
+                const topPct = clamp(((r.y + 2) / step.sourceHeight) * 100, 0, 98);
+                return `
+                  <button
+                    type="button"
+                    data-remove-region-idx="${idx}"
+                    class="simple-scan-remove-region-btn absolute z-30 h-5 w-5 rounded-full border border-red-700 bg-red-600 text-[12px] font-bold leading-none text-white shadow hover:bg-red-700"
+                    style="left:${leftPct}%;top:${topPct}%;"
+                    title="Remove this section from processing"
+                    aria-label="Remove section ${idx + 1}"
+                  >
+                    ×
+                  </button>
+                `;
+              })
+              .join("")
+          : "";
+      const step1ResetButton =
+        step.key === "step1" && Array.isArray(regions) && regions.length > 0
+          ? `<div class="mb-2 flex flex-wrap items-center gap-2">${excludedRegionIndexes.size > 0 ? '<button type="button" id="simple-scan-reset-removed-regions" class="rounded bg-gray-700 px-2 py-1 text-[11px] font-semibold text-white dark:bg-gray-600">Reset removed sections</button>' : ""}<button type="button" id="simple-scan-remove-all-regions" class="rounded bg-red-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-red-700">Remove all sections</button></div>`
+          : "";
+      const step55InlineSlot =
+        step.key === "step5"
+          ? `<div id="simple-scan-step55-controls-slot" class="mb-2"></div>`
+          : "";
+      const step1RegionControls = "";
+      const step1LayerTransforms = "";
+      const overlayControls =
+        step.overlayImageUrl && step.key
+          ? (() => {
+              const isStep1MaskTransform = String(step.key) === "step1";
+              return `
+                <div class="mb-2 flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    data-overlay-key="${step.key}"
+                    class="simple-scan-overlay-toggle rounded bg-gray-700 px-2 py-1 text-[11px] font-semibold text-white dark:bg-gray-600"
+                  >
+                    ${isOverlayVisible(String(step.key)) ? "Show source" : "Show identified only"}
+                  </button>
+                  ${isStep1MaskTransform ? `<span class="text-[11px] font-semibold text-gray-700 dark:text-gray-300">Drag overlays directly. Use mouse wheel to scale, Shift + wheel to rotate.</span>` : ""}
+                </div>
+                ${
+                  isStep1MaskTransform
+                    ? '<p class="mb-2 text-[11px] text-gray-500 dark:text-gray-400">Click an overlay to activate it. Delete buttons move with each transformed overlay.</p>'
+                    : ""
+                }
+              `;
+            })()
+          : "";
+      const step55Guide =
+        step.key === "step5"
+          ? (() => {
+              const markerDots =
+                step55Mode === "connect"
+                  ? step55Endpoints
+                      .map((ep) => {
+                        const leftPct = clamp((ep.x / sourceImageData.width) * 100, 0, 100);
+                        const topPct = clamp((ep.y / sourceImageData.height) * 100, 0, 100);
+                        return `<span class="pointer-events-none absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-cyan-100 bg-cyan-400/90 shadow" style="left:${leftPct}%;top:${topPct}%"></span>`;
+                      })
+                      .join("")
+                  : step55Mode === "cleanup"
+                    ? step55EditableComps
+                        .map((c) => {
+                          const cx = c.x + c.w / 2;
+                          const cy = c.y + c.h / 2;
+                          const leftPct = clamp((cx / sourceImageData.width) * 100, 0, 100);
+                          const topPct = clamp((cy / sourceImageData.height) * 100, 0, 100);
+                          return `<span class="pointer-events-none absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-amber-100 bg-amber-400/90 shadow" style="left:${leftPct}%;top:${topPct}%"></span>`;
+                        })
+                        .join("")
+                    : "";
+              const selectedMarker =
+                step55Mode === "connect" && step55SelectedEndpoint
+                  ? `<span class="pointer-events-none absolute h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-yellow-300 shadow" style="left:${clamp((step55SelectedEndpoint.x / sourceImageData.width) * 100, 0, 100)}%;top:${clamp((step55SelectedEndpoint.y / sourceImageData.height) * 100, 0, 100)}%"></span>`
+                  : "";
+              const helpText =
+                step55Mode === "off"
+                  ? "Step 5.5 is Off. Choose Cleanup or Connect above."
+                  : step55Mode === "cleanup"
+                    ? "Cleanup mode: click amber targets to toggle remove/re-add."
+                    : "Connect mode: click cyan endpoint 1, then endpoint 2.";
+              return {
+                helpText,
+                markerDots,
+                selectedMarker,
+              };
+            })()
+          : null;
+      return `
+        <div class="rounded border border-gray-200 p-2 dark:border-gray-700">
+          <p class="text-xs font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-300">${step.title}</p>
+          <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">${step.detail}</p>
+          ${step1ResetButton}
+          ${step1RegionControls}
+          ${step1LayerTransforms}
+          ${step55InlineSlot}
+          ${step55Guide ? `<p class="mb-2 text-[11px] text-gray-500 dark:text-gray-400">${step55Guide.helpText}</p>` : ""}
+          ${
+            step.overlayImageUrl
+              ? `
+                ${overlayControls}
+                <div ${step.key === "step5" ? 'data-step55-hit="1"' : ""} class="relative overflow-hidden rounded border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+                  <img src="${step.baseImageUrl}" alt="${step.title}" class="block w-full" />
+                  ${
+                    step.key === "step1"
+                      ? step1SelectedRegionEntries
+                          .map(({ region, idx }) => {
+                            const layerKey = `step1-r${idx}`;
+                            const top = clamp(
+                              (region.y / Math.max(1, step.sourceHeight)) * 100,
+                              0,
+                              100
+                            );
+                            const left = clamp(
+                              (region.x / Math.max(1, step.sourceWidth)) * 100,
+                              0,
+                              100
+                            );
+                            const right = clamp(
+                              ((step.sourceWidth - (region.x + region.w)) /
+                                Math.max(1, step.sourceWidth)) *
+                                100,
+                              0,
+                              100
+                            );
+                            const bottom = clamp(
+                              ((step.sourceHeight - (region.y + region.h)) /
+                                Math.max(1, step.sourceHeight)) *
+                                100,
+                              0,
+                              100
+                            );
+                            step1RegionClipByKey[layerKey] = { top, right, bottom, left };
+                            const delLeftPct = clamp(
+                              ((region.x + region.w - 10) / Math.max(1, step.sourceWidth)) * 100,
+                              0,
+                              99
+                            );
+                            const delTopPct = clamp(
+                              ((region.y + 2) / Math.max(1, step.sourceHeight)) * 100,
+                              0,
+                              99
+                            );
+                            return `
+                              <div
+                                data-overlay-key="${layerKey}"
+                                class="simple-scan-overlay-layer absolute inset-0 h-full w-full touch-none"
+                                style="${overlayTransformStyle(layerKey)}"
+                              >
+                                <img
+                                  src="${regionMaskLayerToDataUrl(sourceImageData, region, idx)}"
+                                  alt="${step.title} region layer R${idx + 1}"
+                                  class="absolute inset-0 h-full w-full object-contain"
+                                />
+                                <button
+                                  type="button"
+                                  data-remove-region-idx="${idx}"
+                                  class="simple-scan-remove-region-btn absolute z-30 h-5 w-5 rounded-full border border-red-700 bg-red-600 text-[12px] font-bold leading-none text-white shadow hover:bg-red-700"
+                                  style="left:${delLeftPct}%;top:${delTopPct}%;"
+                                  title="Remove this section"
+                                  aria-label="Remove section ${idx + 1}"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            `;
+                          })
+                          .join("")
+                      : `
+                          <img
+                            src="${step.overlayImageUrl}"
+                            alt="${step.title} identified-only view"
+                            data-overlay-key="${step.key}"
+                            class="simple-scan-overlay-layer absolute inset-0 h-full w-full touch-none object-contain"
+                            style="${overlayTransformStyle(String(step.key))}"
+                          />
+                        `
+                  }
+                  ${step55Guide ? `${step55Guide.markerDots}${step55Guide.selectedMarker}` : ""}
+                  ${step.key === "step1" ? "" : step1RemoveButtons}
+                </div>
+              `
+              : `<div class="relative"><img src="${step.imageUrl}" alt="${step.title}" class="w-full rounded border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900" />${step1RemoveButtons}</div>`
+          }
+        </div>
+      `;
+    });
+    const matchDetected = Array.isArray(matchDetections) ? matchDetections : [];
+    const matchTotal = Number(pipelineMatchSummary?.totalMatches || 0);
+    const matchCandidates = Number(pipelineMatchSummary?.candidateCount || 0);
+    const matchDetailText =
+      matchDetected.length > 0
+        ? `${matchTotal} match(es) from ${matchCandidates} candidate(s). Rings mark detected library items.`
+        : "Run matching here after Step 7. Results and markers will appear below.";
+    const step8MarkerRings = matchDetected
+      .map((d, idx) => {
+        const x = clamp(Number(d?.x || 0), 0, sourceImageData.width - 1);
+        const y = clamp(Number(d?.y || 0), 0, sourceImageData.height - 1);
+        const ringRadiusPx = clamp(Number(d?.radius || 10), 6, 44);
+        const diameterPct = clamp(
+          (ringRadiusPx * 2 * 100) / Math.max(1, sourceImageData.width),
+          0.8,
+          12
+        );
+        const leftPct = clamp((x / Math.max(1, sourceImageData.width)) * 100, 0, 100);
+        const topPct = clamp((y / Math.max(1, sourceImageData.height)) * 100, 0, 100);
+        const color = String(d?.color || "rgba(251,191,36,0.95)");
+        const label = String(d?.label || `match-${idx + 1}`);
+        return `<span class="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full" title="${label}" style="left:${leftPct}%;top:${topPct}%;width:${diameterPct}%;height:${diameterPct}%;border:2px solid ${color};background:transparent;"></span>`;
+      })
+      .join("");
+    cards.push(`
+      <div class="rounded border border-gray-200 p-2 dark:border-gray-700">
+        <p class="text-xs font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-300">Step 8: Match Targeted Library Items</p>
+        <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">${matchDetailText}</p>
+        <div id="simple-scan-step8-controls-slot" class="mb-2 rounded border border-gray-200 p-2 dark:border-gray-700"></div>
+        <div class="relative overflow-hidden rounded border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+          <img src="${step7BaseUrl}" alt="Step 8 final canvas with match rings" class="block w-full" />
+          ${step8MarkerRings}
+        </div>
+      </div>
+    `);
+    cards.splice(
+      2,
+      0,
+      `<div id="simple-scan-step3-controls-slot" class="rounded border border-gray-200 p-2 dark:border-gray-700"></div>`
+    );
+    cards.splice(
+      4,
+      0,
+      `<div id="simple-scan-step4-controls-slot" class="rounded border border-gray-200 p-2 dark:border-gray-700"></div>`
+    );
+    cards.splice(
+      6,
+      0,
+      `<div id="simple-scan-step5-controls-slot" class="rounded border border-gray-200 p-2 dark:border-gray-700"></div>`
+    );
+    cards.splice(
+      8,
+      0,
+      `<div id="simple-scan-step6-controls-slot" class="rounded border border-gray-200 p-2 dark:border-gray-700"></div>`
+    );
+    pipelineStepsEl.innerHTML = cards.join("");
+    const step3ControlsSlot = document.getElementById("simple-scan-step3-controls-slot");
+    const step4ControlsSlot = document.getElementById("simple-scan-step4-controls-slot");
+    const step5ControlsSlot = document.getElementById("simple-scan-step5-controls-slot");
+    const step6ControlsSlot = document.getElementById("simple-scan-step6-controls-slot");
+    const step55ControlsSlot = document.getElementById("simple-scan-step55-controls-slot");
+    const step8ControlsSlot = document.getElementById("simple-scan-step8-controls-slot");
+    const step1LayerKeys = Array.from(
+      pipelineStepsEl.querySelectorAll(".simple-scan-overlay-layer[data-overlay-key^='step1-r']")
+    )
+      .map((el) => String((el as HTMLElement).getAttribute("data-overlay-key") || ""))
+      .filter(Boolean);
+    if (
+      step1LayerKeys.length > 0 &&
+      (!activeStep1LayerKey || !step1LayerKeys.includes(activeStep1LayerKey))
+    ) {
+      activeStep1LayerKey = step1LayerKeys[0];
+    }
+    if (step3ControlsSlot && layerFlowControlsEl) {
+      step3ControlsSlot.appendChild(layerFlowControlsEl);
+      layerFlowControlsEl.classList.remove("hidden");
+    }
+    if (step3ControlsSlot && step3ControlsEl) {
+      step3ControlsSlot.appendChild(step3ControlsEl);
+      step3ControlsEl.classList.remove("hidden");
+    }
+    if (step4ControlsSlot && step4ControlsEl && !HAIRLINE_STEP_PAUSED) {
+      step4ControlsSlot.appendChild(step4ControlsEl);
+      step4ControlsEl.classList.remove("hidden");
+    }
+    if (step5ControlsSlot && step5ControlsEl) {
+      step5ControlsSlot.appendChild(step5ControlsEl);
+      step5ControlsEl.classList.remove("hidden");
+    }
+    if (step6ControlsSlot && step6ControlsEl) {
+      step6ControlsSlot.appendChild(step6ControlsEl);
+      step6ControlsEl.classList.remove("hidden");
+    }
+    if (step55ControlsSlot && step55ControlsEl) {
+      step55ControlsSlot.appendChild(step55ControlsEl);
+      step55ControlsEl.classList.remove("hidden");
+    }
+    if (step8ControlsSlot && step8ControlsEl) {
+      step8ControlsSlot.appendChild(step8ControlsEl);
+      step8ControlsEl.classList.remove("hidden");
+      renderMatchSummaryUi();
+    }
+    pipelineStepsEl.querySelectorAll(".simple-scan-overlay-toggle").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const key = btn.getAttribute("data-overlay-key");
+        if (!key || !(key in stepOverlayVisibility)) return;
+        const nextVisible = !isOverlayVisible(key);
+        setOverlayVisible(key, nextVisible);
+        applyOverlayTransformUi(key);
+        btn.textContent = nextVisible ? "Show source" : "Show identified only";
+      });
+    });
+    const resetRemovedRegionsBtn = document.getElementById(
+      "simple-scan-reset-removed-regions"
+    ) as HTMLButtonElement | null;
+    const removeAllRegionsBtn = document.getElementById(
+      "simple-scan-remove-all-regions"
+    ) as HTMLButtonElement | null;
+    resetRemovedRegionsBtn?.addEventListener("click", () => {
+      excludedRegionIndexes.clear();
+      if (drawingState) renderProcessingOnlyView();
+    });
+    removeAllRegionsBtn?.addEventListener("click", () => {
+      (baselineRegions || []).forEach((_, idx) => excludedRegionIndexes.add(idx));
+      if (drawingState) renderProcessingOnlyView();
+    });
+    pipelineStepsEl.querySelectorAll(".simple-scan-remove-region-btn").forEach((btn) => {
+      btn.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const idx = Number(btn.getAttribute("data-remove-region-idx"));
+        if (!Number.isFinite(idx) || idx < 0) return;
+        excludedRegionIndexes.add(idx);
+        if (drawingState) renderProcessingOnlyView();
+      });
+    });
+    pipelineStepsEl.querySelectorAll(".simple-scan-region-remove-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const idx = Number(btn.getAttribute("data-region-remove-idx"));
+        if (!Number.isFinite(idx) || idx < 0) return;
+        excludedRegionIndexes.add(idx);
+        if (drawingState) renderProcessingOnlyView();
+      });
+    });
+    pipelineStepsEl.querySelectorAll(".simple-scan-region-readd-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const idx = Number(btn.getAttribute("data-region-readd-idx"));
+        if (!Number.isFinite(idx) || idx < 0) return;
+        excludedRegionIndexes.delete(idx);
+        if (drawingState) renderProcessingOnlyView();
+      });
+    });
+    pipelineStepsEl.querySelectorAll("[data-overlay-active-key]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const key = btn.getAttribute("data-overlay-active-key") || "";
+        if (!key) return;
+        activeStep1LayerKey = key;
+        step1LayerKeys.forEach((k) => applyOverlayTransformUi(k));
+      });
+    });
+    pipelineStepsEl.querySelectorAll("[data-overlay-scale-key]").forEach((input) => {
+      input.addEventListener("input", () => {
+        const key = input.getAttribute("data-overlay-scale-key");
+        if (!key) return;
+        const t = ensureOverlayTransform(key);
+        t.scale = clamp(Number((input as HTMLInputElement).value) / 100, 0.5, 2.6);
+        applyOverlayTransformUi(key);
+      });
+    });
+    pipelineStepsEl.querySelectorAll("[data-overlay-rotate-key]").forEach((input) => {
+      input.addEventListener("input", () => {
+        const key = input.getAttribute("data-overlay-rotate-key");
+        if (!key) return;
+        const t = ensureOverlayTransform(key);
+        t.rotationDeg = clamp(Number((input as HTMLInputElement).value), -180, 180);
+        applyOverlayTransformUi(key);
+      });
+    });
+    pipelineStepsEl.querySelectorAll("[data-overlay-x-key]").forEach((input) => {
+      input.addEventListener("input", () => {
+        const key = input.getAttribute("data-overlay-x-key");
+        if (!key) return;
+        const t = ensureOverlayTransform(key);
+        t.x = clamp(Number((input as HTMLInputElement).value), -600, 600);
+        applyOverlayTransformUi(key);
+      });
+    });
+    pipelineStepsEl.querySelectorAll("[data-overlay-y-key]").forEach((input) => {
+      input.addEventListener("input", () => {
+        const key = input.getAttribute("data-overlay-y-key");
+        if (!key) return;
+        const t = ensureOverlayTransform(key);
+        t.y = clamp(Number((input as HTMLInputElement).value), -600, 600);
+        applyOverlayTransformUi(key);
+      });
+    });
+    pipelineStepsEl.querySelectorAll("[data-overlay-opacity-key]").forEach((input) => {
+      input.addEventListener("input", () => {
+        const key = input.getAttribute("data-overlay-opacity-key");
+        if (!key) return;
+        const t = ensureOverlayTransform(key);
+        t.opacity = clamp(Number((input as HTMLInputElement).value) / 100, 0.15, 1);
+        applyOverlayTransformUi(key);
+      });
+    });
+    pipelineStepsEl.querySelectorAll("[data-overlay-reset-key]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const key = btn.getAttribute("data-overlay-reset-key");
+        if (!key) return;
+        resetOverlayTransform(key);
+        const scaleInput = pipelineStepsEl.querySelector(
+          `[data-overlay-scale-key="${key}"]`
+        ) as HTMLInputElement | null;
+        const rotateInput = pipelineStepsEl.querySelector(
+          `[data-overlay-rotate-key="${key}"]`
+        ) as HTMLInputElement | null;
+        const opacityInput = pipelineStepsEl.querySelector(
+          `[data-overlay-opacity-key="${key}"]`
+        ) as HTMLInputElement | null;
+        if (scaleInput) scaleInput.value = "100";
+        if (rotateInput) rotateInput.value = "0";
+        if (opacityInput) opacityInput.value = "100";
+        const xInput = pipelineStepsEl.querySelector(
+          `[data-overlay-x-key="${key}"]`
+        ) as HTMLInputElement | null;
+        const yInput = pipelineStepsEl.querySelector(
+          `[data-overlay-y-key="${key}"]`
+        ) as HTMLInputElement | null;
+        if (xInput) xInput.value = "0";
+        if (yInput) yInput.value = "0";
+        applyOverlayTransformUi(key);
+      });
+    });
+    const step1ActiveLayerSelect = document.getElementById(
+      "simple-scan-step1-active-layer"
+    ) as HTMLSelectElement | null;
+    step1ActiveLayerSelect?.addEventListener("change", () => {
+      const key = step1ActiveLayerSelect.value || "";
+      if (!key) return;
+      activeStep1LayerKey = key;
+      step1LayerKeys.forEach((k) => applyOverlayTransformUi(k));
+    });
+    if (step1LayerKeys.length > 0) {
+      step1LayerKeys.forEach((k) => applyOverlayTransformUi(k));
+    }
+    pipelineStepsEl.querySelectorAll(".simple-scan-overlay-layer").forEach((layer) => {
+      layer.addEventListener("wheel", (event) => {
+        const key = layer.getAttribute("data-overlay-key");
+        if (!key || !key.startsWith("step1-r")) return;
+        event.preventDefault();
+        activeStep1LayerKey = key;
+        const t = ensureOverlayTransform(key);
+        if ((event as WheelEvent).shiftKey) {
+          t.rotationDeg = clamp(t.rotationDeg + (event as WheelEvent).deltaY * 0.12, -180, 180);
+        } else {
+          const factor = Math.exp(-(event as WheelEvent).deltaY * 0.0015);
+          t.scale = clamp(t.scale * factor, 0.45, 3.2);
+        }
+        step1LayerKeys.forEach((k) => applyOverlayTransformUi(k));
+      });
+      layer.addEventListener("pointerdown", (event) => {
+        const targetEl = event.target as HTMLElement | null;
+        if (targetEl?.closest("button, input, select, textarea, a, label")) return;
+        const key = layer.getAttribute("data-overlay-key");
+        if (!key) return;
+        if (!key.startsWith("step1-r")) return;
+        activeStep1LayerKey = key;
+        step1LayerKeys.forEach((k) => applyOverlayTransformUi(k));
+        const pointerEvent = event as PointerEvent;
+        const t = ensureOverlayTransform(key);
+        overlayDragState = {
+          key,
+          startX: pointerEvent.clientX,
+          startY: pointerEvent.clientY,
+          baseX: t.x,
+          baseY: t.y,
+        };
+        (layer as HTMLElement).setPointerCapture(pointerEvent.pointerId);
+        pointerEvent.preventDefault();
+      });
+    });
+  }
+
+  function stopPlayback() {
+    if (traceTimer !== null) {
+      window.clearInterval(traceTimer);
+      traceTimer = null;
+    }
+  }
+
+  function buildGridFromMask(mask, width, height, comp, gridSize = BASE_GRID_SIZE) {
+    const grid = new Array(gridSize * gridSize).fill(0);
+    for (let gy = 0; gy < gridSize; gy += 1) {
+      const y0 = comp.y + Math.floor((gy / gridSize) * comp.h);
+      const y1 = comp.y + Math.floor(((gy + 1) / gridSize) * comp.h);
+      for (let gx = 0; gx < gridSize; gx += 1) {
+        const x0 = comp.x + Math.floor((gx / gridSize) * comp.w);
+        const x1 = comp.x + Math.floor(((gx + 1) / gridSize) * comp.w);
+        let on = 0;
+        let total = 0;
+        for (let y = y0; y <= Math.max(y0, y1 - 1); y += 1) {
+          if (y < 0 || y >= height) continue;
+          for (let x = x0; x <= Math.max(x0, x1 - 1); x += 1) {
+            if (x < 0 || x >= width) continue;
+            total += 1;
+            if (mask[y * width + x]) on += 1;
+          }
+        }
+        grid[gy * gridSize + gx] = total > 0 ? on / total : 0;
+      }
+    }
+    return grid;
+  }
+
+  function scoreGridSimilarity(a, b) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length || a.length === 0) return 0;
+    let diffSum = 0;
+    for (let i = 0; i < a.length; i += 1) diffSum += Math.abs(a[i] - b[i]);
+    return clamp(1 - diffSum / a.length, 0, 1);
+  }
+
+  function buildPolarDetailProfile(mask, width, height, comp, bins = DETAIL_BINS) {
+    const profile = new Array(bins).fill(0);
+    const cx = comp.x + comp.w / 2;
+    const cy = comp.y + comp.h / 2;
+    const maxR = Math.max(1, Math.min(comp.w, comp.h) / 2);
+    const xStart = Math.max(0, comp.x);
+    const yStart = Math.max(0, comp.y);
+    const xEnd = Math.min(width - 1, comp.x + comp.w - 1);
+    const yEnd = Math.min(height - 1, comp.y + comp.h - 1);
+    for (let y = yStart; y <= yEnd; y += 1) {
+      for (let x = xStart; x <= xEnd; x += 1) {
+        const p = y * width + x;
+        if (!mask[p]) continue;
+        const dx = x + 0.5 - cx;
+        const dy = y + 0.5 - cy;
+        const radiusNorm = Math.hypot(dx, dy) / maxR;
+        if (radiusNorm < 0.45 || radiusNorm > 1.08) continue;
+        const theta = Math.atan2(dy, dx);
+        const norm = theta < 0 ? theta + Math.PI * 2 : theta;
+        const bin = clamp(Math.floor((norm / (Math.PI * 2)) * bins), 0, bins - 1);
+        profile[bin] += 1;
+      }
+    }
+    const maxVal = profile.reduce((m, v) => Math.max(m, v), 0);
+    if (maxVal > 0) for (let i = 0; i < bins; i += 1) profile[i] /= maxVal;
+    return profile;
+  }
+
+  function buildMachinePreviewDataUrl(imageData, mask, width, height, comp) {
+    const preview = document.createElement("canvas");
+    const size = 260;
+    preview.width = size;
+    preview.height = size;
+    const ctx = preview.getContext("2d");
+    if (!ctx) return "";
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, size, size);
+    const bw = Math.max(1, comp.w);
+    const bh = Math.max(1, comp.h);
+    const scale = Math.min((size - 12) / bw, (size - 12) / bh);
+    const dw = Math.max(1, Math.floor(bw * scale));
+    const dh = Math.max(1, Math.floor(bh * scale));
+    const ox = Math.floor((size - dw) / 2);
+    const oy = Math.floor((size - dh) / 2);
+    const srcCanvas = document.createElement("canvas");
+    srcCanvas.width = imageData.width;
+    srcCanvas.height = imageData.height;
+    const srcCtx = srcCanvas.getContext("2d", { willReadFrequently: true });
+    if (!srcCtx) return "";
+    srcCtx.putImageData(imageData, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(srcCanvas, comp.x, comp.y, bw, bh, ox, oy, dw, dh);
+
+    const maskCanvas = document.createElement("canvas");
+    maskCanvas.width = bw;
+    maskCanvas.height = bh;
+    const maskCtx = maskCanvas.getContext("2d");
+    if (!maskCtx) return preview.toDataURL("image/png");
+    const maskImageData = maskCtx.createImageData(bw, bh);
+    for (let my = 0; my < bh; my += 1) {
+      for (let mx = 0; mx < bw; mx += 1) {
+        const sx = comp.x + mx;
+        const sy = comp.y + my;
+        const on = sx >= 0 && sy >= 0 && sx < width && sy < height ? mask[sy * width + sx] : 0;
+        const idx = (my * bw + mx) * 4;
+        if (on) {
+          maskImageData.data[idx] = 0;
+          maskImageData.data[idx + 1] = 0;
+          maskImageData.data[idx + 2] = 0;
+          maskImageData.data[idx + 3] = 255;
+        } else {
+          maskImageData.data[idx + 3] = 0;
+        }
+      }
+    }
+    maskCtx.putImageData(maskImageData, 0, 0);
+    ctx.globalAlpha = 0.65;
+    ctx.drawImage(maskCanvas, 0, 0, bw, bh, ox, oy, dw, dh);
+    ctx.globalAlpha = 1;
+    return preview.toDataURL("image/png");
+  }
+
+  function renderTraceFrame(index: number) {
+    if (!traceFrames.length) {
+      setPreviewSrc(templatePreviewEl, "");
+      setPreviewSrc(machinePreviewEl, "");
+      if (frameMetaEl) frameMetaEl.textContent = "Frame: none";
+      if (machineVoteEl) {
+        machineVoteEl.textContent = "-";
+        machineVoteEl.classList.remove(
+          "border-emerald-500",
+          "bg-emerald-100",
+          "text-emerald-700",
+          "dark:bg-emerald-900/30",
+          "dark:text-emerald-300",
+          "border-red-500",
+          "bg-red-100",
+          "text-red-700",
+          "dark:bg-red-900/30",
+          "dark:text-red-300"
+        );
+      }
+      traceCursor = -1;
+      return;
+    }
+    const safeIndex = clamp(index, 0, traceFrames.length - 1);
+    traceCursor = safeIndex;
+    const frame = traceFrames[safeIndex];
+    setPreviewSrc(templatePreviewEl, frame.templateUrl || "");
+    setPreviewSrc(machinePreviewEl, frame.machinePreview || "");
+    if (machineVoteEl) {
+      const accepted = Boolean(frame.accepted);
+      machineVoteEl.textContent = accepted ? "👍" : "👎";
+      machineVoteEl.classList.toggle("border-emerald-500", accepted);
+      machineVoteEl.classList.toggle("bg-emerald-100", accepted);
+      machineVoteEl.classList.toggle("text-emerald-700", accepted);
+      machineVoteEl.classList.toggle("dark:bg-emerald-900/30", accepted);
+      machineVoteEl.classList.toggle("dark:text-emerald-300", accepted);
+      machineVoteEl.classList.toggle("border-red-500", !accepted);
+      machineVoteEl.classList.toggle("bg-red-100", !accepted);
+      machineVoteEl.classList.toggle("text-red-700", !accepted);
+      machineVoteEl.classList.toggle("dark:bg-red-900/30", !accepted);
+      machineVoteEl.classList.toggle("dark:text-red-300", !accepted);
+    }
+    if (frameMetaEl) {
+      const runnerUp =
+        frame.secondLabel && Number.isFinite(frame.secondScore)
+          ? ` - 2nd ${frame.secondLabel} ${(frame.secondScore * 100).toFixed(1)}%`
+          : "";
+      frameMetaEl.textContent =
+        `Frame ${safeIndex + 1}/${traceFrames.length} - ` +
+        `${frame.label} - Score ${(frame.score * 100).toFixed(1)}% - ` +
+        `Detail ${((frame.detail || 0) * 100).toFixed(1)}% - ` +
+        `Overlap ${((frame.puzzle || 0) * 100).toFixed(1)}% - ` +
+        `${frame.accepted ? "accepted" : frame.ambiguous ? "ambiguous reject" : "rejected"}${runnerUp}`;
+    }
+  }
+
+  function stepTrace(nextOffset = 1) {
+    if (!traceFrames.length) return;
+    const start = traceCursor < 0 ? 0 : traceCursor;
+    renderTraceFrame(clamp(start + nextOffset, 0, traceFrames.length - 1));
+  }
+
+  function startPlayback() {
+    if (!traceFrames.length) return;
+    stopPlayback();
+    if (traceCursor < 0) renderTraceFrame(0);
+    traceTimer = window.setInterval(() => {
+      if (traceCursor >= traceFrames.length - 1) {
+        stopPlayback();
+        return;
+      }
+      stepTrace(1);
+    }, 500);
+  }
+
+  function imageToNeutralMask(imageData) {
+    const { width, height, data } = imageData;
+    const mask = new Uint8Array(width * height);
+    for (let i = 0, p = 0; p < mask.length; p += 1, i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const a = data[i + 3];
+      const gray = r * 0.299 + g * 0.587 + b * 0.114;
+      const spread = Math.max(r, g, b) - Math.min(r, g, b);
+      mask[p] = gray < 210 && a > 20 && spread < 42 ? 1 : 0;
+    }
+    return mask;
+  }
+
+  function imageToRegionSeedMask(imageData) {
+    const { width, height, data } = imageData;
+    const mask = new Uint8Array(width * height);
+    for (let i = 0, p = 0; p < mask.length; p += 1, i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const a = data[i + 3];
+      const gray = r * 0.299 + g * 0.587 + b * 0.114;
+      const spread = Math.max(r, g, b) - Math.min(r, g, b);
+      // Gentler region seed so we do not over-flatten like neutral-ink masking.
+      mask[p] = gray < 244 && a > 6 && spread < 88 ? 1 : 0;
+    }
+    return mask;
+  }
+
+  function passesBlackColorGate(comp, imageData, mask, width, height) {
+    let blackLike = 0;
+    let considered = 0;
+    const xStart = Math.max(0, comp.x);
+    const yStart = Math.max(0, comp.y);
+    const xEnd = Math.min(width - 1, comp.x + comp.w - 1);
+    const yEnd = Math.min(height - 1, comp.y + comp.h - 1);
+    for (let y = yStart; y <= yEnd; y += 1) {
+      for (let x = xStart; x <= xEnd; x += 1) {
+        const p = y * width + x;
+        if (!mask[p]) continue;
+        const i = p * 4;
+        const r = imageData.data[i];
+        const g = imageData.data[i + 1];
+        const b = imageData.data[i + 2];
+        const a = imageData.data[i + 3];
+        if (a < 16) continue;
+        considered += 1;
+        const luma = r * 0.299 + g * 0.587 + b * 0.114;
+        const spread = Math.max(r, g, b) - Math.min(r, g, b);
+        if (luma <= runtimeBlackInkMaxLuma && spread <= runtimeBlackInkMaxSpread) blackLike += 1;
+      }
+    }
+    if (considered < 8) return false;
+    return blackLike / considered >= runtimeBlackInkMinRatio;
+  }
+
+  function countEdgeInk(mask, width, height, comp, edge) {
+    let count = 0;
+    const xStart = Math.max(0, comp.x);
+    const yStart = Math.max(0, comp.y);
+    const xEnd = Math.min(width - 1, comp.x + comp.w - 1);
+    const yEnd = Math.min(height - 1, comp.y + comp.h - 1);
+    if (xStart > xEnd || yStart > yEnd) return 0;
+    if (edge === "top") {
+      const y = yStart;
+      for (let x = xStart; x <= xEnd; x += 1) if (mask[y * width + x]) count += 1;
+      return count;
+    }
+    if (edge === "bottom") {
+      const y = yEnd;
+      for (let x = xStart; x <= xEnd; x += 1) if (mask[y * width + x]) count += 1;
+      return count;
+    }
+    if (edge === "left") {
+      const x = xStart;
+      for (let y = yStart; y <= yEnd; y += 1) if (mask[y * width + x]) count += 1;
+      return count;
+    }
+    const x = xEnd;
+    for (let y = yStart; y <= yEnd; y += 1) if (mask[y * width + x]) count += 1;
+    return count;
+  }
+
+  function countBoxInk(mask, width, height, comp) {
+    let area = 0;
+    const xStart = Math.max(0, comp.x);
+    const yStart = Math.max(0, comp.y);
+    const xEnd = Math.min(width - 1, comp.x + comp.w - 1);
+    const yEnd = Math.min(height - 1, comp.y + comp.h - 1);
+    for (let y = yStart; y <= yEnd; y += 1) {
+      const row = y * width;
+      for (let x = xStart; x <= xEnd; x += 1) if (mask[row + x]) area += 1;
+    }
+    return area;
+  }
+
+  function trimComponentToDenseCore(comp, mask, width, height) {
+    let out = { ...comp };
+    const maxTrimSteps = 14;
+    for (let step = 0; step < maxTrimSteps; step += 1) {
+      if (out.w < 6 || out.h < 6) break;
+      const topInk = countEdgeInk(mask, width, height, out, "top");
+      const bottomInk = countEdgeInk(mask, width, height, out, "bottom");
+      const leftInk = countEdgeInk(mask, width, height, out, "left");
+      const rightInk = countEdgeInk(mask, width, height, out, "right");
+      const topDensity = topInk / Math.max(1, out.w);
+      const bottomDensity = bottomInk / Math.max(1, out.w);
+      const leftDensity = leftInk / Math.max(1, out.h);
+      const rightDensity = rightInk / Math.max(1, out.h);
+      let changed = false;
+
+      if (topDensity <= 0.09 && bottomDensity >= topDensity * 2.2) {
+        out = { ...out, y: out.y + 1, h: out.h - 1 };
+        changed = true;
+      }
+      if (bottomDensity <= 0.09 && topDensity >= bottomDensity * 2.2 && out.h > 5) {
+        out = { ...out, h: out.h - 1 };
+        changed = true;
+      }
+      if (leftDensity <= 0.09 && rightDensity >= leftDensity * 2.2 && out.w > 5) {
+        out = { ...out, x: out.x + 1, w: out.w - 1 };
+        changed = true;
+      }
+      if (rightDensity <= 0.09 && leftDensity >= rightDensity * 2.2 && out.w > 5) {
+        out = { ...out, w: out.w - 1 };
+        changed = true;
+      }
+      if (!changed) break;
+    }
+    if (out.w < 5 || out.h < 5) return null;
+    out.area = countBoxInk(mask, width, height, out);
+    if (out.area < 8) return null;
+    return out;
+  }
+
+  function passesCandidateShapeGate(comp, templateMinDiameter, templateMaxDiameter) {
+    const w = Math.max(1, comp.w);
+    const h = Math.max(1, comp.h);
+    const aspect = w / h;
+    if (aspect < CANDIDATE_MIN_ASPECT || aspect > CANDIDATE_MAX_ASPECT) return false;
+    const fill = comp.area / Math.max(1, w * h);
+    if (fill < CANDIDATE_MIN_FILL || fill > CANDIDATE_MAX_FILL) return false;
+    const diam = Math.min(w, h);
+    if (Number.isFinite(templateMinDiameter) && Number.isFinite(templateMaxDiameter)) {
+      const minAllowed = Math.max(3, templateMinDiameter * 0.5);
+      const maxAllowed = Math.max(minAllowed + 3, templateMaxDiameter * 1.8);
+      if (diam < minAllowed || diam > maxAllowed) return false;
+    }
+    return true;
+  }
+
+  function getComponents(mask, width, height, minArea = 18, maxArea = 999999) {
+    const visited = new Uint8Array(width * height);
+    const qx = new Int32Array(width * height);
+    const qy = new Int32Array(width * height);
+    const out = [];
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const start = y * width + x;
+        if (!mask[start] || visited[start]) continue;
+        let head = 0;
+        let tail = 0;
+        qx[tail] = x;
+        qy[tail] = y;
+        tail += 1;
+        visited[start] = 1;
+        let area = 0;
+        let minX = x;
+        let minY = y;
+        let maxX = x;
+        let maxY = y;
+        while (head < tail) {
+          const cx = qx[head];
+          const cy = qy[head];
+          head += 1;
+          area += 1;
+          if (cx < minX) minX = cx;
+          if (cy < minY) minY = cy;
+          if (cx > maxX) maxX = cx;
+          if (cy > maxY) maxY = cy;
+          for (let oy = -1; oy <= 1; oy += 1)
+            for (let ox = -1; ox <= 1; ox += 1) {
+              if (ox === 0 && oy === 0) continue;
+              const nx = cx + ox;
+              const ny = cy + oy;
+              if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+              const nidx = ny * width + nx;
+              if (!mask[nidx] || visited[nidx]) continue;
+              visited[nidx] = 1;
+              qx[tail] = nx;
+              qy[tail] = ny;
+              tail += 1;
+            }
+        }
+        if (area >= minArea && area <= maxArea)
+          out.push({ x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1, area });
+      }
+    }
+    return out;
+  }
+
+  function getMaskedByRegions(state, regions) {
+    if (!state || !Array.isArray(regions) || regions.length === 0) return state;
+    const masked = new Uint8Array(state.mask);
+    for (let y = 0; y < state.height; y += 1)
+      for (let x = 0; x < state.width; x += 1) {
+        if (!regions.some((r) => x >= r.x && y >= r.y && x < r.x + r.w && y < r.y + r.h))
+          masked[y * state.width + x] = 0;
+      }
+    return { ...state, mask: masked };
+  }
+
+  function buildRegionBoundsMask(width, height, regions) {
+    const mask = new Uint8Array(width * height);
+    if (!Array.isArray(regions) || regions.length === 0) return mask;
+    for (const r of regions) {
+      const x0 = clamp(Math.floor(r.x), 0, width - 1);
+      const y0 = clamp(Math.floor(r.y), 0, height - 1);
+      const x1 = clamp(Math.floor(r.x + r.w - 1), 0, width - 1);
+      const y1 = clamp(Math.floor(r.y + r.h - 1), 0, height - 1);
+      for (let y = y0; y <= y1; y += 1) {
+        const row = y * width;
+        for (let x = x0; x <= x1; x += 1) mask[row + x] = 1;
+      }
+    }
+    return mask;
+  }
+
+  function buildFullMask(width, height) {
+    const mask = new Uint8Array(width * height);
+    mask.fill(1);
+    return mask;
+  }
+
+  function subtractMask(baseMask, subtractingMask) {
+    const len = Math.min(baseMask?.length || 0, subtractingMask?.length || 0);
+    const out = new Uint8Array(len);
+    for (let i = 0; i < len; i += 1) out[i] = baseMask[i] && !subtractingMask[i] ? 1 : 0;
+    return out;
+  }
+
+  function extractBaselineRegions(state) {
+    if (!state) return [];
+    const { width, height, mask } = state;
+    const canvasArea = Math.max(1, width * height);
+    const comps = getComponents(mask, width, height, 18, canvasArea * 0.9);
+    if (comps.length === 0) return [];
+
+    const edgeMargin = Math.max(6, Math.round(Math.min(width, height) * 0.02));
+    const scored = [];
+    for (const c of comps) {
+      const bboxArea = c.w * c.h;
+      const bboxRatio = bboxArea / canvasArea;
+      if (bboxRatio < 0.015 || bboxRatio > 0.72) continue;
+      const aspect = c.w / Math.max(1, c.h);
+      if (aspect < 0.35 || aspect > 3.0) continue;
+      const inkRatio = c.area / Math.max(1, bboxArea);
+      if (inkRatio < 0.0015 || inkRatio > 0.24) continue;
+
+      const nearLeft = c.x <= edgeMargin;
+      const nearTop = c.y <= edgeMargin;
+      const nearRight = c.x + c.w >= width - edgeMargin;
+      const nearBottom = c.y + c.h >= height - edgeMargin;
+      const edgeTouchCount = [nearLeft, nearTop, nearRight, nearBottom].filter(Boolean).length;
+
+      const cx = c.x + c.w / 2;
+      const cy = c.y + c.h / 2;
+      const centerDist =
+        Math.hypot(cx - width / 2, cy - height / 2) /
+        Math.max(1, Math.hypot(width / 2, height / 2));
+      const centerBonus = 1 - clamp(centerDist, 0, 1);
+      const frameBonus = clamp(1 - Math.abs(inkRatio - 0.06) / 0.14, 0, 1);
+      const edgePenalty = edgeTouchCount >= 2 ? 0.22 : 0;
+      const score = bboxRatio * 1.1 + frameBonus * 0.35 + centerBonus * 0.2 - edgePenalty;
+
+      scored.push({ ...c, score });
+    }
+
+    scored.sort((a, b) => b.score - a.score);
+    const selected: Array<{ x: number; y: number; w: number; h: number }> = [];
+    for (const c of scored) {
+      const overlaps = selected.some((k) => {
+        const x0 = Math.max(c.x, k.x);
+        const y0 = Math.max(c.y, k.y);
+        const x1 = Math.min(c.x + c.w - 1, k.x + k.w - 1);
+        const y1 = Math.min(c.y + c.h - 1, k.y + k.h - 1);
+        if (x1 < x0 || y1 < y0) return false;
+        const inter = (x1 - x0 + 1) * (y1 - y0 + 1);
+        return inter / Math.max(1, Math.min(c.w * c.h, k.w * k.h)) > 0.58;
+      });
+      if (overlaps) continue;
+      const pad = Math.max(8, Math.round(Math.min(c.w, c.h) * 0.03));
+      selected.push({
+        x: clamp(c.x - pad, 0, width - 1),
+        y: clamp(c.y - pad, 0, height - 1),
+        w: clamp(c.w + pad * 2, 1, width),
+        h: clamp(c.h + pad * 2, 1, height),
+      });
+      if (selected.length >= 4) break;
+    }
+    return selected;
+  }
+
+  const detectTextLikeComponentIndexes = (comps) => {
+    const out = new Set<number>();
+    const valid = new Set<number>();
+    const neighbors = new Map<number, Set<number>>();
+    const cx = (c) => c.x + c.w / 2;
+    const cy = (c) => c.y + c.h / 2;
+    for (let i = 0; i < comps.length; i += 1) {
+      const c = comps[i];
+      if (!c) continue;
+      const longSide = Math.max(c.w, c.h);
+      const shortSide = Math.min(c.w, c.h);
+      if (longSide > 300 || shortSide > 110) continue;
+      valid.add(i);
+      neighbors.set(i, new Set<number>());
+    }
+    const linked = (a, b) => {
+      const aCx = cx(a);
+      const aCy = cy(a);
+      const bCx = cx(b);
+      const bCy = cy(b);
+      const gapX = Math.max(0, Math.max(a.x, b.x) - Math.min(a.x + a.w, b.x + b.w));
+      const gapY = Math.max(0, Math.max(a.y, b.y) - Math.min(a.y + a.h, b.y + b.h));
+      const hTol = Math.max(5, Math.min(a.h, b.h) * 1.05);
+      const wTol = Math.max(5, Math.min(a.w, b.w) * 1.05);
+      const baselineOk = Math.abs(aCy - bCy) <= hTol && gapX <= 30;
+      const columnOk = Math.abs(aCx - bCx) <= wTol && gapY <= 30;
+      const scaleRatio =
+        Math.max(Math.max(a.w, a.h), Math.max(b.w, b.h)) /
+        Math.max(1, Math.min(Math.max(a.w, a.h), Math.max(b.w, b.h)));
+      return (baselineOk || columnOk) && scaleRatio <= 4.0;
+    };
+    const validList = Array.from(valid);
+    for (let i = 0; i < validList.length; i += 1) {
+      const aIdx = validList[i];
+      const a = comps[aIdx];
+      for (let j = i + 1; j < validList.length; j += 1) {
+        const bIdx = validList[j];
+        const b = comps[bIdx];
+        if (!linked(a, b)) continue;
+        neighbors.get(aIdx)?.add(bIdx);
+        neighbors.get(bIdx)?.add(aIdx);
+      }
+    }
+    // Loose proximity targeting: if it's in a nearby alphanumeric group, treat as text.
+    validList.forEach((idx) => {
+      if ((neighbors.get(idx)?.size || 0) >= 1) out.add(idx);
+    });
+    // One-hop expansion catches partial glyph fragments next to confident text.
+    validList.forEach((idx) => {
+      if (out.has(idx)) return;
+      const nearText = Array.from(neighbors.get(idx) || []).some((n) => {
+        if (out.has(n)) return true;
+        return Array.from(neighbors.get(n) || []).some((m) => out.has(m));
+      });
+      if (!nearText) return;
+      const c = comps[idx];
+      const area = Number(c.area || 0);
+      if (area <= 3200) out.add(idx);
+    });
+    return out;
+  };
+
+  async function loadImageDataFromUrl(src: string): Promise<ImageData | null> {
+    return await new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement("canvas");
+        c.width = img.naturalWidth || img.width;
+        c.height = img.naturalHeight || img.height;
+        const x = c.getContext("2d", { willReadFrequently: true });
+        if (!x) return resolve(null);
+        x.drawImage(img, 0, 0);
+        resolve(x.getImageData(0, 0, c.width, c.height));
+      };
+      img.onerror = () => resolve(null);
+      img.src = String(src || "");
+    });
+  }
+
+  const signatureFromImageData = (d, gridSize = BASE_GRID_SIZE) => {
+    if (!d) return null;
+    const mask = imageToNeutralMask(d);
+    const comps = getComponents(mask, d.width, d.height, 8, d.width * d.height);
+    const c = comps.sort((a, b) => b.area - a.area)[0];
+    if (!c) return null;
+    return {
+      aspect: c.w / Math.max(1, c.h),
+      fill: c.area / Math.max(1, c.w * c.h),
+      diameter: Math.min(c.w, c.h),
+      grid: buildGridFromMask(mask, d.width, d.height, c, gridSize),
+      detailProfile: buildPolarDetailProfile(mask, d.width, d.height, c, DETAIL_BINS),
+    };
+  };
+
+  const scoreComponentVsTemplate = (comp, sig, compGrid, compDetail): MatchScore => {
+    if (!sig)
+      return {
+        totalScore: 0,
+        puzzleScore: 0,
+        detailScore: 0,
+        aspectScore: 0,
+        fillScore: 0,
+        diamScore: 0,
+      };
+    const aspect = comp.w / Math.max(1, comp.h);
+    const fill = comp.area / Math.max(1, comp.w * comp.h);
+    const diam = Math.min(comp.w, comp.h);
+    const aspectScore = clamp(1 - Math.abs(aspect - sig.aspect) / 0.55, 0, 1);
+    const fillScore = clamp(1 - Math.abs(fill - sig.fill) / 0.42, 0, 1);
+    const diamScore = clamp(
+      1 - Math.abs(diam - sig.diameter) / Math.max(8, sig.diameter * 0.7),
+      0,
+      1
+    );
+    const puzzleScore = scoreGridSimilarity(compGrid, sig.grid);
+    const detailScore = scoreGridSimilarity(compDetail, sig.detailProfile || []);
+    const totalScore =
+      puzzleScore * 0.52 +
+      detailScore * 0.28 +
+      aspectScore * 0.1 +
+      fillScore * 0.05 +
+      diamScore * 0.05;
+    return { totalScore, puzzleScore, detailScore, aspectScore, fillScore, diamScore };
+  };
+
+  async function getTemplateSignature(item, gridSize = BASE_GRID_SIZE) {
+    const key = `${item.fileName}|${item.imageUrl}|${item.rawImageUrl || ""}|g:${gridSize}`;
+    if (templateSignatureCache.has(key)) return templateSignatureCache.get(key);
+    let d = await loadImageDataFromUrl(item.imageUrl);
+    if (!d && item.rawImageUrl) d = await loadImageDataFromUrl(item.rawImageUrl);
+    const sig = signatureFromImageData(d, gridSize);
+    templateSignatureCache.set(key, sig);
+    return sig;
+  }
+
+  function drawOverlay() {
+    const ctx = getCtx();
+    if (!ctx || !drawingState) return;
+    ctx.putImageData(drawingState.imageData, 0, 0);
+    ctx.lineWidth = 2;
+    baselineRegions.forEach((r, idx) => {
+      const excluded = excludedRegionIndexes.has(idx);
+      ctx.strokeStyle = excluded ? "rgba(239,68,68,0.95)" : "rgba(56,189,248,0.95)";
+      ctx.strokeRect(r.x, r.y, r.w, r.h);
+      if (excluded) {
+        ctx.beginPath();
+        ctx.moveTo(r.x + 3, r.y + 3);
+        ctx.lineTo(r.x + r.w - 3, r.y + r.h - 3);
+        ctx.moveTo(r.x + r.w - 3, r.y + 3);
+        ctx.lineTo(r.x + 3, r.y + r.h - 3);
+        ctx.stroke();
+      }
+    });
+    detections.forEach((d) => {
+      ctx.strokeStyle = d.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, Math.max(6, Number(d.radius || 8)), 0, Math.PI * 2);
+      ctx.stroke();
+    });
+    if (step55Mode !== "off" || step55SelectedEndpoint) {
+      step55Endpoints.forEach((ep) => {
+        ctx.fillStyle = "rgba(34,211,238,0.92)";
+        ctx.beginPath();
+        ctx.arc(ep.x, ep.y, 3.4, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      if (step55SelectedEndpoint) {
+        ctx.strokeStyle = "rgba(250,204,21,0.98)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(step55SelectedEndpoint.x, step55SelectedEndpoint.y, 7, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+  }
+
+  async function renderProcessingOnlyView() {
+    if (!drawingState) return;
+    const renderToken = ++processingRenderToken;
+    stopPlayback();
+    traceFrames = [];
+    traceCursor = -1;
+    renderTraceFrame(-1);
+    detections = [];
+    matchSummary = null;
+    renderMatchSummaryUi();
+    if (!baselineRegions.length) baselineRegions = extractBaselineRegions(drawingState);
+    const { regionsSource, selectedRegions, selectedRegionIndexes } =
+      getActiveRegionSelection(drawingState);
+    const selectedState = getMaskedByRegions(drawingState, selectedRegions);
+    const step2BoundsMask = buildRegionBoundsMask(
+      drawingState.width,
+      drawingState.height,
+      selectedRegions
+    );
+    const fullCanvasMask = buildFullMask(drawingState.width, drawingState.height);
+    const selectedComps = getComponents(
+      selectedState.mask,
+      selectedState.width,
+      selectedState.height,
+      LINE_COMPONENT_MIN_AREA,
+      20000
+    );
+    const step3AllowedMask = layerFlowState.step2ToStep3 ? step2BoundsMask : fullCanvasMask;
+    const colorLineInfo = detectColoredPixelsWithinAllowedMask(
+      drawingState.imageData,
+      step3AllowedMask
+    );
+    const colorLineDeltaMask = colorLineInfo.colorMask;
+    colorLineCandidatePool = [];
+    let step4InputMask = layerFlowState.step2ToStep4
+      ? new Uint8Array(selectedState.mask)
+      : fullCanvasMask;
+    if (layerFlowState.step3ExcludeFromStep4) {
+      step4InputMask = subtractMask(step4InputMask, colorLineInfo.colorMask);
+    }
+    const lineInputCompsStep4 = getComponents(
+      step4InputMask,
+      drawingState.width,
+      drawingState.height,
+      LINE_COMPONENT_MIN_AREA,
+      20000
+    );
+    const hairlineInfo = HAIRLINE_STEP_PAUSED
+      ? {
+          hairlineMask: new Uint8Array(step4InputMask.length),
+          hairlineCount: 0,
+          nsPixels: 0,
+          ewPixels: 0,
+          combinedPixels: 0,
+          nsMinRun: HAIRLINE_NS_MIN_RUN,
+          ewMinRun: HAIRLINE_EW_MIN_RUN,
+          maxThickness: runtimeHairlineMaxThickness,
+          maxGap: HAIRLINE_MAX_GAP,
+          fallbackMinInkStrength: runtimeHairlineMinInkStrength,
+          fallbackMaxSpread: HAIRLINE_FALLBACK_MAX_SPREAD,
+        }
+      : detectHairlineMaskOrthogonalPasses(
+          step4InputMask,
+          drawingState.imageData,
+          drawingState.width,
+          drawingState.height
+        );
+    const hairlineRemovedMask = HAIRLINE_STEP_PAUSED
+      ? new Uint8Array(step4InputMask)
+      : subtractMask(step4InputMask, hairlineInfo.hairlineMask);
+    const hairlineRemovedDeltaMask = diffRemovedMask(step4InputMask, hairlineRemovedMask);
+
+    const lineInputComps = getComponents(
+      hairlineRemovedMask,
+      drawingState.width,
+      drawingState.height,
+      LINE_COMPONENT_MIN_AREA,
+      20000
+    );
+    const lineInfo = detectLineAndDashedComponentIndexes(
+      lineInputComps,
+      hairlineRemovedMask,
+      drawingState.width,
+      drawingState.height,
+      selectedRegions
+    );
+    const step5Indexes = new Set<number>([
+      ...Array.from(lineInfo.dashedIndexes || []),
+      ...Array.from(lineInfo.junctionIndexes || []),
+    ]);
+    const invalidRemoved = Array.from(step55RemovedIndexes).filter((idx) => !step5Indexes.has(idx));
+    invalidRemoved.forEach((idx) => step55RemovedIndexes.delete(idx));
+    const step5EditedIndexes = new Set<number>(
+      Array.from(step5Indexes).filter((idx) => !step55RemovedIndexes.has(idx))
+    );
+    const step5EditedDashedIndexes = new Set<number>(
+      Array.from(lineInfo.dashedIndexes || []).filter((idx) => step5EditedIndexes.has(idx))
+    );
+    const step5EditedJunctionIndexes = new Set<number>(
+      Array.from(lineInfo.junctionIndexes || []).filter((idx) => step5EditedIndexes.has(idx))
+    );
+    rebuildStep55InteractiveGeometry(lineInputComps, step5EditedIndexes);
+    const dashedLinearCandidates = (lineInfo.dashedLineSegments || [])
+      .filter((seg) => step5EditedDashedIndexes.has(Number(seg.idx)))
+      .map((seg) => {
+        const w = Math.abs(seg.x1 - seg.x0) + 1;
+        const h = Math.abs(seg.y1 - seg.y0) + 1;
+        const widthPx = Math.max(1, Number(seg.thickness || 1));
+        const lengthPx = Math.max(w, h);
+        const orientation = seg.horizontal ? "horizontal" : "vertical";
+        const widthBand = widthPx <= 3 ? "thin" : widthPx <= 7 ? "medium" : "thick";
+        return {
+          idx: Number(seg.idx),
+          x: Math.min(seg.x0, seg.x1),
+          y: Math.min(seg.y0, seg.y1),
+          w,
+          h,
+          area: w * h,
+          style: "dashed-linear",
+          orientation,
+          widthPx,
+          lengthPx,
+          widthBand,
+          offAxisDeg: 0,
+        };
+      });
+    const junctionCandidates = lineInputComps
+      .map((c, idx) => ({ c, idx }))
+      .filter((x) => step5EditedJunctionIndexes.has(x.idx))
+      .map(({ c, idx }) => {
+        const widthPx = Math.min(c.w, c.h);
+        const lengthPx = Math.max(c.w, c.h);
+        const orientation = c.w >= c.h ? "horizontal" : "vertical";
+        const style = "junction";
+        const widthBand = widthPx <= 3 ? "thin" : widthPx <= 7 ? "medium" : "thick";
+        const offAxisDeg = Number(lineInfo.axisMetaByIndex.get(idx) || 0);
+        return {
+          idx,
+          x: c.x,
+          y: c.y,
+          w: c.w,
+          h: c.h,
+          area: c.area,
+          style,
+          orientation,
+          widthPx,
+          lengthPx,
+          widthBand,
+          offAxisDeg,
+        };
+      });
+    lineCandidatePool = [...dashedLinearCandidates, ...junctionCandidates];
+    const dashedLinearMask = lineSegmentsToMask(
+      (lineInfo.dashedLineSegments || [])
+        .filter((seg) => step5EditedDashedIndexes.has(Number(seg.idx)))
+        .map((seg) => ({
+          x0: seg.x0,
+          y0: seg.y0,
+          x1: seg.x1,
+          y1: seg.y1,
+          thickness: seg.thickness,
+        })),
+      drawingState.width,
+      drawingState.height
+    );
+    const junctionRemovedMask = removeComponentBoxesFromMask(
+      hairlineRemovedMask,
+      drawingState.width,
+      drawingState.height,
+      lineInputComps,
+      step5EditedJunctionIndexes
+    );
+    const lineRemovedMaskBase = subtractMask(junctionRemovedMask, dashedLinearMask);
+    const dashLoopClosureMask = lineSegmentsToMask(
+      lineInfo.loopClosureSegments,
+      drawingState.width,
+      drawingState.height
+    );
+    const manualConnectionMask = lineSegmentsToMask(
+      step55AddedSegments,
+      drawingState.width,
+      drawingState.height
+    );
+    const lineRemovedMask = subtractMask(
+      subtractMask(lineRemovedMaskBase, dashLoopClosureMask),
+      manualConnectionMask
+    );
+    const lineRemovedDeltaMask = diffRemovedMask(hairlineRemovedMask, lineRemovedMask);
+    const step6InputComps = getComponents(
+      lineRemovedMask,
+      drawingState.width,
+      drawingState.height,
+      LINE_COMPONENT_MIN_AREA,
+      20000
+    );
+    const dashShieldMask = dilateMask(dashedLinearMask, drawingState.width, drawingState.height, 2);
+    const componentOverlapsMask = (comp, testMask, minRatio = 0.08) => {
+      if (!comp || !testMask) return false;
+      const x0 = Math.max(0, comp.x);
+      const y0 = Math.max(0, comp.y);
+      const x1 = Math.min(drawingState.width - 1, comp.x + comp.w - 1);
+      const y1 = Math.min(drawingState.height - 1, comp.y + comp.h - 1);
+      let overlap = 0;
+      const area = Math.max(1, (x1 - x0 + 1) * (y1 - y0 + 1));
+      for (let y = y0; y <= y1; y += 1) {
+        const row = y * drawingState.width;
+        for (let x = x0; x <= x1; x += 1) {
+          if (testMask[row + x]) overlap += 1;
+        }
+      }
+      return overlap / area >= minRatio;
+    };
+    const residualLineInfo = detectLineAndDashedComponentIndexes(
+      step6InputComps,
+      lineRemovedMask,
+      drawingState.width,
+      drawingState.height,
+      selectedRegions
+    );
+    const residualLinearIndexes = new Set<number>(Array.from(residualLineInfo.indexes || []));
+    const residualDashShieldedIndexes = new Set<number>();
+    step6InputComps.forEach((c, idx) => {
+      if (componentOverlapsMask(c, dashShieldMask, 0.08)) residualDashShieldedIndexes.add(idx);
+    });
+    const ocrStep6 = useOcrTextDetection
+      ? await detectTextLikeComponentIndexesOcr(
+          step6InputComps,
+          drawingState.imageData,
+          lineRemovedMask,
+          drawingState.width,
+          drawingState.height,
+          renderToken
+        )
+      : { indexes: new Set<number>(), boxes: 0, words: 0 };
+    if (renderToken !== processingRenderToken) return;
+    const textLikeRaw = useOcrTextDetection
+      ? ocrStep6.indexes
+      : detectTextLikeComponentIndexes(step6InputComps);
+    const textLikeIndexes = new Set<number>(
+      Array.from(textLikeRaw).filter(
+        (idx) => !residualLinearIndexes.has(idx) && !residualDashShieldedIndexes.has(idx)
+      )
+    );
+    const step6LinearShieldedCount = Math.max(0, textLikeRaw.size - textLikeIndexes.size);
+    const step6DashShieldedCount = residualDashShieldedIndexes.size;
+    const textRemovedMask = removeComponentBoxesFromMask(
+      lineRemovedMask,
+      drawingState.width,
+      drawingState.height,
+      step6InputComps,
+      textLikeIndexes
+    );
+    const textRemovedDeltaMask = diffRemovedMask(lineRemovedMask, textRemovedMask);
+    const lineWidthStats =
+      lineCandidatePool.length > 0
+        ? {
+            min: Math.min(...lineCandidatePool.map((x) => x.widthPx)),
+            max: Math.max(...lineCandidatePool.map((x) => x.widthPx)),
+            avg:
+              lineCandidatePool.reduce((sum, x) => sum + x.widthPx, 0) /
+              Math.max(1, lineCandidatePool.length),
+          }
+        : { min: 0, max: 0, avg: 0 };
+    const widthBandCounts = lineCandidatePool.reduce(
+      (acc, x) => {
+        acc[x.widthBand] += 1;
+        return acc;
+      },
+      { thin: 0, medium: 0, thick: 0 }
+    );
+    const pipelinePayload = {
+      sourceImageData: drawingState.imageData,
+      step3SourceMask: step3AllowedMask,
+      step4SourceMask: step4InputMask,
+      step5SourceMask: hairlineRemovedMask,
+      step6SourceMask: lineRemovedMask,
+      step7SourceMask: textRemovedMask,
+      colorLineDeltaMask,
+      colorPixelCount: colorLineInfo.coloredPixelCount,
+      hairlineRemovedDeltaMask,
+      hairlineRemovedCount: hairlineInfo.hairlineCount,
+      hairlineWidthThreshold: hairlineInfo.maxThickness,
+      lineRemovedDeltaMask,
+      lineDashedCount: lineInfo.dashedCount,
+      lineJunctionCount: lineInfo.junctionCount,
+      lineMagneticSeedCount: lineInfo.magneticSeedCount,
+      lineLoopClosedCount: lineInfo.loopClosedClusterCount,
+      textRemovedDeltaMask,
+      textRemovedCount: textLikeIndexes.size,
+      regions: regionsSource,
+      selectedRegions,
+      selectedRegionIndexes,
+      matchSummary,
+      matchDetections: detections,
+    };
+    lastPipelineSnapshot = pipelinePayload;
+    renderPipelineSteps(pipelinePayload);
+    drawOverlay();
+    if (resultsEl)
+      resultsEl.textContent = JSON.stringify(
+        {
+          mode: "processing-only",
+          maxRegionsToScan: MAX_REGIONS_TO_SCAN,
+          regionsDetected: baselineRegions.length,
+          regionsSelected: selectedRegions.length,
+          selectedComponents: selectedComps.length,
+          layerFlowState,
+          step4HairlinePaused: HAIRLINE_STEP_PAUSED,
+          colorPixelsIdentified: colorLineInfo.coloredPixelCount,
+          colorLineMinLuma: COLOR_LINE_MIN_LUMA,
+          colorLineMinSpread: runtimeColorLineMinSpread,
+          colorLineCandidatePoolCount: colorLineCandidatePool.length,
+          colorLineCandidatePoolPreview: colorLineCandidatePool.slice(0, 24),
+          componentsAfterColorLineStage: lineInputCompsStep4.length,
+          step4HairlineRemovedCount: hairlineInfo.hairlineCount,
+          step4HairlineNsPixels: hairlineInfo.nsPixels,
+          step4HairlineEwPixels: hairlineInfo.ewPixels,
+          step4HairlineCombinedPixels: hairlineInfo.combinedPixels,
+          step4HairlineNsMinRun: hairlineInfo.nsMinRun,
+          step4HairlineEwMinRun: hairlineInfo.ewMinRun,
+          step4HairlineMaxThickness: hairlineInfo.maxThickness,
+          step4HairlineMinRun: runtimeHairlineMinRun,
+          step4HairlineMinSegmentLength: runtimeHairlineComponentMinLongSide,
+          step4HairlineMaxGap: hairlineInfo.maxGap,
+          step4HairlineFallbackMinInkStrength: hairlineInfo.fallbackMinInkStrength,
+          step4HairlineFallbackMaxSpread: hairlineInfo.fallbackMaxSpread,
+          dashedLayerIsolated: lineInfo.dashedCount,
+          solidLinesDetectedNotHidden: lineInfo.solidCount,
+          hairlinesDetectedNotHidden: lineInfo.hairlineCount,
+          step5HiddenCount: step5EditedIndexes.size,
+          step5DashedLinearCount: dashedLinearCandidates.length,
+          step5JunctionCount: lineInfo.junctionCount,
+          step55Mode,
+          step55RemovedCount: step55RemovedIndexes.size,
+          step55AddedConnections: step55AddedSegments.length,
+          dashClustersQualifying: lineInfo.totalQualifyingDashClusters,
+          dashClustersKept: lineInfo.keptDashClusters,
+          dashClustersDroppedBySectionCap: lineInfo.droppedDashClustersBySectionCap,
+          dashDroppedNonClosedClusters: lineInfo.droppedNonClosedDashClusters,
+          dashMagneticSeedCount: lineInfo.magneticSeedCount,
+          dashMagneticReachableCount: lineInfo.magneticReachableCount,
+          dashLoopClosureEnabled: DASH_LOOP_CLOSURE_ENABLED,
+          dashLoopClosedClusterCount: lineInfo.loopClosedClusterCount,
+          dashLoopClosureSegmentCount: lineInfo.loopClosureSegments.length,
+          step6TextLikeRemovedCount: textLikeIndexes.size,
+          step6LinearShieldedCount,
+          step6DashShieldedCount,
+          step6TextMode: useOcrTextDetection ? "ocr" : "proximity",
+          step6OcrBoxes: ocrStep6.boxes || 0,
+          step6OcrWords: ocrStep6.words || 0,
+          axisRejectedInterference: lineInfo.axisRejectedCount,
+          axisAlignmentTolerancePercent: AXIS_ALIGNMENT_TOLERANCE_PERCENT,
+          axisAlignmentMaxOffDeg: lineInfo.maxOffAxisDeg,
+          dashAxisAlignmentTolerancePercent: DASH_AXIS_ALIGNMENT_TOLERANCE_PERCENT,
+          dashAxisAlignmentMaxOffDeg: lineInfo.maxDashOffAxisDeg,
+          dashMinAspect: DASH_SEED_MIN_ASPECT,
+          dashPrimaryGapMultiplier: DASH_PRIMARY_GAP_MULTIPLIER,
+          dashMinRunLength: runtimeDashNeighborMin,
+          dashMaxClustersPerSection: DASH_MAX_CLUSTERS_PER_REGION,
+          lineComponentMinArea: LINE_COMPONENT_MIN_AREA,
+          lineCandidatePoolCount: lineCandidatePool.length,
+          lineWidthStats,
+          lineWidthBandCounts: widthBandCounts,
+          componentsAfterLineDrop: getComponents(
+            textRemovedMask,
+            drawingState.width,
+            drawingState.height,
+            8,
+            20000
+          ).length,
+          lineCandidatePoolPreview: lineCandidatePool.slice(0, 24),
+          note: "Hard stop at Step 6. Layer flow toggles control whether each step feeds the next.",
+          traceFrames: traceFrames.length,
+        },
+        null,
+        2
+      );
+    setStatus(
+      `Processing steps ready (hard stop at Step 6). ${selectedRegions.length} viable region(s), ${colorLineInfo.coloredPixelCount} color pixels identified (${layerFlowState.step2ToStep3 ? "Step 2 -> Step 3 on" : "Step 2 -> Step 3 off"}), ${HAIRLINE_STEP_PAUSED ? "Step 4 hairline layer paused (passthrough)" : `${hairlineInfo.hairlineCount} thin continuous line component(s) removed via NS/EW passes at Step 4`}, ${lineInfo.dashedCount} dashed component(s) + ${lineInfo.junctionCount} junction(s) isolated at Step 5 (${lineInfo.keptDashClusters} closed rectangle system(s), ${lineInfo.loopClosedClusterCount} forced closure${lineInfo.loopClosedClusterCount === 1 ? "" : "s"}, ${lineInfo.droppedNonClosedDashClusters} non-closed cluster${lineInfo.droppedNonClosedDashClusters === 1 ? "" : "s"} dropped), manual repairs: ${step55RemovedIndexes.size} removed + ${step55AddedSegments.length} connections, ${textLikeIndexes.size} text-like component(s) removed at Step 6 (${step6LinearShieldedCount} linear leftovers + ${step6DashShieldedCount} dash-overlap components protected from text classification, mode=${useOcrTextDetection ? "OCR" : "proximity"}).`
+    );
+    updateTextOcrUiMeta(
+      useOcrTextDetection
+        ? `last run: ${textLikeRaw.size} text components from OCR (${ocrStep6.boxes} boxes)`
+        : `last run: ${textLikeRaw.size} text components from proximity`
+    );
+  }
+
+  async function runSimpleScan() {
+    if (!drawingState) return;
+    setStatus("Scanning...");
+    if (matchMetaEl) matchMetaEl.textContent = "Matching in progress...";
+    stopPlayback();
+    traceFrames = [];
+    traceCursor = -1;
+    renderTraceFrame(-1);
+    if (!baselineRegions.length) baselineRegions = extractBaselineRegions(drawingState);
+    const { selectedRegions: regions } = getActiveRegionSelection(drawingState);
+    const selectedState = getMaskedByRegions(drawingState, regions);
+    const rawComps = getComponents(
+      selectedState.mask,
+      selectedState.width,
+      selectedState.height,
+      18,
+      20000
+    );
+    const ocrMatchTextInfo = useOcrTextDetection
+      ? await detectTextLikeComponentIndexesOcr(
+          rawComps,
+          drawingState.imageData,
+          selectedState.mask,
+          selectedState.width,
+          selectedState.height
+        )
+      : { indexes: new Set<number>(), boxes: 0, words: 0 };
+    const textLike = useOcrTextDetection
+      ? ocrMatchTextInfo.indexes
+      : detectTextLikeComponentIndexes(rawComps);
+    let colorDropped = 0;
+    let trimDropped = 0;
+    let shapeDropped = 0;
+    const candidatePool = [];
+    for (let i = 0; i < rawComps.length; i += 1) {
+      if (textLike.has(i)) continue;
+      const trimmed = trimComponentToDenseCore(
+        rawComps[i],
+        selectedState.mask,
+        selectedState.width,
+        selectedState.height
+      );
+      if (!trimmed) {
+        trimDropped += 1;
+        continue;
+      }
+      const c = trimmed;
+      if (Math.min(c.w, c.h) < 6) continue;
+      if (!passesCandidateShapeGate(c, Number.NaN, Number.NaN)) {
+        shapeDropped += 1;
+        continue;
+      }
+      if (
+        !passesBlackColorGate(
+          c,
+          drawingState.imageData,
+          selectedState.mask,
+          selectedState.width,
+          selectedState.height
+        )
+      ) {
+        colorDropped += 1;
+        continue;
+      }
+      candidatePool.push(c);
+    }
+
+    const totals = new Map();
+    const sectionStats = [];
+    detections = [];
+    let matched = 0;
+
+    if (candidatePool.length > 0) {
+      await refreshItemLibrary(false);
+      const targetItems = itemLibrary.filter((item) =>
+        targetedLibraryFileNames.has(String(item?.fileName || ""))
+      );
+      if (targetItems.length === 0) {
+        setStatus("No targeted library items selected. Select at least one item.");
+        matchSummary = {
+          totalMatches: 0,
+          candidateCount: candidatePool.length,
+          regions: regions.length,
+          itemCounts: [],
+        };
+        renderMatchSummaryUi();
+        if (lastPipelineSnapshot) {
+          renderPipelineSteps({
+            ...lastPipelineSnapshot,
+            matchSummary,
+            matchDetections: detections,
+          });
+        }
+        if (resultsEl) {
+          resultsEl.textContent = JSON.stringify(
+            {
+              note: "No targeted library items selected.",
+              itemLibraryCount: itemLibrary.length,
+              targetedLibraryFiles: Array.from(targetedLibraryFileNames),
+            },
+            null,
+            2
+          );
+        }
+        return;
+      }
+      const firstPassSignatures = (
+        await Promise.all(
+          targetItems.map(async (item) => ({
+            item,
+            sig: await getTemplateSignature(item, BASE_GRID_SIZE),
+          }))
+        )
+      ).filter((x) => x.sig);
+      const smallestTemplateDiameter = firstPassSignatures.reduce(
+        (min, { sig }) => Math.min(min, Number(sig?.diameter || Number.POSITIVE_INFINITY)),
+        Number.POSITIVE_INFINITY
+      );
+      const runtimeGridSize = Number.isFinite(smallestTemplateDiameter)
+        ? clamp(Math.round(Math.max(10, smallestTemplateDiameter) * 2), 18, 160)
+        : BASE_GRID_SIZE;
+      const signatures =
+        runtimeGridSize === BASE_GRID_SIZE
+          ? firstPassSignatures
+          : (
+              await Promise.all(
+                targetItems.map(async (item) => ({
+                  item,
+                  sig: await getTemplateSignature(item, runtimeGridSize),
+                }))
+              )
+            ).filter((x) => x.sig);
+
+      for (const c of candidatePool) {
+        const compGrid = buildGridFromMask(
+          selectedState.mask,
+          selectedState.width,
+          selectedState.height,
+          c,
+          runtimeGridSize
+        );
+        const compDetail = buildPolarDetailProfile(
+          selectedState.mask,
+          selectedState.width,
+          selectedState.height,
+          c,
+          DETAIL_BINS
+        );
+        let best: Record<string, unknown> | null = null;
+        let bestScore = 0;
+        let bestPuzzleScore = 0;
+        let bestDetailScore = 0;
+        let secondBestScore = 0;
+        let secondBestLabel = "";
+        for (const { item, sig } of signatures) {
+          const score: MatchScore = scoreComponentVsTemplate(c, sig, compGrid, compDetail);
+          if (score.totalScore > bestScore) {
+            secondBestScore = bestScore;
+            secondBestLabel =
+              typeof best?.displayName === "string"
+                ? best.displayName
+                : typeof best?.fileName === "string"
+                  ? best.fileName
+                  : "";
+            bestScore = score.totalScore;
+            bestPuzzleScore = score.puzzleScore;
+            bestDetailScore = score.detailScore;
+            best = item;
+          } else if (score.totalScore > secondBestScore) {
+            secondBestScore = score.totalScore;
+            secondBestLabel =
+              typeof item?.displayName === "string"
+                ? item.displayName
+                : typeof item?.fileName === "string"
+                  ? item.fileName
+                  : "";
+          }
+        }
+        const isAmbiguous = bestScore - secondBestScore < runtimeAmbiguousMargin;
+        const templateUrl =
+          typeof best?.imageUrl === "string"
+            ? best.imageUrl
+            : typeof best?.rawImageUrl === "string"
+              ? best.rawImageUrl
+              : "";
+        const machinePreview = buildMachinePreviewDataUrl(
+          drawingState.imageData,
+          selectedState.mask,
+          selectedState.width,
+          selectedState.height,
+          c
+        );
+        traceFrames.push({
+          section: 1,
+          label:
+            typeof best?.displayName === "string"
+              ? best.displayName
+              : typeof best?.fileName === "string"
+                ? best.fileName
+                : "no-template",
+          score: bestScore,
+          puzzle: bestPuzzleScore,
+          detail: bestDetailScore,
+          secondScore: secondBestScore,
+          secondLabel: secondBestLabel,
+          ambiguous: isAmbiguous,
+          accepted: Boolean(
+            best &&
+            bestScore >= runtimeMatchThreshold &&
+            bestPuzzleScore >= runtimeMinPuzzleOverlap &&
+            !isAmbiguous
+          ),
+          templateUrl,
+          machinePreview,
+        });
+        if (
+          !best ||
+          bestScore < runtimeMatchThreshold ||
+          bestPuzzleScore < runtimeMinPuzzleOverlap ||
+          isAmbiguous
+        )
+          continue;
+        matched += 1;
+        const fileName = typeof best.fileName === "string" ? best.fileName : "unknown";
+        totals.set(fileName, (totals.get(fileName) || 0) + 1);
+        detections.push({
+          x: c.x + c.w / 2,
+          y: c.y + c.h / 2,
+          radius: Math.max(7, Math.round(Math.max(c.w, c.h) / 2) + 2),
+          color: colorFromLabel(fileName),
+          label: fileName,
+        });
+      }
+
+      sectionStats.push({
+        section: 1,
+        components: rawComps.length,
+        textDropped: textLike.size,
+        trimDropped,
+        shapeDropped,
+        colorDropped,
+        candidatePool: candidatePool.length,
+        matches: matched,
+        runtimeGridSize,
+      });
+    } else {
+      sectionStats.push({
+        section: 1,
+        components: rawComps.length,
+        textDropped: textLike.size,
+        trimDropped,
+        shapeDropped,
+        colorDropped,
+        candidatePool: 0,
+        matches: 0,
+        runtimeGridSize: BASE_GRID_SIZE,
+      });
+    }
+
+    drawOverlay();
+    const itemCounts = [...totals.entries()]
+      .map(([fileName, count]) => ({ fileName, count }))
+      .sort((a, b) => b.count - a.count);
+    matchSummary = {
+      totalMatches: itemCounts.reduce((s, x) => s + x.count, 0),
+      candidateCount: candidatePool.length,
+      regions: regions.length,
+      itemCounts,
+    };
+    renderMatchSummaryUi();
+    if (lastPipelineSnapshot) {
+      renderPipelineSteps({
+        ...lastPipelineSnapshot,
+        matchSummary,
+        matchDetections: detections,
+      });
+    }
+    if (resultsEl)
+      resultsEl.textContent = JSON.stringify(
+        {
+          matchThreshold: runtimeMatchThreshold,
+          minPuzzleOverlap: runtimeMinPuzzleOverlap,
+          ambiguousMargin: runtimeAmbiguousMargin,
+          blackInkMaxLuma: runtimeBlackInkMaxLuma,
+          blackInkMaxSpread: runtimeBlackInkMaxSpread,
+          blackInkMinRatio: runtimeBlackInkMinRatio,
+          maxRegionsToScan: MAX_REGIONS_TO_SCAN,
+          itemLibraryCount: itemLibrary.length,
+          targetedLibraryFiles: Array.from(targetedLibraryFileNames),
+          textDetectionMode: useOcrTextDetection ? "ocr" : "proximity",
+          ocrBoxes: ocrMatchTextInfo.boxes || 0,
+          ocrWords: ocrMatchTextInfo.words || 0,
+          traceFrames: traceFrames.length,
+          regions: regions.length,
+          itemCounts,
+          sectionStats,
+        },
+        null,
+        2
+      );
+    renderTraceFrame(0);
+    setStatus(
+      `Done. ${itemCounts.reduce((s, x) => s + x.count, 0)} matches from ${candidatePool.length} candidate(s).`
+    );
+  }
+
+  async function renderPdfToImage(file: File): Promise<HTMLImageElement | null> {
+    for (const scale of PDF_RENDER_SCALE_FALLBACKS) {
+      try {
+        const pdfLib = getPdfLib();
+        if (!pdfLib) return null;
+        const pdf = await pdfLib.getDocument({ data: await file.arrayBuffer() }).promise;
+        const page = await pdf.getPage(1);
+        const viewport = page.getViewport({ scale });
+        const c = document.createElement("canvas");
+        c.width = Math.max(1, Math.floor(viewport.width));
+        c.height = Math.max(1, Math.floor(viewport.height));
+        const ctx = c.getContext("2d", { willReadFrequently: true });
+        if (!ctx) continue;
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        const img = new Image();
+        img.src = c.toDataURL("image/png");
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+        });
+        lastPdfRenderScale = scale;
+        return img;
+      } catch (error) {
+        void error;
+      }
+    }
+    return null;
+  }
+
+  async function loadImageFromFile(file: File): Promise<HTMLImageElement | null> {
+    return await new Promise((resolve: (image: HTMLImageElement | null) => void) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = String(reader.result || "");
+      };
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleDrawingUpload(file: File) {
+    if (!(file instanceof File)) return;
+    setStatus("Rendering drawing...");
+    lastPdfRenderScale = 0;
+    const isPdf = file.name.toLowerCase().endsWith(".pdf") || file.type === "application/pdf";
+    const isSvg = file.name.toLowerCase().endsWith(".svg") || file.type === "image/svg+xml";
+    const img: HTMLImageElement | null = isPdf
+      ? await renderPdfToImage(file)
+      : await loadImageFromFile(file);
+    if (!img || !(canvas instanceof HTMLCanvasElement))
+      return setStatus("Failed to render drawing");
+    const ctx = getCtx();
+    if (!ctx) return;
+    const ratio = Math.min(
+      isSvg ? 10 : 1,
+      DRAWING_RENDER_MAX_SIDE /
+        Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height)
+    );
+    canvas.width = Math.max(1, Math.round((img.naturalWidth || img.width) * ratio));
+    canvas.height = Math.max(1, Math.round((img.naturalHeight || img.height) * ratio));
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    drawingState = {
+      width: canvas.width,
+      height: canvas.height,
+      imageData,
+      mask: imageToRegionSeedMask(imageData),
+    };
+    setStatus(
+      `Rendered ${canvas.width}x${canvas.height}${lastPdfRenderScale ? ` @ PDF scale ${lastPdfRenderScale}` : ""}. Building processing steps...`
+    );
+    baselineRegions = extractBaselineRegions(drawingState);
+    excludedRegionIndexes.clear();
+    renderProcessingOnlyView();
+  }
+
+  drawingFileInput?.addEventListener("change", async () => {
+    const file = drawingFileInput.files?.[0];
+    if (file) await handleDrawingUpload(file);
+  });
+  const handleColorTuningInput = () => {
+    runtimeColorLineMinSpread = clamp(Number(colorSpreadInput?.value || "38") || 38, 4, 90);
+    runtimeHairlineMaxThickness = clamp(
+      Number(hairlineWidthInput?.value || String(HAIRLINE_MAX_THICKNESS)) || HAIRLINE_MAX_THICKNESS,
+      1.2,
+      4.0
+    );
+    runtimeHairlineMinInkStrength = clamp(
+      Math.round(
+        Number(hairlineInkInput?.value || String(HAIRLINE_FALLBACK_MIN_INK_STRENGTH)) ||
+          HAIRLINE_FALLBACK_MIN_INK_STRENGTH
+      ),
+      1,
+      40
+    );
+    runtimeHairlineMinRun = clamp(
+      Math.round(
+        Number(hairlineRunInput?.value || String(HAIRLINE_NS_MIN_RUN)) || HAIRLINE_NS_MIN_RUN
+      ),
+      4,
+      24
+    );
+    runtimeHairlineComponentMinLongSide = clamp(
+      Math.round(
+        Number(hairlineLengthInput?.value || String(HAIRLINE_COMPONENT_MIN_LONG_SIDE)) ||
+          HAIRLINE_COMPONENT_MIN_LONG_SIDE
+      ),
+      6,
+      48
+    );
+    runtimeDashNeighborMin = clamp(
+      Math.round(
+        Number(dashNeighborsInput?.value || String(DASH_MIN_RUN_LENGTH)) || DASH_MIN_RUN_LENGTH
+      ),
+      3,
+      8
+    );
+    syncDashControlLabels();
+    setOverlayVisible("step3", true);
+    setOverlayVisible("step4", true);
+    setOverlayVisible("step5", true);
+    setOverlayVisible("step6", true);
+    if (!drawingState) return;
+    if (tuningRenderTimer !== null) window.clearTimeout(tuningRenderTimer);
+    setStatus("Applying slider changes...");
+    tuningRenderTimer = window.setTimeout(() => {
+      tuningRenderTimer = null;
+      renderProcessingOnlyView();
+    }, 120);
+  };
+  const handleLayerFlowInput = () => {
+    syncLayerFlowStateFromInputs();
+    if (!drawingState) return;
+    if (tuningRenderTimer !== null) window.clearTimeout(tuningRenderTimer);
+    setStatus("Applying layer flow changes...");
+    tuningRenderTimer = window.setTimeout(() => {
+      tuningRenderTimer = null;
+      renderProcessingOnlyView();
+    }, 120);
+  };
+  const handleMatchTuningInput = () => {
+    runtimeMatchThreshold = clamp(
+      Number(matchThresholdInput?.value || String(MATCH_THRESHOLD)),
+      0.45,
+      0.98
+    );
+    runtimeMinPuzzleOverlap = clamp(
+      Number(matchOverlapInput?.value || String(MIN_PUZZLE_OVERLAP)),
+      0.1,
+      0.95
+    );
+    runtimeAmbiguousMargin = clamp(
+      Number(matchAmbiguousInput?.value || String(AMBIGUOUS_MARGIN)),
+      0,
+      0.2
+    );
+    runtimeBlackInkMaxLuma = clamp(
+      Number(blackLumaInput?.value || String(BLACK_INK_MAX_LUMA)),
+      60,
+      220
+    );
+    runtimeBlackInkMaxSpread = clamp(
+      Number(blackSpreadInput?.value || String(BLACK_INK_MAX_SPREAD)),
+      8,
+      90
+    );
+    runtimeBlackInkMinRatio = clamp(
+      Number(blackRatioInput?.value || String(BLACK_INK_MIN_RATIO)),
+      0.1,
+      0.95
+    );
+    syncMatchControlLabels();
+    if (matchMetaEl) {
+      matchMetaEl.textContent =
+        "Match parameters updated. Run Match (Targeted Library) to apply these settings.";
+    }
+  };
+  const applyStep55InteractionAtPoint = (
+    x: number,
+    y: number,
+    opts: { componentTolerance?: number; endpointTolerance?: number } = {}
+  ) => {
+    const componentTolerance = Math.max(10, Number(opts.componentTolerance || 18));
+    const endpointTolerance = Math.max(10, Number(opts.endpointTolerance || 20));
+    if (step55Mode === "off" || !drawingState) return;
+    if (step55Mode === "cleanup") {
+      const idx = findNearestStep55Component(x, y, componentTolerance);
+      if (idx === null) return;
+      if (step55RemovedIndexes.has(idx)) step55RemovedIndexes.delete(idx);
+      else step55RemovedIndexes.add(idx);
+      step55SelectedEndpoint = null;
+      renderProcessingOnlyView();
+      return;
+    }
+    if (step55Mode === "connect") {
+      const endpoint = findNearestStep55Endpoint(x, y, endpointTolerance);
+      if (!endpoint) return;
+      if (!step55SelectedEndpoint) {
+        step55SelectedEndpoint = { x: endpoint.x, y: endpoint.y };
+        updateStep55Ui();
+        return;
+      }
+      const a = step55SelectedEndpoint;
+      const b = { x: endpoint.x, y: endpoint.y };
+      if (Math.hypot(a.x - b.x, a.y - b.y) < 2) {
+        step55SelectedEndpoint = null;
+        updateStep55Ui();
+        return;
+      }
+      const avgThickness =
+        step55EditableComps.length > 0
+          ? Math.max(
+              1,
+              Math.round(
+                step55EditableComps.reduce((sum, c) => sum + c.thickness, 0) /
+                  step55EditableComps.length
+              )
+            )
+          : 1;
+      if (Math.abs(a.x - b.x) > 2 && Math.abs(a.y - b.y) > 2) {
+        step55AddedSegments.push({ x0: a.x, y0: a.y, x1: b.x, y1: a.y, thickness: avgThickness });
+        step55AddedSegments.push({ x0: b.x, y0: a.y, x1: b.x, y1: b.y, thickness: avgThickness });
+      } else {
+        step55AddedSegments.push({ x0: a.x, y0: a.y, x1: b.x, y1: b.y, thickness: avgThickness });
+      }
+      step55SelectedEndpoint = null;
+      renderProcessingOnlyView();
+    }
+  };
+  const handleStep55CanvasClick = (event: MouseEvent) => {
+    const p = getCanvasPointFromEvent(event);
+    if (!p) return;
+    applyStep55InteractionAtPoint(p.x, p.y, { componentTolerance: 22, endpointTolerance: 24 });
+  };
+  const handleStep55StepPanelClick = (event: MouseEvent, hitTarget: HTMLElement) => {
+    if (!drawingState || step55Mode === "off") return;
+    const rect = hitTarget.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+    const sx = drawingState.width / Math.max(1, rect.width);
+    const sy = drawingState.height / Math.max(1, rect.height);
+    const scaleAvg = (sx + sy) / 2;
+    const x = clamp(
+      ((event.clientX - rect.left) / rect.width) * drawingState.width,
+      0,
+      drawingState.width - 1
+    );
+    const y = clamp(
+      ((event.clientY - rect.top) / rect.height) * drawingState.height,
+      0,
+      drawingState.height - 1
+    );
+    applyStep55InteractionAtPoint(x, y, {
+      componentTolerance: clamp(Math.round(18 * scaleAvg), 20, 96),
+      endpointTolerance: clamp(Math.round(22 * scaleAvg), 24, 110),
+    });
+  };
+  const handleOverlayPointerMove = (event: PointerEvent) => {
+    if (!overlayDragState) return;
+    const t = ensureOverlayTransform(overlayDragState.key);
+    t.x = overlayDragState.baseX + (event.clientX - overlayDragState.startX);
+    t.y = overlayDragState.baseY + (event.clientY - overlayDragState.startY);
+    applyOverlayTransformUi(overlayDragState.key);
+  };
+  const handleOverlayPointerUp = () => {
+    overlayDragState = null;
+  };
+  colorSpreadInput?.addEventListener("input", handleColorTuningInput);
+  hairlineWidthInput?.addEventListener("input", handleColorTuningInput);
+  hairlineInkInput?.addEventListener("input", handleColorTuningInput);
+  hairlineRunInput?.addEventListener("input", handleColorTuningInput);
+  hairlineLengthInput?.addEventListener("input", handleColorTuningInput);
+  dashNeighborsInput?.addEventListener("input", handleColorTuningInput);
+  flowStep2Step3Input?.addEventListener("change", handleLayerFlowInput);
+  flowStep2Step4Input?.addEventListener("change", handleLayerFlowInput);
+  flowStep3Step4Input?.addEventListener("change", handleLayerFlowInput);
+  matchThresholdInput?.addEventListener("input", handleMatchTuningInput);
+  matchOverlapInput?.addEventListener("input", handleMatchTuningInput);
+  matchAmbiguousInput?.addEventListener("input", handleMatchTuningInput);
+  blackLumaInput?.addEventListener("input", handleMatchTuningInput);
+  blackSpreadInput?.addEventListener("input", handleMatchTuningInput);
+  blackRatioInput?.addEventListener("input", handleMatchTuningInput);
+  textOcrToggleInput?.addEventListener("change", async () => {
+    useOcrTextDetection = Boolean(textOcrToggleInput.checked);
+    updateTextOcrUiMeta(useOcrTextDetection ? "loading OCR engine on demand" : "");
+    if (drawingState) await renderProcessingOnlyView();
+  });
+  libraryRefreshBtn?.addEventListener("click", async () => {
+    if (libraryMetaEl) libraryMetaEl.textContent = "Refreshing library...";
+    await refreshItemLibrary(true);
+  });
+  librarySelectAllBtn?.addEventListener("click", () => {
+    itemLibrary.forEach((item) => {
+      const fileName = String(item?.fileName || "");
+      if (fileName) targetedLibraryFileNames.add(fileName);
+    });
+    renderLibraryTargetingUi();
+  });
+  libraryClearAllBtn?.addEventListener("click", () => {
+    targetedLibraryFileNames.clear();
+    renderLibraryTargetingUi();
+  });
+  syncDashControlLabels();
+  syncMatchControlLabels();
+  syncLayerFlowStateFromInputs();
+  renderMatchSummaryUi();
+  if (textOcrToggleInput) textOcrToggleInput.checked = useOcrTextDetection;
+  updateTextOcrUiMeta();
+  renderLibraryTargetingUi();
+  updateStep55Ui();
+  step55ModeOffBtn?.addEventListener("click", () => setStep55Mode("off"));
+  step55ModeCleanupBtn?.addEventListener("click", () => setStep55Mode("cleanup"));
+  step55ModeConnectBtn?.addEventListener("click", () => setStep55Mode("connect"));
+  step55ClearBtn?.addEventListener("click", () => {
+    step55RemovedIndexes.clear();
+    step55AddedSegments = [];
+    step55SelectedEndpoint = null;
+    updateStep55Ui();
+    if (drawingState) renderProcessingOnlyView();
+  });
+  canvas?.addEventListener("click", handleStep55CanvasClick);
+  pipelineStepsEl?.addEventListener("click", (event) => {
+    const target = event.target as HTMLElement | null;
+    const hit = target?.closest?.("[data-step55-hit]") as HTMLElement | null;
+    if (!hit) return;
+    handleStep55StepPanelClick(event as MouseEvent, hit);
+  });
+  window.addEventListener("pointermove", handleOverlayPointerMove);
+  window.addEventListener("pointerup", handleOverlayPointerUp);
+  window.addEventListener("pointercancel", handleOverlayPointerUp);
+  runScanBtn?.addEventListener("click", renderProcessingOnlyView);
+  runMatchBtn?.addEventListener("click", runSimpleScan);
+  playBtn?.addEventListener("click", startPlayback);
+  pauseBtn?.addEventListener("click", stopPlayback);
+  nextBtn?.addEventListener("click", () => {
+    stopPlayback();
+    stepTrace(1);
+  });
+
+  (async () => {
+    try {
+      while (!getPdfLib()) await new Promise((r) => setTimeout(r, 100));
+      await refreshItemLibrary(true);
+      const res = await fetch(DEFAULT_DRAWING_PUBLIC_PATH, { cache: "no-store" });
+      const blob = await res.blob();
+      await handleDrawingUpload(new File([blob], "demo-plan.pdf", { type: "application/pdf" }));
+    } catch {
+      setStatus("Could not auto-load default drawing.");
+    }
+  })();
+</script>

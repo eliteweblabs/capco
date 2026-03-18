@@ -6,6 +6,7 @@
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
+import { isAdminOrSuperAdmin } from "../../../lib/user-utils";
 
 export const PATCH: APIRoute = async ({ params, request, cookies }): Promise<Response> => {
   try {
@@ -37,7 +38,7 @@ export const PATCH: APIRoute = async ({ params, request, cookies }): Promise<Res
     const { notes, startedAt, endedAt } = body;
 
     const role = (currentUser as any)?.profile?.role;
-    const isAdmin = role === "Admin";
+    const isAdmin = isAdminOrSuperAdmin(role);
 
     const { data: existing, error: fetchError } = await supabaseAdmin
       .from("timeEntries")

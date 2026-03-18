@@ -47,13 +47,23 @@ const { projectId } = Astro.props;
       },
       {
         id: "drawing-library-tab",
-        label: "Graphics Library",
+        label: "Pattern Results",
         variant: "tab",
         showLabel: true,
         dataAttributes: {
           "data-switch-target": "drawing-library-content",
         },
         onclick: "window.switchDrawingAnalyzerTab('drawing-library-content')",
+      },
+      {
+        id: "drawing-debug-tab",
+        label: "Debug Overlay",
+        variant: "tab",
+        showLabel: true,
+        dataAttributes: {
+          "data-switch-target": "drawing-debug-content",
+        },
+        onclick: "window.switchDrawingAnalyzerTab('drawing-debug-content')",
       },
     ]}
   />
@@ -243,9 +253,26 @@ const { projectId } = Astro.props;
       class="mb-3 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900"
     >
       <p class="text-sm text-gray-700 dark:text-gray-300">
-        Build a reusable symbol library for varying drawing iconography. Set priority by dragging
-        items in the list, then re-scan using those symbols.
+        Autonomous duplicate-pattern detection. Text/alphanumeric interference is removed first,
+        then repeated visual motifs are grouped and shown below.
       </p>
+      <div
+        class="mt-3 rounded-md border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800"
+      >
+        <label class="text-xs text-gray-600 dark:text-gray-300" for="drawing-fuzziness">
+          Matching fuzziness
+        </label>
+        <div class="mt-2 flex items-center gap-3">
+          <input id="drawing-fuzziness" type="range" min="0" max="100" value="15" class="w-full" />
+          <span
+            id="drawing-fuzziness-readout"
+            class="w-12 text-right text-xs font-medium text-gray-600 dark:text-gray-300">15%</span
+          >
+        </div>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          Lower = stricter match. Higher = looser match and broader search.
+        </p>
+      </div>
       <div class="mt-3 flex flex-wrap gap-2">
         <button
           id="drawing-enable-symbol-capture"
@@ -259,11 +286,143 @@ const { projectId } = Astro.props;
           type="button"
           class="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
         >
-          Re-scan Drawing For Library Symbols
+          Re-scan for Duplicate Patterns
+        </button>
+        <button
+          id="drawing-clear-learning"
+          type="button"
+          class="rounded-md border border-red-300 px-3 py-1.5 text-sm text-red-700 hover:bg-red-50 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/20"
+        >
+          Clear Learning
         </button>
       </div>
     </div>
     <div id="drawing-library-list" class="space-y-2"></div>
+    <div
+      id="drawing-scan-live"
+      class="mt-3 hidden rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+    >
+    </div>
+    <div
+      id="drawing-top-candidates"
+      class="mt-3 hidden rounded-md border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900"
+    >
+      <h4 class="text-sm font-medium text-gray-800 dark:text-gray-100">
+        Top visual candidate patches
+      </h4>
+      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+        Previewing highest-scoring candidate window(s).
+      </p>
+      <div id="drawing-top-candidate-grid" class="mt-2 grid grid-cols-2 gap-2 md:grid-cols-4"></div>
+  </div>
+  </div>
+
+  <div
+    id="drawing-debug-content"
+    role="tabpanel"
+    aria-labelledby="drawing-debug-tab"
+    class="hidden"
+  >
+    <div
+      class="mb-3 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900"
+    >
+      <p class="text-sm text-gray-700 dark:text-gray-300">
+        Full-canvas debug overlay. Green = returned results, amber = grouped candidates before final
+        dimension lock, red = components removed as text/alphanumeric interference.
+      </p>
+      <p id="drawing-debug-meta" class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+        Run a scan to populate overlay.
+      </p>
+      <div class="mt-3 flex flex-wrap gap-3 text-xs text-gray-700 dark:text-gray-300">
+        <label class="inline-flex items-center gap-1"
+          ><input id="drawing-debug-layer-final" type="checkbox" checked /> final</label
+        >
+        <label class="inline-flex items-center gap-1"
+          ><input id="drawing-debug-layer-grouped" type="checkbox" checked /> grouped</label
+        >
+        <label class="inline-flex items-center gap-1"
+          ><input id="drawing-debug-layer-round" type="checkbox" checked /> round</label
+        >
+        <label class="inline-flex items-center gap-1"
+          ><input id="drawing-debug-layer-text" type="checkbox" checked /> text</label
+        >
+        <label class="inline-flex items-center gap-1"
+          ><input id="drawing-debug-layer-square" type="checkbox" checked /> square</label
+        >
+        <label class="inline-flex items-center gap-1"
+          ><input id="drawing-debug-layer-line" type="checkbox" checked /> line</label
+        >
+    </div>
+      <pre
+        id="drawing-debug-log"
+        class="mt-3 max-h-36 overflow-auto rounded border border-gray-200 bg-white p-2 text-[11px] text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">
+      </pre>
+    </div>
+    <div
+      class="overflow-auto rounded-md border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-900"
+    >
+      <canvas
+        id="drawing-debug-canvas"
+        class="block max-w-full rounded bg-gray-100 dark:bg-gray-800"></canvas>
+    </div>
+  </div>
+</div>
+
+<div
+  id="drawing-review-modal"
+  class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/60 p-4"
+>
+  <div
+    class="w-full max-w-4xl rounded-lg border border-gray-700 bg-gray-900 p-4 text-white shadow-xl"
+  >
+    <div class="mb-3 flex items-center justify-between">
+      <div>
+        <h3 class="text-lg font-semibold">Review detected match</h3>
+        <p id="drawing-review-meta" class="text-sm text-gray-300"></p>
+      </div>
+      <button
+        id="drawing-review-close"
+        type="button"
+        class="rounded border border-gray-700 px-2 py-1 text-xs text-gray-300 hover:bg-gray-800"
+      >
+        Close
+      </button>
+    </div>
+    <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+      <div class="rounded-md border border-gray-700 p-2">
+        <p class="mb-2 text-xs text-gray-300">Found in drawing</p>
+        <canvas id="drawing-review-found-canvas" class="block h-auto w-full rounded bg-black"
+        ></canvas>
+      </div>
+      <div class="rounded-md border border-gray-700 p-2">
+        <p class="mb-2 text-xs text-gray-300">Library symbol</p>
+        <canvas id="drawing-review-symbol-canvas" class="block h-auto w-full rounded bg-black"
+        ></canvas>
+      </div>
+    </div>
+    <div class="mt-4 flex flex-wrap justify-end gap-2">
+      <button
+        id="drawing-review-stop"
+        type="button"
+        class="rounded border border-gray-700 px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-800"
+      >
+        Stop review
+      </button>
+      <button
+        id="drawing-review-no"
+        type="button"
+        class="rounded border border-red-700 px-3 py-1.5 text-sm text-red-300 hover:bg-red-900/30"
+      >
+        No
+      </button>
+      <button
+        id="drawing-review-yes"
+        type="button"
+        class="rounded border border-green-700 px-3 py-1.5 text-sm text-green-300 hover:bg-green-900/30"
+      >
+        Yes
+      </button>
+    </div>
   </div>
 </div>
 
@@ -282,6 +441,31 @@ const { projectId } = Astro.props;
       border-color: rgba(130, 91, 221, 1);
       opacity: 1;
     }
+  }
+
+  .drawing-candidate-card {
+    overflow: hidden;
+    border-radius: 0.375rem;
+    border: 1px solid rgb(203 213 225);
+    background: rgb(255 255 255);
+  }
+
+  .drawing-candidate-thumb {
+    width: 100%;
+    height: 148px;
+    object-fit: contain;
+    display: block;
+    background: linear-gradient(135deg, #f8fafc, #eef2f7);
+    image-rendering: auto;
+  }
+
+  .dark .drawing-candidate-card {
+    border-color: rgb(55 65 81);
+    background: rgb(17 24 39);
+  }
+
+  .dark .drawing-candidate-thumb {
+    background: linear-gradient(135deg, #0b1220, #111827);
   }
 </style>
 
@@ -326,12 +510,35 @@ const { projectId } = Astro.props;
   const workingScaleInput = document.getElementById("drawing-working-scale");
   const enableSymbolCaptureBtn = document.getElementById("drawing-enable-symbol-capture");
   const rescanLibrarySymbolsBtn = document.getElementById("drawing-rescan-library-symbols");
+  const clearLearningBtn = document.getElementById("drawing-clear-learning");
   const libraryListEl = document.getElementById("drawing-library-list");
   const zoomOutBtn = document.getElementById("drawing-zoom-out");
   const zoomInBtn = document.getElementById("drawing-zoom-in");
   const zoomResetBtn = document.getElementById("drawing-zoom-reset");
   const zoomRange = document.getElementById("drawing-zoom-range");
   const zoomReadout = document.getElementById("drawing-zoom-readout");
+  const fuzzinessRange = document.getElementById("drawing-fuzziness");
+  const fuzzinessReadout = document.getElementById("drawing-fuzziness-readout");
+  const scanLiveEl = document.getElementById("drawing-scan-live");
+  const topCandidatesWrap = document.getElementById("drawing-top-candidates");
+  const topCandidateGrid = document.getElementById("drawing-top-candidate-grid");
+  const debugMetaEl = document.getElementById("drawing-debug-meta");
+  const debugCanvasEl = document.getElementById("drawing-debug-canvas");
+  const debugLogEl = document.getElementById("drawing-debug-log");
+  const debugLayerFinalEl = document.getElementById("drawing-debug-layer-final");
+  const debugLayerGroupedEl = document.getElementById("drawing-debug-layer-grouped");
+  const debugLayerRoundEl = document.getElementById("drawing-debug-layer-round");
+  const debugLayerTextEl = document.getElementById("drawing-debug-layer-text");
+  const debugLayerSquareEl = document.getElementById("drawing-debug-layer-square");
+  const debugLayerLineEl = document.getElementById("drawing-debug-layer-line");
+  const reviewModal = document.getElementById("drawing-review-modal");
+  const reviewMetaEl = document.getElementById("drawing-review-meta");
+  const reviewFoundCanvas = document.getElementById("drawing-review-found-canvas");
+  const reviewSymbolCanvas = document.getElementById("drawing-review-symbol-canvas");
+  const reviewCloseBtn = document.getElementById("drawing-review-close");
+  const reviewYesBtn = document.getElementById("drawing-review-yes");
+  const reviewNoBtn = document.getElementById("drawing-review-no");
+  const reviewStopBtn = document.getElementById("drawing-review-stop");
 
   let pointerStart = null;
   let viableArea = null;
@@ -344,29 +551,44 @@ const { projectId } = Astro.props;
   let zoomLevel = 1;
   let libraryMutationVersion = 0;
   let libraryLoadRequestId = 0;
+  let topCandidates = [];
+  let reviewQueue = [];
+  let reviewIndex = 0;
+  let acceptedReviewMatches = [];
+  let lastDebugOverlayPayload = null;
+  let fuzzinessValue = 15;
+  let rescanDebounceTimer = null;
+  let scanInProgress = false;
+  let rescanQueued = false;
+  const DUPLICATE_ONLY_MODE = true;
+  const REJECT_TEXT_FILTER = true;
+  const REVIEW_FEEDBACK_KEY = "drawingAnalyzer.reviewFeedbackBySymbol.v1";
+  let reviewFeedbackBySymbol = {};
   const currentProjectId = projectId != null ? Number(projectId) : null;
 
   window.switchDrawingAnalyzerTab = function (tabId) {
     const workspacePanel = document.getElementById("drawing-workspace-content");
     const libraryPanel = document.getElementById("drawing-library-content");
+    const debugPanel = document.getElementById("drawing-debug-content");
     const tabsNav = document.getElementById("drawing-analyzer-tabs");
     const workspaceTabBtn = document.getElementById("drawing-workspace-tab");
     const libraryTabBtn = document.getElementById("drawing-library-tab");
-    if (!workspacePanel || !libraryPanel) return;
-    if (tabId === "drawing-library-content") {
-      workspacePanel.classList.add("hidden");
-      libraryPanel.classList.remove("hidden");
-      workspaceTabBtn?.setAttribute("data-active", "false");
-      libraryTabBtn?.setAttribute("data-active", "true");
-    } else {
-      workspacePanel.classList.remove("hidden");
-      libraryPanel.classList.add("hidden");
-      workspaceTabBtn?.setAttribute("data-active", "true");
-      libraryTabBtn?.setAttribute("data-active", "false");
-    }
+    const debugTabBtn = document.getElementById("drawing-debug-tab");
+    if (!workspacePanel || !libraryPanel || !debugPanel) return;
+    workspacePanel.classList.toggle("hidden", tabId !== "drawing-workspace-content");
+    libraryPanel.classList.toggle("hidden", tabId !== "drawing-library-content");
+    debugPanel.classList.toggle("hidden", tabId !== "drawing-debug-content");
+    workspaceTabBtn?.setAttribute("data-active", String(tabId === "drawing-workspace-content"));
+    libraryTabBtn?.setAttribute("data-active", String(tabId === "drawing-library-content"));
+    debugTabBtn?.setAttribute("data-active", String(tabId === "drawing-debug-content"));
 
     // Keep sliding indicator visually synced on programmatic switches.
-    const activeBtn = tabId === "drawing-library-content" ? libraryTabBtn : workspaceTabBtn;
+    const activeBtn =
+      tabId === "drawing-library-content"
+        ? libraryTabBtn
+        : tabId === "drawing-debug-content"
+          ? debugTabBtn
+          : workspaceTabBtn;
     const indicator = tabsNav?.querySelector("[data-sliding-tabs-indicator]");
     if (tabsNav && activeBtn && indicator) {
       const navRect = tabsNav.getBoundingClientRect();
@@ -399,6 +621,63 @@ const { projectId } = Astro.props;
   function clearStatus() {
     statusEl?.classList.add("hidden");
     if (statusEl) statusEl.textContent = "";
+  }
+
+  function showScanLive(message) {
+    if (!scanLiveEl) return;
+    scanLiveEl.classList.remove("hidden");
+    scanLiveEl.textContent = message;
+  }
+
+  function clearScanLive() {
+    if (!scanLiveEl) return;
+    scanLiveEl.classList.add("hidden");
+    scanLiveEl.textContent = "";
+  }
+
+  function loadReviewFeedback() {
+    try {
+      const raw = localStorage.getItem(REVIEW_FEEDBACK_KEY);
+      const parsed = raw ? JSON.parse(raw) : {};
+      reviewFeedbackBySymbol = parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+      reviewFeedbackBySymbol = {};
+    }
+  }
+
+  function saveReviewFeedback() {
+    try {
+      localStorage.setItem(REVIEW_FEEDBACK_KEY, JSON.stringify(reviewFeedbackBySymbol || {}));
+    } catch {
+      /* noop */
+    }
+  }
+
+  function clearReviewFeedback() {
+    reviewFeedbackBySymbol = {};
+    try {
+      localStorage.removeItem(REVIEW_FEEDBACK_KEY);
+    } catch {
+      /* noop */
+    }
+  }
+
+  function scoreBiasForSymbol(symbolName) {
+    const entry =
+      reviewFeedbackBySymbol && symbolName in reviewFeedbackBySymbol
+        ? Number(reviewFeedbackBySymbol[symbolName] || 0)
+        : 0;
+    return Math.max(-0.08, Math.min(0.08, entry));
+  }
+
+  function updateReviewBias(symbolName, accepted) {
+    const current =
+      reviewFeedbackBySymbol && symbolName in reviewFeedbackBySymbol
+        ? Number(reviewFeedbackBySymbol[symbolName] || 0)
+        : 0;
+    const delta = accepted ? 0.01 : -0.012;
+    reviewFeedbackBySymbol[symbolName] = Math.max(-0.08, Math.min(0.08, current + delta));
+    saveReviewFeedback();
   }
 
   function setOverlaySizeFromImage() {
@@ -469,6 +748,21 @@ const { projectId } = Astro.props;
     readoutEl.textContent = `Viable area: x ${leftPct}% | y ${topPct}% | w ${widthPct}% | h ${heightPct}%`;
   }
 
+  function applyAutonomousDuplicateUiMode() {
+    if (!DUPLICATE_ONLY_MODE) return;
+    const libraryTabBtn = document.getElementById("drawing-library-tab");
+    const workspaceTabBtn = document.getElementById("drawing-workspace-tab");
+    if (libraryTabBtn) libraryTabBtn.textContent = "Results";
+    if (workspaceTabBtn) workspaceTabBtn.textContent = "Workspace";
+    if (enableSymbolCaptureBtn) enableSymbolCaptureBtn.classList.add("hidden");
+    if (clearLearningBtn) clearLearningBtn.classList.add("hidden");
+    if (libraryListEl) libraryListEl.classList.add("hidden");
+    if (selectionPurposeSelect?.closest("label")) {
+      selectionPurposeSelect.closest("label")?.classList.add("hidden");
+    }
+    showStatus("Autonomous mode active: text removal + duplicate pattern grouping.");
+  }
+
   function getViableWidthNaturalPx() {
     if (!imgEl || !overlay || !viableArea) return 0;
     const displayWidth = overlay.clientWidth || 1;
@@ -499,7 +793,7 @@ const { projectId } = Astro.props;
     const scaleLineIdx = lines.findIndex((l) => /\bscale\b/i.test(l));
     if (scaleLineIdx >= 0) {
       const line = lines[scaleLineIdx];
-      if (/scale\s*[:\-]?\s*$/i.test(line) && lines[scaleLineIdx + 1]) {
+      if (/scale\s*[:-]?\s*$/i.test(line) && lines[scaleLineIdx + 1]) {
         return `${line} ${lines[scaleLineIdx + 1]}`.trim();
       }
       return line;
@@ -662,6 +956,8 @@ const { projectId } = Astro.props;
         selectionShape: item.selectionShape || "square",
         price: Number(item.price || 0),
         priority: Number(item.priority || 1),
+        isIgnored: Boolean(item.isIgnored),
+        nonGraphical: Boolean(item.nonGraphical),
         dependencies: Array.isArray(item.dependencies) ? item.dependencies : [],
       }));
       renderLibraryList();
@@ -694,6 +990,7 @@ const { projectId } = Astro.props;
       selectionShape: item.selectionShape || "square",
       price: Number(item.price || 0),
       priority: Number(item.priority || 1),
+      isIgnored: Boolean(item.isIgnored),
       dependencies: Array.isArray(item.dependencies) ? item.dependencies : [],
     };
     if (item.id) {
@@ -748,11 +1045,15 @@ const { projectId } = Astro.props;
           <span class="cursor-grab text-gray-400">::</span>
           <img src="${item.localDataUrl}" alt="${item.name}" class="h-10 w-10 rounded border border-gray-300 object-contain dark:border-gray-600" />
           <div class="min-w-0 flex-1 space-y-2">
-            <p class="truncate text-sm text-gray-800 dark:text-gray-200">${item.name}</p>
+            <input value="${item.name}" data-name-symbol="${item.clientId}" class="w-full rounded border border-gray-300 bg-white px-2 py-1 text-sm text-gray-800 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-200" />
             <p class="text-xs text-gray-500 dark:text-gray-400">Priority ${i + 1}</p>
             <div class="flex items-center gap-2">
               <label class="text-xs text-gray-500 dark:text-gray-400">Price</label>
               <input type="number" step="0.01" min="0" value="${Number(item.price || 0)}" data-price-symbol="${item.clientId}" class="w-24 rounded border border-gray-300 bg-white px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-900 dark:text-gray-200" />
+              <label class="ml-2 inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                Ignore
+                <input type="checkbox" data-ignore-symbol="${item.clientId}" ${item.isIgnored ? "checked" : ""} />
+              </label>
             </div>
             <div class="space-y-1" data-dependencies-wrap="${item.clientId}">
               ${(item.dependencies || [])
@@ -809,6 +1110,40 @@ const { projectId } = Astro.props;
             await saveLibraryItem(item);
           } catch (error) {
             console.error("[DrawingAnalyzer] price save failed", error);
+          }
+        }
+      });
+    });
+
+    libraryListEl.querySelectorAll("[data-name-symbol]").forEach((input) => {
+      input.addEventListener("change", async () => {
+        const clientId = input.getAttribute("data-name-symbol");
+        const item = symbolLibrary.find((x) => x.clientId === clientId);
+        if (!item) return;
+        item.name = String(input.value || "").trim() || item.name;
+        if (item.id) {
+          try {
+            await saveLibraryItem(item);
+          } catch (error) {
+            console.error("[DrawingAnalyzer] name save failed", error);
+          }
+        }
+      });
+    });
+
+    libraryListEl.querySelectorAll("[data-ignore-symbol]").forEach((input) => {
+      input.addEventListener("change", async () => {
+        const clientId = input.getAttribute("data-ignore-symbol");
+        const item = symbolLibrary.find((x) => x.clientId === clientId);
+        if (!item) return;
+        item.isIgnored = Boolean(input.checked);
+        if (item.id) {
+          try {
+            await saveLibraryItem(item);
+          } catch (error) {
+            input.checked = !item.isIgnored;
+            item.isIgnored = !item.isIgnored;
+            console.error("[DrawingAnalyzer] ignore save failed", error);
           }
         }
       });
@@ -964,6 +1299,8 @@ const { projectId } = Astro.props;
         imageUrl: "",
         selectionShape,
         price: 0,
+        isIgnored: false,
+        nonGraphical: false,
         dependencies: [],
         priority: symbolLibrary.length + 1,
       },
@@ -1010,51 +1347,2227 @@ const { projectId } = Astro.props;
     });
   }
 
-  async function rescanForLibrarySymbols() {
-    if (!imgEl?.src || symbolLibrary.length === 0) {
-      showStatus("Add at least one symbol to the library before re-scan.", true);
-      return;
-    }
-    showStatus("Re-scanning drawing with current symbol library...");
-    try {
+  function getCurrentDrawingImageData() {
+    if (!imgEl?.src || !imgEl.naturalWidth || !imgEl.naturalHeight) return null;
       const canvas = document.createElement("canvas");
       canvas.width = imgEl.naturalWidth;
       canvas.height = imgEl.naturalHeight;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-      ctx.drawImage(imgEl, 0, 0);
-      const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
-      if (!blob) throw new Error("Could not prepare image");
-      const imageUrl = await uploadImageBlob(blob, `rescan-${Date.now()}.png`);
-      const symbolContext = symbolLibrary
-        .map((s) => ({ name: s.name, url: s.uploadedUrl || "", priority: s.priority }))
-        .filter((s) => s.url);
-      const res = await fetch("/api/agent/analyze-drawing", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          imageUrls: [imageUrl],
-          projectId: projectId || undefined,
-          scale: "auto-from-working-scale",
-          userSelections: symbolContext.map((s) => ({
-            elementType: `library-symbol:${s.name}`,
-            notes: `priority:${s.priority}|url:${s.url}`,
-            floorIndex: "0",
-            floorName: "Plan",
-            centerX: 50,
-            centerY: 50,
-          })),
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || err.message || "Re-scan failed");
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return null;
+    ctx.drawImage(imgEl, 0, 0, canvas.width, canvas.height);
+    return { canvas, ctx, imageData: ctx.getImageData(0, 0, canvas.width, canvas.height) };
+  }
+
+  function trimDarkBounds(mask, width, height) {
+    let minX = width;
+    let minY = height;
+    let maxX = -1;
+    let maxY = -1;
+    for (let y = 0; y < height; y += 1) {
+      const row = y * width;
+      for (let x = 0; x < width; x += 1) {
+        if (!mask[row + x]) continue;
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
       }
-      showStatus("Re-scan submitted with symbol library context.");
+    }
+    if (maxX < minX || maxY < minY) return null;
+    return { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 };
+  }
+
+  function imageDataToMask(imageData) {
+    const { width, height, data } = imageData;
+    const mask = new Uint8Array(width * height);
+    let dark = 0;
+    for (let i = 0; i < width * height; i += 1) {
+      const idx = i * 4;
+      const isInk = isNeutralInkPixel(data[idx], data[idx + 1], data[idx + 2], data[idx + 3])
+        ? 1
+        : 0;
+      mask[i] = isInk;
+      dark += isInk;
+    }
+    return { mask, darkRatio: dark / Math.max(1, width * height) };
+  }
+
+  function isNeutralInkPixel(r, g, b, a) {
+    if (a / 255 < 0.08) return false;
+    const maxC = Math.max(r, g, b);
+    const minC = Math.min(r, g, b);
+    const chroma = maxC - minC;
+    const saturation = maxC > 0 ? chroma / maxC : 0;
+    const gray = r * 0.299 + g * 0.587 + b * 0.114;
+    // Keep only dark-ish, low-chroma pixels (black/gray line art).
+    const chromaLimit = gray < 130 ? 20 : 14;
+    const hasBlueTint = b - Math.max(r, g) > 12;
+    return gray < 198 && chroma <= chromaLimit && saturation <= 0.12 && !hasBlueTint;
+  }
+
+  function passesColorNeutralityGate(imageData, candidate, fuzz) {
+    const minX = Math.max(0, Math.floor(candidate.x));
+    const minY = Math.max(0, Math.floor(candidate.y));
+    const maxX = Math.min(imageData.width - 1, Math.floor(candidate.x + candidate.w - 1));
+    const maxY = Math.max(minY, Math.floor(candidate.y + candidate.h - 1));
+    if (maxX <= minX || maxY <= minY) return false;
+
+    let darkNeutral = 0;
+    let darkColored = 0;
+    const data = imageData.data;
+    for (let y = minY; y <= maxY; y += 1) {
+      const row = y * imageData.width;
+      for (let x = minX; x <= maxX; x += 1) {
+        const idx = (row + x) * 4;
+        const r = data[idx];
+        const g = data[idx + 1];
+        const b = data[idx + 2];
+        const a = data[idx + 3];
+        const gray = r * 0.299 + g * 0.587 + b * 0.114;
+        if (a / 255 < 0.08 || gray > 215) continue;
+        if (isNeutralInkPixel(r, g, b, a)) darkNeutral += 1;
+        else darkColored += 1;
+      }
+    }
+    const darkTotal = darkNeutral + darkColored;
+    if (darkTotal < 10) return false;
+    const coloredRatio = darkColored / darkTotal;
+    const neutralRatio = darkNeutral / darkTotal;
+    // Strict: color contamination should be minimal for black/gray line-art matches.
+    const maxColoredRatio = 0.015 + fuzz * 0.015;
+    const minNeutralRatio = 0.93 - fuzz * 0.05;
+    return coloredRatio <= maxColoredRatio && neutralRatio >= minNeutralRatio;
+  }
+
+  function hasSecondaryColorInCandidate(imageData, candidate, maxColoredPixels = 2) {
+    const minX = Math.max(0, Math.floor(candidate.x));
+    const minY = Math.max(0, Math.floor(candidate.y));
+    const maxX = Math.min(imageData.width - 1, Math.floor(candidate.x + candidate.w - 1));
+    const maxY = Math.max(minY, Math.floor(candidate.y + candidate.h - 1));
+    if (maxX <= minX || maxY <= minY) return true;
+    const data = imageData.data;
+    let colored = 0;
+    for (let y = minY; y <= maxY; y += 1) {
+      const row = y * imageData.width;
+      for (let x = minX; x <= maxX; x += 1) {
+        const idx = (row + x) * 4;
+        const r = data[idx];
+        const g = data[idx + 1];
+        const b = data[idx + 2];
+        const a = data[idx + 3];
+        const gray = r * 0.299 + g * 0.587 + b * 0.114;
+        if (a / 255 < 0.08 || gray > 215) continue;
+        if (!isNeutralInkPixel(r, g, b, a)) {
+          colored += 1;
+          if (colored > maxColoredPixels) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function refineCandidateToBlackBounds(drawingMask, drawingWidth, candidate) {
+    const minX = Math.max(0, Math.floor(candidate.x));
+    const minY = Math.max(0, Math.floor(candidate.y));
+    const maxX = Math.min(drawingWidth - 1, Math.floor(candidate.x + candidate.w - 1));
+    const maxY = Math.max(minY, Math.floor(candidate.y + candidate.h - 1));
+    if (maxX <= minX || maxY <= minY) return null;
+    let bMinX = maxX;
+    let bMinY = maxY;
+    let bMaxX = minX;
+    let bMaxY = minY;
+    let dark = 0;
+    for (let y = minY; y <= maxY; y += 1) {
+      const row = y * drawingWidth;
+      for (let x = minX; x <= maxX; x += 1) {
+        if (!drawingMask[row + x]) continue;
+        dark += 1;
+        if (x < bMinX) bMinX = x;
+        if (y < bMinY) bMinY = y;
+        if (x > bMaxX) bMaxX = x;
+        if (y > bMaxY) bMaxY = y;
+      }
+    }
+    if (dark < 6 || bMaxX < bMinX || bMaxY < bMinY) return null;
+    return {
+      ...candidate,
+      x: bMinX,
+      y: bMinY,
+      w: bMaxX - bMinX + 1,
+      h: bMaxY - bMinY + 1,
+      cx: bMinX + (bMaxX - bMinX + 1) / 2,
+      cy: bMinY + (bMaxY - bMinY + 1) / 2,
+    };
+  }
+
+  function getRadialRoundnessScore(drawingMask, drawingWidth, candidate) {
+    const minX = Math.max(0, Math.floor(candidate.x));
+    const minY = Math.max(0, Math.floor(candidate.y));
+    const maxX = Math.min(drawingWidth - 1, Math.floor(candidate.x + candidate.w - 1));
+    const maxY = Math.max(minY, Math.floor(candidate.y + candidate.h - 1));
+    const w = maxX - minX + 1;
+    const h = maxY - minY + 1;
+    if (w < 8 || h < 8) return 0;
+
+    const cx = (w - 1) / 2;
+    const cy = (h - 1) / 2;
+    const sectors = 36;
+    const far = new Float32Array(sectors);
+    const seen = new Uint8Array(sectors);
+
+    for (let y = 0; y < h; y += 1) {
+      const srcRow = (minY + y) * drawingWidth + minX;
+      for (let x = 0; x < w; x += 1) {
+        if (!drawingMask[srcRow + x]) continue;
+        const dx = x - cx;
+        const dy = y - cy;
+        const r = Math.hypot(dx, dy);
+        const ang = Math.floor(
+          (((Math.atan2(dy, dx) + Math.PI) / (Math.PI * 2)) * sectors) % sectors
+        );
+        if (!seen[ang] || r > far[ang]) far[ang] = r;
+        seen[ang] = 1;
+      }
+    }
+
+    const radii = [];
+    for (let i = 0; i < sectors; i += 1) if (seen[i]) radii.push(far[i]);
+    if (radii.length < 24) return 0;
+    const mean = radii.reduce((a, b) => a + b, 0) / radii.length;
+    if (mean <= 0) return 0;
+    const variance = radii.reduce((acc, r) => acc + (r - mean) * (r - mean), 0) / radii.length;
+    const std = Math.sqrt(variance);
+    return Math.max(0, 1 - std / mean);
+  }
+
+  function buildMaskSignature(mask, width, height, grid = 10) {
+    const bounds = trimDarkBounds(mask, width, height);
+    if (!bounds) return null;
+    const sig = [];
+    const cw = bounds.w / grid;
+    const ch = bounds.h / grid;
+    for (let gy = 0; gy < grid; gy += 1) {
+      for (let gx = 0; gx < grid; gx += 1) {
+        const x0 = Math.floor(bounds.x + gx * cw);
+        const y0 = Math.floor(bounds.y + gy * ch);
+        const x1 = Math.max(x0 + 1, Math.floor(bounds.x + (gx + 1) * cw));
+        const y1 = Math.max(y0 + 1, Math.floor(bounds.y + (gy + 1) * ch));
+        let dark = 0;
+        let total = 0;
+        for (let y = y0; y < Math.min(height, y1); y += 1) {
+          const row = y * width;
+          for (let x = x0; x < Math.min(width, x1); x += 1) {
+            dark += mask[row + x] ? 1 : 0;
+            total += 1;
+          }
+        }
+        sig.push(total ? dark / total : 0);
+      }
+    }
+    return {
+      values: sig,
+      aspect: bounds.w / Math.max(1, bounds.h),
+      fill: bounds.w * bounds.h ? sig.reduce((a, b) => a + b, 0) / sig.length : 0,
+    };
+  }
+
+  function buildGridDensityFromMask(mask, width, height, grid = 10) {
+    const values = [];
+    const cw = width / grid;
+    const ch = height / grid;
+    for (let gy = 0; gy < grid; gy += 1) {
+      for (let gx = 0; gx < grid; gx += 1) {
+        const x0 = Math.floor(gx * cw);
+        const y0 = Math.floor(gy * ch);
+        const x1 = Math.max(x0 + 1, Math.floor((gx + 1) * cw));
+        const y1 = Math.max(y0 + 1, Math.floor((gy + 1) * ch));
+        let dark = 0;
+        let total = 0;
+        for (let y = y0; y < Math.min(height, y1); y += 1) {
+          const row = y * width;
+          for (let x = x0; x < Math.min(width, x1); x += 1) {
+            dark += mask[row + x] ? 1 : 0;
+            total += 1;
+          }
+        }
+        values.push(total ? dark / total : 0);
+      }
+    }
+    return values;
+  }
+
+  function getPartialMotifConfidence(drawingMask, drawingWidth, candidate, template) {
+    const minX = Math.max(0, Math.floor(candidate.x));
+    const minY = Math.max(0, Math.floor(candidate.y));
+    const maxX = Math.min(drawingWidth - 1, Math.floor(candidate.x + candidate.w - 1));
+    const maxY = Math.max(minY, Math.floor(candidate.y + candidate.h - 1));
+    if (maxX <= minX || maxY <= minY) return 0;
+    const w = maxX - minX + 1;
+    const h = maxY - minY + 1;
+    const local = new Uint8Array(w * h);
+    for (let y = 0; y < h; y += 1) {
+      const srcRow = (minY + y) * drawingWidth + minX;
+      const dstRow = y * w;
+      for (let x = 0; x < w; x += 1) {
+        local[dstRow + x] = drawingMask[srcRow + x] ? 1 : 0;
+      }
+    }
+    const localSig = buildGridDensityFromMask(local, w, h, 10);
+    const tplSig = Array.isArray(template.gridSignature) ? template.gridSignature : [];
+    if (tplSig.length !== localSig.length || tplSig.length === 0) return 0;
+
+    const informative = Array.isArray(template.informativeCells)
+      ? template.informativeCells
+      : tplSig
+          .map((v, i) => ({ i, v }))
+          .filter((x) => x.v >= 0.08)
+          .sort((a, b) => b.v - a.v)
+          .slice(0, 24)
+          .map((x) => x.i);
+
+    if (informative.length === 0) return 0;
+    let matched = 0;
+    let matchedStrength = 0;
+    for (const idx of informative) {
+      const t = tplSig[idx];
+      const s = localSig[idx];
+      const minLocal = Math.max(0.06, t * 0.55);
+      if (s >= minLocal) {
+        matched += 1;
+        matchedStrength += Math.min(1, s / Math.max(0.01, t));
+      }
+    }
+
+    const matchRatio = matched / informative.length;
+    const strength = matched > 0 ? matchedStrength / matched : 0;
+    return matchRatio * 0.7 + strength * 0.3;
+  }
+
+  function scaleBinaryMaskNearest(
+    sourceMask,
+    sourceWidth,
+    sourceHeight,
+    targetWidth,
+    targetHeight
+  ) {
+    const out = new Uint8Array(targetWidth * targetHeight);
+    const xRatio = sourceWidth / Math.max(1, targetWidth);
+    const yRatio = sourceHeight / Math.max(1, targetHeight);
+    for (let y = 0; y < targetHeight; y += 1) {
+      const sy = Math.min(sourceHeight - 1, Math.floor((y + 0.5) * yRatio));
+      const outRow = y * targetWidth;
+      const srcRow = sy * sourceWidth;
+      for (let x = 0; x < targetWidth; x += 1) {
+        const sx = Math.min(sourceWidth - 1, Math.floor((x + 0.5) * xRatio));
+        out[outRow + x] = sourceMask[srcRow + sx];
+      }
+    }
+    return out;
+  }
+
+  function getMaskBorderDarkRatio(mask, width, height, bandPx) {
+    const band = Math.max(1, Math.min(Math.floor(Math.min(width, height) / 2), bandPx));
+    let dark = 0;
+    let total = 0;
+    for (let y = 0; y < height; y += 1) {
+      const row = y * width;
+      for (let x = 0; x < width; x += 1) {
+        const inBorder = x < band || x >= width - band || y < band || y >= height - band;
+        if (!inBorder) continue;
+        total += 1;
+        dark += mask[row + x] ? 1 : 0;
+      }
+    }
+    return total > 0 ? dark / total : 0;
+  }
+
+  function getDrawingBorderDarkRatio(drawingMask, drawingWidth, candidate, bandPx) {
+    const minX = Math.max(0, Math.floor(candidate.x));
+    const minY = Math.max(0, Math.floor(candidate.y));
+    const maxX = Math.min(drawingWidth - 1, Math.floor(candidate.x + candidate.w - 1));
+    const maxY = Math.max(minY, Math.floor(candidate.y + candidate.h - 1));
+    const w = maxX - minX + 1;
+    const h = maxY - minY + 1;
+    if (w <= 2 || h <= 2) return 1;
+    const band = Math.max(1, Math.min(Math.floor(Math.min(w, h) / 2), bandPx));
+    let dark = 0;
+    let total = 0;
+    for (let y = 0; y < h; y += 1) {
+      const srcRow = (minY + y) * drawingWidth + minX;
+      for (let x = 0; x < w; x += 1) {
+        const inBorder = x < band || x >= w - band || y < band || y >= h - band;
+        if (!inBorder) continue;
+        total += 1;
+        dark += drawingMask[srcRow + x] ? 1 : 0;
+      }
+    }
+    return total > 0 ? dark / total : 1;
+  }
+
+  function createTemplateVariantsFromImage(imageData, symbol) {
+    const variants = [];
+    const { width, height } = imageData;
+    const { mask, darkRatio } = imageDataToMask(imageData);
+    if (darkRatio < 0.015) return variants;
+    const bounds = trimDarkBounds(mask, width, height);
+    if (!bounds) return variants;
+    const cropCanvas = document.createElement("canvas");
+    cropCanvas.width = bounds.w;
+    cropCanvas.height = bounds.h;
+    const cropCtx = cropCanvas.getContext("2d", { willReadFrequently: true });
+    if (!cropCtx) return variants;
+    cropCtx.putImageData(imageData, -bounds.x, -bounds.y, bounds.x, bounds.y, bounds.w, bounds.h);
+    const trimmedImageData = cropCtx.getImageData(0, 0, bounds.w, bounds.h);
+    const trimmed = imageDataToMask(trimmedImageData);
+    if (trimmed.darkRatio < 0.02) return variants;
+    const signature = buildMaskSignature(trimmed.mask, bounds.w, bounds.h, 10);
+    if (!signature) return variants;
+    // Add context whitespace around symbol so border behavior is comparable.
+    const contextPad = Math.max(4, Math.round(Math.max(bounds.w, bounds.h) * 0.5));
+    const baseWidth = bounds.w + contextPad * 2;
+    const baseHeight = bounds.h + contextPad * 2;
+    const paddedMask = new Uint8Array(baseWidth * baseHeight);
+    for (let y = 0; y < bounds.h; y += 1) {
+      const srcRow = y * bounds.w;
+      const dstRow = (y + contextPad) * baseWidth + contextPad;
+      for (let x = 0; x < bounds.w; x += 1) {
+        paddedMask[dstRow + x] = trimmed.mask[srcRow + x];
+      }
+    }
+
+    const templateIsCircleLike = isBoundsCircleLike(bounds.w, bounds.h, 0.08);
+    // For circle-like templates, enforce strict scale band (±5%).
+    // For non-circles, keep moderate tolerance.
+    const scales = templateIsCircleLike
+      ? [0.85, 0.92, 0.97, 1, 1.03, 1.08, 1.15]
+      : [0.82, 0.9, 0.96, 1, 1.04, 1.1, 1.18];
+    for (const scale of scales) {
+      const w = Math.max(10, Math.round(baseWidth * scale));
+      const h = Math.max(10, Math.round(baseHeight * scale));
+      // Scale the binary mask directly (nearest-neighbor) to avoid anti-aliased blur.
+      const scaledMask = scaleBinaryMaskNearest(paddedMask, baseWidth, baseHeight, w, h);
+      const gridSignature = buildGridDensityFromMask(scaledMask, w, h, 10);
+      const informativeCells = gridSignature
+        .map((v, i) => ({ i, v }))
+        .filter((x) => x.v >= 0.08)
+        .sort((a, b) => b.v - a.v)
+        .slice(0, 24)
+        .map((x) => x.i);
+      const borderBand = Math.max(2, Math.round(Math.min(w, h) * 0.12));
+      const borderDarkRatio = getMaskBorderDarkRatio(scaledMask, w, h, borderBand);
+      variants.push({
+        symbolName: symbol.name,
+        symbolId: symbol.clientId,
+        width: w,
+        height: h,
+        mask: scaledMask,
+        sourceDataUrl: symbol.localDataUrl,
+        contentAspect: signature.aspect,
+        contentFill: signature.fill,
+        contentSignature: signature.values,
+        gridSignature,
+        informativeCells,
+        borderBand,
+        borderDarkRatio,
+        circleLike: templateIsCircleLike,
+      });
+    }
+    return variants;
+  }
+
+  function extractPatchDataUrl(canvas, x, y, w, h) {
+    const pad = Math.max(12, Math.round(Math.max(w, h) * 0.9));
+    const sx = Math.max(0, Math.floor(x - pad));
+    const sy = Math.max(0, Math.floor(y - pad));
+    const sw = Math.max(1, Math.min(canvas.width - sx, Math.ceil(w + pad * 2)));
+    const sh = Math.max(1, Math.min(canvas.height - sy, Math.ceil(h + pad * 2)));
+    const c = document.createElement("canvas");
+    c.width = sw;
+    c.height = sh;
+    const ctx = c.getContext("2d");
+    if (!ctx) return "";
+    ctx.drawImage(canvas, sx, sy, sw, sh, 0, 0, c.width, c.height);
+    return c.toDataURL("image/png");
+  }
+
+  function centerCandidateBox(candidate, imageWidth, imageHeight, paddingScale = 0.34) {
+    const baseSize = Math.max(candidate.w, candidate.h, 1);
+    const paddedSize = Math.max(10, Math.round(baseSize * (1 + paddingScale)));
+    const cx = candidate.x + candidate.w / 2;
+    const cy = candidate.y + candidate.h / 2;
+    let x = Math.round(cx - paddedSize / 2);
+    let y = Math.round(cy - paddedSize / 2);
+    let w = paddedSize;
+    let h = paddedSize;
+    if (x < 0) x = 0;
+    if (y < 0) y = 0;
+    if (x + w > imageWidth) x = Math.max(0, imageWidth - w);
+    if (y + h > imageHeight) y = Math.max(0, imageHeight - h);
+    w = Math.max(1, Math.min(w, imageWidth - x));
+    h = Math.max(1, Math.min(h, imageHeight - y));
+    return {
+      ...candidate,
+      x,
+      y,
+      w,
+      h,
+      cx: x + w / 2,
+      cy: y + h / 2,
+    };
+  }
+
+  function dedupeCandidatesByDistance(candidates, radiusPx = 14) {
+    const sorted = [...candidates].sort((a, b) => b.score - a.score);
+    const kept = [];
+    for (const item of sorted) {
+      const found = kept.some((k) => {
+        if (k.symbolId !== item.symbolId) return false;
+        const dx = k.cx - item.cx;
+        const dy = k.cy - item.cy;
+        return Math.hypot(dx, dy) <= radiusPx;
+      });
+      if (!found) kept.push(item);
+    }
+    return kept;
+  }
+
+  function dedupeCandidatesByOverlapNms(candidates) {
+    const sorted = [...candidates].sort((a, b) => b.score - a.score);
+    const kept = [];
+    for (const item of sorted) {
+      const isDuplicate = kept.some((k) => {
+        // Same symbol near same center -> duplicate.
+        if (k.symbolId === item.symbolId) {
+          const centerDist = Math.hypot(k.cx - item.cx, k.cy - item.cy);
+          const sizeRef = Math.max(k.w, k.h, item.w, item.h, 1);
+          if (centerDist <= sizeRef * 0.55) return true;
+        }
+        // High overlap across any class -> keep only highest score.
+        return overlapsCandidate(k, item);
+      });
+      if (!isDuplicate) kept.push(item);
+    }
+    return kept;
+  }
+
+  function overlapsCandidate(a, b) {
+    const ax2 = a.x + a.w;
+    const ay2 = a.y + a.h;
+    const bx2 = b.x + b.w;
+    const by2 = b.y + b.h;
+    if (a.x >= bx2 || b.x >= ax2 || a.y >= by2 || b.y >= ay2) return false;
+    const interW = Math.max(0, Math.min(ax2, bx2) - Math.max(a.x, b.x));
+    const interH = Math.max(0, Math.min(ay2, by2) - Math.max(a.y, b.y));
+    const inter = interW * interH;
+    if (!inter) return false;
+    const union = a.w * a.h + b.w * b.h - inter;
+    const iou = union > 0 ? inter / union : 0;
+    if (iou >= 0.08) return true;
+    const centerDist = Math.hypot(a.cx - b.cx, a.cy - b.cy);
+    const sizeRef = Math.max(a.w, a.h, b.w, b.h, 1);
+    return centerDist <= sizeRef * 0.55;
+  }
+
+  function passesContiguousCandidateGate(drawingMask, drawingWidth, candidate) {
+    const minX = Math.max(0, Math.floor(candidate.x));
+    const minY = Math.max(0, Math.floor(candidate.y));
+    const maxX = Math.min(drawingWidth - 1, Math.floor(candidate.x + candidate.w - 1));
+    const maxY = Math.max(minY, Math.floor(candidate.y + candidate.h - 1));
+    if (maxX <= minX || maxY <= minY) return false;
+    const w = maxX - minX + 1;
+    const h = maxY - minY + 1;
+    const local = new Uint8Array(w * h);
+    let darkTotal = 0;
+    for (let y = 0; y < h; y += 1) {
+      const srcRow = (minY + y) * drawingWidth + minX;
+      const dstRow = y * w;
+      for (let x = 0; x < w; x += 1) {
+        const v = drawingMask[srcRow + x] ? 1 : 0;
+        local[dstRow + x] = v;
+        darkTotal += v;
+      }
+    }
+    if (darkTotal < 12) return false;
+    const density = darkTotal / Math.max(1, w * h);
+    if (density < 0.03) return false;
+
+    const visited = new Uint8Array(w * h);
+    let largest = 0;
+    const qx = new Int16Array(w * h);
+    const qy = new Int16Array(w * h);
+
+    for (let y = 0; y < h; y += 1) {
+      for (let x = 0; x < w; x += 1) {
+        const idx = y * w + x;
+        if (!local[idx] || visited[idx]) continue;
+        let head = 0;
+        let tail = 0;
+        qx[tail] = x;
+        qy[tail] = y;
+        tail += 1;
+        visited[idx] = 1;
+        let size = 0;
+        while (head < tail) {
+          const cx = qx[head];
+          const cy = qy[head];
+          head += 1;
+          size += 1;
+          const neighbors = [
+            [cx - 1, cy],
+            [cx + 1, cy],
+            [cx, cy - 1],
+            [cx, cy + 1],
+          ];
+          for (const [nx, ny] of neighbors) {
+            if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+            const nIdx = ny * w + nx;
+            if (!local[nIdx] || visited[nIdx]) continue;
+            visited[nIdx] = 1;
+            qx[tail] = nx;
+            qy[tail] = ny;
+            tail += 1;
+          }
+        }
+        if (size > largest) largest = size;
+      }
+    }
+
+    const dominantRatio = largest / darkTotal;
+    return dominantRatio >= 0.58;
+  }
+
+  function buildRefineRegions(candidates, drawingWidth, drawingHeight) {
+    const regions = [];
+    for (const item of candidates.slice(0, 60)) {
+      const pad = Math.max(22, Math.round(Math.max(item.w, item.h) * 1.8));
+      regions.push({
+        x1: Math.max(0, Math.floor(item.cx - pad)),
+        y1: Math.max(0, Math.floor(item.cy - pad)),
+        x2: Math.min(drawingWidth - 1, Math.ceil(item.cx + pad)),
+        y2: Math.min(drawingHeight - 1, Math.ceil(item.cy + pad)),
+      });
+    }
+    return regions;
+  }
+
+  function isBoundsCircleLike(w, h, tolerance = 0.05) {
+    const aspect = w / Math.max(1, h);
+    return Math.abs(aspect - 1) <= tolerance;
+  }
+
+  function passesCircleShapeGate(drawingMask, drawingWidth, candidate, fuzz = 0) {
+    const minX = Math.max(0, Math.floor(candidate.x));
+    const minY = Math.max(0, Math.floor(candidate.y));
+    const maxX = Math.min(drawingWidth - 1, Math.floor(candidate.x + candidate.w - 1));
+    const maxY = Math.max(minY, Math.floor(candidate.y + candidate.h - 1));
+    const w = maxX - minX + 1;
+    const h = maxY - minY + 1;
+    if (w <= 2 || h <= 2) return false;
+    const aspectTolerance = 0.05 + fuzz * 0.12;
+    if (!isBoundsCircleLike(w, h, aspectTolerance)) return false;
+
+    const cx = (w - 1) / 2;
+    const cy = (h - 1) / 2;
+    const radius = Math.min(w, h) / 2;
+    const sectors = 12;
+    const sectorHits = new Uint8Array(sectors);
+    let darkCount = 0;
+    for (let y = 0; y < h; y += 1) {
+      const srcRow = (minY + y) * drawingWidth + minX;
+      for (let x = 0; x < w; x += 1) {
+        if (!drawingMask[srcRow + x]) continue;
+        darkCount += 1;
+        const dx = x - cx;
+        const dy = y - cy;
+        const r = Math.hypot(dx, dy);
+        const rNorm = radius > 0 ? r / radius : 0;
+        const innerRing = 0.72 - fuzz * 0.2;
+        const outerRing = 1.05 + fuzz * 0.16;
+        if (rNorm < innerRing || rNorm > outerRing) continue;
+        const ang = Math.atan2(dy, dx);
+        const bucket = Math.floor((((ang + Math.PI) / (Math.PI * 2)) * sectors) % sectors);
+        sectorHits[bucket] = 1;
+      }
+    }
+    if (darkCount < Math.max(8, Math.round(14 - fuzz * 6))) return false;
+    const sectorsHit = sectorHits.reduce((a, b) => a + b, 0);
+    const minSectorsHit = Math.max(4, Math.round(10 - fuzz * 5));
+    return sectorsHit >= minSectorsHit;
+  }
+
+  function getMedian(values) {
+    if (!Array.isArray(values) || values.length === 0) return 0;
+    const sorted = [...values].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    if (sorted.length % 2 === 1) return sorted[mid];
+    return (sorted[mid - 1] + sorted[mid]) / 2;
+  }
+
+  function detectRepeatedCirclesFallback(drawing, drawingMask, templates, fuzz = 0) {
+    const width = drawing.imageData.width;
+    const height = drawing.imageData.height;
+    const visited = new Uint8Array(width * height);
+    const qx = new Int32Array(width * height);
+    const qy = new Int32Array(width * height);
+    const circleTemplates = templates.filter((t) => t.circleLike);
+    const referenceTemplate =
+      circleTemplates[0] ||
+      templates
+        .slice()
+        .sort((a, b) => Math.abs(a.width - a.height) - Math.abs(b.width - b.height))[0] ||
+      null;
+    const targetDiam = Math.max(
+      8,
+      getMedian(
+        (circleTemplates.length > 0 ? circleTemplates : templates).map((t) =>
+          Math.min(t.width, t.height)
+        )
+      ) || 0
+    );
+    const targetFill =
+      getMedian(
+        (circleTemplates.length > 0 ? circleTemplates : templates).map((t) =>
+          Number(t.darkRatio || 0.3)
+        )
+      ) || 0.3;
+
+    const raw = [];
+    const minArea = Math.max(18, Math.round(targetDiam * targetDiam * 0.03));
+    const maxArea = Math.max(minArea + 1, Math.round(width * height * 0.025));
+    const maxComponents = 1200;
+    let seenComponents = 0;
+
+    const sizeLogTol = 0.62 - fuzz * 0.2;
+    for (let y = 0; y < height; y += 1) {
+      const row = y * width;
+      for (let x = 0; x < width; x += 1) {
+        const idx = row + x;
+        if (!drawingMask[idx] || visited[idx]) continue;
+        if (seenComponents > maxComponents) break;
+        seenComponents += 1;
+        let head = 0;
+        let tail = 0;
+        qx[tail] = x;
+        qy[tail] = y;
+        tail += 1;
+        visited[idx] = 1;
+        let area = 0;
+        let minX = x;
+        let minY = y;
+        let maxX = x;
+        let maxY = y;
+        while (head < tail) {
+          const cx = qx[head];
+          const cy = qy[head];
+          head += 1;
+          area += 1;
+          if (cx < minX) minX = cx;
+          if (cy < minY) minY = cy;
+          if (cx > maxX) maxX = cx;
+          if (cy > maxY) maxY = cy;
+          for (let oy = -1; oy <= 1; oy += 1) {
+            const ny = cy + oy;
+            if (ny < 0 || ny >= height) continue;
+            const nrow = ny * width;
+            for (let ox = -1; ox <= 1; ox += 1) {
+              if (ox === 0 && oy === 0) continue;
+              const nx = cx + ox;
+              if (nx < 0 || nx >= width) continue;
+              const nidx = nrow + nx;
+              if (!drawingMask[nidx] || visited[nidx]) continue;
+              visited[nidx] = 1;
+              qx[tail] = nx;
+              qy[tail] = ny;
+              tail += 1;
+            }
+          }
+        }
+        if (area < minArea || area > maxArea) continue;
+        const w = maxX - minX + 1;
+        const h = maxY - minY + 1;
+        if (w < 6 || h < 6) continue;
+        const aspect = w / Math.max(1, h);
+        if (Math.abs(aspect - 1) > 0.24 + fuzz * 0.04) continue;
+        const diameter = Math.min(w, h);
+        const sizeLogDelta = Math.abs(Math.log(Math.max(1, diameter) / Math.max(1, targetDiam)));
+        if (sizeLogDelta > sizeLogTol) continue;
+        const bboxArea = Math.max(1, w * h);
+        const fill = area / bboxArea;
+        if (fill < 0.05 || fill > 0.8) continue;
+        const rawCandidate = {
+          x: minX,
+          y: minY,
+          w,
+          h,
+          cx: minX + w / 2,
+          cy: minY + h / 2,
+          symbolName: referenceTemplate?.symbolName || "Circular motif",
+          symbolId: referenceTemplate?.symbolId || null,
+          sourceDataUrl: referenceTemplate?.sourceDataUrl || "",
+          patchDataUrl: "",
+          acceptedByThreshold: true,
+          rescuedByMotif: false,
+          fallbackDetected: true,
+          circleLike: true,
+        };
+        if (looksTextLikeCandidate(drawingMask, width, candidate)) continue;
+        if (!passesCircleShapeGate(drawingMask, width, candidate, Math.min(1, fuzz + 0.15)))
+          continue;
+        if (!passesColorNeutralityGate(drawing.imageData, candidate, Math.min(1, fuzz + 0.2)))
+          continue;
+        const borderDark = getDrawingBorderDarkRatio(drawingMask, width, candidate, 2);
+        if (borderDark > 0.66) continue;
+        const fillPenalty = Math.min(1, Math.abs(fill - targetFill) / 0.6);
+        const sizePenalty = Math.min(1, sizeLogDelta / Math.max(0.001, sizeLogTol));
+        candidate.score = Math.max(0.58, 1 - 0.55 * sizePenalty - 0.25 * fillPenalty);
+        candidate.cxPct = (candidate.cx / width) * 100;
+        candidate.cyPct = (candidate.cy / height) * 100;
+        raw.push(candidate);
+      }
+    }
+
+    if (raw.length < 2) return [];
+    const sorted = raw.sort((a, b) => b.score - a.score);
+    const groups = [];
+    for (const item of sorted) {
+      let placed = false;
+      for (const group of groups) {
+        const rep = group[0];
+        const diamA = Math.min(item.w, item.h);
+        const diamB = Math.min(rep.w, rep.h);
+        const sizeClose =
+          Math.abs(Math.log(Math.max(1, diamA) / Math.max(1, diamB))) <= 0.24 + fuzz * 0.18;
+        const aspectClose =
+          Math.abs(item.w / Math.max(1, item.h) - rep.w / Math.max(1, rep.h)) <= 0.16 + fuzz * 0.1;
+        if (sizeClose && aspectClose) {
+          group.push(item);
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) groups.push([item]);
+    }
+    groups.sort((a, b) => b.length - a.length);
+    const repeatGroup = groups.find((g) => g.length >= 2);
+    if (!repeatGroup) return [];
+    return dedupeCandidatesByOverlapNms(dedupeCandidatesByDistance(repeatGroup, 10)).sort(
+      (a, b) => b.score - a.score
+    );
+  }
+
+  function detectRepeatedMotifsOnCanvas(drawing, drawingMask, fuzz = 0, similarityThreshold = 0.5) {
+    const width = drawing.imageData.width;
+    const height = drawing.imageData.height;
+    const fuzzNorm = Math.max(0, Math.min(1, Number(fuzz) || 0));
+    const similarityBias = Math.max(0, Math.min(1, similarityThreshold + fuzzNorm * 0.2));
+    const visited = new Uint8Array(width * height);
+    const qx = new Int32Array(width * height);
+    const qy = new Int32Array(width * height);
+
+    const minArea = Math.max(10, Math.round(width * height * (0.000012 - fuzzNorm * 0.000006)));
+    const maxArea = Math.max(minArea + 1, Math.round(width * height * (0.022 + fuzzNorm * 0.03)));
+    const maxComponents = 2200;
+    let seenComponents = 0;
+    const components = [];
+
+    const debugRoundBoxes = [];
+    const debugSquareBoxes = [];
+    const debugLineBoxes = [];
+    const debugTextRejectedBoxes = [];
+    const debugColorRejectedBoxes = [];
+
+    const getComponentRoundness = (pixels, candidate) => {
+      if (!Array.isArray(pixels) || pixels.length < 10) return 0;
+      const cx = candidate.x + candidate.w / 2;
+      const cy = candidate.y + candidate.h / 2;
+      const sectorCount = 36;
+      const sectorFar = new Float32Array(sectorCount);
+      const sectorSeen = new Uint8Array(sectorCount);
+      const boundaryRadii = [];
+
+      for (const idx of pixels) {
+        const px = idx % width;
+        const py = Math.floor(idx / width);
+        const left = px <= 0 || !drawingMask[py * width + (px - 1)];
+        const right = px >= width - 1 || !drawingMask[py * width + (px + 1)];
+        const up = py <= 0 || !drawingMask[(py - 1) * width + px];
+        const down = py >= height - 1 || !drawingMask[(py + 1) * width + px];
+        if (!(left || right || up || down)) continue;
+        const dx = px + 0.5 - cx;
+        const dy = py + 0.5 - cy;
+        const r = Math.hypot(dx, dy);
+        if (r <= 0.001) continue;
+        boundaryRadii.push(r);
+        const sector =
+          Math.floor(
+            (((Math.atan2(dy, dx) + Math.PI) / (Math.PI * 2)) * sectorCount) % sectorCount
+          ) || 0;
+        if (!sectorSeen[sector] || r > sectorFar[sector]) sectorFar[sector] = r;
+        sectorSeen[sector] = 1;
+      }
+
+      const outerRadii = [];
+      for (let i = 0; i < sectorCount; i += 1) {
+        if (sectorSeen[i]) outerRadii.push(sectorFar[i]);
+      }
+      if (outerRadii.length < 14) return 0;
+      const mean = outerRadii.reduce((acc, r) => acc + r, 0) / outerRadii.length;
+      if (mean <= 0) return 0;
+      const variance =
+        outerRadii.reduce((acc, r) => acc + (r - mean) * (r - mean), 0) / outerRadii.length;
+      const std = Math.sqrt(variance);
+      const sectorHits = sectorSeen.reduce((acc, v) => acc + (v ? 1 : 0), 0);
+      const sectorCoverage = sectorHits / sectorCount;
+      const radialUniformity = Math.max(0, 1 - std / mean);
+      return Math.max(0, Math.min(1, radialUniformity * 0.72 + sectorCoverage * 0.28));
+    };
+
+    const roundThreshold = 0.72 - fuzzNorm * 0.2;
+    const lineAspectReject = 1.45 + fuzzNorm * 0.3;
+    const maxColoredPixels = Math.round(fuzzNorm * 4);
+    const minDiameterPx = Math.max(10, Math.round(Math.min(width, height) * 0.006));
+
+    for (let y = 0; y < height; y += 1) {
+      const row = y * width;
+      for (let x = 0; x < width; x += 1) {
+        const startIdx = row + x;
+        if (!drawingMask[startIdx] || visited[startIdx]) continue;
+        if (seenComponents >= maxComponents) break;
+        seenComponents += 1;
+
+        let head = 0;
+        let tail = 0;
+        qx[tail] = x;
+        qy[tail] = y;
+        tail += 1;
+        visited[startIdx] = 1;
+
+        let area = 0;
+        let minX = x;
+        let minY = y;
+        let maxX = x;
+        let maxY = y;
+        const pixels = [];
+
+        while (head < tail) {
+          const cx = qx[head];
+          const cy = qy[head];
+          head += 1;
+          area += 1;
+          const idx = cy * width + cx;
+          pixels.push(idx);
+          if (cx < minX) minX = cx;
+          if (cy < minY) minY = cy;
+          if (cx > maxX) maxX = cx;
+          if (cy > maxY) maxY = cy;
+          for (let oy = -1; oy <= 1; oy += 1) {
+            const ny = cy + oy;
+            if (ny < 0 || ny >= height) continue;
+            const nrow = ny * width;
+            for (let ox = -1; ox <= 1; ox += 1) {
+              if (ox === 0 && oy === 0) continue;
+              const nx = cx + ox;
+              if (nx < 0 || nx >= width) continue;
+              const nidx = nrow + nx;
+              if (!drawingMask[nidx] || visited[nidx]) continue;
+              visited[nidx] = 1;
+              qx[tail] = nx;
+              qy[tail] = ny;
+              tail += 1;
+            }
+          }
+        }
+
+        if (area < minArea || area > maxArea) continue;
+
+        const w = maxX - minX + 1;
+        const h = maxY - minY + 1;
+        if (w < 6 || h < 6) continue;
+        const aspect = w / Math.max(1, h);
+        if (aspect > 2.35 || aspect < 1 / 2.35) {
+          if (debugLineBoxes.length < 2500) debugLineBoxes.push({ x: minX, y: minY, w, h });
+          continue;
+        }
+        const fill = area / Math.max(1, w * h);
+        if (fill < 0.03 || fill > 0.94) continue;
+
+        const candidate = {
+          x: minX,
+          y: minY,
+          w,
+          h,
+          cx: minX + w / 2,
+          cy: minY + h / 2,
+          symbolName: "Round item",
+          symbolId: null,
+          sourceDataUrl: "",
+          patchDataUrl: "",
+          acceptedByThreshold: true,
+          rescuedByMotif: false,
+          fallbackDetected: true,
+        };
+
+        const blackBoundCandidate = refineCandidateToBlackBounds(drawingMask, width, candidate);
+        if (!blackBoundCandidate) continue;
+
+        let finalCandidate = blackBoundCandidate;
+        let refinedAspect = finalCandidate.w / Math.max(1, finalCandidate.h);
+        if (refinedAspect > lineAspectReject || refinedAspect < 1 / lineAspectReject) {
+          if (debugLineBoxes.length < 2500) {
+            debugLineBoxes.push({
+              x: finalCandidate.x,
+              y: finalCandidate.y,
+              w: finalCandidate.w,
+              h: finalCandidate.h,
+            });
+          }
+          continue;
+        }
+
+        let roundness = getComponentRoundness(pixels, finalCandidate);
+        // Rescue round items that are attached to nearby lines by extracting a tighter circular core.
+        if (roundness < roundThreshold) {
+          const isolatedCore = isolateCircularCoreCandidate(
+            drawingMask,
+            width,
+            height,
+            finalCandidate,
+            fuzz
+          );
+          if (isolatedCore) {
+            const coreBounds = refineCandidateToBlackBounds(drawingMask, width, isolatedCore);
+            if (coreBounds) {
+              const coreRoundness = getRadialRoundnessScore(drawingMask, width, coreBounds);
+              if (coreRoundness >= roundThreshold - 0.03) {
+                finalCandidate = coreBounds;
+                roundness = Math.max(roundness, coreRoundness);
+                refinedAspect = finalCandidate.w / Math.max(1, finalCandidate.h);
+              }
+            }
+          }
+        }
+        if (roundness < roundThreshold) {
+          if (debugSquareBoxes.length < 2500) {
+            debugSquareBoxes.push({
+              x: finalCandidate.x,
+              y: finalCandidate.y,
+              w: finalCandidate.w,
+              h: finalCandidate.h,
+            });
+          }
+          continue;
+        }
+
+        if (hasSecondaryColorInCandidate(drawing.imageData, finalCandidate, maxColoredPixels)) {
+          if (debugColorRejectedBoxes.length < 2500) {
+            debugColorRejectedBoxes.push({
+              x: finalCandidate.x,
+              y: finalCandidate.y,
+              w: finalCandidate.w,
+              h: finalCandidate.h,
+            });
+          }
+          continue;
+        }
+        if (!passesColorNeutralityGate(drawing.imageData, finalCandidate, 0)) {
+          if (debugColorRejectedBoxes.length < 2500) {
+            debugColorRejectedBoxes.push({
+              x: finalCandidate.x,
+              y: finalCandidate.y,
+              w: finalCandidate.w,
+              h: finalCandidate.h,
+            });
+          }
+          continue;
+        }
+
+        const diameter = Math.min(finalCandidate.w, finalCandidate.h);
+        if (diameter < minDiameterPx) {
+          if (debugTextRejectedBoxes.length < 2500) {
+            debugTextRejectedBoxes.push({
+              x: finalCandidate.x,
+              y: finalCandidate.y,
+              w: finalCandidate.w,
+              h: finalCandidate.h,
+            });
+          }
+          continue;
+        }
+        const score = Math.min(
+          0.98,
+          0.56 + roundness * 0.3 + (1 - Math.abs(1 - refinedAspect)) * 0.1 + similarityBias * 0.04
+        );
+        finalCandidate.score = score;
+        finalCandidate.cxPct = (finalCandidate.cx / width) * 100;
+        finalCandidate.cyPct = (finalCandidate.cy / height) * 100;
+
+        components.push({
+          candidate: finalCandidate,
+          diameter,
+          roundness,
+        });
+        if (debugRoundBoxes.length < 2500) {
+          debugRoundBoxes.push({
+            x: finalCandidate.x,
+            y: finalCandidate.y,
+            w: finalCandidate.w,
+            h: finalCandidate.h,
+          });
+        }
+      }
+    }
+
+    if (components.length < 1) {
+      return {
+        candidates: [],
+        groupedCandidates: [],
+        rawCandidates: [],
+        groupCount: 0,
+        componentCount: 0,
+        tuning: {
+          fuzzPercent: Math.round(fuzzNorm * 100),
+          roundThreshold: Number(roundThreshold.toFixed(3)),
+          lineAspectReject: Number(lineAspectReject.toFixed(3)),
+          diameterBandRatio: Number((0.04 + fuzzNorm * 0.12).toFixed(3)),
+          maxColoredPixels,
+          minDiameterPx,
+          selectedClusterCount: 0,
+        },
+        debugLayers: {
+          roundBoxes: debugRoundBoxes,
+          textRejectedBoxes: debugTextRejectedBoxes,
+          squareBoxes: debugSquareBoxes,
+          lineBoxes: debugLineBoxes,
+          colorRejectedBoxes: debugColorRejectedBoxes,
+        },
+      };
+    }
+
+    const ranked = [...components].sort((a, b) => b.candidate.score - a.candidate.score);
+    const groupedCandidates = ranked.map((x) => x.candidate);
+
+    const diameterBandRatio = 0.04 + fuzzNorm * 0.12;
+    const clusters = [];
+    for (const item of ranked) {
+      let placed = false;
+      for (const cluster of clusters) {
+        const ratio = item.diameter / Math.max(1e-6, cluster.meanDiameter);
+        if (ratio >= 1 - diameterBandRatio && ratio <= 1 + diameterBandRatio) {
+          cluster.items.push(item);
+          cluster.sumDiameter += item.diameter;
+          cluster.meanDiameter = cluster.sumDiameter / cluster.items.length;
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        clusters.push({
+          items: [item],
+          sumDiameter: item.diameter,
+          meanDiameter: item.diameter,
+        });
+      }
+    }
+
+    clusters.sort((a, b) => b.items.length - a.items.length || b.meanDiameter - a.meanDiameter);
+    const repeatedClusters = clusters.filter((c) => c.items.length >= 2);
+    const selectedClusters =
+      fuzzNorm >= 0.45
+        ? (repeatedClusters.length > 0 ? repeatedClusters : clusters).slice(0, 8)
+        : clusters.slice(0, 1);
+    const dominant = selectedClusters.flatMap((c) => c.items);
+    const deduped = [];
+    for (const entry of dominant) {
+      const c = entry.candidate;
+      const duplicate = deduped.some((k) => {
+        const dRef = Math.max(8, Math.min(c.w, c.h, k.w, k.h));
+        return Math.hypot(c.cx - k.cx, c.cy - k.cy) <= dRef * 0.6;
+      });
+      if (!duplicate) deduped.push(c);
+    }
+
+    return {
+      candidates: deduped.sort((a, b) => b.score - a.score),
+      groupedCandidates,
+      rawCandidates: components.map((x) => x.candidate),
+      groupCount: clusters.filter((c) => c.items.length >= 2).length,
+      componentCount: seenComponents,
+      tuning: {
+        fuzzPercent: Math.round(fuzzNorm * 100),
+        roundThreshold: Number(roundThreshold.toFixed(3)),
+        lineAspectReject: Number(lineAspectReject.toFixed(3)),
+        diameterBandRatio: Number(diameterBandRatio.toFixed(3)),
+        maxColoredPixels,
+        minDiameterPx,
+        selectedClusterCount: selectedClusters.length,
+      },
+      debugLayers: {
+        roundBoxes: debugRoundBoxes,
+        textRejectedBoxes: debugTextRejectedBoxes,
+        squareBoxes: debugSquareBoxes,
+        lineBoxes: debugLineBoxes,
+        colorRejectedBoxes: debugColorRejectedBoxes,
+      },
+    };
+  }
+
+  function tightenCandidateToPrimaryComponent(drawingMask, drawingWidth, candidate) {
+    const minX = Math.max(0, Math.floor(candidate.x));
+    const minY = Math.max(0, Math.floor(candidate.y));
+    const maxX = Math.min(drawingWidth - 1, Math.floor(candidate.x + candidate.w - 1));
+    const maxY = Math.max(minY, Math.floor(candidate.y + candidate.h - 1));
+    const w = maxX - minX + 1;
+    const h = maxY - minY + 1;
+    if (w <= 2 || h <= 2) return null;
+
+    const local = new Uint8Array(w * h);
+    for (let y = 0; y < h; y += 1) {
+      const srcRow = (minY + y) * drawingWidth + minX;
+      const dstRow = y * w;
+      for (let x = 0; x < w; x += 1) {
+        local[dstRow + x] = drawingMask[srcRow + x] ? 1 : 0;
+      }
+    }
+
+    const visited = new Uint8Array(w * h);
+    const components = [];
+    const qx = new Int16Array(w * h);
+    const qy = new Int16Array(w * h);
+
+    for (let y = 0; y < h; y += 1) {
+      for (let x = 0; x < w; x += 1) {
+        const idx = y * w + x;
+        if (!local[idx] || visited[idx]) continue;
+        let head = 0;
+        let tail = 0;
+        qx[tail] = x;
+        qy[tail] = y;
+        tail += 1;
+        visited[idx] = 1;
+        let size = 0;
+        let cMinX = x;
+        let cMinY = y;
+        let cMaxX = x;
+        let cMaxY = y;
+        while (head < tail) {
+          const cx = qx[head];
+          const cy = qy[head];
+          head += 1;
+          size += 1;
+          if (cx < cMinX) cMinX = cx;
+          if (cy < cMinY) cMinY = cy;
+          if (cx > cMaxX) cMaxX = cx;
+          if (cy > cMaxY) cMaxY = cy;
+          const neighbors = [
+            [cx - 1, cy],
+            [cx + 1, cy],
+            [cx, cy - 1],
+            [cx, cy + 1],
+          ];
+          for (const [nx, ny] of neighbors) {
+            if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+            const nIdx = ny * w + nx;
+            if (!local[nIdx] || visited[nIdx]) continue;
+            visited[nIdx] = 1;
+            qx[tail] = nx;
+            qy[tail] = ny;
+            tail += 1;
+          }
+        }
+        if (size >= 8) {
+          components.push({ size, minX: cMinX, minY: cMinY, maxX: cMaxX, maxY: cMaxY });
+        }
+      }
+    }
+
+    if (components.length === 0) return null;
+    components.sort((a, b) => b.size - a.size);
+    const primary = components[0];
+    const secondary = components[1];
+    // If two similarly strong components exist, this window is ambiguous (often 2 symbols).
+    if (secondary && secondary.size >= primary.size * 0.52) {
+      return null;
+    }
+
+    const pad = 2;
+    const tx = Math.max(0, minX + primary.minX - pad);
+    const ty = Math.max(0, minY + primary.minY - pad);
+    const tw = Math.max(1, primary.maxX - primary.minX + 1 + pad * 2);
+    const th = Math.max(1, primary.maxY - primary.minY + 1 + pad * 2);
+    return {
+      ...candidate,
+      x: tx,
+      y: ty,
+      w: tw,
+      h: th,
+      cx: tx + tw / 2,
+      cy: ty + th / 2,
+    };
+  }
+
+  function matchesTemplateGeometry(drawingMask, drawingWidth, candidate, template, fuzz) {
+    const minX = Math.max(0, Math.floor(candidate.x));
+    const minY = Math.max(0, Math.floor(candidate.y));
+    const maxX = Math.min(drawingWidth - 1, Math.floor(candidate.x + candidate.w - 1));
+    const maxY = Math.max(minY, Math.floor(candidate.y + candidate.h - 1));
+    if (maxX <= minX || maxY <= minY) return false;
+    const w = maxX - minX + 1;
+    const h = maxY - minY + 1;
+    const local = new Uint8Array(w * h);
+    let dark = 0;
+    for (let y = 0; y < h; y += 1) {
+      const srcRow = (minY + y) * drawingWidth + minX;
+      const dstRow = y * w;
+      for (let x = 0; x < w; x += 1) {
+        const v = drawingMask[srcRow + x] ? 1 : 0;
+        local[dstRow + x] = v;
+        dark += v;
+      }
+    }
+    if (dark < 12) return false;
+    const sig = buildMaskSignature(local, w, h, 10);
+    if (!sig || !Array.isArray(template.contentSignature)) return true;
+    const aspectDelta = Math.abs(Math.log((sig.aspect + 1e-6) / (template.contentAspect + 1e-6)));
+    const aspectTolerance = 0.2 + fuzz * 0.35;
+    if (aspectDelta > aspectTolerance) return false;
+    const fillDelta = Math.abs(sig.fill - template.contentFill);
+    const fillTolerance = 0.16 + fuzz * 0.22;
+    if (fillDelta > fillTolerance) return false;
+    const t = template.contentSignature;
+    const s = sig.values;
+    let diff = 0;
+    const len = Math.min(t.length, s.length);
+    for (let i = 0; i < len; i += 1) diff += Math.abs(t[i] - s[i]);
+    const signatureScore = 1 - diff / Math.max(1, len);
+    const signatureMin = 0.78 - fuzz * 0.28;
+    return signatureScore >= signatureMin;
+  }
+
+  function looksTextLikeCandidate(drawingMask, drawingWidth, candidate) {
+    const minX = Math.max(0, Math.floor(candidate.x));
+    const minY = Math.max(0, Math.floor(candidate.y));
+    const maxX = Math.min(drawingWidth - 1, Math.floor(candidate.x + candidate.w - 1));
+    const maxY = Math.max(minY, Math.floor(candidate.y + candidate.h - 1));
+    if (maxX <= minX || maxY <= minY) return false;
+    let dark = 0;
+    let rowTransitions = 0;
+    let colTransitions = 0;
+    for (let y = minY; y <= maxY; y += 1) {
+      const row = y * drawingWidth;
+      let prev = 0;
+      for (let x = minX; x <= maxX; x += 1) {
+        const value = drawingMask[row + x];
+        dark += value;
+        if (x > minX && value !== prev) rowTransitions += 1;
+        prev = value;
+      }
+    }
+    for (let x = minX; x <= maxX; x += 1) {
+      let prev = 0;
+      for (let y = minY; y <= maxY; y += 1) {
+        const value = drawingMask[y * drawingWidth + x];
+        if (y > minY && value !== prev) colTransitions += 1;
+        prev = value;
+      }
+    }
+    const area = Math.max(1, (maxX - minX + 1) * (maxY - minY + 1));
+    const w = maxX - minX + 1;
+    const h = maxY - minY + 1;
+    const density = dark / area;
+    const elongated = w / Math.max(1, h) > 1.5 || h / Math.max(1, w) > 1.5;
+    const highTransitions = rowTransitions + colTransitions > area * 0.36;
+    const sparseGlyphLike = density < 0.34 && highTransitions;
+    const tinyAndThin = Math.min(w, h) < 11 && density < 0.38;
+    const narrowStrokeGlyph = Math.min(w, h) < 14 && area < 260 && density < 0.46;
+    return (
+      REJECT_TEXT_FILTER &&
+      (sparseGlyphLike || (elongated && density < 0.34) || tinyAndThin || narrowStrokeGlyph)
+    );
+  }
+
+  function looksAlphanumericInterference(drawingMask, drawingWidth, candidate) {
+    const minX = Math.max(0, Math.floor(candidate.x));
+    const minY = Math.max(0, Math.floor(candidate.y));
+    const maxX = Math.min(drawingWidth - 1, Math.floor(candidate.x + candidate.w - 1));
+    const maxY = Math.max(minY, Math.floor(candidate.y + candidate.h - 1));
+    const w = maxX - minX + 1;
+    const h = maxY - minY + 1;
+    if (w <= 3 || h <= 3) return true;
+
+    const rowDensity = new Float32Array(h);
+    const colDensity = new Float32Array(w);
+    let dark = 0;
+    for (let y = 0; y < h; y += 1) {
+      const row = (minY + y) * drawingWidth + minX;
+      let rowDark = 0;
+      for (let x = 0; x < w; x += 1) {
+        const v = drawingMask[row + x] ? 1 : 0;
+        rowDark += v;
+        colDensity[x] += v;
+      }
+      rowDensity[y] = rowDark / Math.max(1, w);
+      dark += rowDark;
+    }
+    for (let x = 0; x < w; x += 1) colDensity[x] /= Math.max(1, h);
+
+    const area = Math.max(1, w * h);
+    const density = dark / area;
+    const activeRows = rowDensity.reduce((n, d) => n + (d > 0.08 ? 1 : 0), 0);
+    const activeCols = colDensity.reduce((n, d) => n + (d > 0.08 ? 1 : 0), 0);
+    const rowCoverage = activeRows / Math.max(1, h);
+    const colCoverage = activeCols / Math.max(1, w);
+    const heavyRowBands = rowDensity.reduce((n, d) => n + (d > 0.7 ? 1 : 0), 0);
+    const heavyColBands = colDensity.reduce((n, d) => n + (d > 0.7 ? 1 : 0), 0);
+
+    const aspect = w / Math.max(1, h);
+    const topBand = rowDensity.slice(0, Math.max(1, Math.floor(h * 0.2)));
+    const bottomBand = rowDensity.slice(Math.max(0, h - Math.max(1, Math.floor(h * 0.2))));
+    const midBand = rowDensity.slice(
+      Math.max(0, Math.floor(h * 0.35)),
+      Math.min(h, Math.ceil(h * 0.65))
+    );
+    const topHeavy = topBand.reduce((m, v) => Math.max(m, v), 0) > 0.72;
+    const bottomHeavy = bottomBand.reduce((m, v) => Math.max(m, v), 0) > 0.72;
+    const midLight =
+      midBand.reduce((a, b) => a + b, 0) / Math.max(1, midBand.length) < 0.34 ||
+      midBand.length === 0;
+
+    const horizontalTextBand = aspect > 1.7 && rowCoverage < 0.6 && colCoverage > 0.45;
+    const stripeLike = heavyRowBands >= 2 && rowCoverage < 0.58;
+    const glyphish = density < 0.5 && rowCoverage < 0.52 && colCoverage < 0.72;
+    const tableCellLike = heavyRowBands >= 2 && heavyColBands >= 1 && density < 0.58;
+    const framedTextLike = topHeavy && bottomHeavy && midLight;
+    return horizontalTextBand || stripeLike || glyphish || tableCellLike || framedTextLike;
+  }
+
+  function suppressTextInterferenceInMask(sourceMask, width, height) {
+    const mask = new Uint8Array(sourceMask);
+    const visited = new Uint8Array(width * height);
+    const qx = new Int32Array(width * height);
+    const qy = new Int32Array(width * height);
+    let removedComponents = 0;
+    let removedPixels = 0;
+    const removedBoxes = [];
+
+    for (let y = 0; y < height; y += 1) {
+      const row = y * width;
+      for (let x = 0; x < width; x += 1) {
+        const startIdx = row + x;
+        if (!mask[startIdx] || visited[startIdx]) continue;
+
+        let head = 0;
+        let tail = 0;
+        qx[tail] = x;
+        qy[tail] = y;
+        tail += 1;
+        visited[startIdx] = 1;
+
+        let minX = x;
+        let minY = y;
+        let maxX = x;
+        let maxY = y;
+        const pixels = [];
+
+        while (head < tail) {
+          const cx = qx[head];
+          const cy = qy[head];
+          head += 1;
+          const idx = cy * width + cx;
+          pixels.push(idx);
+          if (cx < minX) minX = cx;
+          if (cy < minY) minY = cy;
+          if (cx > maxX) maxX = cx;
+          if (cy > maxY) maxY = cy;
+
+          for (let oy = -1; oy <= 1; oy += 1) {
+            const ny = cy + oy;
+            if (ny < 0 || ny >= height) continue;
+            const nrow = ny * width;
+            for (let ox = -1; ox <= 1; ox += 1) {
+              if (ox === 0 && oy === 0) continue;
+              const nx = cx + ox;
+              if (nx < 0 || nx >= width) continue;
+              const nidx = nrow + nx;
+              if (!mask[nidx] || visited[nidx]) continue;
+              visited[nidx] = 1;
+              qx[tail] = nx;
+              qy[tail] = ny;
+              tail += 1;
+            }
+          }
+        }
+
+        if (pixels.length < 4) continue;
+        const candidate = {
+          x: minX,
+          y: minY,
+          w: maxX - minX + 1,
+          h: maxY - minY + 1,
+        };
+        const candidateMinDim = Math.min(candidate.w, candidate.h);
+        const candidateArea = candidate.w * candidate.h;
+        const hasCore = hasCircularCore(mask, width, candidate, 0.2);
+        const tinyCircularGlyph = hasCore && (candidateMinDim <= 14 || candidateArea <= 230);
+        const isTextLike =
+          (looksTextLikeCandidate(mask, width, candidate) ||
+            looksAlphanumericInterference(mask, width, candidate)) &&
+          (!hasCore || tinyCircularGlyph);
+        if (!isTextLike) continue;
+        for (const idx of pixels) mask[idx] = 0;
+        removedComponents += 1;
+        removedPixels += pixels.length;
+        if (removedBoxes.length < 1200) {
+          removedBoxes.push({
+            x: minX,
+            y: minY,
+            w: maxX - minX + 1,
+            h: maxY - minY + 1,
+          });
+        }
+      }
+    }
+
+    return { mask, removedComponents, removedPixels, removedBoxes };
+  }
+
+  function hasCircularCore(drawingMask, drawingWidth, candidate, fuzz = 0) {
+    const sizes = [0.34, 0.46, 0.58];
+    const minDim = Math.min(candidate.w, candidate.h);
+    const cx = candidate.x + candidate.w / 2;
+    const cy = candidate.y + candidate.h / 2;
+    for (const frac of sizes) {
+      const side = Math.max(8, Math.round(minDim * frac));
+      const probe = {
+        x: Math.round(cx - side / 2),
+        y: Math.round(cy - side / 2),
+        w: side,
+        h: side,
+      };
+      if (passesCircleShapeGate(drawingMask, drawingWidth, probe, Math.min(1, fuzz + 0.2))) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function scoreCircleWindow(drawingMask, drawingWidth, candidate, fuzz = 0) {
+    const minX = Math.max(0, Math.floor(candidate.x));
+    const minY = Math.max(0, Math.floor(candidate.y));
+    const maxX = Math.min(drawingWidth - 1, Math.floor(candidate.x + candidate.w - 1));
+    const maxY = Math.max(minY, Math.floor(candidate.y + candidate.h - 1));
+    const w = maxX - minX + 1;
+    const h = maxY - minY + 1;
+    if (w <= 4 || h <= 4) return 0;
+    const aspect = w / Math.max(1, h);
+    if (Math.abs(aspect - 1) > 0.28 + fuzz * 0.14) return 0;
+
+    const cx = (w - 1) / 2;
+    const cy = (h - 1) / 2;
+    const radius = Math.min(w, h) / 2;
+    const sectors = 16;
+    const ringHits = new Uint8Array(sectors);
+    let ringDark = 0;
+    let centerDark = 0;
+    let centerTotal = 0;
+    for (let y = 0; y < h; y += 1) {
+      const srcRow = (minY + y) * drawingWidth + minX;
+      for (let x = 0; x < w; x += 1) {
+        const v = drawingMask[srcRow + x] ? 1 : 0;
+        const dx = x - cx;
+        const dy = y - cy;
+        const rNorm = Math.hypot(dx, dy) / Math.max(1e-6, radius);
+        if (rNorm <= 0.22) {
+          centerTotal += 1;
+          centerDark += v;
+        }
+        if (!v) continue;
+        if (rNorm >= 0.74 && rNorm <= 1.05) {
+          ringDark += 1;
+          const ang = Math.floor(
+            (((Math.atan2(dy, dx) + Math.PI) / (Math.PI * 2)) * sectors) % sectors
+          );
+          ringHits[ang] = 1;
+        }
+      }
+    }
+    const ringCoverage = ringHits.reduce((a, b) => a + b, 0) / sectors;
+    const centerRatio = centerDark / Math.max(1, centerTotal);
+    const ringPresence = ringDark / Math.max(1, w * h);
+    return ringCoverage * 0.6 + centerRatio * 0.2 + Math.min(1, ringPresence * 18) * 0.2;
+  }
+
+  function isolateCircularCoreCandidate(
+    drawingMask,
+    drawingWidth,
+    drawingHeight,
+    candidate,
+    fuzz = 0
+  ) {
+    const minDim = Math.max(8, Math.min(candidate.w, candidate.h));
+    const sizes = [0.34, 0.46, 0.58, 0.7].map((f) => Math.max(8, Math.round(minDim * f)));
+    const baseCx = candidate.x + candidate.w / 2;
+    const baseCy = candidate.y + candidate.h / 2;
+    let best = null;
+    let bestScore = 0;
+
+    for (const side of sizes) {
+      const step = Math.max(2, Math.round(side * 0.2));
+      for (let oy = -2; oy <= 2; oy += 1) {
+        for (let ox = -2; ox <= 2; ox += 1) {
+          const probe = {
+            x: Math.round(baseCx - side / 2 + ox * step),
+            y: Math.round(baseCy - side / 2 + oy * step),
+            w: side,
+            h: side,
+          };
+          if (
+            probe.x < 0 ||
+            probe.y < 0 ||
+            probe.x + probe.w > drawingWidth ||
+            probe.y + probe.h > drawingHeight
+          )
+            continue;
+          if (!passesCircleShapeGate(drawingMask, drawingWidth, probe, Math.min(1, fuzz + 0.25)))
+            continue;
+          const score = scoreCircleWindow(drawingMask, drawingWidth, probe, fuzz);
+          if (score > bestScore) {
+            bestScore = score;
+            best = probe;
+          }
+        }
+      }
+    }
+    if (!best || bestScore < 0.46) return null;
+    return centerCandidateBox(best, drawingWidth, drawingHeight, 0.22);
+  }
+
+  function keepStrongestCircleCluster(candidates, fuzz = 0) {
+    if (!Array.isArray(candidates) || candidates.length === 0) return [];
+    const circles = candidates.filter((c) => c.circleLike);
+    if (circles.length === 0) return [];
+    const groups = [];
+    for (const item of circles) {
+      let placed = false;
+      const itemDiameter = Math.min(item.w, item.h);
+      const itemAspect = item.w / Math.max(1, item.h);
+      for (const group of groups) {
+        const rep = group[0];
+        const repDiameter = Math.min(rep.w, rep.h);
+        const repAspect = rep.w / Math.max(1, rep.h);
+        const sizeClose =
+          Math.abs(Math.log((itemDiameter + 1e-6) / (repDiameter + 1e-6))) <= 0.14 + fuzz * 0.16;
+        const aspectClose = Math.abs(itemAspect - repAspect) <= 0.08 + fuzz * 0.08;
+        if (sizeClose && aspectClose) {
+          group.push(item);
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) groups.push([item]);
+    }
+    groups.sort((a, b) => b.length - a.length || b[0].score - a[0].score);
+    const repeated = groups.filter((g) => g.length >= 2);
+    if (repeated.length > 0) {
+      // Return all duplicated-instance groups (not just a small subset).
+      return repeated.flat().sort((a, b) => b.score - a.score);
+    }
+    return circles.slice(0, Math.min(12, circles.length));
+  }
+
+  function renderTopCandidateGrid(candidates) {
+    if (!topCandidatesWrap || !topCandidateGrid) return;
+    topCandidateGrid.innerHTML = "";
+    if (!candidates || candidates.length === 0) {
+      topCandidatesWrap.classList.add("hidden");
+      return;
+    }
+    const grouped = new Map();
+    for (const item of candidates.slice(0, 160)) {
+      const raw = String(item?.symbolName || "Ungrouped");
+      const match = raw.match(/^Pattern group (\d+) \((\d+)\)$/);
+      const key = match ? `Pattern group ${match[1]}` : "Ungrouped";
+      const declaredCount = match ? Number(match[2] || 0) : 0;
+      if (!grouped.has(key)) grouped.set(key, { items: [], declaredCount });
+      const entry = grouped.get(key);
+      entry.items.push(item);
+      entry.declaredCount = Math.max(entry.declaredCount, declaredCount);
+    }
+
+    const groups = [...grouped.entries()].sort((a, b) => b[1].items.length - a[1].items.length);
+    for (const [groupName, group] of groups) {
+      const wrapper = document.createElement("section");
+      wrapper.className =
+        "col-span-full mb-3 rounded-md border border-gray-200 bg-gray-50/70 p-2 dark:border-gray-700 dark:bg-gray-800/40";
+      const header = document.createElement("div");
+      const shownCount = group.items.length;
+      const totalCount = Math.max(shownCount, Number(group.declaredCount || 0));
+      header.className = "mb-2 text-xs font-semibold text-gray-700 dark:text-gray-200";
+      header.textContent = `${groupName} - showing ${shownCount}${totalCount ? ` of ${totalCount}` : ""}`;
+
+      const groupGrid = document.createElement("div");
+      groupGrid.className = "grid gap-2 sm:grid-cols-2 lg:grid-cols-4";
+      for (const item of group.items.sort((a, b) => b.score - a.score)) {
+        const card = document.createElement("div");
+        card.className = "drawing-candidate-card";
+        const img = document.createElement("img");
+        img.className = "drawing-candidate-thumb";
+        img.alt = `${item.symbolName} candidate`;
+        img.src = item.patchDataUrl || "";
+        const meta = document.createElement("div");
+        meta.className =
+          "border-t border-gray-200 bg-white p-2 text-xs text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200";
+        meta.innerHTML = `<div class="font-semibold">${item.symbolName}</div><div class="mt-0.5">score ${item.score.toFixed(3)}</div><div class="mt-0.5">x ${item.cxPct.toFixed(2)}% | y ${item.cyPct.toFixed(2)}%</div>`;
+        card.append(img, meta);
+        groupGrid.appendChild(card);
+      }
+      wrapper.append(header, groupGrid);
+      topCandidateGrid.appendChild(wrapper);
+    }
+    topCandidatesWrap.classList.remove("hidden");
+  }
+
+  function clearScanMarkers() {
+    overlay?.querySelectorAll("[data-scan-marker='1']").forEach((n) => n.remove());
+  }
+
+  function renderScanMarkers(candidates) {
+    clearScanMarkers();
+    if (!overlay || !imgEl || !candidates?.length) return;
+    const sx = overlay.clientWidth / Math.max(1, imgEl.naturalWidth);
+    const sy = overlay.clientHeight / Math.max(1, imgEl.naturalHeight);
+    for (const item of candidates) {
+      const marker = document.createElement("div");
+      marker.setAttribute("data-scan-marker", "1");
+      marker.className =
+        "absolute rounded border border-green-500 bg-green-500/10 pointer-events-none";
+      marker.style.left = `${Math.round(item.x * sx)}px`;
+      marker.style.top = `${Math.round(item.y * sy)}px`;
+      marker.style.width = `${Math.max(8, Math.round(item.w * sx))}px`;
+      marker.style.height = `${Math.max(8, Math.round(item.h * sy))}px`;
+      overlay.appendChild(marker);
+    }
+  }
+
+  function renderDebugOverlay(payload) {
+    if (!(debugCanvasEl instanceof HTMLCanvasElement) || !payload?.drawingCanvas) return;
+    lastDebugOverlayPayload = payload;
+    const src = payload.drawingCanvas;
+    const ctx = debugCanvasEl.getContext("2d");
+      if (!ctx) return;
+    debugCanvasEl.width = src.width;
+    debugCanvasEl.height = src.height;
+    ctx.clearRect(0, 0, src.width, src.height);
+    ctx.drawImage(src, 0, 0);
+
+    const drawBoxes = (boxes, color, lineWidth = 2, max = 1400) => {
+      if (!Array.isArray(boxes) || boxes.length === 0) return;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = lineWidth;
+      for (const b of boxes.slice(0, max)) {
+        const x = Math.max(0, Number(b.x || 0));
+        const y = Math.max(0, Number(b.y || 0));
+        const w = Math.max(1, Number(b.w || 0));
+        const h = Math.max(1, Number(b.h || 0));
+        ctx.strokeRect(x, y, w, h);
+      }
+    };
+
+    const layer = {
+      final: debugLayerFinalEl instanceof HTMLInputElement ? debugLayerFinalEl.checked : true,
+      grouped: debugLayerGroupedEl instanceof HTMLInputElement ? debugLayerGroupedEl.checked : true,
+      round: debugLayerRoundEl instanceof HTMLInputElement ? debugLayerRoundEl.checked : true,
+      text: debugLayerTextEl instanceof HTMLInputElement ? debugLayerTextEl.checked : true,
+      square: debugLayerSquareEl instanceof HTMLInputElement ? debugLayerSquareEl.checked : true,
+      line: debugLayerLineEl instanceof HTMLInputElement ? debugLayerLineEl.checked : true,
+    };
+
+    // Draw in this order so kept hits remain visible on top.
+    if (layer.text) drawBoxes(payload.removedTextBoxes, "rgba(239,68,68,0.22)", 1, 3000);
+    if (layer.text) drawBoxes(payload.textRejectedBoxes, "rgba(220,38,38,0.8)", 1.2, 2000);
+    if (layer.square) drawBoxes(payload.squareBoxes, "rgba(168,85,247,0.75)", 1.4, 1800);
+    if (layer.line) drawBoxes(payload.lineBoxes, "rgba(59,130,246,0.75)", 1.4, 1800);
+    if (layer.round) drawBoxes(payload.roundBoxes, "rgba(6,182,212,0.8)", 1.5, 2000);
+    if (layer.grouped) drawBoxes(payload.groupedCandidates, "rgba(245,158,11,0.65)", 1.6, 1800);
+    if (layer.final) drawBoxes(payload.finalCandidates, "rgba(34,197,94,0.95)", 2.2, 1200);
+
+    if (debugMetaEl) {
+      debugMetaEl.textContent = `Overlay legend: green=returned (${payload.finalCandidates?.length || 0}), amber=grouped pre-final (${payload.groupedCandidates?.length || 0}), cyan=round candidates (${payload.roundBoxes?.length || 0}), purple=square rejects (${payload.squareBoxes?.length || 0}), blue=line rejects (${payload.lineBoxes?.length || 0}), red=text removed (${payload.removedTextBoxes?.length || 0} shown/${payload.removedTextComponents || 0} total).`;
+    }
+    if (debugLogEl) {
+      debugLogEl.textContent = [
+        `Fuzziness: ${Number(payload.tuning?.fuzzPercent || 0)}%`,
+        `Round threshold: ${Number(payload.tuning?.roundThreshold || 0).toFixed(3)}`,
+        `Line aspect reject: ${Number(payload.tuning?.lineAspectReject || 0).toFixed(3)}`,
+        `Diameter band ratio: ${Number(payload.tuning?.diameterBandRatio || 0).toFixed(3)}`,
+        `Max colored pixels: ${Number(payload.tuning?.maxColoredPixels || 0)}`,
+        `Min diameter px: ${Number(payload.tuning?.minDiameterPx || 0)}`,
+        `Selected clusters: ${Number(payload.tuning?.selectedClusterCount || 0)}`,
+        `Final returned: ${payload.finalCandidates?.length || 0}`,
+        `Grouped pre-final: ${payload.groupedCandidates?.length || 0}`,
+        `Round candidates: ${payload.roundBoxes?.length || 0}`,
+        `Text removed boxes shown: ${payload.removedTextBoxes?.length || 0}`,
+        `Text removed components total: ${payload.removedTextComponents || 0}`,
+        `Text-like rejects (post-circle): ${payload.textRejectedBoxes?.length || 0}`,
+        `Color rejects: ${payload.colorRejectedBoxes?.length || 0}`,
+        `Square rejects: ${payload.squareBoxes?.length || 0}`,
+        `Line rejects: ${payload.lineBoxes?.length || 0}`,
+      ].join("\n");
+    }
+  }
+
+  function refreshDebugOverlayFromLastPayload() {
+    if (!lastDebugOverlayPayload) return;
+    renderDebugOverlay(lastDebugOverlayPayload);
+  }
+
+  function renderReviewCandidate() {
+    const candidate = reviewQueue[reviewIndex];
+    if (!candidate || !(reviewFoundCanvas instanceof HTMLCanvasElement)) {
+      reviewModal?.classList.add("hidden");
+      reviewModal?.classList.remove("flex");
+      return;
+    }
+    if (!(reviewSymbolCanvas instanceof HTMLCanvasElement)) return;
+    if (reviewMetaEl) {
+      reviewMetaEl.textContent = `Candidate ${reviewIndex + 1} of ${reviewQueue.length} | ${candidate.symbolName} | score ${candidate.score.toFixed(3)} | confidence ${candidate.score >= 0.9 ? "high" : "medium"}`;
+    }
+    const foundCtx = reviewFoundCanvas.getContext("2d");
+    const symbolCtx = reviewSymbolCanvas.getContext("2d");
+    if (!foundCtx || !symbolCtx) return;
+    const foundImg = new Image();
+    foundImg.onload = () => {
+      reviewFoundCanvas.width = foundImg.width;
+      reviewFoundCanvas.height = foundImg.height;
+      foundCtx.clearRect(0, 0, reviewFoundCanvas.width, reviewFoundCanvas.height);
+      foundCtx.drawImage(foundImg, 0, 0);
+    };
+    foundImg.src = candidate.patchDataUrl || "";
+    const symbolImg = new Image();
+    symbolImg.onload = () => {
+      reviewSymbolCanvas.width = symbolImg.width;
+      reviewSymbolCanvas.height = symbolImg.height;
+      symbolCtx.clearRect(0, 0, reviewSymbolCanvas.width, reviewSymbolCanvas.height);
+      symbolCtx.drawImage(symbolImg, 0, 0);
+    };
+    symbolImg.src = candidate.sourceDataUrl || "";
+    reviewModal?.classList.remove("hidden");
+    reviewModal?.classList.add("flex");
+  }
+
+  function finishReviewAndRender() {
+    reviewModal?.classList.add("hidden");
+    reviewModal?.classList.remove("flex");
+    renderScanMarkers(acceptedReviewMatches);
+    showStatus(`Scan complete: ${acceptedReviewMatches.length} reviewed match(es) accepted.`);
+    showScanLive(`Accepted ${acceptedReviewMatches.length} reviewed match(es).`);
+  }
+
+  function handleReviewDecision(accepted) {
+    const candidate = reviewQueue[reviewIndex];
+    if (!candidate) {
+      finishReviewAndRender();
+      return;
+    }
+    updateReviewBias(candidate.symbolName, accepted);
+    if (accepted) acceptedReviewMatches.push(candidate);
+    reviewIndex += 1;
+    if (reviewIndex >= reviewQueue.length) {
+      finishReviewAndRender();
+      return;
+    }
+    renderReviewCandidate();
+  }
+
+  async function rescanForLibrarySymbols() {
+    if (scanInProgress) {
+      rescanQueued = true;
+      return;
+    }
+    if (!imgEl?.src) {
+      showStatus("Upload a drawing before running duplicate scan.", true);
+      return;
+    }
+    const drawing = getCurrentDrawingImageData();
+    if (!drawing) {
+      showStatus("Unable to read drawing image for scanning.", true);
+      return;
+    }
+    scanInProgress = true;
+    rescanQueued = false;
+    showStatus("Scanning drawing canvas for duplicated patterns...");
+    showScanLive("Building component signatures from full canvas...");
+    clearScanMarkers();
+    try {
+      const duplicateOnlyMode =
+        DUPLICATE_ONLY_MODE || document.body?.dataset?.drawingDuplicateOnly !== "0";
+      if (duplicateOnlyMode) {
+        const baseMask = imageDataToMask(drawing.imageData).mask;
+        const textSuppressed = suppressTextInterferenceInMask(
+          baseMask,
+          drawing.imageData.width,
+          drawing.imageData.height
+        );
+        const drawingMask = textSuppressed.mask;
+        const fuzz = Math.max(0, Math.min(100, Number(fuzzinessValue || 15))) / 100;
+        const similarityThreshold = Math.max(0.32, 0.58 - fuzz * 0.24);
+        const duplicateScan = detectRepeatedMotifsOnCanvas(
+          drawing,
+          drawingMask,
+          fuzz,
+          similarityThreshold
+        );
+        const deduped = Array.isArray(duplicateScan?.candidates) ? duplicateScan.candidates : [];
+        for (const item of deduped.slice(0, 160)) {
+          item.patchDataUrl = extractPatchDataUrl(drawing.canvas, item.x, item.y, item.w, item.h);
+        }
+        topCandidates = deduped.slice(0, 120);
+        renderTopCandidateGrid(topCandidates);
+        renderDebugOverlay({
+          drawingCanvas: drawing.canvas,
+          finalCandidates: deduped,
+          groupedCandidates: Array.isArray(duplicateScan?.groupedCandidates)
+            ? duplicateScan.groupedCandidates
+            : [],
+          removedTextBoxes: Array.isArray(textSuppressed?.removedBoxes)
+            ? textSuppressed.removedBoxes
+            : [],
+          removedTextComponents: Number(textSuppressed?.removedComponents || 0),
+          roundBoxes: Array.isArray(duplicateScan?.debugLayers?.roundBoxes)
+            ? duplicateScan.debugLayers.roundBoxes
+            : [],
+          textRejectedBoxes: Array.isArray(duplicateScan?.debugLayers?.textRejectedBoxes)
+            ? duplicateScan.debugLayers.textRejectedBoxes
+            : [],
+          squareBoxes: Array.isArray(duplicateScan?.debugLayers?.squareBoxes)
+            ? duplicateScan.debugLayers.squareBoxes
+            : [],
+          lineBoxes: Array.isArray(duplicateScan?.debugLayers?.lineBoxes)
+            ? duplicateScan.debugLayers.lineBoxes
+            : [],
+          colorRejectedBoxes: Array.isArray(duplicateScan?.debugLayers?.colorRejectedBoxes)
+            ? duplicateScan.debugLayers.colorRejectedBoxes
+            : [],
+          tuning: duplicateScan?.tuning || null,
+        });
+        acceptedReviewMatches = [...deduped];
+        reviewQueue = [];
+        reviewIndex = 0;
+        renderScanMarkers(acceptedReviewMatches);
+        console.log("[DrawingAnalyzer Debug]", {
+          finalReturned: deduped.length,
+          groupedPreFinal: Array.isArray(duplicateScan?.groupedCandidates)
+            ? duplicateScan.groupedCandidates.length
+            : 0,
+          componentsAnalyzed: Number(duplicateScan?.componentCount || 0),
+          removedTextComponents: Number(textSuppressed?.removedComponents || 0),
+          fuzzPercent: Math.round(fuzz * 100),
+          similarityThreshold: Number(similarityThreshold.toFixed(3)),
+          tuning: duplicateScan?.tuning || null,
+          debugLayers: duplicateScan?.debugLayers || null,
+        });
+        showScanLive(
+          `Duplicate-only scan. Fuzziness: ${Math.round(fuzz * 100)}%. Components analyzed: ${Number(duplicateScan?.componentCount || 0)}. Repeated groups: ${Number(duplicateScan?.groupCount || 0)}. Returned instances: ${deduped.length}. Text removed: ${Number(textSuppressed?.removedComponents || 0)} components (${Number(textSuppressed?.removedPixels || 0)} px). Similarity threshold: ${Math.round(similarityThreshold * 100)}%. Round gate: ${Number(duplicateScan?.tuning?.roundThreshold || 0).toFixed(2)}.`
+        );
+        if (deduped.length === 0) {
+          showStatus("No repeated visual patterns found at 50% similarity.", true);
+        } else {
+          showStatus(
+            `Found ${deduped.length} repeated instances across ${Number(duplicateScan?.groupCount || 0)} pattern groups.`
+          );
+        }
+        return;
+      }
+
+      const templates = [];
+      const ignoreTemplates = [];
+      let templateLoadFailed = 0;
+      for (const symbol of symbolLibrary) {
+        if (!symbol?.localDataUrl || symbol.nonGraphical) continue;
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        const loaded = await new Promise((resolve) => {
+          img.onload = () => resolve(true);
+          img.onerror = () => resolve(false);
+          img.src = symbol.localDataUrl;
+        });
+        if (!loaded) {
+          templateLoadFailed += 1;
+          continue;
+        }
+        const c = document.createElement("canvas");
+        c.width = Math.max(1, img.naturalWidth || img.width);
+        c.height = Math.max(1, img.naturalHeight || img.height);
+        const cctx = c.getContext("2d", { willReadFrequently: true });
+        if (!cctx) continue;
+        cctx.drawImage(img, 0, 0, c.width, c.height);
+        const data = cctx.getImageData(0, 0, c.width, c.height);
+        const variants = createTemplateVariantsFromImage(data, symbol);
+        if (symbol.isIgnored) ignoreTemplates.push(...variants);
+        else templates.push(...variants);
+      }
+      if (templates.length === 0) {
+        clearScanLive();
+        showStatus(
+          templateLoadFailed > 0
+            ? "No usable templates found (one or more library images failed to load)."
+            : "No usable graphical library templates found for scan.",
+          true
+        );
+        return;
+      }
+      const circleTemplates = templates.filter((template) => template.circleLike);
+      if (circleTemplates.length === 0) {
+        clearScanLive();
+        showStatus(
+          "Circle-only mode: add at least one circular library symbol before scanning.",
+          true
+        );
+        return;
+      }
+
+      const drawingMask = imageDataToMask(drawing.imageData).mask;
+      const rawCandidates = [];
+      const ignoreRawCandidates = [];
+      const fuzz = Math.max(0, Math.min(100, Number(fuzzinessValue || 62))) / 100;
+      const baseMin = 0.92 - fuzz * 0.28;
+      const potentialFloor = Math.max(0.5, baseMin - (0.16 + fuzz * 0.08));
+      let testedWindows = 0;
+      let borderRejected = 0;
+      let colorRejected = 0;
+      let circleRejected = 0;
+      const runScanPass = (
+        scanTemplates,
+        outCandidates,
+        minScoreOffset = 0,
+        strideMultiplier = 1,
+        regions = null
+      ) => {
+        for (const template of scanTemplates) {
+          const baseStride = Math.max(
+            2,
+            Math.round(Math.min(template.width, template.height) * (0.31 - 0.16 * fuzz))
+          );
+          const stride = Math.max(2, Math.round(baseStride * strideMultiplier));
+          const minScore = Math.max(
+            0.56,
+            Math.min(0.95, baseMin + scoreBiasForSymbol(template.symbolName) + minScoreOffset)
+          );
+          const searchRegions = regions?.length
+            ? regions
+            : [
+                {
+                  x1: 0,
+                  y1: 0,
+                  x2: drawing.imageData.width - 1,
+                  y2: drawing.imageData.height - 1,
+                },
+              ];
+          for (const region of searchRegions) {
+            const startY = Math.max(0, region.y1);
+            const endY = Math.max(startY, region.y2 - template.height);
+            const startX = Math.max(0, region.x1);
+            const endX = Math.max(startX, region.x2 - template.width);
+            for (let y = startY; y <= endY; y += stride) {
+              for (let x = startX; x <= endX; x += stride) {
+                testedWindows += 1;
+                let fgHits = 0;
+                let fgTotal = 0;
+                let bgDark = 0;
+                for (let ty = 0; ty < template.height; ty += 1) {
+                  const drawRow = (y + ty) * drawing.imageData.width + x;
+                  const tplRow = ty * template.width;
+                  for (let tx = 0; tx < template.width; tx += 1) {
+                    const t = template.mask[tplRow + tx];
+                    const d = drawingMask[drawRow + tx];
+                    if (t) {
+                      fgTotal += 1;
+                      fgHits += d ? 1 : 0;
+                    } else if (d) {
+                      bgDark += 1;
+                    }
+                  }
+                }
+                if (!fgTotal) continue;
+                const fgRatio = fgHits / fgTotal;
+                const bgTotal = Math.max(1, template.width * template.height - fgTotal);
+                const bgPenalty = bgDark / bgTotal;
+                const score = fgRatio - bgPenalty * 0.22;
+                if (score < potentialFloor) continue;
+                const candidate = {
+                  symbolName: template.symbolName,
+                  symbolId: template.symbolId,
+                  score,
+                  x,
+                  y,
+                  w: template.width,
+                  h: template.height,
+                  cx: x + template.width / 2,
+                  cy: y + template.height / 2,
+                  cxPct: ((x + template.width / 2) / drawing.imageData.width) * 100,
+                  cyPct: ((y + template.height / 2) / drawing.imageData.height) * 100,
+                  sourceDataUrl: template.sourceDataUrl,
+                  patchDataUrl: "",
+                  acceptedByThreshold: score >= minScore,
+                  rescuedByMotif: false,
+                  circleLike: Boolean(template.circleLike),
+                };
+                const tightenedCandidate = tightenCandidateToPrimaryComponent(
+                  drawingMask,
+                  drawing.imageData.width,
+                  candidate
+                );
+                if (!tightenedCandidate) continue;
+                if (
+                  looksTextLikeCandidate(drawingMask, drawing.imageData.width, tightenedCandidate)
+                )
+                  continue;
+                if (
+                  !passesContiguousCandidateGate(
+                    drawingMask,
+                    drawing.imageData.width,
+                    tightenedCandidate
+                  )
+                )
+                  continue;
+                // Border stroke/whitespace agreement: reject if border behavior deviates too much.
+                // 50% tolerance for testing, per request.
+                const candidateBorderRatio = getDrawingBorderDarkRatio(
+                  drawingMask,
+                  drawing.imageData.width,
+                  tightenedCandidate,
+                  Number(template.borderBand || 2)
+                );
+                const borderDeviation = Math.abs(
+                  candidateBorderRatio - Number(template.borderDarkRatio || 0)
+                );
+                const maxBorderDeviation = 0.5 + fuzz * 0.45;
+                if (borderDeviation > maxBorderDeviation) {
+                  borderRejected += 1;
+                  continue;
+                }
+                // Require at least 50% whitespace in border ring (testing rule).
+                const maxBorderDarkRatio = 0.5 + fuzz * 0.2;
+                if (candidateBorderRatio > maxBorderDarkRatio) {
+                  borderRejected += 1;
+                  continue;
+                }
+                if (template.circleLike) {
+                  const maxSizeDrift = 0.05 + fuzz * 0.17;
+                  const sizeRefCandidate = candidate;
+                  const widthDrift =
+                    Math.abs(sizeRefCandidate.w - template.width) / Math.max(1, template.width);
+                  const heightDrift =
+                    Math.abs(sizeRefCandidate.h - template.height) / Math.max(1, template.height);
+                  if (widthDrift > maxSizeDrift || heightDrift > maxSizeDrift) {
+                    circleRejected += 1;
+                    continue;
+                  }
+                  if (
+                    !passesCircleShapeGate(
+                      drawingMask,
+                      drawing.imageData.width,
+                      tightenedCandidate,
+                      fuzz
+                    )
+                  ) {
+                    circleRejected += 1;
+                    continue;
+                  }
+                }
+                if (!passesColorNeutralityGate(drawing.imageData, tightenedCandidate, fuzz)) {
+                  colorRejected += 1;
+                  continue;
+                }
+                outCandidates.push(tightenedCandidate);
+              }
+            }
+          }
+        }
+      };
+
+      const coarseCandidates = [];
+      // Discovery pass: intentionally broad to find multiple repeat instances.
+      runScanPass(circleTemplates, coarseCandidates, -0.02, 2.1, null);
+      const coarseDeduped = dedupeCandidatesByDistance(coarseCandidates, 18).slice(0, 220);
+      const refineRegions = buildRefineRegions(
+        coarseDeduped,
+        drawing.imageData.width,
+        drawing.imageData.height
+      );
+
+      runScanPass(circleTemplates, rawCandidates, 0, 1.1, refineRegions);
+      // Coverage pass across whole image so misses outside seed regions can still be found.
+      const coverageCandidates = [];
+      runScanPass(circleTemplates, coverageCandidates, -0.05, 1.55, null);
+      rawCandidates.push(...coverageCandidates);
+      runScanPass(ignoreTemplates, ignoreRawCandidates, -0.08, 1.15, refineRegions);
+
+      let deduped = dedupeCandidatesByDistance(rawCandidates, 14);
+      deduped = dedupeCandidatesByOverlapNms(deduped);
+      const ignoreAnchors = dedupeCandidatesByDistance(
+        ignoreRawCandidates.filter((x) => x.acceptedByThreshold),
+        16
+      );
+      if (ignoreAnchors.length > 0) {
+        deduped = deduped.filter((candidate) => {
+          return !ignoreAnchors.some((anchor) => overlapsCandidate(candidate, anchor));
+        });
+      }
+      let fallbackCircleCount = 0;
+      if (deduped.length === 0) {
+        const fallbackCircles = detectRepeatedCirclesFallback(
+          drawing,
+          drawingMask,
+          circleTemplates,
+          fuzz
+        );
+        fallbackCircleCount = fallbackCircles.length;
+        deduped = fallbackCircles;
+      }
+      // Final pass after ignore suppression to collapse any residual near-duplicates.
+      deduped = dedupeCandidatesByOverlapNms(deduped);
+      deduped = keepStrongestCircleCluster(deduped, fuzz);
+      deduped = dedupeCandidatesByOverlapNms(dedupeCandidatesByDistance(deduped, 10));
+      deduped = deduped.sort((a, b) => b.score - a.score);
+      for (const item of deduped.slice(0, 160)) {
+        item.patchDataUrl = extractPatchDataUrl(drawing.canvas, item.x, item.y, item.w, item.h);
+      }
+      topCandidates = deduped.slice(0, 120);
+      renderTopCandidateGrid(topCandidates);
+
+      const accepted = deduped.filter((x) => x.acceptedByThreshold);
+      const autoAccepted = accepted.filter((x) => x.score >= 0.91).slice(0, 100);
+      const needsReview = accepted.filter((x) => x.score < 0.91).slice(0, 120);
+      const motifRescuedCount = accepted.filter((x) => x.rescuedByMotif).length;
+      acceptedReviewMatches = [...autoAccepted];
+      reviewQueue = needsReview;
+      reviewIndex = 0;
+      showScanLive(
+        `Windows: ${testedWindows}. Coarse seeds: ${coarseDeduped.length}. Coverage hits: ${coverageCandidates.length}. Raw: ${rawCandidates.length}. Kept: ${deduped.length}. Fallback circles: ${fallbackCircleCount}. Auto-accepted: ${autoAccepted.length}. Review: ${needsReview.length}. Motif-rescued: ${motifRescuedCount}. Border rejected: ${borderRejected}. Circle rejected: ${circleRejected}. Color rejected: ${colorRejected}. Template load failures: ${templateLoadFailed}. Fuzziness: ${Math.round(fuzz * 100)}%.`
+      );
+      if (deduped.length === 0) {
+      showStatus(
+          "Scan returned 0 candidates, including full-canvas repeated-circle fallback.",
+          true
+        );
+      }
+      if (reviewQueue.length > 0) {
+        renderReviewCandidate();
+        return;
+      }
+      finishReviewAndRender();
     } catch (error) {
       console.error("[DrawingAnalyzer] re-scan failed", error);
       showStatus(error?.message || "Re-scan failed", true);
+      clearScanLive();
+    } finally {
+      scanInProgress = false;
+      if (rescanQueued) {
+        rescanQueued = false;
+        window.setTimeout(() => {
+          rescanForLibrarySymbols();
+        }, 120);
+      }
     }
   }
 
@@ -1063,7 +3576,8 @@ const { projectId } = Astro.props;
     const data = new Uint8Array(await file.arrayBuffer());
     const pdf = await window.pdfjsLib.getDocument({ data }).promise;
     const page = await pdf.getPage(1);
-    const viewport = page.getViewport({ scale: 2.2 });
+    // Higher render scale preserves line-art edges for symbol matching.
+    const viewport = page.getViewport({ scale: 3.4 });
     const canvas = document.createElement("canvas");
     canvas.width = viewport.width;
     canvas.height = viewport.height;
@@ -1108,7 +3622,29 @@ const { projectId } = Astro.props;
           updateWorkingScale();
           runScaleOcr("full");
         });
-        clearStatus();
+        clearScanMarkers();
+        clearScanLive();
+        renderTopCandidateGrid([]);
+        reviewModal?.classList.add("hidden");
+        reviewModal?.classList.remove("flex");
+        const hasGraphicalLibraryItems = symbolLibrary.some(
+          (item) => !item?.isIgnored && !item?.nonGraphical && Boolean(item?.localDataUrl)
+        );
+        if (DUPLICATE_ONLY_MODE || hasGraphicalLibraryItems) {
+          showStatus(
+            DUPLICATE_ONLY_MODE
+              ? "File loaded. Running duplicate pattern scan..."
+              : "File loaded. Running scan with your current library..."
+          );
+          // Let layout settle so overlay/image dimensions are fully ready before scanning.
+          window.setTimeout(() => {
+            rescanForLibrarySymbols();
+          }, 120);
+        } else {
+          showStatus(
+            "File loaded. Draw around symbols to add them to the library, then click Re-scan Drawing For Library Symbols."
+          );
+        }
       };
       imgEl.src = src;
     } catch (error) {
@@ -1161,7 +3697,7 @@ const { projectId } = Astro.props;
     });
     overlay.releasePointerCapture(e.pointerId);
     if (viableArea.width < 8 || viableArea.height < 8) {
-      setFullViableArea();
+        setFullViableArea();
       TraceLog.end(ctx, { action: "reset-full-viable-area", reason: "selection-too-small" });
     } else {
       updateReadout();
@@ -1203,6 +3739,22 @@ const { projectId } = Astro.props;
     if (selectionPurposeSelect) selectionPurposeSelect.value = "symbol";
     if (selectionShapeSelect) selectionShapeSelect.value = "square";
     setZoom(1);
+    clearScanMarkers();
+    clearScanLive();
+    topCandidates = [];
+    reviewQueue = [];
+    reviewIndex = 0;
+    acceptedReviewMatches = [];
+    lastDebugOverlayPayload = null;
+    renderTopCandidateGrid([]);
+    if (debugCanvasEl instanceof HTMLCanvasElement) {
+      const dctx = debugCanvasEl.getContext("2d");
+      if (dctx) dctx.clearRect(0, 0, debugCanvasEl.width, debugCanvasEl.height);
+    }
+    if (debugMetaEl) debugMetaEl.textContent = "Run a scan to populate overlay.";
+    if (debugLogEl) debugLogEl.textContent = "";
+    reviewModal?.classList.add("hidden");
+    reviewModal?.classList.remove("flex");
     clearStatus();
   });
 
@@ -1263,6 +3815,45 @@ const { projectId } = Astro.props;
     rescanForLibrarySymbols();
   });
 
+  clearLearningBtn?.addEventListener("click", () => {
+    clearReviewFeedback();
+    showStatus("Learning memory cleared.");
+    if (imgEl?.src) {
+      rescanForLibrarySymbols();
+    }
+  });
+
+  fuzzinessRange?.addEventListener("input", () => {
+    fuzzinessValue = Math.max(0, Math.min(100, Number(fuzzinessRange.value || 15)));
+    if (fuzzinessReadout) fuzzinessReadout.textContent = `${Math.round(fuzzinessValue)}%`;
+    if (rescanDebounceTimer) window.clearTimeout(rescanDebounceTimer);
+    rescanDebounceTimer = window.setTimeout(() => {
+      const hasGraphicalLibraryItems = symbolLibrary.some(
+        (item) => !item?.isIgnored && !item?.nonGraphical && Boolean(item?.localDataUrl)
+      );
+      if (imgEl?.src && (DUPLICATE_ONLY_MODE || hasGraphicalLibraryItems)) {
+        rescanForLibrarySymbols();
+      }
+    }, 260);
+  });
+
+  reviewCloseBtn?.addEventListener("click", () => finishReviewAndRender());
+  reviewStopBtn?.addEventListener("click", () => finishReviewAndRender());
+  reviewNoBtn?.addEventListener("click", () => handleReviewDecision(false));
+  reviewYesBtn?.addEventListener("click", () => handleReviewDecision(true));
+  [
+    debugLayerFinalEl,
+    debugLayerGroupedEl,
+    debugLayerRoundEl,
+    debugLayerTextEl,
+    debugLayerSquareEl,
+    debugLayerLineEl,
+  ]
+    .filter((el) => el instanceof HTMLInputElement)
+    .forEach((el) => {
+      el.addEventListener("change", () => refreshDebugOverlayFromLastPayload());
+  });
+
   window.addEventListener("resize", () => {
     if (!imgEl?.src) return;
     setOverlaySizeFromImage();
@@ -1274,6 +3865,11 @@ const { projectId } = Astro.props;
   });
 
   setZoom(1);
+  fuzzinessValue = Math.max(0, Math.min(100, Number(fuzzinessRange?.value || 15)));
+  if (fuzzinessReadout) fuzzinessReadout.textContent = `${Math.round(fuzzinessValue)}%`;
+  if (!DUPLICATE_ONLY_MODE) loadReviewFeedback();
+  else reviewFeedbackBySymbol = {};
   TraceLog.initForEnvironment();
-  loadLibraryItems();
+  if (!DUPLICATE_ONLY_MODE) loadLibraryItems();
+  applyAutonomousDuplicateUiMode();
 </script>

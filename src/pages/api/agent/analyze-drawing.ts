@@ -30,6 +30,136 @@ interface AnalyzeDrawingRequest {
   userSelections?: UserSelection[];
 }
 
+type Confidence = "high" | "medium" | "low";
+
+function normalizeConfidence(value: unknown): Confidence {
+  if (value === "high" || value === "medium" || value === "low") return value;
+  return "low";
+}
+
+function normalizePositions(value: unknown): number[][] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry) =>
+      Array.isArray(entry) && entry.length >= 2
+        ? [Number(entry[0] ?? 0), Number(entry[1] ?? 0)]
+        : null
+    )
+    .filter((entry): entry is number[] => Array.isArray(entry));
+}
+
+function normalizeGroup(value: unknown): {
+  count: number;
+  positions: number[][];
+  locations: string[];
+  confidence: Confidence;
+} {
+  const obj = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+  return {
+    count: Number(obj.count ?? 0) || 0,
+    positions: normalizePositions(obj.positions),
+    locations: Array.isArray(obj.locations)
+      ? obj.locations.filter((x): x is string => typeof x === "string")
+      : [],
+    confidence: normalizeConfidence(obj.confidence),
+  };
+}
+
+function extractFirstJsonObject(raw: string): string | null {
+  const start = raw.indexOf("{");
+  if (start < 0) return null;
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = start; i < raw.length; i += 1) {
+    const ch = raw[i];
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (ch === "\\") {
+        escaped = true;
+      } else if (ch === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = true;
+      continue;
+    }
+    if (ch === "{") depth += 1;
+    if (ch === "}") depth -= 1;
+
+    if (depth === 0) {
+      return raw.slice(start, i + 1);
+    }
+  }
+
+  return null;
+}
+
+function normalizeParsedDrawing(value: unknown): Record<string, unknown> {
+  const obj = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+  const floorsRaw = Array.isArray(obj.floors) ? obj.floors : [];
+  const floors = floorsRaw.map((floor, index) => {
+    const floorObj =
+      floor && typeof floor === "object"
+        ? (floor as Record<string, unknown>)
+        : ({} as Record<string, unknown>);
+    return {
+      name:
+        typeof floorObj.name === "string" && floorObj.name.trim()
+          ? floorObj.name
+          : `Plan ${index + 1}`,
+      pageIndex: Number(floorObj.pageIndex ?? index) || index,
+      aspectRatio: Number(floorObj.aspectRatio ?? 1.4) || 1.4,
+      pipeSegments: Array.isArray(floorObj.pipeSegments) ? floorObj.pipeSegments : [],
+      sprinklerHeads: normalizeGroup(floorObj.sprinklerHeads),
+      smokeAlarms: normalizeGroup(floorObj.smokeAlarms),
+      otherEquipment: Array.isArray(floorObj.otherEquipment) ? floorObj.otherEquipment : [],
+    };
+  });
+
+  return {
+    summary: typeof obj.summary === "string" ? obj.summary : "",
+    floors,
+    pipeSegments: Array.isArray(obj.pipeSegments) ? obj.pipeSegments : [],
+    sprinklerHeads: normalizeGroup(obj.sprinklerHeads),
+    smokeAlarms: normalizeGroup(obj.smokeAlarms),
+    otherEquipment: Array.isArray(obj.otherEquipment) ? obj.otherEquipment : [],
+    materials: Array.isArray(obj.materials) ? obj.materials : [],
+    uncertainties: Array.isArray(obj.uncertainties) ? obj.uncertainties : [],
+  };
+}
+
+function parseAndNormalizeDrawingResponse(raw: string): {
+  parsed: Record<string, unknown> | null;
+  parseWarnings: string[];
+} {
+  const parseWarnings: string[] = [];
+  const rawTrimmed = raw.trim();
+  const primaryCandidate =
+    rawTrimmed.startsWith("{") && rawTrimmed.endsWith("}")
+      ? rawTrimmed
+      : extractFirstJsonObject(rawTrimmed);
+
+  if (!primaryCandidate) {
+    parseWarnings.push("No JSON object found in model response.");
+    return { parsed: null, parseWarnings };
+  }
+
+  try {
+    const parsed = JSON.parse(primaryCandidate) as Record<string, unknown>;
+    return { parsed: normalizeParsedDrawing(parsed), parseWarnings };
+  } catch {
+    parseWarnings.push("Detected JSON-like content but JSON.parse failed.");
+    return { parsed: null, parseWarnings };
+  }
+}
+
 function buildDrawingAnalysisPrompt(scale?: string, userSelections?: UserSelection[]): string {
   const scaleSection =
     scale && scale.trim()
@@ -184,18 +314,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       },
     });
 
-    // Try to parse JSON from the response
-    let analysis = response.content;
-    let parsed: Record<string, unknown> | null = null;
-
-    try {
-      const jsonMatch = analysis.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        parsed = JSON.parse(jsonMatch[0]) as Record<string, unknown>;
-      }
-    } catch {
-      // Keep raw content if parsing fails
-    }
+    const { parsed, parseWarnings } = parseAndNormalizeDrawingResponse(response.content);
 
     return new Response(
       JSON.stringify({
@@ -203,6 +322,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         analysis: {
           rawResponse: response.content,
           parsed,
+          parseWarnings,
           metadata: response.metadata,
         },
       }),

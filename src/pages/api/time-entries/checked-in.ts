@@ -106,6 +106,7 @@ export const GET: APIRoute = async ({ cookies }): Promise<Response> => {
         const ping = latestPingByEntry.get(e.id);
         const address = ping ? await reverseGeocode(ping.lat, ping.lng) : null;
         return {
+          timeEntryId: e.id,
           userId: e.userId,
           name: profileMap.get(e.userId) ?? "—",
           projectId: e.projectId ?? null,

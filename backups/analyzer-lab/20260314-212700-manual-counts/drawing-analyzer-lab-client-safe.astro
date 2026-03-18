@@ -1,0 +1,38 @@
+---
+import { checkAuth } from "../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../lib/user-utils";
+import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
+import DrawingAnalyzerLabClientSafeFeature from "../../features/drawing-analyzer/DrawingAnalyzerLabClientSafe.astro";
+import { globalClasses } from "../api/global/global-classes";
+
+const { currentUser, session } = await checkAuth(Astro.cookies);
+const currentRole = currentUser?.profile?.role;
+const { primaryTextClasses, secondaryTextClasses } = globalClasses();
+
+if (!currentUser || !session) {
+  return Astro.redirect("/auth/login");
+}
+if (!isAdminOrSuperAdmin(currentRole)) {
+  return Astro.redirect("/dashboard");
+}
+---
+
+<LayoutFullWidth
+  title="Drawing Analyzer Lab Client Safe"
+  classList="p-4"
+  description="Frozen snapshot copy for client-safe demo fallback"
+>
+  <div class="px-4 py-8">
+    <div class="mb-8">
+      <h1 class={`mb-2 text-3xl font-bold ${primaryTextClasses}`}>
+        Drawing Analyzer Lab (Client Safe)
+      </h1>
+      <p class={`${secondaryTextClasses} text-gray-600 dark:text-gray-400`}>
+        Frozen copy loaded from snapshot <code>20260314-171329</code> so you have a stable page to show
+        clients while active development continues.
+      </p>
+    </div>
+
+    <DrawingAnalyzerLabClientSafeFeature />
+  </div>
+</LayoutFullWidth>

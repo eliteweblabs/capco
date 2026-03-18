@@ -1,0 +1,34 @@
+---
+import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
+import { checkAuth } from "../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../lib/user-utils";
+import SimpleScanFeature from "../../features/drawing-analyzer/SimpleScan.astro";
+import { globalClasses } from "../api/global/global-classes";
+
+const { currentUser, session } = await checkAuth(Astro.cookies);
+const currentRole = currentUser?.profile?.role;
+const { primaryTextClasses, secondaryTextClasses } = globalClasses();
+const isLocalBypass = Astro.url.hostname === "localhost" || Astro.url.hostname === "127.0.0.1";
+
+if (!isLocalBypass && (!currentUser || !session)) {
+  return Astro.redirect("/auth/login");
+}
+if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) {
+  return Astro.redirect("/dashboard");
+}
+---
+
+<LayoutFullWidth
+  title="Simple Scan"
+  classList="p-4"
+  description="Minimal section + symbol matching sandbox"
+>
+  <div class="px-4 py-8">
+    <h1 class={`mb-2 text-3xl font-bold ${primaryTextClasses}`}>Simple Scan</h1>
+    <p class={`${secondaryTextClasses} mb-6`}>
+      Minimal test page using the default drawing, baseline section extraction, and item-library
+      symbols.
+    </p>
+    <SimpleScanFeature />
+  </div>
+</LayoutFullWidth>

@@ -1,0 +1,2743 @@
+---
+import { globalClasses } from "../api/global/global-classes";
+
+const { globalContainer, globalTextH2, globalTextXsMuted, globalCardStyle } = globalClasses();
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Document Analyzer Demo</title>
+    <style>
+      :root {
+        color-scheme: light;
+      }
+      body {
+        margin: 0;
+        background: #f3f4f6;
+        color: #111827;
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          Helvetica,
+          Arial;
+      }
+      .demo-shell {
+        min-height: 100vh;
+        padding: 2rem 0;
+      }
+      .demo-grid {
+        display: grid;
+        grid-template-columns: 320px minmax(0, 1fr);
+        gap: 1rem;
+        align-items: start;
+      }
+      .panel {
+        border: 1px solid #d1d5db;
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 1rem;
+      }
+      .legend-list {
+        display: grid;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+      }
+      .legend-btn {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        border: 1px solid #d1d5db;
+        border-radius: 10px;
+        background: #ffffff;
+        padding: 0.6rem 0.75rem;
+        cursor: pointer;
+        font-size: 0.95rem;
+      }
+      .legend-btn:hover {
+        border-color: #9ca3af;
+        background: #f9fafb;
+      }
+      .legend-btn.is-active {
+        border-color: #2563eb;
+        background: #eff6ff;
+      }
+      .legend-btn.is-inactive {
+        opacity: 0.7;
+      }
+      .legend-count {
+        font-variant-numeric: tabular-nums;
+        color: #374151;
+      }
+      .legend-left {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .legend-icon {
+        width: 18px;
+        height: 18px;
+        border-radius: 4px;
+        border: 1px solid #d1d5db;
+        background: #fff;
+      }
+      .legend-swatch {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(17, 24, 39, 0.25);
+      }
+      .button-row {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+      }
+      .action-btn {
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        background: #ffffff;
+        color: #111827;
+        padding: 0.5rem 0.75rem;
+        cursor: pointer;
+      }
+      .action-btn:hover {
+        background: #f3f4f6;
+      }
+      .pdf-stage {
+        border: 1px solid #d1d5db;
+        background: #e5e7eb;
+        border-radius: 12px;
+        padding: 0.75rem;
+        overflow: auto;
+      }
+      .pdf-page {
+        display: block;
+        width: min(100%, 960px);
+        height: auto;
+        margin: 0 auto;
+        background: #ffffff;
+        box-shadow: 0 16px 36px rgba(17, 24, 39, 0.15);
+      }
+      .status-line {
+        margin-top: 0.75rem;
+        color: #374151;
+        font-size: 0.9rem;
+      }
+      .matching-badge {
+        display: inline-block;
+        margin-top: 0.5rem;
+        border: 1px solid #bfdbfe;
+        border-radius: 999px;
+        background: #eff6ff;
+        color: #1e3a8a;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.22rem 0.55rem;
+      }
+      .review-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(17, 24, 39, 0.55);
+        backdrop-filter: blur(2px);
+      }
+      .review-overlay.is-open {
+        display: flex;
+      }
+      .review-modal {
+        width: min(92vw, 440px);
+        border: 1px solid #d1d5db;
+        border-radius: 14px;
+        background: #fff;
+        padding: 1rem;
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.25);
+      }
+      .review-preview {
+        width: 100%;
+        border: 1px solid #d1d5db;
+        border-radius: 10px;
+        background: #f9fafb;
+        cursor: grab;
+      }
+      .review-preview.is-dragging {
+        cursor: grabbing;
+      }
+      .review-actions {
+        margin-top: 0.75rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+      .review-classify {
+        margin-top: 0.5rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+      .review-btn {
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        background: #fff;
+        color: #111827;
+        padding: 0.45rem 0.75rem;
+        cursor: pointer;
+      }
+      .review-btn.accept {
+        border-color: #15803d;
+        background: #dcfce7;
+      }
+      .review-btn.reject {
+        border-color: #b91c1c;
+        background: #fee2e2;
+      }
+      .review-btn.classify-active {
+        border-color: #2563eb;
+        background: #eff6ff;
+      }
+      .working-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 60;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(17, 24, 39, 0.3);
+      }
+      .working-overlay.is-open {
+        display: flex;
+      }
+      .working-card {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.65rem;
+        border: 1px solid #d1d5db;
+        border-radius: 10px;
+        background: #fff;
+        padding: 0.7rem 0.95rem;
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+        color: #111827;
+        font-size: 0.9rem;
+      }
+      .working-spinner {
+        width: 18px;
+        height: 18px;
+        border-radius: 9999px;
+        border: 2px solid #d1d5db;
+        border-top-color: #2563eb;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @media (max-width: 1000px) {
+        .demo-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class={`${globalContainer} demo-shell`}>
+      <h1 class={globalTextH2}>Document Analyzer Demo (Public)</h1>
+      <p class={`${globalTextXsMuted} mt-2`}>
+        Synthetic PDF-style page with auto detection. Toggle legend layers to show or hide matches.
+      </p>
+
+      <div class="demo-grid mt-4">
+        <section class={`${globalCardStyle} panel`}>
+          <h2 class="text-lg font-semibold">Legend</h2>
+          <p class={`${globalTextXsMuted} mt-1`}>
+            Upload a document screenshot, then detection runs on that uploaded image.
+          </p>
+          <div id="legend-list" class="legend-list"></div>
+          <div class="button-row">
+            <input id="upload-image-input" type="file" accept="image/*" class="hidden" />
+            <button id="btn-upload" type="button" class="action-btn">Upload Screenshot</button>
+            <button id="btn-clear" type="button" class="action-btn">Clear Highlight</button>
+            <button id="btn-reset-learning" type="button" class="action-btn">Reset Learning</button>
+            <button id="btn-randomize" type="button" class="action-btn">Rearrange</button>
+          </div>
+          <div class="button-row">
+            <button id="btn-detection-mode" type="button" class="action-btn"
+              >Mode: YOLO + Assist</button
+            >
+          </div>
+          <p id="matching-source-badge" class="matching-badge">Matching source: clean base image</p>
+          <p id="detection-status" class="status-line">Building page...</p>
+        </section>
+
+        <section class={`${globalCardStyle} panel`}>
+          <div class="pdf-stage">
+            <canvas id="pdf-canvas" class="pdf-page"></canvas>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <div id="working-overlay" class="working-overlay" aria-hidden="true">
+      <div class="working-card">
+        <span class="working-spinner"></span>
+        <span id="working-text">Analyzing matches...</span>
+      </div>
+    </div>
+
+    <div id="review-overlay" class="review-overlay" aria-hidden="true">
+      <div class="review-modal">
+        <h3 class="text-base font-semibold text-gray-900">Confirm Match</h3>
+        <p id="review-meta" class="mt-1 text-sm text-gray-600"></p>
+        <canvas id="review-preview-canvas" class="review-preview mt-2" width="360" height="210"
+        ></canvas>
+        <div class="review-actions">
+          <button id="review-accept" type="button" class="review-btn accept">Accept</button>
+          <button id="review-reject" type="button" class="review-btn reject">Reject</button>
+          <button id="review-skip" type="button" class="review-btn">Skip</button>
+          <button id="review-back" type="button" class="review-btn">Back</button>
+          <button id="review-done" type="button" class="review-btn">Done</button>
+        </div>
+        <div id="review-classify-actions" class="review-classify"></div>
+      </div>
+    </div>
+
+    <script>
+      (() => {
+        const PAGE_WIDTH = 960;
+        const PAGE_HEIGHT = 1320;
+        const SYMBOL_SIZE = 34;
+        const COMPONENT_MIN_AREA = 24;
+        const COMPONENT_MAX_AREA = 4400;
+        const OCCUPANCY_GRID = 20;
+
+        const SYMBOLS = [
+          { id: "sprinkler", label: "Sprinkler Head", iconPath: "/img/sprinkler-head.png" },
+          { id: "valve", label: "Control Valve", iconPath: "/img/control-valve.png" },
+          { id: "detector", label: "Smoke Detector", iconPath: "/img/smoke-detector.png" },
+        ];
+        const YOLO_CLASS_TO_SYMBOL = {
+          sprinkler: "sprinkler",
+          control_valve: "valve",
+          valve: "valve",
+          smoke_detector: "detector",
+          detector: "detector",
+        };
+        const SYMBOL_LAYER_COLORS = {
+          sprinkler: "#2563eb",
+          valve: "#f59e0b",
+          detector: "#16a34a",
+        };
+
+        const TARGET_COUNTS = {
+          sprinkler: 6,
+          valve: 5,
+          detector: 4,
+        };
+
+        const canvas = document.getElementById("pdf-canvas");
+        const legendList = document.getElementById("legend-list");
+        const statusEl = document.getElementById("detection-status");
+        const uploadInput = document.getElementById("upload-image-input");
+        const uploadBtn = document.getElementById("btn-upload");
+        const clearBtn = document.getElementById("btn-clear");
+        const resetLearningBtn = document.getElementById("btn-reset-learning");
+        const randomizeBtn = document.getElementById("btn-randomize");
+        const detectionModeBtn = document.getElementById("btn-detection-mode");
+        const matchingSourceBadge = document.getElementById("matching-source-badge");
+        const workingOverlay = document.getElementById("working-overlay");
+        const workingText = document.getElementById("working-text");
+        const reviewOverlay = document.getElementById("review-overlay");
+        const reviewMeta = document.getElementById("review-meta");
+        const reviewPreviewCanvas = document.getElementById("review-preview-canvas");
+        const reviewAcceptBtn = document.getElementById("review-accept");
+        const reviewRejectBtn = document.getElementById("review-reject");
+        const reviewSkipBtn = document.getElementById("review-skip");
+        const reviewBackBtn = document.getElementById("review-back");
+        const reviewDoneBtn = document.getElementById("review-done");
+        const reviewClassifyActions = document.getElementById("review-classify-actions");
+        if (!(canvas instanceof HTMLCanvasElement)) return;
+        if (!(legendList instanceof HTMLDivElement)) return;
+        if (!(statusEl instanceof HTMLParagraphElement)) return;
+        if (!(uploadInput instanceof HTMLInputElement)) return;
+        if (!(uploadBtn instanceof HTMLButtonElement)) return;
+        if (!(clearBtn instanceof HTMLButtonElement)) return;
+        if (!(resetLearningBtn instanceof HTMLButtonElement)) return;
+        if (!(randomizeBtn instanceof HTMLButtonElement)) return;
+        if (!(detectionModeBtn instanceof HTMLButtonElement)) return;
+        if (!(matchingSourceBadge instanceof HTMLParagraphElement)) return;
+        if (!(workingOverlay instanceof HTMLDivElement)) return;
+        if (!(workingText instanceof HTMLSpanElement)) return;
+        if (!(reviewOverlay instanceof HTMLDivElement)) return;
+        if (!(reviewMeta instanceof HTMLParagraphElement)) return;
+        if (!(reviewPreviewCanvas instanceof HTMLCanvasElement)) return;
+        if (!(reviewAcceptBtn instanceof HTMLButtonElement)) return;
+        if (!(reviewRejectBtn instanceof HTMLButtonElement)) return;
+        if (!(reviewSkipBtn instanceof HTMLButtonElement)) return;
+        if (!(reviewBackBtn instanceof HTMLButtonElement)) return;
+        if (!(reviewDoneBtn instanceof HTMLButtonElement)) return;
+        if (!(reviewClassifyActions instanceof HTMLDivElement)) return;
+
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        if (!ctx) return;
+
+        canvas.width = PAGE_WIDTH;
+        canvas.height = PAGE_HEIGHT;
+
+        let placedSymbols = [];
+        let detections = [];
+        let activeLayerIds = new Set(SYMBOLS.map((symbol) => symbol.id));
+        let sourceMode = "uploaded";
+        let uploadedImage = null;
+        let uploadedRenderState = { dx: 0, dy: 0, drawW: PAGE_WIDTH, drawH: PAGE_HEIGHT, scale: 1 };
+        const templateSignatures = buildTemplateSignatures();
+        const templateMaskCache = new Map();
+        const LOG_PREFIX = "[DocAnalyzerDemo]";
+        const DETECTION_PROFILE = "uploaded";
+        const globalFuzziness = 65;
+        const FEEDBACK_STORE_KEY = "doc-analyzer-demo-feedback-v2";
+        let feedbackStore = {};
+        let reviewQueue = [];
+        let reviewQueueIndex = 0;
+        let reviewHistory = [];
+        let skippedFingerprints = new Set();
+        let manualDetections = [];
+        let workingDepth = 0;
+        let clickTraceBox = null;
+        let matchingSourceLabel = "Matching source: YOLO class-only";
+        let detectionMode = "yolo_assist";
+        let reviewRenderState = null;
+        let reviewPan = { x: 0, y: 0 };
+        let reviewDrag = { active: false, startX: 0, startY: 0, startPanX: 0, startPanY: 0 };
+        const reviewClassButtons = new Map();
+
+        function daLog(message, extra = undefined) {
+          if (extra !== undefined) {
+            console.log(`${LOG_PREFIX} ${message}`, extra);
+            return;
+          }
+          console.log(`${LOG_PREFIX} ${message}`);
+        }
+
+        function updateMatchingSourceBadge() {
+          matchingSourceBadge.textContent = matchingSourceLabel;
+        }
+
+        function updateDetectionModeButton() {
+          detectionModeBtn.textContent =
+            detectionMode === "yolo_only" ? "Mode: YOLO only" : "Mode: YOLO + Assist";
+        }
+
+        /** @returns {Promise<HTMLImageElement>} */
+        function loadImageFromPath(pathname) {
+          return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = () => reject(new Error(`Failed to load image: ${pathname}`));
+            img.src = pathname;
+          });
+        }
+
+        function setWorking(isWorking, text = "Analyzing matches...") {
+          if (isWorking) {
+            workingDepth += 1;
+            workingText.textContent = text;
+            workingOverlay.classList.add("is-open");
+            workingOverlay.setAttribute("aria-hidden", "false");
+            return;
+          }
+          workingDepth = Math.max(0, workingDepth - 1);
+          if (workingDepth === 0) {
+            workingOverlay.classList.remove("is-open");
+            workingOverlay.setAttribute("aria-hidden", "true");
+          }
+        }
+
+        function loadFeedbackStore() {
+          try {
+            const raw = window.localStorage.getItem(FEEDBACK_STORE_KEY);
+            if (!raw) return {};
+            const parsed = JSON.parse(raw);
+            if (!parsed || typeof parsed !== "object") return {};
+            return parsed;
+          } catch {
+            return {};
+          }
+        }
+
+        function saveFeedbackStore() {
+          try {
+            window.localStorage.setItem(FEEDBACK_STORE_KEY, JSON.stringify(feedbackStore));
+          } catch {
+            // Ignore storage errors.
+          }
+        }
+
+        function resetLearningState() {
+          feedbackStore = {};
+          skippedFingerprints = new Set();
+          manualDetections = [];
+          reviewQueue = [];
+          reviewQueueIndex = 0;
+          reviewHistory = [];
+          clickTraceBox = null;
+          try {
+            window.localStorage.removeItem(FEEDBACK_STORE_KEY);
+          } catch {
+            // Ignore storage errors.
+          }
+        }
+
+        function buildDetectionFingerprint(detection, darkMask) {
+          const sampleGrid = 12;
+          const values = [];
+          for (let gy = 0; gy < sampleGrid; gy += 1) {
+            for (let gx = 0; gx < sampleGrid; gx += 1) {
+              const px = Math.round(
+                detection.x + ((gx + 0.5) / sampleGrid) * Math.max(1, detection.w - 1)
+              );
+              const py = Math.round(
+                detection.y + ((gy + 0.5) / sampleGrid) * Math.max(1, detection.h - 1)
+              );
+              const clampedX = Math.max(0, Math.min(PAGE_WIDTH - 1, px));
+              const clampedY = Math.max(0, Math.min(PAGE_HEIGHT - 1, py));
+              values.push(darkMask[clampedY * PAGE_WIDTH + clampedX] ? "1" : "0");
+            }
+          }
+          return `${detection.symbolId}:${values.join("")}`;
+        }
+
+        function openReviewModal() {
+          reviewOverlay.classList.add("is-open");
+          reviewOverlay.setAttribute("aria-hidden", "false");
+        }
+
+        function closeReviewModal() {
+          reviewOverlay.classList.remove("is-open");
+          reviewOverlay.setAttribute("aria-hidden", "true");
+          reviewPreviewCanvas.classList.remove("is-dragging");
+          reviewDrag.active = false;
+        }
+
+        function clampReviewPan(panX, panY, state) {
+          // Keep movement bounded so preview remains understandable.
+          const maxPanX = Math.max(18, Math.round(state.drawW * 0.18));
+          const maxPanY = Math.max(18, Math.round(state.drawH * 0.18));
+          return {
+            x: Math.max(-maxPanX, Math.min(maxPanX, panX)),
+            y: Math.max(-maxPanY, Math.min(maxPanY, panY)),
+          };
+        }
+
+        function drawReviewPreview() {
+          if (!(reviewPreviewCanvas instanceof HTMLCanvasElement)) return;
+          if (!reviewRenderState) return;
+          const reviewCtx = reviewPreviewCanvas.getContext("2d");
+          if (!reviewCtx) return;
+
+          const pan = clampReviewPan(reviewPan.x, reviewPan.y, reviewRenderState);
+          reviewPan = pan;
+
+          reviewCtx.clearRect(0, 0, reviewPreviewCanvas.width, reviewPreviewCanvas.height);
+          reviewCtx.fillStyle = "#fff";
+          reviewCtx.fillRect(0, 0, reviewPreviewCanvas.width, reviewPreviewCanvas.height);
+
+          reviewCtx.drawImage(
+            reviewRenderState.tempCanvas,
+            reviewRenderState.dx + pan.x,
+            reviewRenderState.dy + pan.y,
+            reviewRenderState.drawW,
+            reviewRenderState.drawH
+          );
+
+          reviewCtx.strokeStyle = "#f59e0b";
+          reviewCtx.lineWidth = 2;
+          reviewCtx.strokeRect(
+            reviewRenderState.boxX,
+            reviewRenderState.boxY,
+            reviewRenderState.boxW,
+            reviewRenderState.boxH
+          );
+        }
+
+        function getAdjustedCandidateFromPan(candidate) {
+          if (!reviewRenderState) return candidate;
+          const scaleX = reviewRenderState.drawW / Math.max(1, reviewRenderState.sw);
+          const scaleY = reviewRenderState.drawH / Math.max(1, reviewRenderState.sh);
+          const dxSource = reviewPan.x / Math.max(0.0001, scaleX);
+          const dySource = reviewPan.y / Math.max(0.0001, scaleY);
+          const x = Math.max(0, Math.min(PAGE_WIDTH - 1, candidate.x - dxSource));
+          const y = Math.max(0, Math.min(PAGE_HEIGHT - 1, candidate.y - dySource));
+          const w = Math.max(1, Math.min(PAGE_WIDTH - x, candidate.w));
+          const h = Math.max(1, Math.min(PAGE_HEIGHT - y, candidate.h));
+          return {
+            ...candidate,
+            x,
+            y,
+            w,
+            h,
+            cx: x + w / 2,
+            cy: y + h / 2,
+          };
+        }
+
+        function renderReviewCandidate() {
+          if (!(reviewPreviewCanvas instanceof HTMLCanvasElement)) {
+            closeReviewModal();
+            return;
+          }
+          const candidate = reviewQueue[reviewQueueIndex];
+          if (!candidate) {
+            closeReviewModal();
+            return;
+          }
+
+          const symbol = SYMBOLS.find((s) => s.id === candidate.symbolId);
+          const pad = 14;
+          const sx = Math.max(0, Math.floor(candidate.x - pad));
+          const sy = Math.max(0, Math.floor(candidate.y - pad));
+          const sw = Math.min(PAGE_WIDTH - sx, Math.ceil(candidate.w + pad * 2));
+          const sh = Math.min(PAGE_HEIGHT - sy, Math.ceil(candidate.h + pad * 2));
+
+          const crop = cropImageData(getBaseImageData(), sx, sy, sw, sh);
+          const scale = Math.min(reviewPreviewCanvas.width / sw, reviewPreviewCanvas.height / sh);
+          const drawW = Math.max(1, Math.round(sw * scale));
+          const drawH = Math.max(1, Math.round(sh * scale));
+          const dx = Math.round((reviewPreviewCanvas.width - drawW) / 2);
+          const dy = Math.round((reviewPreviewCanvas.height - drawH) / 2);
+
+          const tempCanvas = /** @type {HTMLCanvasElement} */ (document.createElement("canvas"));
+          tempCanvas.width = sw;
+          tempCanvas.height = sh;
+          const tempCtx = tempCanvas.getContext("2d");
+          if (!tempCtx) {
+            closeReviewModal();
+            return;
+          }
+          tempCtx.putImageData(crop, 0, 0);
+
+          const boxX = dx + ((candidate.x - sx) / sw) * drawW;
+          const boxY = dy + ((candidate.y - sy) / sh) * drawH;
+          const boxW = (candidate.w / sw) * drawW;
+          const boxH = (candidate.h / sh) * drawH;
+          reviewRenderState = {
+            tempCanvas,
+            dx,
+            dy,
+            drawW,
+            drawH,
+            sw,
+            sh,
+            boxX,
+            boxY,
+            boxW,
+            boxH,
+          };
+          reviewPan = { x: 0, y: 0 };
+          drawReviewPreview();
+
+          reviewMeta.textContent = `Predicted: ${symbol?.label ?? candidate.symbolId} (${reviewQueueIndex + 1}/${reviewQueue.length})`;
+          for (const [symbolId, button] of reviewClassButtons.entries()) {
+            if (!(button instanceof HTMLButtonElement)) continue;
+            button.classList.toggle("classify-active", symbolId === candidate.symbolId);
+          }
+          openReviewModal();
+        }
+
+        function startReviewQueue(candidates) {
+          reviewQueue = [...candidates].sort((a, b) => b.score - a.score);
+          reviewQueueIndex = 0;
+          reviewHistory = [];
+          if (reviewQueue.length === 0) {
+            closeReviewModal();
+            return;
+          }
+          renderReviewCandidate();
+        }
+
+        function applyReviewDecision(decision, forcedSymbolId = "") {
+          const candidate = reviewQueue[reviewQueueIndex];
+          if (!candidate) {
+            closeReviewModal();
+            return;
+          }
+          const adjustedCandidate = getAdjustedCandidateFromPan(candidate);
+          const currentDarkMask = getDarkMask(getBaseImageData());
+          const targetSymbolId = forcedSymbolId || candidate.symbolId;
+          const adjustedFingerprint = buildDetectionFingerprint(
+            {
+              ...adjustedCandidate,
+              symbolId: targetSymbolId,
+            },
+            currentDarkMask
+          );
+          const historyEntry = {
+            index: reviewQueueIndex,
+            fingerprint: candidate.fingerprint,
+            adjustedFingerprint,
+            previousStoredDecision:
+              candidate.fingerprint in feedbackStore
+                ? feedbackStore[candidate.fingerprint]
+                : undefined,
+            previousAdjustedStoredDecision:
+              adjustedFingerprint in feedbackStore ? feedbackStore[adjustedFingerprint] : undefined,
+            skippedPreviously: skippedFingerprints.has(candidate.fingerprint),
+            action: decision,
+          };
+          if (decision === "accept" || decision === "reject") {
+            if (decision === "accept" && forcedSymbolId && forcedSymbolId !== candidate.symbolId) {
+              // Class correction: suppress prior class key and reinforce corrected class.
+              feedbackStore[candidate.fingerprint] = "reject";
+              feedbackStore[adjustedFingerprint] = "accept";
+            } else {
+              feedbackStore[candidate.fingerprint] = decision;
+              feedbackStore[adjustedFingerprint] = decision;
+            }
+            saveFeedbackStore();
+          }
+          if (decision === "accept") {
+            candidate.symbolId = targetSymbolId;
+            candidate.x = adjustedCandidate.x;
+            candidate.y = adjustedCandidate.y;
+            candidate.w = adjustedCandidate.w;
+            candidate.h = adjustedCandidate.h;
+            candidate.cx = adjustedCandidate.cx;
+            candidate.cy = adjustedCandidate.cy;
+            candidate.fingerprint = adjustedFingerprint;
+          }
+          if (decision === "skip") {
+            skippedFingerprints.add(candidate.fingerprint);
+          }
+          reviewHistory.push(historyEntry);
+          reviewPan = { x: 0, y: 0 };
+          reviewQueueIndex += 1;
+          if (reviewQueueIndex >= reviewQueue.length) {
+            closeReviewModal();
+            runDetectionAndRender();
+            return;
+          }
+          renderReviewCandidate();
+        }
+
+        function goBackOneReviewItem() {
+          const last = reviewHistory.pop();
+          if (!last) return;
+          reviewQueueIndex = Math.max(0, last.index);
+
+          if (last.previousStoredDecision === undefined) {
+            delete feedbackStore[last.fingerprint];
+          } else {
+            feedbackStore[last.fingerprint] = last.previousStoredDecision;
+          }
+          if (last.previousAdjustedStoredDecision === undefined) {
+            delete feedbackStore[last.adjustedFingerprint];
+          } else {
+            feedbackStore[last.adjustedFingerprint] = last.previousAdjustedStoredDecision;
+          }
+          saveFeedbackStore();
+
+          if (last.skippedPreviously) skippedFingerprints.add(last.fingerprint);
+          else skippedFingerprints.delete(last.fingerprint);
+
+          renderReviewCandidate();
+        }
+
+        feedbackStore = loadFeedbackStore();
+        daLog("Initialized", {
+          pageSize: { width: PAGE_WIDTH, height: PAGE_HEIGHT },
+          symbolTypes: SYMBOLS.map((s) => ({ id: s.id, iconPath: s.iconPath })),
+          detectionProfile: DETECTION_PROFILE,
+          globalFuzziness,
+          feedbackEntries: Object.keys(feedbackStore).length,
+          thresholds: {
+            componentMinArea: COMPONENT_MIN_AREA,
+            componentMaxArea: COMPONENT_MAX_AREA,
+            signatureThreshold: 0.62,
+          },
+        });
+
+        function hashStringToSeed(input) {
+          let h = 2166136261 >>> 0;
+          for (let i = 0; i < input.length; i += 1) {
+            h ^= input.charCodeAt(i);
+            h = Math.imul(h, 16777619);
+          }
+          return h >>> 0;
+        }
+
+        function createRng(seedValue) {
+          let state = seedValue >>> 0;
+          return () => {
+            state = (Math.imul(1664525, state) + 1013904223) >>> 0;
+            return state / 4294967296;
+          };
+        }
+
+        function random(rng, min, max) {
+          return rng() * (max - min) + min;
+        }
+
+        function drawParagraphNoise(context) {
+          context.save();
+          context.strokeStyle = "#000";
+          context.lineWidth = 1;
+          for (let i = 0; i < 18; i += 1) {
+            const y = 120 + i * 42;
+            const x = 120 + (i % 3) * 230;
+            const w = 180 + ((i * 17) % 70);
+            context.beginPath();
+            context.moveTo(x, y);
+            context.lineTo(x + w, y);
+            context.stroke();
+            if (i % 2 === 0) {
+              context.beginPath();
+              context.moveTo(x, y + 10);
+              context.lineTo(x + w - 30, y + 10);
+              context.stroke();
+            }
+          }
+          context.restore();
+        }
+
+        function drawRoomLines(context) {
+          context.save();
+          context.strokeStyle = "#111";
+          context.lineWidth = 2;
+          context.strokeRect(70, 80, PAGE_WIDTH - 140, PAGE_HEIGHT - 160);
+          for (let i = 0; i < 6; i += 1) {
+            context.beginPath();
+            context.moveTo(100, 210 + i * 165);
+            context.lineTo(PAGE_WIDTH - 100, 210 + i * 165);
+            context.stroke();
+          }
+          for (let i = 0; i < 4; i += 1) {
+            context.beginPath();
+            context.moveTo(180 + i * 180, 100);
+            context.lineTo(180 + i * 180, PAGE_HEIGHT - 100);
+            context.stroke();
+          }
+          context.restore();
+        }
+
+        function drawSprinkler(context, x, y, size) {
+          const r = size * 0.38;
+          context.beginPath();
+          context.arc(x, y, r, 0, Math.PI * 2);
+          context.stroke();
+          context.beginPath();
+          context.moveTo(x - r * 0.9, y);
+          context.lineTo(x + r * 0.9, y);
+          context.moveTo(x, y - r * 0.9);
+          context.lineTo(x, y + r * 0.9);
+          context.stroke();
+        }
+
+        function drawValve(context, x, y, size) {
+          const r = size * 0.42;
+          context.beginPath();
+          context.moveTo(x, y - r);
+          context.lineTo(x + r, y);
+          context.lineTo(x, y + r);
+          context.lineTo(x - r, y);
+          context.closePath();
+          context.stroke();
+          context.beginPath();
+          context.moveTo(x, y + r);
+          context.lineTo(x, y + r + size * 0.36);
+          context.stroke();
+        }
+
+        function drawDetector(context, x, y, size) {
+          const r = size * 0.4;
+          context.beginPath();
+          context.arc(x, y, r, 0, Math.PI * 2);
+          context.stroke();
+          context.beginPath();
+          context.moveTo(x - r * 0.8, y + r * 0.15);
+          context.lineTo(x + r * 0.8, y + r * 0.15);
+          context.moveTo(x - r * 0.45, y - r * 0.2);
+          context.lineTo(x + r * 0.45, y - r * 0.2);
+          context.stroke();
+        }
+
+        function drawSymbol(context, symbolId, x, y, size) {
+          context.save();
+          context.strokeStyle = "#000";
+          context.lineWidth = 2.4;
+          context.lineCap = "round";
+          context.lineJoin = "round";
+          if (symbolId === "sprinkler") drawSprinkler(context, x, y, size);
+          if (symbolId === "valve") drawValve(context, x, y, size);
+          if (symbolId === "detector") drawDetector(context, x, y, size);
+          context.restore();
+        }
+
+        function collides(x, y, existing) {
+          return existing.some((item) => {
+            const dx = item.x - x;
+            const dy = item.y - y;
+            return Math.hypot(dx, dy) < SYMBOL_SIZE * 2.2;
+          });
+        }
+
+        function generateLayout(seedLabel) {
+          const seed = hashStringToSeed(seedLabel);
+          const rng = createRng(seed);
+          const points = [];
+          for (const symbol of SYMBOLS) {
+            const count = TARGET_COUNTS[symbol.id];
+            for (let i = 0; i < count; i += 1) {
+              let tries = 0;
+              let x = 0;
+              let y = 0;
+              do {
+                x = random(rng, 130, PAGE_WIDTH - 130);
+                y = random(rng, 130, PAGE_HEIGHT - 130);
+                tries += 1;
+              } while (tries < 120 && collides(x, y, points));
+              points.push({ symbolId: symbol.id, x, y, size: SYMBOL_SIZE });
+            }
+          }
+          return points;
+        }
+
+        function renderDocument(includeHighlights = true, includeTrace = true) {
+          ctx.clearRect(0, 0, PAGE_WIDTH, PAGE_HEIGHT);
+          ctx.fillStyle = "#fff";
+          ctx.fillRect(0, 0, PAGE_WIDTH, PAGE_HEIGHT);
+          if (sourceMode === "uploaded" && uploadedImage) {
+            const scale = Math.min(
+              PAGE_WIDTH / uploadedImage.width,
+              PAGE_HEIGHT / uploadedImage.height
+            );
+            const drawW = Math.max(1, Math.round(uploadedImage.width * scale));
+            const drawH = Math.max(1, Math.round(uploadedImage.height * scale));
+            const dx = Math.round((PAGE_WIDTH - drawW) / 2);
+            const dy = Math.round((PAGE_HEIGHT - drawH) / 2);
+            uploadedRenderState = { dx, dy, drawW, drawH, scale };
+            ctx.drawImage(uploadedImage, dx, dy, drawW, drawH);
+            daLog("Rendered uploaded image", {
+              original: { width: uploadedImage.width, height: uploadedImage.height },
+              drawn: { x: dx, y: dy, width: drawW, height: drawH },
+              scale,
+            });
+          } else {
+            uploadedRenderState = { dx: 0, dy: 0, drawW: PAGE_WIDTH, drawH: PAGE_HEIGHT, scale: 1 };
+            daLog("No uploaded image yet; canvas is blank");
+          }
+          if (includeHighlights && activeLayerIds.size > 0) drawActiveLayerHighlights();
+          if (includeTrace) drawClickTraceBox();
+        }
+
+        function getBaseImageData() {
+          renderDocument(false, false);
+          const imageData = ctx.getImageData(0, 0, PAGE_WIDTH, PAGE_HEIGHT);
+          renderDocument();
+          return imageData;
+        }
+
+        function cropImageData(sourceImageData, sx, sy, sw, sh) {
+          const out = new ImageData(sw, sh);
+          const source = sourceImageData.data;
+          const target = out.data;
+          const sourceWidth = sourceImageData.width;
+          for (let y = 0; y < sh; y += 1) {
+            const sourceRow = (sy + y) * sourceWidth;
+            const targetRow = y * sw;
+            for (let x = 0; x < sw; x += 1) {
+              const sourceIdx = (sourceRow + (sx + x)) * 4;
+              const targetIdx = (targetRow + x) * 4;
+              target[targetIdx] = source[sourceIdx];
+              target[targetIdx + 1] = source[sourceIdx + 1];
+              target[targetIdx + 2] = source[sourceIdx + 2];
+              target[targetIdx + 3] = source[sourceIdx + 3];
+            }
+          }
+          return out;
+        }
+
+        async function requestYoloDetections() {
+          if (!uploadedImage) return { ok: false, error: "no-image", detections: [] };
+          let imageDataUrl = String(uploadedImage.src || "");
+          if (!imageDataUrl.startsWith("data:image/")) {
+            const tempCanvas = /** @type {HTMLCanvasElement} */ (document.createElement("canvas"));
+            tempCanvas.width = Math.max(1, uploadedImage.naturalWidth || uploadedImage.width || 1);
+            tempCanvas.height = Math.max(
+              1,
+              uploadedImage.naturalHeight || uploadedImage.height || 1
+            );
+            const tempCtx = tempCanvas.getContext("2d");
+            if (!tempCtx)
+              return { ok: false, error: "image-canvas-context-failed", detections: [] };
+            tempCtx.drawImage(uploadedImage, 0, 0, tempCanvas.width, tempCanvas.height);
+            imageDataUrl = tempCanvas.toDataURL("image/png");
+          }
+          const response = await fetch("/api/tests/yolo-detect", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              imageDataUrl,
+              conf: 0.18,
+              imgsz: 1024,
+            }),
+          });
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok || payload?.success !== true) {
+            return { ok: false, error: payload?.error || "yolo-failed", detections: [] };
+          }
+          const mapped = [];
+          const scale = uploadedRenderState.scale || 1;
+          const dx = uploadedRenderState.dx || 0;
+          const dy = uploadedRenderState.dy || 0;
+          const rawDetections = Array.isArray(payload.detections) ? payload.detections : [];
+          for (const det of rawDetections) {
+            const className = String(det?.className || "")
+              .trim()
+              .toLowerCase();
+            const symbolId = YOLO_CLASS_TO_SYMBOL[className];
+            if (!symbolId) continue;
+            const x = dx + Number(det.x || 0) * scale;
+            const y = dy + Number(det.y || 0) * scale;
+            const w = Number(det.width || 0) * scale;
+            const h = Number(det.height || 0) * scale;
+            if (!Number.isFinite(x + y + w + h) || w < 2 || h < 2) continue;
+            mapped.push({
+              symbolId,
+              score: Number(det.confidence || 0),
+              x,
+              y,
+              w,
+              h,
+              cx: x + w / 2,
+              cy: y + h / 2,
+              source: "yolo",
+            });
+          }
+          return { ok: true, detections: mapped, modelPath: String(payload.modelPath || "") };
+        }
+
+        function buildTemplateSignatures() {
+          const signatures = {};
+          for (const symbol of SYMBOLS) {
+            const tCanvas = document.createElement("canvas");
+            tCanvas.width = 64;
+            tCanvas.height = 64;
+            const tCtx = tCanvas.getContext("2d", { willReadFrequently: true });
+            if (!tCtx) continue;
+            tCtx.fillStyle = "#fff";
+            tCtx.fillRect(0, 0, 64, 64);
+            drawSymbol(tCtx, symbol.id, 32, 32, SYMBOL_SIZE);
+            const imageData = tCtx.getImageData(0, 0, 64, 64);
+            signatures[symbol.id] = buildOccupancySignature(imageData, 64, 64);
+          }
+          return signatures;
+        }
+
+        function getTemplateMask(symbolId, maskSize) {
+          const size = Math.max(20, Math.min(62, Math.round(maskSize)));
+          const cacheKey = `${symbolId}:${size}`;
+          const cached = templateMaskCache.get(cacheKey);
+          if (cached) return cached;
+
+          const tCanvas = document.createElement("canvas");
+          tCanvas.width = size;
+          tCanvas.height = size;
+          const tCtx = tCanvas.getContext("2d", { willReadFrequently: true });
+          if (!tCtx) return null;
+          tCtx.fillStyle = "#fff";
+          tCtx.fillRect(0, 0, size, size);
+          // Draw symbol slightly inset to preserve edge strokes at small scales.
+          drawSymbol(tCtx, symbolId, size / 2, size / 2, size * 0.78);
+          const imageData = tCtx.getImageData(0, 0, size, size);
+          const mask = getDarkMask(imageData);
+          const fg = [];
+          const bg = [];
+          let minFx = size;
+          let minFy = size;
+          let maxFx = -1;
+          let maxFy = -1;
+          for (let y = 0; y < size; y += 1) {
+            for (let x = 0; x < size; x += 1) {
+              if (mask[y * size + x]) {
+                fg.push([x, y]);
+                if (x < minFx) minFx = x;
+                if (y < minFy) minFy = y;
+                if (x > maxFx) maxFx = x;
+                if (y > maxFy) maxFy = y;
+              } else {
+                bg.push([x, y]);
+              }
+            }
+          }
+          if (fg.length === 0) return null;
+
+          // Sample foreground points to keep scan runtime reasonable.
+          const sampled = [];
+          for (let i = 0; i < fg.length; i += 2) sampled.push(fg[i]);
+          const sampledBg = [];
+          for (let i = 0; i < bg.length; i += 8) sampledBg.push(bg[i]);
+          const fgNorm = [];
+          const normW = Math.max(1, maxFx - minFx + 1);
+          const normH = Math.max(1, maxFy - minFy + 1);
+          for (let i = 0; i < fg.length; i += 4) {
+            const [px, py] = fg[i];
+            fgNorm.push([(px - minFx) / normW, (py - minFy) / normH]);
+          }
+          const template = {
+            width: size,
+            height: size,
+            fg: sampled.length > 0 ? sampled : fg,
+            bg: sampledBg,
+            fgNorm,
+            centerX: Math.floor(size / 2),
+            centerY: Math.floor(size / 2),
+          };
+          templateMaskCache.set(cacheKey, template);
+          return template;
+        }
+
+        function scoreTemplateAt(darkMask, x, y, tpl) {
+          let fgHit = 0;
+          for (let i = 0; i < tpl.fg.length; i += 1) {
+            const [tx, ty] = tpl.fg[i];
+            if (darkMask[(y + ty) * PAGE_WIDTH + (x + tx)]) fgHit += 1;
+          }
+
+          let bgHit = 0;
+          for (let i = 0; i < tpl.bg.length; i += 1) {
+            const [tx, ty] = tpl.bg[i];
+            if (darkMask[(y + ty) * PAGE_WIDTH + (x + tx)]) bgHit += 1;
+          }
+
+          const fgRate = tpl.fg.length > 0 ? fgHit / tpl.fg.length : 0;
+          const bgRate = tpl.bg.length > 0 ? bgHit / tpl.bg.length : 0;
+          // Penalize unexpected dark pixels in template background.
+          const shapeScore = fgRate - bgRate * 0.75;
+
+          // Crop/padding invariance: compare normalized dark content distribution.
+          let cMinX = tpl.width;
+          let cMinY = tpl.height;
+          let cMaxX = -1;
+          let cMaxY = -1;
+          for (let py = 0; py < tpl.height; py += 1) {
+            for (let px = 0; px < tpl.width; px += 1) {
+              if (!darkMask[(y + py) * PAGE_WIDTH + (x + px)]) continue;
+              if (px < cMinX) cMinX = px;
+              if (py < cMinY) cMinY = py;
+              if (px > cMaxX) cMaxX = px;
+              if (py > cMaxY) cMaxY = py;
+            }
+          }
+
+          let contentScore = 0;
+          if (cMaxX >= 0 && tpl.fgNorm.length > 0) {
+            const cW = Math.max(1, cMaxX - cMinX + 1);
+            const cH = Math.max(1, cMaxY - cMinY + 1);
+            let contentHits = 0;
+            for (let i = 0; i < tpl.fgNorm.length; i += 1) {
+              const [nx, ny] = tpl.fgNorm[i];
+              const tx = x + cMinX + Math.round(nx * (cW - 1));
+              const ty = y + cMinY + Math.round(ny * (cH - 1));
+              let localHit = false;
+              for (let oy = -1; oy <= 1 && !localHit; oy += 1) {
+                for (let ox = -1; ox <= 1; ox += 1) {
+                  const sx = tx + ox;
+                  const sy = ty + oy;
+                  if (sx < 0 || sy < 0 || sx >= PAGE_WIDTH || sy >= PAGE_HEIGHT) continue;
+                  if (darkMask[sy * PAGE_WIDTH + sx]) {
+                    localHit = true;
+                    break;
+                  }
+                }
+              }
+              if (localHit) contentHits += 1;
+            }
+            contentScore = contentHits / tpl.fgNorm.length;
+          }
+
+          const hybrid = shapeScore * 0.35 + contentScore * 0.65;
+          return { fgRate, bgRate, shapeScore, contentScore, hybrid };
+        }
+
+        function getUploadedMinScore() {
+          const fuzziness = Number(globalFuzziness);
+          // 0 (strict) -> 0.66, 100 (fuzzy) -> 0.4
+          return 0.66 - (fuzziness / 100) * 0.26;
+        }
+
+        function passesContiguousGate(darkMask, x, y, tpl) {
+          const width = tpl.width;
+          const height = tpl.height;
+          const localMask = new Uint8Array(width * height);
+          let darkCount = 0;
+          for (let py = 0; py < height; py += 1) {
+            for (let px = 0; px < width; px += 1) {
+              const v = darkMask[(y + py) * PAGE_WIDTH + (x + px)] ? 1 : 0;
+              localMask[py * width + px] = v;
+              darkCount += v;
+            }
+          }
+          if (darkCount < 14) return { pass: false, score: 0, reason: "too-few-dark-pixels" };
+
+          let seedX = -1;
+          let seedY = -1;
+          const cx = tpl.centerX;
+          const cy = tpl.centerY;
+          for (let radius = 0; radius <= 4 && seedX < 0; radius += 1) {
+            for (let oy = -radius; oy <= radius; oy += 1) {
+              for (let ox = -radius; ox <= radius; ox += 1) {
+                const sx = cx + ox;
+                const sy = cy + oy;
+                if (sx < 0 || sy < 0 || sx >= width || sy >= height) continue;
+                if (localMask[sy * width + sx]) {
+                  seedX = sx;
+                  seedY = sy;
+                  break;
+                }
+              }
+              if (seedX >= 0) break;
+            }
+          }
+          if (seedX < 0) return { pass: false, score: 0, reason: "no-center-component" };
+
+          const visited = new Uint8Array(width * height);
+          const stack = [seedY * width + seedX];
+          visited[seedY * width + seedX] = 1;
+          let area = 0;
+          let minX = seedX;
+          let minY = seedY;
+          let maxX = seedX;
+          let maxY = seedY;
+          let touchTop = false;
+          let touchBottom = false;
+          let touchLeft = false;
+          let touchRight = false;
+          while (stack.length > 0) {
+            const idx = stack.pop();
+            const px = idx % width;
+            const py = (idx / width) | 0;
+            area += 1;
+            if (px < minX) minX = px;
+            if (py < minY) minY = py;
+            if (px > maxX) maxX = px;
+            if (py > maxY) maxY = py;
+            if (py === 0) touchTop = true;
+            if (py === height - 1) touchBottom = true;
+            if (px === 0) touchLeft = true;
+            if (px === width - 1) touchRight = true;
+            const neighbors = [idx - 1, idx + 1, idx - width, idx + width];
+            for (const n of neighbors) {
+              if (n < 0 || n >= localMask.length) continue;
+              if (visited[n] || !localMask[n]) continue;
+              visited[n] = 1;
+              stack.push(n);
+            }
+          }
+
+          const bboxW = maxX - minX + 1;
+          const bboxH = maxY - minY + 1;
+          const aspect = bboxH > 0 ? bboxW / bboxH : 99;
+          const areaRatio = area / (width * height);
+          const touchedEdges =
+            Number(touchTop) + Number(touchBottom) + Number(touchLeft) + Number(touchRight);
+
+          if (area < 16) return { pass: false, score: 0, reason: "component-too-small" };
+          if (areaRatio < 0.03) return { pass: false, score: 0, reason: "too-sparse" };
+          if (areaRatio > 0.62) return { pass: false, score: 0, reason: "too-dense" };
+          if (aspect < 0.28 || aspect > 3.4)
+            return { pass: false, score: 0, reason: "elongated-fragment" };
+          if (touchedEdges >= 3) return { pass: false, score: 0, reason: "open-line-fragment" };
+
+          const compactness = Math.min(1, areaRatio / 0.22);
+          const edgePenalty = touchedEdges * 0.12;
+          const score = Math.max(0, compactness - edgePenalty);
+          return { pass: true, score, reason: "ok" };
+        }
+
+        function expandCandidateToConnectedBounds(darkMask, candidate) {
+          const baseW = Math.max(1, Math.round(candidate.w));
+          const baseH = Math.max(1, Math.round(candidate.h));
+          const symbolPadMultiplier = candidate.symbolId === "valve" ? 1.25 : 0.9;
+          const pad = Math.max(8, Math.round(Math.max(baseW, baseH) * symbolPadMultiplier));
+          const left = Math.max(0, Math.floor(candidate.x - pad));
+          const top = Math.max(0, Math.floor(candidate.y - pad));
+          const right = Math.min(PAGE_WIDTH, Math.ceil(candidate.x + candidate.w + pad));
+          const bottom = Math.min(PAGE_HEIGHT, Math.ceil(candidate.y + candidate.h + pad));
+          const localW = right - left;
+          const localH = bottom - top;
+          if (localW < 2 || localH < 2) return candidate;
+
+          const seedLeft = Math.max(left, Math.floor(candidate.x - 2));
+          const seedTop = Math.max(top, Math.floor(candidate.y - 2));
+          const seedRight = Math.min(right, Math.ceil(candidate.x + candidate.w + 2));
+          const seedBottom = Math.min(bottom, Math.ceil(candidate.y + candidate.h + 2));
+          const seeds = [];
+          for (let gy = seedTop; gy < seedBottom; gy += 1) {
+            for (let gx = seedLeft; gx < seedRight; gx += 1) {
+              if (darkMask[gy * PAGE_WIDTH + gx]) seeds.push((gy - top) * localW + (gx - left));
+            }
+          }
+          if (seeds.length === 0) return candidate;
+
+          // Hard expansion cap: can grow, but only within bounded scale of original detection.
+          const growthCap = candidate.symbolId === "valve" ? 1.4 : 1.33;
+          const capW = Math.max(baseW + 4, Math.round(baseW * growthCap));
+          const capH = Math.max(baseH + 4, Math.round(baseH * growthCap));
+          const capLeft = Math.max(0, Math.floor(candidate.cx - capW / 2));
+          const capTop = Math.max(0, Math.floor(candidate.cy - capH / 2));
+          const capRight = Math.min(PAGE_WIDTH, Math.ceil(candidate.cx + capW / 2));
+          const capBottom = Math.min(PAGE_HEIGHT, Math.ceil(candidate.cy + capH / 2));
+
+          const visited = new Uint8Array(localW * localH);
+          const stack = [];
+          for (const s of seeds) {
+            if (visited[s]) continue;
+            visited[s] = 1;
+            stack.push(s);
+          }
+
+          let minX = localW;
+          let minY = localH;
+          let maxX = -1;
+          let maxY = -1;
+          let area = 0;
+
+          while (stack.length > 0) {
+            const idx = stack.pop();
+            const lx = idx % localW;
+            const ly = (idx / localW) | 0;
+            area += 1;
+            if (lx < minX) minX = lx;
+            if (ly < minY) minY = ly;
+            if (lx > maxX) maxX = lx;
+            if (ly > maxY) maxY = ly;
+
+            for (let oy = -1; oy <= 1; oy += 1) {
+              for (let ox = -1; ox <= 1; ox += 1) {
+                if (ox === 0 && oy === 0) continue;
+                const nx = lx + ox;
+                const ny = ly + oy;
+                if (nx < 0 || ny < 0 || nx >= localW || ny >= localH) continue;
+                const gx = left + nx;
+                const gy = top + ny;
+                if (gx < capLeft || gx >= capRight || gy < capTop || gy >= capBottom) continue;
+                const nIdx = ny * localW + nx;
+                if (visited[nIdx]) continue;
+                if (!darkMask[gy * PAGE_WIDTH + gx]) continue;
+                visited[nIdx] = 1;
+                stack.push(nIdx);
+              }
+            }
+          }
+
+          if (maxX < 0 || maxY < 0) return candidate;
+
+          const expandedW = maxX - minX + 1;
+          const expandedH = maxY - minY + 1;
+          const oldArea = baseW * baseH;
+          const newArea = expandedW * expandedH;
+          const touchEdges =
+            Number(minX === 0) +
+            Number(minY === 0) +
+            Number(maxX === localW - 1) +
+            Number(maxY === localH - 1);
+
+          // Guardrails so connected major lines don't explode the box.
+          if (newArea > oldArea * 5.5) return candidate;
+          if (newArea < oldArea * 0.75) return candidate;
+          if (expandedW > capW || expandedH > capH) return candidate;
+          if (touchEdges >= 3) return candidate;
+          if (area < 16) return candidate;
+
+          const x = left + minX;
+          const y = top + minY;
+          const w = expandedW;
+          const h = expandedH;
+
+          return {
+            ...candidate,
+            x,
+            y,
+            w,
+            h,
+            cx: x + w / 2,
+            cy: y + h / 2,
+          };
+        }
+
+        function tightenCandidateToPrimaryComponent(darkMask, candidate) {
+          const pad = 3;
+          const left = Math.max(0, Math.floor(candidate.x - pad));
+          const top = Math.max(0, Math.floor(candidate.y - pad));
+          const right = Math.min(PAGE_WIDTH, Math.ceil(candidate.x + candidate.w + pad));
+          const bottom = Math.min(PAGE_HEIGHT, Math.ceil(candidate.y + candidate.h + pad));
+          const localW = right - left;
+          const localH = bottom - top;
+          if (localW < 2 || localH < 2) return candidate;
+
+          const localMask = new Uint8Array(localW * localH);
+          for (let y = 0; y < localH; y += 1) {
+            for (let x = 0; x < localW; x += 1) {
+              localMask[y * localW + x] = darkMask[(top + y) * PAGE_WIDTH + (left + x)] ? 1 : 0;
+            }
+          }
+
+          const visited = new Uint8Array(localMask.length);
+          const comps = [];
+          for (let y = 0; y < localH; y += 1) {
+            for (let x = 0; x < localW; x += 1) {
+              const idx = y * localW + x;
+              if (!localMask[idx] || visited[idx]) continue;
+              const stack = [idx];
+              visited[idx] = 1;
+              let area = 0;
+              let minX = x;
+              let minY = y;
+              let maxX = x;
+              let maxY = y;
+              while (stack.length > 0) {
+                const current = stack.pop();
+                const cx = current % localW;
+                const cy = (current / localW) | 0;
+                area += 1;
+                if (cx < minX) minX = cx;
+                if (cy < minY) minY = cy;
+                if (cx > maxX) maxX = cx;
+                if (cy > maxY) maxY = cy;
+                for (let oy = -1; oy <= 1; oy += 1) {
+                  for (let ox = -1; ox <= 1; ox += 1) {
+                    if (ox === 0 && oy === 0) continue;
+                    const nx = cx + ox;
+                    const ny = cy + oy;
+                    if (nx < 0 || ny < 0 || nx >= localW || ny >= localH) continue;
+                    const nIdx = ny * localW + nx;
+                    if (visited[nIdx] || !localMask[nIdx]) continue;
+                    visited[nIdx] = 1;
+                    stack.push(nIdx);
+                  }
+                }
+              }
+              comps.push({
+                area,
+                minX,
+                minY,
+                maxX,
+                maxY,
+                cx: (minX + maxX) / 2,
+                cy: (minY + maxY) / 2,
+              });
+            }
+          }
+
+          if (comps.length === 0) return candidate;
+
+          const targetCx = candidate.cx - left;
+          const targetCy = candidate.cy - top;
+          const maxArea = Math.max(...comps.map((c) => c.area));
+          let best = null;
+          let bestScore = -Infinity;
+          for (const comp of comps) {
+            const dist = Math.hypot(comp.cx - targetCx, comp.cy - targetCy);
+            const centerScore =
+              1 / (1 + dist / Math.max(8, Math.max(candidate.w, candidate.h) * 0.4));
+            const areaScore = comp.area / Math.max(1, maxArea);
+            const score = centerScore * 0.65 + areaScore * 0.35;
+            if (score > bestScore) {
+              bestScore = score;
+              best = comp;
+            }
+          }
+          if (!best) return candidate;
+
+          const shrinkPad = 2;
+          const x = Math.max(0, left + best.minX - shrinkPad);
+          const y = Math.max(0, top + best.minY - shrinkPad);
+          const rightBound = Math.min(PAGE_WIDTH, left + best.maxX + 1 + shrinkPad);
+          const bottomBound = Math.min(PAGE_HEIGHT, top + best.maxY + 1 + shrinkPad);
+          const w = Math.max(1, rightBound - x);
+          const h = Math.max(1, bottomBound - y);
+
+          // Guardrails: don't accept degenerate shrink results.
+          if (w < Math.max(10, candidate.w * 0.35) || h < Math.max(10, candidate.h * 0.35)) {
+            return candidate;
+          }
+
+          return {
+            ...candidate,
+            x,
+            y,
+            w,
+            h,
+            cx: x + w / 2,
+            cy: y + h / 2,
+          };
+        }
+
+        function getDarkMask(imageData) {
+          const out = new Uint8Array(imageData.width * imageData.height);
+          const data = imageData.data;
+          for (let i = 0, p = 0; i < data.length; i += 4, p += 1) {
+            const lum = data[i] * 0.3 + data[i + 1] * 0.59 + data[i + 2] * 0.11;
+            out[p] = lum < 110 ? 1 : 0;
+          }
+          return out;
+        }
+
+        function connectedComponents(imageData, width, height) {
+          const mask = getDarkMask(imageData);
+          const visited = new Uint8Array(mask.length);
+          const components = [];
+          const stack = [];
+          for (let y = 1; y < height - 1; y += 1) {
+            for (let x = 1; x < width - 1; x += 1) {
+              const idx = y * width + x;
+              if (!mask[idx] || visited[idx]) continue;
+              stack.length = 0;
+              stack.push(idx);
+              visited[idx] = 1;
+              let minX = x;
+              let minY = y;
+              let maxX = x;
+              let maxY = y;
+              let area = 0;
+              while (stack.length > 0) {
+                const current = stack.pop();
+                area += 1;
+                const cx = current % width;
+                const cy = (current / width) | 0;
+                if (cx < minX) minX = cx;
+                if (cy < minY) minY = cy;
+                if (cx > maxX) maxX = cx;
+                if (cy > maxY) maxY = cy;
+                const neighbors = [current - 1, current + 1, current - width, current + width];
+                for (const n of neighbors) {
+                  if (n < 0 || n >= mask.length) continue;
+                  if (!mask[n] || visited[n]) continue;
+                  visited[n] = 1;
+                  stack.push(n);
+                }
+              }
+              const boxW = maxX - minX + 1;
+              const boxH = maxY - minY + 1;
+              if (area < COMPONENT_MIN_AREA || area > COMPONENT_MAX_AREA) continue;
+              if (boxW < 14 || boxH < 14 || boxW > 90 || boxH > 90) continue;
+              components.push({ minX, minY, maxX, maxY, area, boxW, boxH });
+            }
+          }
+          return components;
+        }
+
+        function buildOccupancySignature(imageData, width, height) {
+          const mask = getDarkMask(imageData);
+          const signature = new Float32Array(OCCUPANCY_GRID * OCCUPANCY_GRID);
+          const cellW = width / OCCUPANCY_GRID;
+          const cellH = height / OCCUPANCY_GRID;
+          for (let gy = 0; gy < OCCUPANCY_GRID; gy += 1) {
+            for (let gx = 0; gx < OCCUPANCY_GRID; gx += 1) {
+              let dark = 0;
+              let total = 0;
+              const xStart = Math.floor(gx * cellW);
+              const xEnd = Math.floor((gx + 1) * cellW);
+              const yStart = Math.floor(gy * cellH);
+              const yEnd = Math.floor((gy + 1) * cellH);
+              for (let y = yStart; y < yEnd; y += 1) {
+                for (let x = xStart; x < xEnd; x += 1) {
+                  dark += mask[y * width + x];
+                  total += 1;
+                }
+              }
+              signature[gy * OCCUPANCY_GRID + gx] = total > 0 ? dark / total : 0;
+            }
+          }
+          return signature;
+        }
+
+        function compareSignatures(a, b) {
+          let dot = 0;
+          let aNorm = 0;
+          let bNorm = 0;
+          for (let i = 0; i < a.length; i += 1) {
+            dot += a[i] * b[i];
+            aNorm += a[i] * a[i];
+            bNorm += b[i] * b[i];
+          }
+          if (aNorm === 0 || bNorm === 0) return 0;
+          return dot / (Math.sqrt(aNorm) * Math.sqrt(bNorm));
+        }
+
+        function detectSymbols() {
+          daLog("Starting detection", { mode: sourceMode });
+          const imageData = ctx.getImageData(0, 0, PAGE_WIDTH, PAGE_HEIGHT);
+          const components = connectedComponents(imageData, PAGE_WIDTH, PAGE_HEIGHT);
+          daLog("Connected components found", { count: components.length });
+          const found = [];
+          for (const component of components) {
+            const pad = 5;
+            const sx = Math.max(0, component.minX - pad);
+            const sy = Math.max(0, component.minY - pad);
+            const sw = Math.min(PAGE_WIDTH - sx, component.boxW + pad * 2);
+            const sh = Math.min(PAGE_HEIGHT - sy, component.boxH + pad * 2);
+            const patch = ctx.getImageData(sx, sy, sw, sh);
+            const signature = buildOccupancySignature(patch, sw, sh);
+
+            let bestSymbolId = "";
+            let bestScore = 0;
+            for (const symbol of SYMBOLS) {
+              const score = compareSignatures(signature, templateSignatures[symbol.id]);
+              if (score > bestScore) {
+                bestScore = score;
+                bestSymbolId = symbol.id;
+              }
+            }
+            if (bestScore < 0.62) continue;
+            found.push({
+              symbolId: bestSymbolId,
+              score: bestScore,
+              x: sx,
+              y: sy,
+              w: sw,
+              h: sh,
+              cx: sx + sw / 2,
+              cy: sy + sh / 2,
+            });
+          }
+
+          // Keep strongest candidate per location cluster.
+          const deduped = [];
+          for (const candidate of found.sort((a, b) => b.score - a.score)) {
+            const duplicate = deduped.some(
+              (d) =>
+                d.symbolId === candidate.symbolId &&
+                Math.hypot(d.cx - candidate.cx, d.cy - candidate.cy) < 18
+            );
+            if (!duplicate) deduped.push(candidate);
+          }
+          const byType = SYMBOLS.reduce((acc, symbol) => {
+            acc[symbol.id] = deduped.filter((d) => d.symbolId === symbol.id).length;
+            return acc;
+          }, {});
+          daLog("Detection complete", {
+            rawCandidates: found.length,
+            deduped: deduped.length,
+            byType,
+          });
+          return deduped;
+        }
+
+        function detectSymbolsByTemplateScan() {
+          const imageData = ctx.getImageData(0, 0, PAGE_WIDTH, PAGE_HEIGHT);
+          const darkMask = getDarkMask(imageData);
+          const candidates = [];
+          const baseScale = sourceMode === "uploaded" ? uploadedRenderState.scale : 1;
+          const uploadedMinScores = SYMBOLS.reduce((acc, symbol) => {
+            acc[symbol.id] = getUploadedMinScore();
+            return acc;
+          }, {});
+          const fallbackMinScore = 0.72;
+          const symbolMeta: Record<
+            string,
+            {
+              fuzz: number;
+              highRecall: boolean;
+              step: number;
+              minScore: number;
+              uniqueScales: number[];
+            }
+          > = SYMBOLS.reduce(
+            (acc, symbol) => {
+              const fuzz = Number(globalFuzziness);
+              const highRecall = fuzz >= 85;
+              const scaleCandidates = highRecall
+                ? [baseScale * 0.75, baseScale * 0.9, baseScale, baseScale * 1.12, baseScale * 1.3]
+                : [baseScale * 0.85, baseScale, baseScale * 1.15];
+              const uniqueScales = [
+                ...new Set(
+                  scaleCandidates
+                    .map((s) => Math.max(0.5, Math.min(1.35, s)))
+                    .map((s) => Number(s.toFixed(3)))
+                ),
+              ];
+              acc[symbol.id] = {
+                fuzz,
+                highRecall,
+                step: highRecall ? 2 : 3,
+                minScore:
+                  DETECTION_PROFILE === "uploaded"
+                    ? (uploadedMinScores[symbol.id] ?? fallbackMinScore)
+                    : fallbackMinScore,
+                uniqueScales,
+              };
+              return acc;
+            },
+            {} as Record<
+              string,
+              {
+                fuzz: number;
+                highRecall: boolean;
+                step: number;
+                minScore: number;
+                uniqueScales: number[];
+              }
+            >
+          );
+          const scanStepUsed = Math.min(...Object.values(symbolMeta).map((m) => m.step));
+          const xMin = sourceMode === "uploaded" ? Math.max(0, uploadedRenderState.dx - 8) : 0;
+          const yMin = sourceMode === "uploaded" ? Math.max(0, uploadedRenderState.dy - 8) : 0;
+          const xMax =
+            sourceMode === "uploaded"
+              ? Math.min(PAGE_WIDTH, uploadedRenderState.dx + uploadedRenderState.drawW + 8)
+              : PAGE_WIDTH;
+          const yMax =
+            sourceMode === "uploaded"
+              ? Math.min(PAGE_HEIGHT, uploadedRenderState.dy + uploadedRenderState.drawH + 8)
+              : PAGE_HEIGHT;
+          const contiguousRejectReasons: Record<string, number> = {};
+          let contiguousRejects = 0;
+
+          for (const symbol of SYMBOLS) {
+            const meta = symbolMeta[symbol.id];
+            const minScore = meta.minScore;
+            for (const scaleFactor of meta.uniqueScales) {
+              const tpl = getTemplateMask(symbol.id, 46 * scaleFactor);
+              if (!tpl || !tpl.fg?.length) continue;
+              const startY = Math.max(0, yMin);
+              const endY = Math.max(0, yMax - tpl.height);
+              const startX = Math.max(0, xMin);
+              const endX = Math.max(0, xMax - tpl.width);
+
+              for (let y = startY; y <= endY; y += meta.step) {
+                for (let x = startX; x <= endX; x += meta.step) {
+                  const fit = scoreTemplateAt(darkMask, x, y, tpl);
+                  if (fit.hybrid < minScore) continue;
+                  const contiguous = passesContiguousGate(darkMask, x, y, tpl);
+                  if (!contiguous.pass) {
+                    if (!(meta.highRecall && fit.contentScore >= 0.72 && fit.shapeScore >= 0.18)) {
+                      contiguousRejects += 1;
+                      contiguousRejectReasons[contiguous.reason] =
+                        (contiguousRejectReasons[contiguous.reason] ?? 0) + 1;
+                      continue;
+                    }
+                    contiguousRejectReasons.high_fuzziness_override =
+                      (contiguousRejectReasons.high_fuzziness_override ?? 0) + 1;
+                  }
+                  candidates.push({
+                    symbolId: symbol.id,
+                    score: fit.hybrid + contiguous.score * 0.08,
+                    x,
+                    y,
+                    w: tpl.width,
+                    h: tpl.height,
+                    cx: x + tpl.width / 2,
+                    cy: y + tpl.height / 2,
+                  });
+                }
+              }
+            }
+          }
+
+          // Recall recovery pass for high-fuzziness symbols only.
+          for (const symbol of SYMBOLS) {
+            const meta = symbolMeta[symbol.id];
+            if (!meta.highRecall) continue;
+            const recoveredScales = [
+              ...new Set(
+                [
+                  baseScale * 0.68,
+                  baseScale * 0.82,
+                  baseScale * 0.96,
+                  baseScale * 1.08,
+                  baseScale * 1.22,
+                ]
+                  .map((s) => Math.max(0.45, Math.min(1.45, s)))
+                  .map((s) => Number(s.toFixed(3)))
+              ),
+            ];
+            const recoveryMin = Math.max(0.33, meta.minScore - 0.08);
+            for (const scaleFactor of recoveredScales) {
+              const tpl = getTemplateMask(symbol.id, 46 * scaleFactor);
+              if (!tpl || !tpl.fg?.length) continue;
+              const startY = Math.max(0, yMin);
+              const endY = Math.max(0, yMax - tpl.height);
+              const startX = Math.max(0, xMin);
+              const endX = Math.max(0, xMax - tpl.width);
+              for (let y = startY; y <= endY; y += 2) {
+                for (let x = startX; x <= endX; x += 2) {
+                  const fit = scoreTemplateAt(darkMask, x, y, tpl);
+                  if (fit.hybrid < recoveryMin) continue;
+                  if (fit.contentScore < 0.7) continue;
+                  candidates.push({
+                    symbolId: symbol.id,
+                    score: fit.hybrid,
+                    x,
+                    y,
+                    w: tpl.width,
+                    h: tpl.height,
+                    cx: x + tpl.width / 2,
+                    cy: y + tpl.height / 2,
+                  });
+                }
+              }
+            }
+          }
+
+          const deduped = [];
+          for (const candidate of candidates.sort((a, b) => b.score - a.score)) {
+            const duplicate = deduped.some(
+              (d) =>
+                d.symbolId === candidate.symbolId &&
+                Math.hypot(d.cx - candidate.cx, d.cy - candidate.cy) <
+                  (DETECTION_PROFILE === "uploaded" ? 18 : 22)
+            );
+            if (!duplicate) deduped.push(candidate);
+          }
+
+          // Resolve cross-symbol conflicts so one location maps to one symbol type.
+          const resolved = [];
+          const crossTypeRadius = DETECTION_PROFILE === "uploaded" ? 20 : 24;
+          const conflictMargin = 0.03;
+          for (const candidate of deduped.sort((a, b) => b.score - a.score)) {
+            const conflictingIndex = resolved.findIndex(
+              (r) => Math.hypot(r.cx - candidate.cx, r.cy - candidate.cy) < crossTypeRadius
+            );
+            if (conflictingIndex < 0) {
+              resolved.push(candidate);
+              continue;
+            }
+            const existing = resolved[conflictingIndex];
+            if (candidate.symbolId === existing.symbolId) {
+              // Same type and near-duplicate handled by score ordering.
+              continue;
+            }
+            const scoreDelta = Math.abs(candidate.score - existing.score);
+            if (scoreDelta <= conflictMargin) {
+              // Ambiguous class at same spot: drop both.
+              resolved.splice(conflictingIndex, 1);
+              continue;
+            }
+            if (candidate.score > existing.score) {
+              resolved[conflictingIndex] = candidate;
+            }
+          }
+
+          // Re-classify each resolved location across all symbol templates.
+          const reclassified = [];
+          let ambiguousDropped = 0;
+          const ambiguityMargin = 0.045;
+          for (const item of resolved) {
+            const classScores = [];
+            for (const symbol of SYMBOLS) {
+              const tpl = getTemplateMask(symbol.id, item.w);
+              if (!tpl) continue;
+              const fit = scoreTemplateAt(darkMask, Math.round(item.x), Math.round(item.y), tpl);
+              classScores.push({ symbolId: symbol.id, score: fit.hybrid });
+            }
+            classScores.sort((a, b) => b.score - a.score);
+            if (classScores.length === 0) continue;
+            const best = classScores[0];
+            const second = classScores[1] ?? { score: -1 };
+            const bestMinScore =
+              DETECTION_PROFILE === "uploaded"
+                ? (uploadedMinScores[best.symbolId] ?? fallbackMinScore)
+                : fallbackMinScore;
+            if (best.score < bestMinScore) continue;
+            if (best.score - second.score < ambiguityMargin) {
+              ambiguousDropped += 1;
+              continue;
+            }
+            reclassified.push({
+              ...item,
+              symbolId: best.symbolId,
+              score: best.score,
+            });
+          }
+
+          const expandedCandidates = reclassified.map((item) =>
+            expandCandidateToConnectedBounds(darkMask, item)
+          );
+          const expandedCount = expandedCandidates.reduce((total, item, idx) => {
+            const src = reclassified[idx];
+            if (!src) return total;
+            return (
+              total +
+              (item.w !== src.w || item.h !== src.h || item.x !== src.x || item.y !== src.y ? 1 : 0)
+            );
+          }, 0);
+
+          // Greedy consume-map selection: once matched, region is removed from further matches.
+          const finalDetections = [];
+          const occupied = [];
+          let consumedSkips = 0;
+          const consumePad = 2;
+          for (const candidate of expandedCandidates.sort((a, b) => b.score - a.score)) {
+            const cLeft = candidate.x - consumePad;
+            const cTop = candidate.y - consumePad;
+            const cRight = candidate.x + candidate.w + consumePad;
+            const cBottom = candidate.y + candidate.h + consumePad;
+
+            const overlapsAccepted = occupied.some((box) => {
+              if (cRight <= box.left) return false;
+              if (cLeft >= box.right) return false;
+              if (cBottom <= box.top) return false;
+              if (cTop >= box.bottom) return false;
+              return true;
+            });
+            if (overlapsAccepted) {
+              consumedSkips += 1;
+              continue;
+            }
+
+            finalDetections.push(candidate);
+            occupied.push({
+              left: cLeft,
+              top: cTop,
+              right: cRight,
+              bottom: cBottom,
+            });
+          }
+
+          // Second pass: cluster nearby centers across all classes and keep top score only.
+          const clusteredDetections = [];
+          let clusterSkips = 0;
+          for (const candidate of finalDetections.sort((a, b) => b.score - a.score)) {
+            const isNearExisting = clusteredDetections.some((kept) => {
+              const radius = Math.max(candidate.w, candidate.h, kept.w, kept.h) * 0.7 + 8;
+              return Math.hypot(kept.cx - candidate.cx, kept.cy - candidate.cy) <= radius;
+            });
+            if (isNearExisting) {
+              clusterSkips += 1;
+              continue;
+            }
+            clusteredDetections.push(candidate);
+          }
+
+          let overlapUntightenedCount = 0;
+          const tightenedDetections = clusteredDetections.map((item) => {
+            // Overlap/interference candidates are fragile; avoid over-tightening to partial stems/fragments.
+            if (hasInterferenceOverlap(item, clusteredDetections)) {
+              overlapUntightenedCount += 1;
+              return item;
+            }
+            return tightenCandidateToPrimaryComponent(darkMask, item);
+          });
+          const tightenedCount = tightenedDetections.reduce((total, item, idx) => {
+            const src = clusteredDetections[idx];
+            if (!src) return total;
+            return (
+              total +
+              (item.w !== src.w || item.h !== src.h || item.x !== src.x || item.y !== src.y ? 1 : 0)
+            );
+          }, 0);
+
+          daLog("Template scan complete", {
+            baseScale,
+            scanMetaBySymbol: symbolMeta,
+            scanBounds: { xMin, yMin, xMax, yMax },
+            step: scanStepUsed,
+            minScoreBySymbol: uploadedMinScores,
+            rawCandidates: candidates.length,
+            deduped: deduped.length,
+            resolved: resolved.length,
+            reclassified: reclassified.length,
+            expandedCount,
+            ambiguousDropped,
+            consumedSkips,
+            clusterSkips,
+            tightenedCount,
+            overlapUntightenedCount,
+            contiguousRejects,
+            contiguousRejectReasons,
+            byType: SYMBOLS.reduce((acc, symbol) => {
+              acc[symbol.id] = tightenedDetections.filter((d) => d.symbolId === symbol.id).length;
+              return acc;
+            }, {}),
+          });
+
+          return tightenedDetections;
+        }
+
+        function fallbackDetectionsFromPlaced() {
+          return placedSymbols.map((item) => {
+            const box = item.size * 0.9;
+            return {
+              symbolId: item.symbolId,
+              score: 1,
+              x: item.x - box / 2,
+              y: item.y - box / 2,
+              w: box,
+              h: box,
+              cx: item.x,
+              cy: item.y,
+            };
+          });
+        }
+
+        function getCount(symbolId) {
+          return detections.reduce(
+            (total, item) => total + (item.symbolId === symbolId ? 1 : 0),
+            0
+          );
+        }
+
+        function hexToRgba(hex, alpha) {
+          const raw = hex.replace("#", "");
+          if (raw.length !== 6) return `rgba(245, 158, 11, ${alpha})`;
+          const r = Number.parseInt(raw.slice(0, 2), 16);
+          const g = Number.parseInt(raw.slice(2, 4), 16);
+          const b = Number.parseInt(raw.slice(4, 6), 16);
+          return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+
+        function drawActiveLayerHighlights() {
+          const active = SYMBOLS.filter((symbol) => activeLayerIds.has(symbol.id));
+          daLog("Applying layer highlights", { activeLayerIds: active.map((s) => s.id) });
+          for (const symbol of active) {
+            const items = detections.filter((item) => item.symbolId === symbol.id);
+            const color = SYMBOL_LAYER_COLORS[symbol.id] ?? "#f59e0b";
+            ctx.save();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = color;
+            ctx.fillStyle = hexToRgba(color, 0.16);
+            for (const item of items) {
+              ctx.fillRect(item.x - 2, item.y - 2, item.w + 4, item.h + 4);
+              ctx.strokeRect(item.x - 2, item.y - 2, item.w + 4, item.h + 4);
+            }
+            ctx.restore();
+          }
+        }
+
+        function drawClickTraceBox() {
+          if (!clickTraceBox) return;
+          ctx.save();
+          ctx.strokeStyle = "rgba(37, 99, 235, 0.9)";
+          ctx.fillStyle = "rgba(37, 99, 235, 0.12)";
+          ctx.lineWidth = 2;
+          ctx.setLineDash([6, 4]);
+          ctx.fillRect(clickTraceBox.x, clickTraceBox.y, clickTraceBox.w, clickTraceBox.h);
+          ctx.strokeRect(clickTraceBox.x, clickTraceBox.y, clickTraceBox.w, clickTraceBox.h);
+          ctx.restore();
+        }
+
+        function activateLayerFromInteraction(symbolId, reason, extra = {}) {
+          activeLayerIds.add(symbolId);
+          renderDocument();
+          rebuildLegend();
+          daLog("Symbol layer activated from interaction", { symbolId, reason, ...extra });
+        }
+
+        function getCanvasPoint(event) {
+          const rect = canvas.getBoundingClientRect();
+          const scaleX = PAGE_WIDTH / Math.max(1, rect.width);
+          const scaleY = PAGE_HEIGHT / Math.max(1, rect.height);
+          const x = Math.round((event.clientX - rect.left) * scaleX);
+          const y = Math.round((event.clientY - rect.top) * scaleY);
+          return {
+            x: Math.max(0, Math.min(PAGE_WIDTH - 1, x)),
+            y: Math.max(0, Math.min(PAGE_HEIGHT - 1, y)),
+          };
+        }
+
+        function findDetectionAtPoint(x, y) {
+          let best = null;
+          for (const item of detections) {
+            const pad = 5;
+            if (
+              x < item.x - pad ||
+              y < item.y - pad ||
+              x > item.x + item.w + pad ||
+              y > item.y + item.h + pad
+            ) {
+              continue;
+            }
+            if (!best || item.score > best.score) best = item;
+          }
+          return best;
+        }
+
+        function computeIoU(a, b) {
+          const left = Math.max(a.x, b.x);
+          const top = Math.max(a.y, b.y);
+          const right = Math.min(a.x + a.w, b.x + b.w);
+          const bottom = Math.min(a.y + a.h, b.y + b.h);
+          if (right <= left || bottom <= top) return 0;
+          const intersection = (right - left) * (bottom - top);
+          const aArea = Math.max(1, a.w * a.h);
+          const bArea = Math.max(1, b.w * b.h);
+          return intersection / (aArea + bArea - intersection);
+        }
+
+        function areLikelySameDetection(a, b) {
+          const iou = computeIoU(a, b);
+          const centerDist = Math.hypot(a.cx - b.cx, a.cy - b.cy);
+          const sizeRef = Math.max(a.w, a.h, b.w, b.h, 1);
+          return iou >= 0.2 || centerDist <= sizeRef * 0.45;
+        }
+
+        function hasInterferenceOverlap(candidate, allDetections) {
+          for (const other of allDetections) {
+            if (other === candidate) continue;
+            if (other.symbolId === candidate.symbolId) continue;
+            const iou = computeIoU(candidate, other);
+            if (iou >= 0.04) return true;
+
+            // Also catch near-collisions where boxes are adjacent but likely from the same clutter.
+            const centerDist = Math.hypot(candidate.cx - other.cx, candidate.cy - other.cy);
+            const sizeRef = Math.max(candidate.w, candidate.h, other.w, other.h, 1);
+            if (centerDist <= sizeRef * 0.55) return true;
+          }
+          return false;
+        }
+
+        function upsertDetectionInList(list, candidate, preferCandidate = false) {
+          const idx = list.findIndex((item) => areLikelySameDetection(item, candidate));
+          if (idx < 0) {
+            list.push(candidate);
+            return "added";
+          }
+          const existing = list[idx];
+          const candidateScore = Number(candidate.score ?? 0);
+          const existingScore = Number(existing.score ?? 0);
+          if (preferCandidate || candidateScore >= existingScore) {
+            list[idx] = candidate;
+            return "replaced";
+          }
+          return "kept-existing";
+        }
+
+        function findNearestDarkSeed(darkMask, x, y, maxRadius = 18) {
+          const idx = y * PAGE_WIDTH + x;
+          if (darkMask[idx]) return { x, y, radius: 0 };
+          for (let radius = 1; radius <= maxRadius; radius += 1) {
+            for (let oy = -radius; oy <= radius; oy += 1) {
+              for (let ox = -radius; ox <= radius; ox += 1) {
+                if (Math.abs(ox) !== radius && Math.abs(oy) !== radius) continue;
+                const sx = x + ox;
+                const sy = y + oy;
+                if (sx < 0 || sy < 0 || sx >= PAGE_WIDTH || sy >= PAGE_HEIGHT) continue;
+                if (darkMask[sy * PAGE_WIDTH + sx]) return { x: sx, y: sy, radius };
+              }
+            }
+          }
+          return null;
+        }
+
+        function traceComponentFromSeed(darkMask, seedX, seedY) {
+          const stack = [seedY * PAGE_WIDTH + seedX];
+          const visited = new Uint8Array(PAGE_WIDTH * PAGE_HEIGHT);
+          visited[seedY * PAGE_WIDTH + seedX] = 1;
+          let area = 0;
+          let minX = seedX;
+          let minY = seedY;
+          let maxX = seedX;
+          let maxY = seedY;
+          let touchTop = false;
+          let touchBottom = false;
+          let touchLeft = false;
+          let touchRight = false;
+          const maxFloodArea = 28000;
+
+          while (stack.length > 0) {
+            const current = stack.pop();
+            const cx = current % PAGE_WIDTH;
+            const cy = (current / PAGE_WIDTH) | 0;
+            area += 1;
+            if (area > maxFloodArea) return null;
+            if (cx < minX) minX = cx;
+            if (cy < minY) minY = cy;
+            if (cx > maxX) maxX = cx;
+            if (cy > maxY) maxY = cy;
+            if (cy === 0) touchTop = true;
+            if (cy === PAGE_HEIGHT - 1) touchBottom = true;
+            if (cx === 0) touchLeft = true;
+            if (cx === PAGE_WIDTH - 1) touchRight = true;
+
+            for (let oy = -1; oy <= 1; oy += 1) {
+              for (let ox = -1; ox <= 1; ox += 1) {
+                if (ox === 0 && oy === 0) continue;
+                const nx = cx + ox;
+                const ny = cy + oy;
+                if (nx < 0 || ny < 0 || nx >= PAGE_WIDTH || ny >= PAGE_HEIGHT) continue;
+                const nIdx = ny * PAGE_WIDTH + nx;
+                if (visited[nIdx] || !darkMask[nIdx]) continue;
+                visited[nIdx] = 1;
+                stack.push(nIdx);
+              }
+            }
+          }
+
+          const w = maxX - minX + 1;
+          const h = maxY - minY + 1;
+          if (area < 16 || w < 6 || h < 6 || w > 180 || h > 180) return null;
+          const boxArea = Math.max(1, w * h);
+          const fillRatio = area / boxArea;
+          const edgeTouches =
+            Number(touchTop) + Number(touchBottom) + Number(touchLeft) + Number(touchRight);
+
+          return { minX, minY, maxX, maxY, w, h, area, fillRatio, edgeTouches };
+        }
+
+        function suggestSymbolFromTrace(trace, sourceImageData = null) {
+          const pad = 4;
+          const sx = Math.max(0, trace.minX - pad);
+          const sy = Math.max(0, trace.minY - pad);
+          const sw = Math.min(PAGE_WIDTH - sx, trace.w + pad * 2);
+          const sh = Math.min(PAGE_HEIGHT - sy, trace.h + pad * 2);
+          const baseImageData = sourceImageData ?? getBaseImageData();
+          const patch = cropImageData(baseImageData, sx, sy, sw, sh);
+          const signature = buildOccupancySignature(patch, sw, sh);
+
+          let bestId = "";
+          let bestScore = 0;
+          let secondScore = 0;
+          for (const symbol of SYMBOLS) {
+            const score = compareSignatures(signature, templateSignatures[symbol.id]);
+            if (score > bestScore) {
+              secondScore = bestScore;
+              bestScore = score;
+              bestId = symbol.id;
+            } else if (score > secondScore) {
+              secondScore = score;
+            }
+          }
+          if (!bestId) return null;
+
+          return {
+            symbolId: bestId,
+            score: bestScore,
+            secondScore,
+            ambiguity: Math.max(0, bestScore - secondScore),
+            x: sx,
+            y: sy,
+            w: sw,
+            h: sh,
+          };
+        }
+
+        function createLegendIcon(symbolId) {
+          const symbol = SYMBOLS.find((s) => s.id === symbolId);
+          if (symbol?.iconPath) {
+            const img = document.createElement("img");
+            img.className = "legend-icon";
+            img.src = symbol.iconPath;
+            img.alt = `${symbol.label} icon`;
+            img.addEventListener("error", () => {
+              const fallback = document.createElement("canvas");
+              fallback.width = 18;
+              fallback.height = 18;
+              fallback.className = "legend-icon";
+              const fallbackCtx = fallback.getContext("2d");
+              if (fallbackCtx) {
+                fallbackCtx.fillStyle = "#fff";
+                fallbackCtx.fillRect(0, 0, 18, 18);
+                drawSymbol(fallbackCtx, symbolId, 9, 9, 12);
+              }
+              img.replaceWith(fallback);
+            });
+            return img;
+          }
+          const iconCanvas = document.createElement("canvas");
+          iconCanvas.width = 18;
+          iconCanvas.height = 18;
+          iconCanvas.className = "legend-icon";
+          const iconCtx = iconCanvas.getContext("2d");
+          if (!iconCtx) return iconCanvas;
+          iconCtx.fillStyle = "#fff";
+          iconCtx.fillRect(0, 0, 18, 18);
+          drawSymbol(iconCtx, symbolId, 9, 9, 12);
+          return iconCanvas;
+        }
+
+        function rebuildLegend() {
+          legendList.innerHTML = "";
+          SYMBOLS.forEach((symbol) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "legend-btn";
+            const isActive = activeLayerIds.has(symbol.id);
+            if (isActive) button.classList.add("is-active");
+            else button.classList.add("is-inactive");
+            button.dataset.symbolId = symbol.id;
+            const count = getCount(symbol.id);
+            const layerColor = SYMBOL_LAYER_COLORS[symbol.id] ?? "#2563eb";
+            if (isActive) {
+              button.style.borderColor = layerColor;
+              button.style.background = hexToRgba(layerColor, 0.11);
+            }
+
+            const left = document.createElement("span");
+            left.className = "legend-left";
+            const swatch = document.createElement("span");
+            swatch.className = "legend-swatch";
+            swatch.style.background = layerColor;
+            const label = document.createElement("span");
+            label.textContent = symbol.label;
+            left.appendChild(swatch);
+            left.appendChild(createLegendIcon(symbol.id));
+            left.appendChild(label);
+
+            const right = document.createElement("span");
+            right.className = "legend-count";
+            right.textContent = String(count);
+
+            button.appendChild(left);
+            button.appendChild(right);
+            button.addEventListener("click", () => {
+              if (activeLayerIds.has(symbol.id)) activeLayerIds.delete(symbol.id);
+              else activeLayerIds.add(symbol.id);
+              clickTraceBox = null;
+              daLog("Legend clicked", {
+                symbolId: symbol.id,
+                layerActive: activeLayerIds.has(symbol.id),
+                count: getCount(symbol.id),
+              });
+              renderDocument();
+              rebuildLegend();
+            });
+            legendList.appendChild(button);
+          });
+          daLog("Legend rebuilt", {
+            counts: SYMBOLS.reduce((acc, symbol) => {
+              acc[symbol.id] = getCount(symbol.id);
+              return acc;
+            }, {}),
+          });
+        }
+
+        async function runDetectionAndRender() {
+          daLog("runDetectionAndRender start", { mode: sourceMode });
+          matchingSourceLabel =
+            detectionMode === "yolo_only"
+              ? "Matching source: YOLO class-only"
+              : "Matching source: YOLO + heuristic assist";
+          updateMatchingSourceBadge();
+          updateDetectionModeButton();
+          setWorking(true, "Analyzing matches...");
+          // requestAnimationFrame can stall under some automated/locked browser contexts.
+          await new Promise((resolve) => window.setTimeout(resolve, 0));
+          try {
+            // Detection must run on a clean render (no layer highlights or trace overlays).
+            renderDocument(false, false);
+            if (!uploadedImage) {
+              detections = [];
+              matchingSourceLabel = "Matching source: waiting for upload";
+              updateMatchingSourceBadge();
+              rebuildLegend();
+              statusEl.textContent = "Upload a screenshot to run detection.";
+              daLog("runDetectionAndRender skipped (no uploaded image)");
+              return;
+            }
+
+            let detectionSource = "yolo";
+            let yoloCount = 0;
+            try {
+              setWorking(true, "Running YOLO detection...");
+              const yolo = await requestYoloDetections();
+              if (yolo.ok) {
+                detections = yolo.detections;
+                yoloCount = detections.length;
+                const modelName =
+                  yolo.modelPath && yolo.modelPath.includes("/")
+                    ? yolo.modelPath.split("/").slice(-3).join("/")
+                    : "YOLO model";
+                if (yoloCount > 0) {
+                  matchingSourceLabel = `Matching source: YOLO class-only (${modelName})`;
+                } else {
+                  matchingSourceLabel =
+                    detectionMode === "yolo_only"
+                      ? "Matching source: YOLO class-only (0 detections)"
+                      : "Matching source: YOLO returned 0 (assist will run)";
+                }
+                daLog("YOLO detection success", {
+                  count: detections.length,
+                  modelPath: yolo.modelPath,
+                });
+              } else {
+                detections = [];
+                detectionSource = "yolo-unavailable";
+                matchingSourceLabel = "Matching source: YOLO unavailable";
+                daLog("YOLO unavailable", { error: yolo.error });
+              }
+            } finally {
+              setWorking(false);
+            }
+            if (detectionMode === "yolo_assist" && yoloCount === 0) {
+              detections = detectSymbols();
+              if (detections.length === 0) {
+                daLog("No CC detections; running template scan fallback", { mode: sourceMode });
+                detections = detectSymbolsByTemplateScan();
+              }
+              detectionSource = "yolo+assist";
+              matchingSourceLabel = "Matching source: YOLO + heuristic assist";
+            }
+            updateMatchingSourceBadge();
+
+            const imageData = ctx.getImageData(0, 0, PAGE_WIDTH, PAGE_HEIGHT);
+            const darkMask = getDarkMask(imageData);
+            detections = detections.map((d) => {
+              const fingerprint = buildDetectionFingerprint(d, darkMask);
+              const feedback = feedbackStore[fingerprint] ?? "";
+              return {
+                ...d,
+                fingerprint,
+                feedback,
+              };
+            });
+
+            const rejected = detections.filter((d) => d.feedback === "reject").length;
+            detections = detections.filter((d) => d.feedback !== "reject");
+            if (manualDetections.length > 0) {
+              let mergedCount = 0;
+              for (const manual of manualDetections) {
+                const manualFingerprint = buildDetectionFingerprint(manual, darkMask);
+                if ((feedbackStore[manualFingerprint] ?? "") === "reject") continue;
+                const action = upsertDetectionInList(
+                  detections,
+                  {
+                    ...manual,
+                    fingerprint: manualFingerprint,
+                    feedback: "accept",
+                    manual: true,
+                  },
+                  true
+                );
+                if (action === "added" || action === "replaced") mergedCount += 1;
+              }
+              daLog("Manual detections merged", {
+                manualStored: manualDetections.length,
+                mergedCount,
+              });
+            }
+            const needsReview = detections
+              .filter(
+                (d) =>
+                  !d.feedback &&
+                  !skippedFingerprints.has(d.fingerprint) &&
+                  hasInterferenceOverlap(d, detections)
+              )
+              .sort((a, b) => b.score - a.score);
+            if (needsReview.length > 0) {
+              startReviewQueue(needsReview);
+            } else {
+              closeReviewModal();
+            }
+
+            renderDocument();
+            rebuildLegend();
+            const total = detections.length;
+            const modeText = sourceMode === "uploaded" ? "uploaded screenshot" : "synthetic page";
+            const yoloNote =
+              detectionSource === "yolo-unavailable"
+                ? " (YOLO unavailable)"
+                : yoloCount === 0
+                  ? " (YOLO returned 0)"
+                  : "";
+            statusEl.textContent = `Detected ${total} symbol instance${total === 1 ? "" : "s"} on ${modeText}${yoloNote}.`;
+            daLog("runDetectionAndRender end", {
+              totalDetections: total,
+              detectionSource,
+              yoloCount,
+              rejectedByLearning: rejected,
+              pendingReview: needsReview.length,
+              modeText,
+              globalFuzziness,
+              uploadedMinScoreBySymbol: SYMBOLS.reduce((acc, symbol) => {
+                acc[symbol.id] = getUploadedMinScore();
+                return acc;
+              }, {}),
+            });
+          } finally {
+            setWorking(false);
+          }
+        }
+
+        function rearrangeAndRescan() {
+          daLog("Rearrange requested", { mode: sourceMode });
+          if (!uploadedImage) {
+            statusEl.textContent = "Upload a screenshot first, then Rearrange will rescan it.";
+            daLog("Rearrange ignored (no uploaded image)");
+            return;
+          }
+          activeLayerIds = new Set(SYMBOLS.map((symbol) => symbol.id));
+          runDetectionAndRender();
+        }
+
+        uploadBtn.addEventListener("click", () => {
+          daLog("Upload button clicked");
+          uploadInput.click();
+        });
+
+        uploadInput.addEventListener("change", () => {
+          const file = uploadInput.files?.[0];
+          if (!file) {
+            daLog("Upload canceled/no file selected");
+            return;
+          }
+          daLog("Upload selected", {
+            name: file.name,
+            type: file.type,
+            sizeBytes: file.size,
+          });
+          const reader = new FileReader();
+          reader.onload = () => {
+            const img = new Image();
+            img.onload = () => {
+              activeLayerIds = new Set(SYMBOLS.map((symbol) => symbol.id));
+              sourceMode = "uploaded";
+              uploadedImage = img;
+              skippedFingerprints = new Set();
+              manualDetections = [];
+              daLog("Uploaded image loaded", { width: img.width, height: img.height });
+              runDetectionAndRender();
+            };
+            img.src = String(reader.result ?? "");
+          };
+          reader.onerror = () => {
+            daLog("FileReader failed to load image");
+          };
+          reader.readAsDataURL(file);
+        });
+
+        clearBtn.addEventListener("click", () => {
+          daLog("Clear highlight clicked", { activeLayerIdsBefore: Array.from(activeLayerIds) });
+          activeLayerIds = new Set();
+          clickTraceBox = null;
+          renderDocument();
+          rebuildLegend();
+        });
+
+        resetLearningBtn.addEventListener("click", () => {
+          daLog("Reset learning clicked");
+          resetLearningState();
+          activeLayerIds = new Set(SYMBOLS.map((symbol) => symbol.id));
+          statusEl.textContent = "Learning cache reset. Re-running detection.";
+          runDetectionAndRender();
+        });
+
+        canvas.addEventListener("click", (event) => {
+          if (reviewQueue.length > 0 && reviewQueueIndex < reviewQueue.length) return;
+          const { x, y } = getCanvasPoint(event);
+
+          const hit = findDetectionAtPoint(x, y);
+          if (hit) {
+            clickTraceBox = {
+              x: hit.x,
+              y: hit.y,
+              w: hit.w,
+              h: hit.h,
+            };
+            const symbol = SYMBOLS.find((s) => s.id === hit.symbolId);
+            statusEl.textContent = `${symbol?.label ?? hit.symbolId} layer selected from canvas.`;
+            activateLayerFromInteraction(hit.symbolId, "existing-detection", {
+              point: { x, y },
+              detection: { x: hit.x, y: hit.y, w: hit.w, h: hit.h, score: hit.score },
+            });
+            return;
+          }
+
+          const imageData = getBaseImageData();
+          const darkMask = getDarkMask(imageData);
+          const seed = findNearestDarkSeed(darkMask, x, y);
+          if (!seed) {
+            clickTraceBox = null;
+            statusEl.textContent = "No nearby linework at that click location.";
+            renderDocument();
+            rebuildLegend();
+            return;
+          }
+
+          const trace = traceComponentFromSeed(darkMask, seed.x, seed.y);
+          if (!trace) {
+            clickTraceBox = null;
+            statusEl.textContent = "Could not isolate a symbol from that area.";
+            renderDocument();
+            rebuildLegend();
+            return;
+          }
+
+          const suggestion = suggestSymbolFromTrace(trace, imageData);
+          if (!suggestion) {
+            clickTraceBox = null;
+            statusEl.textContent = "No symbol suggestion from traced shape.";
+            renderDocument();
+            rebuildLegend();
+            return;
+          }
+
+          clickTraceBox = {
+            x: suggestion.x,
+            y: suggestion.y,
+            w: suggestion.w,
+            h: suggestion.h,
+          };
+          const minimumScore = Math.max(0.46, getUploadedMinScore() - 0.1);
+          const hardFloorScore = Math.max(0.34, minimumScore - 0.08);
+          const strongShapeScore = suggestion.score >= minimumScore + 0.06;
+          const enoughSeparation = suggestion.ambiguity >= 0.006;
+          const confidencePass =
+            suggestion.score >= hardFloorScore &&
+            (enoughSeparation || strongShapeScore) &&
+            trace.fillRatio <= 0.86 &&
+            trace.edgeTouches <= 3;
+
+          const manualCandidate = {
+            symbolId: suggestion.symbolId,
+            score: Math.max(suggestion.score, minimumScore),
+            x: suggestion.x,
+            y: suggestion.y,
+            w: suggestion.w,
+            h: suggestion.h,
+            cx: suggestion.x + suggestion.w / 2,
+            cy: suggestion.y + suggestion.h / 2,
+            manual: true,
+          };
+          const manualAction = upsertDetectionInList(manualDetections, manualCandidate, true);
+          const liveAction = upsertDetectionInList(
+            detections,
+            {
+              ...manualCandidate,
+              feedback: "accept",
+            },
+            true
+          );
+
+          const symbol = SYMBOLS.find((s) => s.id === suggestion.symbolId);
+          const wasLowConfidence = suggestion.score < minimumScore;
+          if (!confidencePass) {
+            daLog("Canvas trace accepted despite low confidence", {
+              point: { x, y },
+              seed,
+              trace,
+              suggestion,
+              minimumScore,
+              hardFloorScore,
+              enoughSeparation,
+              strongShapeScore,
+            });
+          }
+          statusEl.textContent = wasLowConfidence
+            ? `Added ${symbol?.label ?? suggestion.symbolId} from click (manual repair; low confidence).`
+            : `Added ${symbol?.label ?? suggestion.symbolId} from traced shape.`;
+          activateLayerFromInteraction(suggestion.symbolId, "trace-suggestion", {
+            point: { x, y },
+            seed,
+            trace,
+            suggestion,
+            minimumScore,
+            hardFloorScore,
+            enoughSeparation,
+            strongShapeScore,
+            manualAction,
+            liveAction,
+            wasLowConfidence,
+          });
+        });
+
+        randomizeBtn.addEventListener("click", () => {
+          rearrangeAndRescan();
+        });
+
+        detectionModeBtn.addEventListener("click", () => {
+          detectionMode = detectionMode === "yolo_only" ? "yolo_assist" : "yolo_only";
+          daLog("Detection mode toggled", { detectionMode });
+          runDetectionAndRender();
+        });
+
+        reviewAcceptBtn.addEventListener("click", () => {
+          applyReviewDecision("accept");
+        });
+
+        reviewRejectBtn.addEventListener("click", () => {
+          applyReviewDecision("reject");
+        });
+
+        reviewSkipBtn.addEventListener("click", () => {
+          applyReviewDecision("skip");
+        });
+
+        reviewBackBtn.addEventListener("click", () => {
+          goBackOneReviewItem();
+        });
+
+        reviewDoneBtn.addEventListener("click", () => {
+          closeReviewModal();
+          reviewQueue = [];
+          reviewQueueIndex = 0;
+          reviewHistory = [];
+        });
+
+        reviewClassifyActions.innerHTML = "";
+        SYMBOLS.forEach((symbol) => {
+          const classBtn = document.createElement("button");
+          classBtn.type = "button";
+          classBtn.className = "review-btn";
+          classBtn.textContent = `Mark ${symbol.label}`;
+          classBtn.addEventListener("click", () => {
+            applyReviewDecision("accept", symbol.id);
+          });
+          reviewClassButtons.set(symbol.id, classBtn);
+          reviewClassifyActions.appendChild(classBtn);
+        });
+
+        reviewPreviewCanvas.addEventListener("pointerdown", (event) => {
+          if (!reviewRenderState) return;
+          reviewDrag.active = true;
+          reviewDrag.startX = event.clientX;
+          reviewDrag.startY = event.clientY;
+          reviewDrag.startPanX = reviewPan.x;
+          reviewDrag.startPanY = reviewPan.y;
+          reviewPreviewCanvas.classList.add("is-dragging");
+          reviewPreviewCanvas.setPointerCapture(event.pointerId);
+        });
+
+        reviewPreviewCanvas.addEventListener("pointermove", (event) => {
+          if (!reviewDrag.active || !reviewRenderState) return;
+          const dx = event.clientX - reviewDrag.startX;
+          const dy = event.clientY - reviewDrag.startY;
+          reviewPan = {
+            x: reviewDrag.startPanX + dx,
+            y: reviewDrag.startPanY + dy,
+          };
+          drawReviewPreview();
+        });
+
+        const finishReviewDrag = (event) => {
+          if (!reviewDrag.active) return;
+          reviewDrag.active = false;
+          reviewPreviewCanvas.classList.remove("is-dragging");
+          if (event && reviewPreviewCanvas.hasPointerCapture(event.pointerId)) {
+            reviewPreviewCanvas.releasePointerCapture(event.pointerId);
+          }
+        };
+        reviewPreviewCanvas.addEventListener("pointerup", finishReviewDrag);
+        reviewPreviewCanvas.addEventListener("pointercancel", finishReviewDrag);
+
+        sourceMode = "uploaded";
+        uploadedImage = null;
+        updateDetectionModeButton();
+        const qs = new URLSearchParams(window.location.search);
+        if (qs.get("autoTest") === "1") {
+          setWorking(true, "Loading test image...");
+          loadImageFromPath("/img/test-upload.png")
+            .then((img) => {
+              uploadedImage = /** @type {HTMLImageElement} */ (img);
+              daLog("Auto test image loaded");
+            })
+            .catch((error) => {
+              daLog("Auto test image failed to load", { error: String(error) });
+            })
+            .finally(() => {
+              setWorking(false);
+              runDetectionAndRender();
+            });
+        } else {
+          runDetectionAndRender();
+        }
+      })();
+    </script>
+  </body>
+</html>

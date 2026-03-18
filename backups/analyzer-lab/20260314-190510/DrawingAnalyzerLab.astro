@@ -1,0 +1,1580 @@
+---
+import { globalClasses } from "../../pages/api/global/global-classes";
+import CloseButton from "../../components/ui/CloseButton.astro";
+
+const { globalCardStyle, globalFormLabel, mutedTextSmClasses, primaryTextClasses } =
+  globalClasses();
+---
+
+<section class={`${globalCardStyle} space-y-4`}>
+  <div class="flex items-center gap-2 border-b border-gray-200 pb-2 dark:border-gray-700">
+    <button
+      id="lab-tab-workspace"
+      type="button"
+      class="rounded-md bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white"
+      aria-selected="true"
+    >
+      Workspace
+    </button>
+    <button
+      id="lab-tab-item-library"
+      type="button"
+      class="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-700 dark:border-gray-700 dark:text-gray-200"
+      aria-selected="false"
+    >
+      Item Library
+    </button>
+  </div>
+
+  <div id="lab-panel-workspace" class="space-y-4">
+    <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+      <div>
+        <label for="lab-drawing-file" class={globalFormLabel}>Drawing (PDF/Image)</label>
+        <input
+          id="lab-drawing-file"
+          type="file"
+          accept=".pdf,image/*,.png,.jpg,.jpeg,.webp"
+          class="block w-full text-sm text-gray-700 file:mr-3 file:rounded file:border-0 file:bg-primary-600 file:px-3 file:py-2 file:text-white dark:text-gray-200"
+        />
+      </div>
+      <div class="rounded border border-gray-200 p-3 dark:border-gray-700">
+        <p class={`text-sm font-semibold ${primaryTextClasses}`}>Baseline Mode</p>
+        <p class={`${mutedTextSmClasses} mt-1`}>
+          Auto-isolates major drawing regions from the sheet and overlays the selected regions.
+        </p>
+      </div>
+    </div>
+
+    <p id="lab-status" class={`${mutedTextSmClasses} min-h-[20px]`}>Loading default drawing...</p>
+    <p id="lab-baseline-readout" class={`${mutedTextSmClasses} min-h-[20px]`}>
+      Baseline regions: waiting for drawing.
+    </p>
+    <div class="flex items-center gap-2">
+      <button
+        id="lab-undo-remove-btn"
+        type="button"
+        class="rounded border border-gray-300 px-3 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+        disabled
+      >
+        Undo Last Remove
+      </button>
+      <p class={mutedTextSmClasses}>
+        Tip: click a region to select. Drag inside to move, or drag transform handles to resize.
+      </p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <button
+        id="lab-zoom-out-btn"
+        type="button"
+        class="rounded border border-gray-300 px-3 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+      >
+        Zoom -
+      </button>
+      <button
+        id="lab-zoom-reset-btn"
+        type="button"
+        class="rounded border border-gray-300 px-3 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+      >
+        100%
+      </button>
+      <button
+        id="lab-zoom-in-btn"
+        type="button"
+        class="rounded border border-gray-300 px-3 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+      >
+        Zoom +
+      </button>
+      <p id="lab-zoom-readout" class={mutedTextSmClasses}>Zoom: 100%</p>
+      <p class={mutedTextSmClasses}>Tip: Ctrl/Cmd + mouse wheel or trackpad pinch to zoom.</p>
+    </div>
+
+    <div class="space-y-2 rounded border border-gray-200 p-2 dark:border-gray-700">
+      <h2 class={`text-sm font-semibold ${primaryTextClasses}`}>Drawing + Baseline Overlay</h2>
+      <div
+        id="lab-drawing-stage"
+        class="relative overflow-auto rounded border border-gray-200 dark:border-gray-700"
+      >
+        <canvas id="lab-drawing-canvas" class="block max-w-full rounded bg-gray-50 dark:bg-gray-900"
+        ></canvas>
+        <canvas id="lab-drawing-overlay" class="absolute left-0 top-0 block max-w-full"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div id="lab-panel-item-library" class="hidden space-y-4">
+    <div class="rounded border border-gray-200 p-3 dark:border-gray-700">
+      <p class={`text-sm font-semibold ${primaryTextClasses}`}>Folder-backed Item Library</p>
+      <p class={`${mutedTextSmClasses} mt-1`}>
+        Add image files manually to <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">
+          public/drawing-analyzer-lab/item-library
+        </code>
+        . This tab scans that folder and stores priority/dependencies/price in
+        <code class="rounded bg-gray-100 px-1 dark:bg-gray-800">
+          markdowns/drawing-analyzer-lab-item-library.md
+        </code>.
+      </p>
+      <div class="mt-3">
+        <button
+          id="lab-library-refresh-btn"
+          type="button"
+          class="rounded-md border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+        >
+          Rescan Folder
+        </button>
+        <button
+          id="lab-library-save-btn"
+          type="button"
+          class="ml-2 rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+        >
+          Save Metadata
+        </button>
+      </div>
+    </div>
+
+    <div id="lab-item-library-list" class="space-y-3"></div>
+  </div>
+
+  <aside
+    id="lab-benchmark-panel"
+    class="fixed bottom-4 right-4 z-[70] w-[340px] max-w-[92vw] rounded-lg border border-gray-300 bg-white/95 shadow-xl backdrop-blur dark:border-gray-700 dark:bg-gray-900/95"
+  >
+    <div
+      id="lab-benchmark-header"
+      class="flex items-center justify-between border-b border-gray-200 px-3 py-2 dark:border-gray-700"
+    >
+      <p class="text-sm font-semibold text-gray-900 dark:text-white">Live Match Benchmark</p>
+      <button
+        id="lab-benchmark-collapse-btn"
+        type="button"
+        class="rounded border border-gray-300 px-2 py-0.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+        aria-expanded="true"
+      >
+        Collapse
+      </button>
+    </div>
+    <div id="lab-benchmark-body" class="space-y-2 px-3 py-2">
+      <p id="lab-benchmark-meta" class={`${mutedTextSmClasses}`}>
+        Waiting for drawing + regions + library...
+      </p>
+      <div class="rounded border border-gray-200 p-2 dark:border-gray-700">
+        <label for="lab-benchmark-confidence" class={`${mutedTextSmClasses} block`}>
+          Confidence threshold:
+          <span id="lab-benchmark-confidence-readout" class="font-semibold">64%</span>
+        </label>
+        <input
+          id="lab-benchmark-confidence"
+          type="range"
+          min="0"
+          max="100"
+          value="64"
+          class="mt-1 w-full"
+        />
+      </div>
+      <div id="lab-benchmark-list" class="max-h-[280px] space-y-1 overflow-auto"></div>
+    </div>
+  </aside>
+
+  <div
+    id="lab-region-focus-overlay"
+    class="fixed inset-0 z-[200] hidden bg-black p-0"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="lab-region-focus-title"
+  >
+    <div class="mx-auto flex h-full w-full flex-col">
+      <div class="mb-0.5 flex items-center justify-between px-2 py-1">
+        <div class="min-w-0">
+          <p id="lab-region-focus-title" class="text-lg font-semibold text-white">Region Focus</p>
+          <p id="lab-region-focus-meta" class="truncate text-sm text-gray-200">
+            First region in left-to-right order.
+          </p>
+        </div>
+        <CloseButton
+          id="lab-region-focus-close"
+          ariaLabel="Close region focus overlay"
+          tooltipText="Close focus overlay"
+        />
+      </div>
+      <div class="flex min-h-0 flex-1 items-center justify-center overflow-auto bg-black p-0">
+        <img
+          id="lab-region-focus-image"
+          alt="Focused baseline region preview"
+          class="h-full w-full bg-white object-contain"
+        />
+      </div>
+    </div>
+  </div>
+</section>
+
+<script src="/js/pdf.min.js" defer></script>
+<script>
+  const drawingFileInput = document.getElementById("lab-drawing-file");
+  const tabWorkspaceBtn = document.getElementById("lab-tab-workspace");
+  const tabItemLibraryBtn = document.getElementById("lab-tab-item-library");
+  const workspacePanel = document.getElementById("lab-panel-workspace");
+  const itemLibraryPanel = document.getElementById("lab-panel-item-library");
+  const statusEl = document.getElementById("lab-status");
+  const baselineReadoutEl = document.getElementById("lab-baseline-readout");
+  const undoRemoveBtn = document.getElementById("lab-undo-remove-btn");
+  const zoomOutBtn = document.getElementById("lab-zoom-out-btn");
+  const zoomResetBtn = document.getElementById("lab-zoom-reset-btn");
+  const zoomInBtn = document.getElementById("lab-zoom-in-btn");
+  const zoomReadoutEl = document.getElementById("lab-zoom-readout");
+  const drawingStage = document.getElementById("lab-drawing-stage");
+  const drawingCanvas = document.getElementById("lab-drawing-canvas");
+  const drawingOverlay = document.getElementById("lab-drawing-overlay");
+  const libraryRefreshBtn = document.getElementById("lab-library-refresh-btn");
+  const librarySaveBtn = document.getElementById("lab-library-save-btn");
+  const itemLibraryListEl = document.getElementById("lab-item-library-list");
+  const benchmarkPanelEl = document.getElementById("lab-benchmark-panel");
+  const benchmarkHeaderEl = document.getElementById("lab-benchmark-header");
+  const benchmarkCollapseBtn = document.getElementById("lab-benchmark-collapse-btn");
+  const benchmarkBodyEl = document.getElementById("lab-benchmark-body");
+  const benchmarkMetaEl = document.getElementById("lab-benchmark-meta");
+  const benchmarkListEl = document.getElementById("lab-benchmark-list");
+  const benchmarkConfidenceEl = document.getElementById("lab-benchmark-confidence");
+  const benchmarkConfidenceReadoutEl = document.getElementById("lab-benchmark-confidence-readout");
+  const regionFocusOverlayEl = document.getElementById("lab-region-focus-overlay");
+  const regionFocusImageEl = document.getElementById("lab-region-focus-image");
+  const regionFocusMetaEl = document.getElementById("lab-region-focus-meta");
+  const regionFocusCloseBtn = document.getElementById("lab-region-focus-close");
+
+  const DEFAULT_DRAWING_FILE_NAME = "demo-plan.pdf";
+  const DEFAULT_DRAWING_PUBLIC_PATH = `/${DEFAULT_DRAWING_FILE_NAME}`;
+
+  let drawingState = null;
+  let baselineRegions = [];
+  let baselineMode = "none";
+  let deleteHotspots = [];
+  let transformHandles = [];
+  let removedRegionsUndo = [];
+  let dragState = null;
+  let selectedRegionIdx = -1;
+  let activeTab = "workspace";
+  let itemLibrary = [];
+  let isBenchmarkCollapsed = false;
+  let templateSignatureCache = new Map();
+  let benchmarkResults = [];
+  let benchmarkDetections = [];
+  let benchmarkRunId = 0;
+  let benchmarkConfidence = 0.64;
+  let benchmarkDrag = null;
+  let drawingDisplayScale = 1;
+
+  function setStatus(msg) {
+    if (statusEl) statusEl.textContent = msg;
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function updateZoomReadout() {
+    if (!(zoomReadoutEl instanceof HTMLElement)) return;
+    zoomReadoutEl.textContent = `Zoom: ${Math.round(drawingDisplayScale * 100)}%`;
+  }
+
+  // Display-only zoom. This never changes the analysis pixel buffer dimensions.
+  function applyDrawingDisplayScale(nextScale) {
+    drawingDisplayScale = clamp(nextScale, 0.35, 5);
+    if (
+      !(drawingCanvas instanceof HTMLCanvasElement) ||
+      !(drawingOverlay instanceof HTMLCanvasElement)
+    )
+      return;
+    drawingCanvas.style.width = `${Math.round(drawingCanvas.width * drawingDisplayScale)}px`;
+    drawingCanvas.style.height = `${Math.round(drawingCanvas.height * drawingDisplayScale)}px`;
+    drawingOverlay.style.width = drawingCanvas.style.width;
+    drawingOverlay.style.height = drawingCanvas.style.height;
+    updateZoomReadout();
+  }
+
+  function closeRegionFocusOverlay() {
+    document.documentElement.style.overflow = "";
+    document.body.style.overflow = "";
+    if (benchmarkPanelEl instanceof HTMLElement) benchmarkPanelEl.classList.remove("hidden");
+    regionFocusOverlayEl?.classList.add("hidden");
+  }
+
+  function getFirstRegionLeftToRight(regions) {
+    if (!Array.isArray(regions) || regions.length === 0) return null;
+    const sorted = regions
+      .map((r, idx) => ({ ...r, idx }))
+      .sort((a, b) => {
+        if (Math.abs(a.x - b.x) > 3) return a.x - b.x;
+        if (Math.abs(a.y - b.y) > 3) return a.y - b.y;
+        return a.idx - b.idx;
+      });
+    return sorted[0] || null;
+  }
+
+  function openRegionFocusOverlayFirstRegion() {
+    if (
+      !(drawingCanvas instanceof HTMLCanvasElement) ||
+      !(regionFocusImageEl instanceof HTMLImageElement) ||
+      !(regionFocusOverlayEl instanceof HTMLElement)
+    )
+      return false;
+    const first = getFirstRegionLeftToRight(baselineRegions);
+    if (!first || first.w < 1 || first.h < 1) return false;
+
+    const cropCanvas = document.createElement("canvas");
+    cropCanvas.width = Math.max(1, Math.round(first.w));
+    cropCanvas.height = Math.max(1, Math.round(first.h));
+    const cropCtx = cropCanvas.getContext("2d");
+    if (!cropCtx) return false;
+
+    cropCtx.drawImage(
+      drawingCanvas,
+      first.x,
+      first.y,
+      first.w,
+      first.h,
+      0,
+      0,
+      cropCanvas.width,
+      cropCanvas.height
+    );
+    regionFocusImageEl.src = cropCanvas.toDataURL("image/png");
+    if (regionFocusMetaEl instanceof HTMLElement) {
+      regionFocusMetaEl.textContent = `Showing region ${first.idx + 1} of ${baselineRegions.length} (left-to-right first).`;
+    }
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    if (benchmarkPanelEl instanceof HTMLElement) benchmarkPanelEl.classList.add("hidden");
+    regionFocusOverlayEl.classList.remove("hidden");
+    return true;
+  }
+
+  function setActiveTab(tabId) {
+    activeTab = tabId === "item-library" ? "item-library" : "workspace";
+    const workspaceActive = activeTab === "workspace";
+    workspacePanel?.classList.toggle("hidden", !workspaceActive);
+    itemLibraryPanel?.classList.toggle("hidden", workspaceActive);
+    if (tabWorkspaceBtn instanceof HTMLButtonElement) {
+      tabWorkspaceBtn.setAttribute("aria-selected", String(workspaceActive));
+      tabWorkspaceBtn.className = workspaceActive
+        ? "rounded-md bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white"
+        : "rounded-md border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-700 dark:border-gray-700 dark:text-gray-200";
+    }
+    if (tabItemLibraryBtn instanceof HTMLButtonElement) {
+      tabItemLibraryBtn.setAttribute("aria-selected", String(!workspaceActive));
+      tabItemLibraryBtn.className = !workspaceActive
+        ? "rounded-md bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white"
+        : "rounded-md border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-700 dark:border-gray-700 dark:text-gray-200";
+    }
+    if (!workspaceActive && itemLibrary.length === 0) {
+      void loadLibraryFromFolder();
+    }
+  }
+
+  function normalizeLibraryItems(items) {
+    if (!Array.isArray(items)) return [];
+    return items
+      .map((item, idx) => {
+        const fileName = String(item?.fileName || "").trim();
+        if (!fileName) return null;
+        const displayName = String(item?.displayName || fileName.replace(/\.[^/.]+$/, ""));
+        const priceRaw = Number(item?.price ?? 0);
+        const price = Number.isFinite(priceRaw) ? Math.max(0, priceRaw) : 0;
+        const priorityRaw = Number(item?.priority ?? idx + 1);
+        const priority = Number.isFinite(priorityRaw)
+          ? Math.max(1, Math.round(priorityRaw))
+          : idx + 1;
+        const dependencies = Array.isArray(item?.dependencies)
+          ? item.dependencies
+              .map((dep) => {
+                const depFile = String(dep?.fileName || "").trim();
+                const qtyRaw = Number(dep?.qty ?? 1);
+                const qty = Number.isFinite(qtyRaw) ? Math.max(1, Math.round(qtyRaw)) : 1;
+                if (!depFile || depFile === fileName) return null;
+                return { fileName: depFile, qty };
+              })
+              .filter(Boolean)
+          : [];
+        return {
+          fileName,
+          displayName,
+          imageUrl: String(item?.imageUrl || ""),
+          rawImageUrl: String(
+            (item as Record<string, unknown>)?.rawImageUrl ||
+              `/drawing-analyzer-lab/item-library/${encodeURIComponent(fileName)}`
+          ),
+          price,
+          priority,
+          dependencies,
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.priority - b.priority)
+      .map((item, idx) => ({ ...item, priority: idx + 1 }));
+  }
+
+  function getDependencySelectOptions(currentFileName) {
+    const options = itemLibrary
+      .filter((it) => it.fileName !== currentFileName)
+      .map(
+        (it) => `<option value="${escapeHtml(it.fileName)}">${escapeHtml(it.displayName)}</option>`
+      );
+    return `<option value="">Depends on...</option>${options.join("")}`;
+  }
+
+  function renderItemLibrary() {
+    if (!(itemLibraryListEl instanceof HTMLElement)) return;
+    if (itemLibrary.length === 0) {
+      itemLibraryListEl.innerHTML = `<div class="rounded border border-dashed border-gray-300 p-4 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">No images found in folder. Add files to public/drawing-analyzer-lab/item-library and click Rescan Folder.</div>`;
+      return;
+    }
+
+    itemLibraryListEl.innerHTML = itemLibrary
+      .map((item, idx) => {
+        const depsHtml =
+          item.dependencies.length === 0
+            ? `<p class="text-xs text-gray-500 dark:text-gray-400">No dependencies</p>`
+            : `<div class="flex flex-wrap gap-1">${item.dependencies
+                .map((dep) => {
+                  const depItem = itemLibrary.find((it) => it.fileName === dep.fileName);
+                  const depName = depItem ? depItem.displayName : dep.fileName;
+                  return `<span class="inline-flex items-center gap-1 rounded border border-gray-300 px-2 py-1 text-xs dark:border-gray-700">
+                    ${escapeHtml(depName)} x${dep.qty}
+                    <button type="button" class="rounded px-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20" data-action="remove-dep" data-item-file="${escapeHtml(item.fileName)}" data-dep-file="${escapeHtml(dep.fileName)}" title="Remove dependency">x</button>
+                  </span>`;
+                })
+                .join("")}</div>`;
+
+        return `<div class="rounded border border-gray-200 p-3 dark:border-gray-700" data-item-file="${escapeHtml(item.fileName)}">
+          <div class="grid grid-cols-1 gap-3 md:grid-cols-[auto_1fr_auto] md:items-start">
+            <div class="flex items-center gap-2">
+              <span class="text-xl text-gray-400" title="Priority">${idx + 1}</span>
+              <img src="${escapeHtml(item.imageUrl)}" data-fallback-src="${escapeHtml(item.rawImageUrl)}" onerror="if(!this.dataset.fallbackUsed){this.dataset.fallbackUsed='1';this.src=this.dataset.fallbackSrc;}" alt="${escapeHtml(item.displayName)}" class="h-16 w-16 rounded border border-gray-300 object-contain bg-white dark:border-gray-700" />
+            </div>
+            <div class="space-y-2">
+              <div>
+                <p class="text-xl font-semibold text-gray-900 dark:text-white">${escapeHtml(item.displayName)}</p>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <label class="text-sm text-gray-600 dark:text-gray-300">Price</label>
+                <input type="number" min="0" step="0.01" value="${Number(item.price || 0)}" class="w-32 rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:border-gray-700 dark:bg-gray-900" data-action="price" data-item-file="${escapeHtml(item.fileName)}" />
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <select id="dep-select-${idx}" class="rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:border-gray-700 dark:bg-gray-900">${getDependencySelectOptions(item.fileName)}</select>
+                <input id="dep-qty-${idx}" type="number" min="1" step="1" value="1" class="w-20 rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:border-gray-700 dark:bg-gray-900" />
+                <button type="button" class="rounded border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800" data-action="add-dep" data-item-file="${escapeHtml(item.fileName)}" data-item-index="${idx}">Add dependency</button>
+              </div>
+              ${depsHtml}
+            </div>
+            <div class="flex flex-col gap-2">
+              <button type="button" class="rounded border border-gray-300 px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800" data-action="move-up" data-item-file="${escapeHtml(item.fileName)}">Move up</button>
+              <button type="button" class="rounded border border-gray-300 px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800" data-action="move-down" data-item-file="${escapeHtml(item.fileName)}">Move down</button>
+            </div>
+          </div>
+        </div>`;
+      })
+      .join("");
+  }
+
+  async function loadLibraryFromFolder() {
+    try {
+      const response = await fetch("/api/drawing-analyzer/item-library", {
+        method: "GET",
+        headers: { Accept: "application/json" },
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload?.success) {
+        setStatus(payload?.error || "Failed to load item library.");
+        return;
+      }
+      itemLibrary = normalizeLibraryItems(payload.items || []);
+      templateSignatureCache.clear();
+      renderItemLibrary();
+      setStatus(`Loaded ${itemLibrary.length} item(s) from folder scan.`);
+      scheduleBenchmarkRun(50);
+    } catch (error) {
+      console.error("[DrawingAnalyzerLab] loadLibraryFromFolder failed", error);
+      setStatus("Failed to load item library from folder.");
+    }
+  }
+
+  async function saveLibraryMetadata() {
+    try {
+      const response = await fetch("/api/drawing-analyzer/item-library", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: itemLibrary }),
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload?.success) {
+        setStatus(payload?.error || "Failed to save item library metadata.");
+        return;
+      }
+      setStatus(
+        `Saved metadata for ${itemLibrary.length} item(s) to markdowns/drawing-analyzer-lab-item-library.md.`
+      );
+      scheduleBenchmarkRun(50);
+    } catch (error) {
+      console.error("[DrawingAnalyzerLab] saveLibraryMetadata failed", error);
+      setStatus("Failed to save item library metadata.");
+    }
+  }
+
+  function clamp(v, min, max) {
+    return Math.max(min, Math.min(max, v));
+  }
+
+  function getCtx(canvas) {
+    if (!(canvas instanceof HTMLCanvasElement)) return null;
+    return canvas.getContext("2d", { willReadFrequently: true });
+  }
+
+  function renderImageOnCanvas(canvas, img, maxSide = 1900) {
+    if (!(canvas instanceof HTMLCanvasElement)) return null;
+    const ctx = getCtx(canvas);
+    if (!ctx) return null;
+    const scale = Math.min(
+      1,
+      maxSide / Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height)
+    );
+    const w = Math.max(1, Math.round((img.naturalWidth || img.width) * scale));
+    const h = Math.max(1, Math.round((img.naturalHeight || img.height) * scale));
+    canvas.width = w;
+    canvas.height = h;
+    ctx.clearRect(0, 0, w, h);
+    ctx.drawImage(img, 0, 0, w, h);
+    return ctx.getImageData(0, 0, w, h);
+  }
+
+  async function loadImageFromFile(file) {
+    const url = URL.createObjectURL(file);
+    try {
+      const img = new Image();
+      const loaded = await new Promise((resolve) => {
+        img.onload = () => resolve(true);
+        img.onerror = () => resolve(false);
+        img.src = url;
+      });
+      if (!loaded) return null;
+      return img;
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  async function renderPdfFirstPageToImage(file) {
+    const pdfjs = window["pdfjsLib"];
+    if (!pdfjs) throw new Error("PDF engine not loaded yet. Try again in a moment.");
+    const data = new Uint8Array(await file.arrayBuffer());
+    const pdf = await pdfjs.getDocument({ data }).promise;
+    const page = await pdf.getPage(1);
+    const viewport = page.getViewport({ scale: 2.8 });
+    const canvas = document.createElement("canvas");
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Unable to render PDF canvas context.");
+    await page.render({ canvasContext: ctx, viewport }).promise;
+    const img = new Image();
+    const loaded = await new Promise((resolve) => {
+      img.onload = () => resolve(true);
+      img.onerror = () => resolve(false);
+      img.src = canvas.toDataURL("image/png");
+    });
+    if (!loaded) throw new Error("Failed to convert PDF page to image.");
+    return img;
+  }
+
+  function imageToNeutralMask(imageData) {
+    const { width, height, data } = imageData;
+    const mask = new Uint8Array(width * height);
+    for (let y = 0; y < height; y += 1) {
+      const row = y * width;
+      for (let x = 0; x < width; x += 1) {
+        const idx = (row + x) * 4;
+        const r = data[idx];
+        const g = data[idx + 1];
+        const b = data[idx + 2];
+        const a = data[idx + 3];
+        const gray = r * 0.299 + g * 0.587 + b * 0.114;
+        const spread = Math.max(r, g, b) - Math.min(r, g, b);
+        const dark = gray < 210 && a > 20;
+        const neutral = spread < 42;
+        mask[row + x] = dark && neutral ? 1 : 0;
+      }
+    }
+    return mask;
+  }
+
+  function getComponents(mask, width, height, minArea = 18, maxArea = 999999) {
+    const visited = new Uint8Array(width * height);
+    const qx = new Int32Array(width * height);
+    const qy = new Int32Array(width * height);
+    const out = [];
+
+    for (let y = 0; y < height; y += 1) {
+      const row = y * width;
+      for (let x = 0; x < width; x += 1) {
+        const start = row + x;
+        if (!mask[start] || visited[start]) continue;
+        let head = 0;
+        let tail = 0;
+        qx[tail] = x;
+        qy[tail] = y;
+        tail += 1;
+        visited[start] = 1;
+        let area = 0;
+        let minX = x;
+        let minY = y;
+        let maxX = x;
+        let maxY = y;
+
+        while (head < tail) {
+          const cx = qx[head];
+          const cy = qy[head];
+          head += 1;
+          area += 1;
+          if (cx < minX) minX = cx;
+          if (cy < minY) minY = cy;
+          if (cx > maxX) maxX = cx;
+          if (cy > maxY) maxY = cy;
+
+          for (let oy = -1; oy <= 1; oy += 1) {
+            const ny = cy + oy;
+            if (ny < 0 || ny >= height) continue;
+            const nrow = ny * width;
+            for (let ox = -1; ox <= 1; ox += 1) {
+              if (ox === 0 && oy === 0) continue;
+              const nx = cx + ox;
+              if (nx < 0 || nx >= width) continue;
+              const nidx = nrow + nx;
+              if (!mask[nidx] || visited[nidx]) continue;
+              visited[nidx] = 1;
+              qx[tail] = nx;
+              qy[tail] = ny;
+              tail += 1;
+            }
+          }
+        }
+
+        if (area < minArea || area > maxArea) continue;
+        const w = maxX - minX + 1;
+        const h = maxY - minY + 1;
+        out.push({ x: minX, y: minY, w, h, area });
+      }
+    }
+    return out;
+  }
+
+  function getMaskedByRegions(state, regions) {
+    if (!state) return null;
+    if (!Array.isArray(regions) || regions.length === 0) return state;
+    const masked = new Uint8Array(state.mask);
+    for (let y = 0; y < state.height; y += 1) {
+      const row = y * state.width;
+      for (let x = 0; x < state.width; x += 1) {
+        const inside = regions.some((r) => x >= r.x && y >= r.y && x < r.x + r.w && y < r.y + r.h);
+        if (!inside) masked[row + x] = 0;
+      }
+    }
+    return { ...state, mask: masked };
+  }
+
+  async function loadImageDataFromUrl(src) {
+    const url = String(src || "").trim();
+    if (!url) return null;
+    return await new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth || img.width;
+        canvas.height = img.naturalHeight || img.height;
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        if (!ctx) return resolve(null);
+        ctx.drawImage(img, 0, 0);
+        resolve(ctx.getImageData(0, 0, canvas.width, canvas.height));
+      };
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+  }
+
+  function signatureFromImageData(imageData) {
+    if (!imageData) return null;
+    const { width, height, data } = imageData;
+    const mask = new Uint8Array(width * height);
+    let minX = width;
+    let minY = height;
+    let maxX = -1;
+    let maxY = -1;
+    let area = 0;
+    for (let y = 0; y < height; y += 1) {
+      const row = y * width;
+      for (let x = 0; x < width; x += 1) {
+        const i = (row + x) * 4;
+        const a = data[i + 3];
+        if (a < 18) continue;
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        const gray = r * 0.299 + g * 0.587 + b * 0.114;
+        const isInk = gray < 245 || a > 32;
+        if (!isInk) continue;
+        mask[row + x] = 1;
+        area += 1;
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+      }
+    }
+    if (area < 8 || maxX < minX || maxY < minY) return null;
+    const w = maxX - minX + 1;
+    const h = maxY - minY + 1;
+    const bboxArea = Math.max(1, w * h);
+    return {
+      w,
+      h,
+      aspect: w / Math.max(1, h),
+      fill: area / bboxArea,
+      area,
+      diameter: Math.min(w, h),
+    };
+  }
+
+  async function getTemplateSignature(item) {
+    const cacheKey = `${item.fileName}|${item.imageUrl}|${item.rawImageUrl || ""}`;
+    if (templateSignatureCache.has(cacheKey)) return templateSignatureCache.get(cacheKey);
+    let imageData = await loadImageDataFromUrl(item.imageUrl);
+    if (!imageData && item.rawImageUrl) imageData = await loadImageDataFromUrl(item.rawImageUrl);
+    const sig = signatureFromImageData(imageData);
+    templateSignatureCache.set(cacheKey, sig);
+    return sig;
+  }
+
+  function scoreComponentVsTemplate(comp, sig) {
+    if (!sig) return 0;
+    const compAspect = comp.w / Math.max(1, comp.h);
+    const compFill = comp.area / Math.max(1, comp.w * comp.h);
+    const compDiam = Math.min(comp.w, comp.h);
+    const aspectScore = clamp(1 - Math.abs(compAspect - sig.aspect) / 0.55, 0, 1);
+    const fillScore = clamp(1 - Math.abs(compFill - sig.fill) / 0.42, 0, 1);
+    const diamScore = clamp(
+      1 - Math.abs(compDiam - sig.diameter) / Math.max(8, sig.diameter * 0.7),
+      0,
+      1
+    );
+    return aspectScore * 0.42 + fillScore * 0.33 + diamScore * 0.25;
+  }
+
+  function colorForItem(fileName) {
+    const palette = [
+      "#ef4444",
+      "#f97316",
+      "#eab308",
+      "#22c55e",
+      "#14b8a6",
+      "#06b6d4",
+      "#3b82f6",
+      "#6366f1",
+      "#8b5cf6",
+      "#d946ef",
+      "#ec4899",
+    ];
+    let hash = 0;
+    const key = String(fileName || "");
+    for (let i = 0; i < key.length; i += 1) hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+    return palette[hash % palette.length];
+  }
+
+  function renderBenchmarkPanel() {
+    if (!(benchmarkMetaEl instanceof HTMLElement) || !(benchmarkListEl instanceof HTMLElement))
+      return;
+    if (benchmarkConfidenceReadoutEl instanceof HTMLElement) {
+      benchmarkConfidenceReadoutEl.textContent = `${Math.round(benchmarkConfidence * 100)}%`;
+    }
+    if (benchmarkConfidenceEl instanceof HTMLInputElement) {
+      benchmarkConfidenceEl.value = String(Math.round(benchmarkConfidence * 100));
+    }
+    const regionCount = baselineRegions.length;
+    const total = benchmarkResults.reduce((acc, r) => acc + Number(r.count || 0), 0);
+    benchmarkMetaEl.textContent = `Regions: ${regionCount} | Items: ${itemLibrary.length} | Matches: ${total} | Threshold: ${Math.round(benchmarkConfidence * 100)}%`;
+    if (benchmarkResults.length === 0) {
+      benchmarkListEl.innerHTML = `<p class="text-xs text-gray-500 dark:text-gray-400">No benchmark results yet.</p>`;
+      return;
+    }
+    benchmarkListEl.innerHTML = benchmarkResults
+      .map(
+        (
+          row
+        ) => `<div class="flex items-center justify-between rounded border border-gray-200 px-2 py-1 text-sm dark:border-gray-700">
+          <span class="flex min-w-0 items-center gap-2 pr-2">
+            <span class="h-3 w-3 rounded-full border border-white/60" style="background:${escapeHtml(row.color)}"></span>
+            <span class="truncate">${escapeHtml(row.name)}</span>
+          </span>
+          <span class="rounded bg-gray-100 px-2 py-0.5 font-semibold text-gray-800 dark:bg-gray-800 dark:text-gray-100">${row.count}</span>
+        </div>`
+      )
+      .join("");
+  }
+
+  async function runLiveBenchmark() {
+    benchmarkRunId += 1;
+    const runId = benchmarkRunId;
+    if (!drawingState || baselineRegions.length === 0 || itemLibrary.length === 0) {
+      benchmarkResults = [];
+      benchmarkDetections = [];
+      renderBaselineOverlay();
+      renderBenchmarkPanel();
+      return;
+    }
+    const maskedState = getMaskedByRegions(drawingState, baselineRegions);
+    const comps = getComponents(
+      maskedState.mask,
+      maskedState.width,
+      maskedState.height,
+      16,
+      maskedState.width * maskedState.height * 0.02
+    ).filter((c) => c.w >= 6 && c.h >= 6);
+    const signatures = await Promise.all(
+      itemLibrary.map(async (item) => ({
+        item,
+        sig: await getTemplateSignature(item),
+      }))
+    );
+    if (runId !== benchmarkRunId) return;
+    const counts = new Map(itemLibrary.map((it) => [it.fileName, 0]));
+    const detections = [];
+    for (const comp of comps) {
+      let bestFile = null;
+      let bestScore = 0;
+      for (const entry of signatures) {
+        const score = scoreComponentVsTemplate(comp, entry.sig);
+        if (score > bestScore) {
+          bestScore = score;
+          bestFile = entry.item.fileName;
+        }
+      }
+      if (bestFile && bestScore >= benchmarkConfidence) {
+        counts.set(bestFile, (counts.get(bestFile) || 0) + 1);
+        detections.push({
+          fileName: bestFile,
+          x: Math.round(comp.x + comp.w / 2),
+          y: Math.round(comp.y + comp.h / 2),
+          r: Math.max(3, Math.min(7, Math.round(Math.min(comp.w, comp.h) * 0.1))),
+          color: colorForItem(bestFile),
+        });
+      }
+    }
+    benchmarkDetections = detections.slice(0, 3000);
+    benchmarkResults = itemLibrary.map((it) => ({
+      fileName: it.fileName,
+      name: it.displayName,
+      count: counts.get(it.fileName) || 0,
+      color: colorForItem(it.fileName),
+    }));
+    renderBaselineOverlay();
+    renderBenchmarkPanel();
+  }
+
+  let benchmarkTimer = null;
+  function scheduleBenchmarkRun(delayMs = 120) {
+    if (benchmarkTimer) clearTimeout(benchmarkTimer);
+    benchmarkTimer = window.setTimeout(() => {
+      void runLiveBenchmark();
+    }, delayMs);
+  }
+
+  // Baseline inspired by engineering-drawing-extractor: isolate major drawing blocks from sheet-level noise/tables.
+  function extractBaselineRegions(state) {
+    if (!state) return { regions: [], mode: "none" };
+    const { width, height, mask } = state;
+    const canvasArea = Math.max(1, width * height);
+    const comps = getComponents(mask, width, height, 18, canvasArea * 0.9);
+    if (comps.length === 0) return { regions: [], mode: "none" };
+
+    const edgeMargin = Math.max(6, Math.round(Math.min(width, height) * 0.02));
+    const scored = [];
+    for (const c of comps) {
+      const bboxArea = c.w * c.h;
+      const bboxRatio = bboxArea / canvasArea;
+      if (bboxRatio < 0.015 || bboxRatio > 0.72) continue;
+      const aspect = c.w / Math.max(1, c.h);
+      if (aspect < 0.35 || aspect > 3.0) continue;
+      const inkRatio = c.area / Math.max(1, bboxArea);
+      if (inkRatio < 0.0015 || inkRatio > 0.24) continue;
+
+      const nearLeft = c.x <= edgeMargin;
+      const nearTop = c.y <= edgeMargin;
+      const nearRight = c.x + c.w >= width - edgeMargin;
+      const nearBottom = c.y + c.h >= height - edgeMargin;
+      const edgeTouchCount = [nearLeft, nearTop, nearRight, nearBottom].filter(Boolean).length;
+
+      const cx = c.x + c.w / 2;
+      const cy = c.y + c.h / 2;
+      const centerDist =
+        Math.hypot(cx - width / 2, cy - height / 2) /
+        Math.max(1, Math.hypot(width / 2, height / 2));
+      const centerBonus = 1 - clamp(centerDist, 0, 1);
+      const frameBonus = clamp(1 - Math.abs(inkRatio - 0.06) / 0.14, 0, 1);
+      const edgePenalty = edgeTouchCount >= 2 ? 0.22 : 0;
+      const score = bboxRatio * 1.1 + frameBonus * 0.35 + centerBonus * 0.2 - edgePenalty;
+
+      scored.push({ ...c, score });
+    }
+
+    scored.sort((a, b) => b.score - a.score);
+    const selected = [];
+    for (const c of scored) {
+      const overlaps = selected.some((k) => {
+        const x0 = Math.max(c.x, k.x);
+        const y0 = Math.max(c.y, k.y);
+        const x1 = Math.min(c.x + c.w - 1, k.x + k.w - 1);
+        const y1 = Math.min(c.y + c.h - 1, k.y + k.h - 1);
+        if (x1 < x0 || y1 < y0) return false;
+        const inter = (x1 - x0 + 1) * (y1 - y0 + 1);
+        return inter / Math.max(1, Math.min(c.w * c.h, k.w * k.h)) > 0.58;
+      });
+      if (overlaps) continue;
+      const pad = Math.max(8, Math.round(Math.min(c.w, c.h) * 0.03));
+      selected.push({
+        x: clamp(c.x - pad, 0, width - 1),
+        y: clamp(c.y - pad, 0, height - 1),
+        w: clamp(c.w + pad * 2, 1, width),
+        h: clamp(c.h + pad * 2, 1, height),
+      });
+      if (selected.length >= 4) break;
+    }
+
+    return { regions: selected, mode: selected.length > 0 ? "baseline-components" : "none" };
+  }
+
+  function renderBaselineOverlay() {
+    if (
+      !(drawingOverlay instanceof HTMLCanvasElement) ||
+      !(drawingCanvas instanceof HTMLCanvasElement)
+    )
+      return;
+    const ctx = getCtx(drawingOverlay);
+    if (!ctx) return;
+
+    drawingOverlay.width = drawingCanvas.width;
+    drawingOverlay.height = drawingCanvas.height;
+    ctx.clearRect(0, 0, drawingOverlay.width, drawingOverlay.height);
+    deleteHotspots = [];
+    transformHandles = [];
+    if (baselineRegions.length === 0) return;
+
+    ctx.lineWidth = 2;
+    ctx.font = "12px sans-serif";
+    baselineRegions.forEach((r, idx) => {
+      const isSelected = idx === selectedRegionIdx;
+      ctx.fillStyle = isSelected ? "rgba(14,165,233,0.16)" : "rgba(245,158,11,0.18)";
+      ctx.strokeStyle = isSelected ? "rgba(14,165,233,0.98)" : "rgba(245,158,11,0.95)";
+      ctx.fillRect(r.x, r.y, r.w, r.h);
+      ctx.strokeRect(r.x, r.y, r.w, r.h);
+      ctx.fillStyle = isSelected ? "rgba(14,165,233,0.98)" : "rgba(245,158,11,0.95)";
+      ctx.fillText(`Region ${idx + 1}`, r.x + 4, Math.max(12, r.y - 4));
+
+      const radius = 9;
+      const cx = r.x + r.w - radius - 2;
+      const cy = r.y + radius + 2;
+      ctx.beginPath();
+      ctx.fillStyle = "rgba(255,255,255,0.96)";
+      ctx.strokeStyle = "rgba(220,38,38,0.95)";
+      ctx.lineWidth = 2;
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx - 4, cy - 4);
+      ctx.lineTo(cx + 4, cy + 4);
+      ctx.moveTo(cx + 4, cy - 4);
+      ctx.lineTo(cx - 4, cy + 4);
+      ctx.strokeStyle = "rgba(220,38,38,0.95)";
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+      deleteHotspots.push({ idx, cx, cy, radius });
+
+      if (!isSelected) return;
+      const hs = 10;
+      const handles = [
+        { kind: "nw", x: r.x, y: r.y, cursor: "nwse-resize" },
+        { kind: "n", x: r.x + r.w / 2, y: r.y, cursor: "ns-resize" },
+        { kind: "ne", x: r.x + r.w, y: r.y, cursor: "nesw-resize" },
+        { kind: "e", x: r.x + r.w, y: r.y + r.h / 2, cursor: "ew-resize" },
+        { kind: "se", x: r.x + r.w, y: r.y + r.h, cursor: "nwse-resize" },
+        { kind: "s", x: r.x + r.w / 2, y: r.y + r.h, cursor: "ns-resize" },
+        { kind: "sw", x: r.x, y: r.y + r.h, cursor: "nesw-resize" },
+        { kind: "w", x: r.x, y: r.y + r.h / 2, cursor: "ew-resize" },
+      ];
+      handles.forEach((h) => {
+        ctx.fillStyle = "rgba(37,99,235,0.92)";
+        ctx.fillRect(h.x - hs / 2, h.y - hs / 2, hs, hs);
+        ctx.strokeStyle = "rgba(255,255,255,0.98)";
+        ctx.lineWidth = 1.1;
+        ctx.strokeRect(h.x - hs / 2, h.y - hs / 2, hs, hs);
+        transformHandles.push({ idx, x: h.x, y: h.y, size: hs, kind: h.kind, cursor: h.cursor });
+      });
+    });
+
+    if (benchmarkDetections.length > 0) {
+      for (const marker of benchmarkDetections) {
+        const radius = Math.max(3, Math.min(14, marker.r || 5));
+        ctx.beginPath();
+        ctx.fillStyle = marker.color || "#ef4444";
+        ctx.globalAlpha = 0.86;
+        ctx.arc(marker.x, marker.y, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = "rgba(15,23,42,0.95)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    }
+  }
+
+  function updateBaselineReadout() {
+    if (!baselineReadoutEl || !drawingState) {
+      if (baselineReadoutEl)
+        baselineReadoutEl.textContent = "Baseline regions: waiting for drawing.";
+      return;
+    }
+    if (baselineRegions.length === 0) {
+      baselineReadoutEl.textContent = `Baseline regions: none (${baselineMode}).`;
+      return;
+    }
+    const totalArea = baselineRegions.reduce((acc, r) => acc + r.w * r.h, 0);
+    const pct = (totalArea / Math.max(1, drawingState.width * drawingState.height)) * 100;
+    baselineReadoutEl.textContent = `Baseline regions: ${baselineRegions.length} (${pct.toFixed(1)}% combined canvas). Mode: ${baselineMode}.`;
+  }
+
+  function getCanvasPointer(evt) {
+    if (!(drawingOverlay instanceof HTMLCanvasElement)) return null;
+    const rect = drawingOverlay.getBoundingClientRect();
+    const sx = drawingOverlay.width / Math.max(1, rect.width);
+    const sy = drawingOverlay.height / Math.max(1, rect.height);
+    return {
+      x: (evt.clientX - rect.left) * sx,
+      y: (evt.clientY - rect.top) * sy,
+    };
+  }
+
+  function getHotspotAtPointer(evt) {
+    const p = getCanvasPointer(evt);
+    if (!p) return null;
+    for (let i = deleteHotspots.length - 1; i >= 0; i -= 1) {
+      const h = deleteHotspots[i];
+      if (Math.hypot(p.x - h.cx, p.y - h.cy) <= h.radius + 2) return h;
+    }
+    return null;
+  }
+
+  function getTransformHandleAtPointer(evt) {
+    const p = getCanvasPointer(evt);
+    if (!p) return null;
+    for (let i = transformHandles.length - 1; i >= 0; i -= 1) {
+      const h = transformHandles[i];
+      if (Math.abs(p.x - h.x) <= h.size && Math.abs(p.y - h.y) <= h.size) return h;
+    }
+    return null;
+  }
+
+  function getRegionAtPointer(evt) {
+    const p = getCanvasPointer(evt);
+    if (!p) return null;
+    for (let i = baselineRegions.length - 1; i >= 0; i -= 1) {
+      const r = baselineRegions[i];
+      if (p.x >= r.x && p.y >= r.y && p.x <= r.x + r.w && p.y <= r.y + r.h) return { idx: i, r, p };
+    }
+    return null;
+  }
+
+  function applyResizeFromHandle(startRegion, handle, p) {
+    if (!(drawingOverlay instanceof HTMLCanvasElement)) return { ...startRegion };
+    const minSize = 20;
+    const dx = p.x - dragState.startX;
+    const dy = p.y - dragState.startY;
+    let left = startRegion.x;
+    let top = startRegion.y;
+    let right = startRegion.x + startRegion.w;
+    let bottom = startRegion.y + startRegion.h;
+
+    if (handle.includes("w")) left += dx;
+    if (handle.includes("e")) right += dx;
+    if (handle.includes("n")) top += dy;
+    if (handle.includes("s")) bottom += dy;
+
+    if (right - left < minSize) {
+      if (handle.includes("w")) left = right - minSize;
+      else right = left + minSize;
+    }
+    if (bottom - top < minSize) {
+      if (handle.includes("n")) top = bottom - minSize;
+      else bottom = top + minSize;
+    }
+
+    left = clamp(left, 0, drawingOverlay.width - minSize);
+    top = clamp(top, 0, drawingOverlay.height - minSize);
+    right = clamp(right, left + minSize, drawingOverlay.width);
+    bottom = clamp(bottom, top + minSize, drawingOverlay.height);
+
+    return {
+      x: Math.round(left),
+      y: Math.round(top),
+      w: Math.round(right - left),
+      h: Math.round(bottom - top),
+    };
+  }
+
+  function updateUndoUi() {
+    if (!(undoRemoveBtn instanceof HTMLButtonElement)) return;
+    if (removedRegionsUndo.length === 0) {
+      undoRemoveBtn.setAttribute("disabled", "true");
+      return;
+    }
+    undoRemoveBtn.removeAttribute("disabled");
+  }
+
+  function removeBaselineRegion(index) {
+    if (!Number.isFinite(index) || index < 0 || index >= baselineRegions.length) return false;
+    const removed = baselineRegions[index];
+    removedRegionsUndo.push({
+      index,
+      region: { x: removed.x, y: removed.y, w: removed.w, h: removed.h },
+    });
+    if (removedRegionsUndo.length > 30) removedRegionsUndo.shift();
+    baselineRegions.splice(index, 1);
+    if (selectedRegionIdx === index) selectedRegionIdx = -1;
+    else if (selectedRegionIdx > index) selectedRegionIdx -= 1;
+    renderBaselineOverlay();
+    updateBaselineReadout();
+    updateUndoUi();
+    setStatus(`Removed region ${index + 1}. ${baselineRegions.length} region(s) remaining.`);
+    scheduleBenchmarkRun(40);
+    return true;
+  }
+
+  function undoLastRemovedRegion() {
+    const item = removedRegionsUndo.pop();
+    if (!item) return false;
+    const insertAt = clamp(item.index, 0, baselineRegions.length);
+    baselineRegions.splice(insertAt, 0, item.region);
+    selectedRegionIdx = insertAt;
+    renderBaselineOverlay();
+    updateBaselineReadout();
+    updateUndoUi();
+    setStatus(`Undo restore complete. ${baselineRegions.length} region(s) active.`);
+    scheduleBenchmarkRun(40);
+    return true;
+  }
+
+  async function handleDrawingUpload(file) {
+    const type = file.type || "";
+    const isPdf = type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    const img = isPdf ? await renderPdfFirstPageToImage(file) : await loadImageFromFile(file);
+    if (!img) {
+      setStatus("Failed to load drawing file.");
+      return;
+    }
+
+    const imageData = renderImageOnCanvas(drawingCanvas, img, 1900);
+    if (!imageData) {
+      setStatus("Failed to render drawing.");
+      return;
+    }
+
+    drawingState = {
+      width: imageData.width,
+      height: imageData.height,
+      imageData,
+      mask: imageToNeutralMask(imageData),
+    };
+    applyDrawingDisplayScale(1);
+
+    const baseline = extractBaselineRegions(drawingState);
+    baselineRegions = baseline.regions;
+    baselineMode = baseline.mode;
+    selectedRegionIdx = baselineRegions.length > 0 ? 0 : -1;
+    removedRegionsUndo = [];
+    dragState = null;
+
+    renderBaselineOverlay();
+    updateBaselineReadout();
+    updateUndoUi();
+    setStatus(
+      baselineRegions.length > 0
+        ? `Drawing loaded. Baseline extracted ${baselineRegions.length} region(s).`
+        : "Drawing loaded. Baseline found no regions."
+    );
+    if (baselineRegions.length > 0) {
+      openRegionFocusOverlayFirstRegion();
+    } else {
+      closeRegionFocusOverlay();
+    }
+    scheduleBenchmarkRun(60);
+  }
+
+  async function autoLoadDefaultDrawing() {
+    if (drawingState) return;
+    try {
+      const resp = await fetch(DEFAULT_DRAWING_PUBLIC_PATH, { cache: "no-store" });
+      if (!resp.ok) {
+        setStatus(`Default drawing not found (${resp.status}). Upload manually if needed.`);
+        return;
+      }
+      const blob = await resp.blob();
+      const defaultFile = new File([blob], DEFAULT_DRAWING_FILE_NAME, {
+        type: blob.type || "application/pdf",
+      });
+      setStatus(`Loaded default drawing from ${DEFAULT_DRAWING_PUBLIC_PATH}.`);
+      await handleDrawingUpload(defaultFile);
+    } catch (err) {
+      console.warn("[DrawingAnalyzerLab] Failed to auto-load default drawing", err);
+      setStatus("Could not auto-load default drawing. Upload manually if needed.");
+    }
+  }
+
+  drawingFileInput?.addEventListener("change", async (e) => {
+    const target = e.target;
+    const file = target instanceof HTMLInputElement ? target.files?.[0] : null;
+    if (file) await handleDrawingUpload(file);
+  });
+
+  zoomOutBtn?.addEventListener("click", () => {
+    applyDrawingDisplayScale(drawingDisplayScale * 0.9);
+  });
+
+  zoomResetBtn?.addEventListener("click", () => {
+    applyDrawingDisplayScale(1);
+  });
+
+  zoomInBtn?.addEventListener("click", () => {
+    applyDrawingDisplayScale(drawingDisplayScale * 1.1);
+  });
+
+  drawingStage?.addEventListener(
+    "wheel",
+    (evt) => {
+      if (!(drawingStage instanceof HTMLElement)) return;
+      if (!(evt.ctrlKey || evt.metaKey)) return;
+      evt.preventDefault();
+      const stageRect = drawingStage.getBoundingClientRect();
+      const cursorX = evt.clientX - stageRect.left;
+      const cursorY = evt.clientY - stageRect.top;
+      const contentX = drawingStage.scrollLeft + cursorX;
+      const contentY = drawingStage.scrollTop + cursorY;
+      const prevScale = drawingDisplayScale;
+      const factor = evt.deltaY < 0 ? 1.1 : 0.9;
+      const nextScale = clamp(prevScale * factor, 0.35, 5);
+      if (Math.abs(nextScale - prevScale) < 0.0001) return;
+      applyDrawingDisplayScale(nextScale);
+      const ratio = nextScale / prevScale;
+      drawingStage.scrollLeft = contentX * ratio - cursorX;
+      drawingStage.scrollTop = contentY * ratio - cursorY;
+    },
+    { passive: false }
+  );
+
+
+  tabWorkspaceBtn?.addEventListener("click", () => setActiveTab("workspace"));
+  tabItemLibraryBtn?.addEventListener("click", () => setActiveTab("item-library"));
+
+  libraryRefreshBtn?.addEventListener("click", async () => {
+    await loadLibraryFromFolder();
+  });
+
+  librarySaveBtn?.addEventListener("click", async () => {
+    await saveLibraryMetadata();
+  });
+
+  itemLibraryListEl?.addEventListener("click", (evt) => {
+    const target = evt.target instanceof HTMLElement ? evt.target : null;
+    if (!target) return;
+    const actionEl = target.closest("[data-action]");
+    if (!(actionEl instanceof HTMLElement)) return;
+    const action = actionEl.dataset.action;
+    const itemFile = String(actionEl.dataset.itemFile || "");
+    if (!itemFile) return;
+    const itemIndex = itemLibrary.findIndex((it) => it.fileName === itemFile);
+    const item = itemIndex >= 0 ? itemLibrary[itemIndex] : null;
+    if (!item) return;
+
+    if (action === "move-up") {
+      if (itemIndex <= 0) return;
+      const prev = itemLibrary[itemIndex - 1];
+      itemLibrary[itemIndex - 1] = item;
+      itemLibrary[itemIndex] = prev;
+      itemLibrary = itemLibrary.map((it, idx) => ({ ...it, priority: idx + 1 }));
+      renderItemLibrary();
+      setStatus(`Moved "${item.displayName}" up.`);
+      scheduleBenchmarkRun(40);
+      return;
+    }
+
+    if (action === "move-down") {
+      if (itemIndex >= itemLibrary.length - 1) return;
+      const next = itemLibrary[itemIndex + 1];
+      itemLibrary[itemIndex + 1] = item;
+      itemLibrary[itemIndex] = next;
+      itemLibrary = itemLibrary.map((it, idx) => ({ ...it, priority: idx + 1 }));
+      renderItemLibrary();
+      setStatus(`Moved "${item.displayName}" down.`);
+      scheduleBenchmarkRun(40);
+      return;
+    }
+
+    if (action === "add-dep") {
+      const idx = Number(actionEl.dataset.itemIndex);
+      const depSelect = document.getElementById(`dep-select-${idx}`);
+      const depQty = document.getElementById(`dep-qty-${idx}`);
+      const depFile = depSelect instanceof HTMLSelectElement ? String(depSelect.value || "") : "";
+      const qtyRaw = depQty instanceof HTMLInputElement ? Number(depQty.value) : 1;
+      const qty = Number.isFinite(qtyRaw) ? Math.max(1, Math.round(qtyRaw)) : 1;
+      if (!depFile || depFile === item.fileName) {
+        setStatus("Choose a valid dependency item.");
+        return;
+      }
+      const existing = item.dependencies.find((d) => d.fileName === depFile);
+      if (existing) existing.qty = qty;
+      else item.dependencies.push({ fileName: depFile, qty });
+      renderItemLibrary();
+      setStatus(`Updated dependencies for "${item.displayName}".`);
+      scheduleBenchmarkRun(40);
+      return;
+    }
+
+    if (action === "remove-dep") {
+      const depFile = String(actionEl.dataset.depFile || "");
+      item.dependencies = item.dependencies.filter((dep) => dep.fileName !== depFile);
+      renderItemLibrary();
+      setStatus(`Dependency removed from "${item.displayName}".`);
+      scheduleBenchmarkRun(40);
+    }
+  });
+
+  itemLibraryListEl?.addEventListener("input", (evt) => {
+    const target = evt.target instanceof HTMLElement ? evt.target : null;
+    if (!(target instanceof HTMLInputElement)) return;
+    if (target.dataset.action !== "price") return;
+    const itemFile = String(target.dataset.itemFile || "");
+    if (!itemFile) return;
+    const item = itemLibrary.find((it) => it.fileName === itemFile);
+    if (!item) return;
+    const value = Number(target.value || 0);
+    item.price = Number.isFinite(value) ? Math.max(0, value) : 0;
+    scheduleBenchmarkRun(120);
+  });
+
+  drawingOverlay?.addEventListener("pointerdown", (evt) => {
+    const deleteHit = getHotspotAtPointer(evt);
+    if (deleteHit) {
+      evt.preventDefault();
+      evt.stopPropagation();
+      removeBaselineRegion(deleteHit.idx);
+      return;
+    }
+    const handleHit = getTransformHandleAtPointer(evt);
+    if (handleHit) {
+      const p = getCanvasPointer(evt);
+      const r = baselineRegions[handleHit.idx];
+      if (!p || !r) return;
+      selectedRegionIdx = handleHit.idx;
+      dragState = {
+        idx: handleHit.idx,
+        mode: "resize",
+        handle: handleHit.kind,
+        startX: p.x,
+        startY: p.y,
+        startRegion: { x: r.x, y: r.y, w: r.w, h: r.h },
+      };
+      renderBaselineOverlay();
+      drawingOverlay?.setPointerCapture?.(evt.pointerId);
+      return;
+    }
+    const regionHit = getRegionAtPointer(evt);
+    if (!regionHit) {
+      if (selectedRegionIdx !== -1) {
+        selectedRegionIdx = -1;
+        renderBaselineOverlay();
+      }
+      return;
+    }
+    selectedRegionIdx = regionHit.idx;
+    dragState = {
+      idx: regionHit.idx,
+      mode: "move",
+      offsetX: regionHit.p.x - regionHit.r.x,
+      offsetY: regionHit.p.y - regionHit.r.y,
+      startRegion: { x: regionHit.r.x, y: regionHit.r.y, w: regionHit.r.w, h: regionHit.r.h },
+    };
+    renderBaselineOverlay();
+    drawingOverlay?.setPointerCapture?.(evt.pointerId);
+  });
+
+  drawingOverlay?.addEventListener("pointermove", (evt) => {
+    if (!(drawingOverlay instanceof HTMLCanvasElement)) return;
+    const p = getCanvasPointer(evt);
+    if (!p) return;
+    if (dragState) {
+      const region = baselineRegions[dragState.idx];
+      if (!region) return;
+      if (dragState.mode === "move") {
+        region.x = clamp(Math.round(p.x - dragState.offsetX), 0, drawingOverlay.width - region.w);
+        region.y = clamp(Math.round(p.y - dragState.offsetY), 0, drawingOverlay.height - region.h);
+      } else if (dragState.mode === "resize") {
+        const resized = applyResizeFromHandle(
+          dragState.startRegion,
+          String(dragState.handle || "se"),
+          p
+        );
+        region.x = resized.x;
+        region.y = resized.y;
+        region.w = resized.w;
+        region.h = resized.h;
+      }
+      renderBaselineOverlay();
+      updateBaselineReadout();
+      if (dragState.mode === "resize") {
+        const cursorByHandle = {
+          n: "ns-resize",
+          s: "ns-resize",
+          e: "ew-resize",
+          w: "ew-resize",
+          ne: "nesw-resize",
+          sw: "nesw-resize",
+          nw: "nwse-resize",
+          se: "nwse-resize",
+        };
+        drawingOverlay.style.cursor =
+          cursorByHandle[String(dragState.handle || "se")] || "nwse-resize";
+      } else {
+        drawingOverlay.style.cursor = "move";
+      }
+      return;
+    }
+    const hotspot = getHotspotAtPointer(evt);
+    if (hotspot) {
+      drawingOverlay.style.cursor = "pointer";
+      return;
+    }
+    const handle = getTransformHandleAtPointer(evt);
+    if (handle) {
+      drawingOverlay.style.cursor = handle.cursor || "nwse-resize";
+      return;
+    }
+    const region = getRegionAtPointer(evt);
+    drawingOverlay.style.cursor = region ? "move" : "default";
+  });
+
+  drawingOverlay?.addEventListener("pointerup", (evt) => {
+    if (!dragState) return;
+    drawingOverlay?.releasePointerCapture?.(evt.pointerId);
+    const mode = dragState.mode;
+    dragState = null;
+    setStatus(mode === "resize" ? "Region size updated." : "Region position updated.");
+    scheduleBenchmarkRun(40);
+  });
+
+  drawingOverlay?.addEventListener("pointerleave", () => {
+    if (!dragState && drawingOverlay instanceof HTMLCanvasElement)
+      drawingOverlay.style.cursor = "default";
+  });
+
+  undoRemoveBtn?.addEventListener("click", () => {
+    undoLastRemovedRegion();
+  });
+
+  function setBenchmarkCollapsed(collapsed) {
+    isBenchmarkCollapsed = Boolean(collapsed);
+    benchmarkBodyEl?.classList.toggle("hidden", isBenchmarkCollapsed);
+    if (benchmarkCollapseBtn instanceof HTMLButtonElement) {
+      benchmarkCollapseBtn.textContent = isBenchmarkCollapsed ? "Expand" : "Collapse";
+      benchmarkCollapseBtn.setAttribute("aria-expanded", String(!isBenchmarkCollapsed));
+    }
+    benchmarkPanelEl?.classList.toggle("w-[340px]", !isBenchmarkCollapsed);
+    benchmarkPanelEl?.classList.toggle("w-[220px]", isBenchmarkCollapsed);
+  }
+
+  benchmarkCollapseBtn?.addEventListener("click", () => {
+    setBenchmarkCollapsed(!isBenchmarkCollapsed);
+  });
+
+  benchmarkConfidenceEl?.addEventListener("input", () => {
+    if (!(benchmarkConfidenceEl instanceof HTMLInputElement)) return;
+    const raw = Number(benchmarkConfidenceEl.value || 64);
+    benchmarkConfidence = clamp(raw / 100, 0, 1);
+    renderBenchmarkPanel();
+    scheduleBenchmarkRun(60);
+  });
+
+  benchmarkHeaderEl?.addEventListener("pointerdown", (evt) => {
+    const target = evt.target instanceof HTMLElement ? evt.target : null;
+    if (target?.closest("#lab-benchmark-collapse-btn")) return;
+    if (!(benchmarkPanelEl instanceof HTMLElement)) return;
+    const rect = benchmarkPanelEl.getBoundingClientRect();
+    benchmarkDrag = {
+      offsetX: evt.clientX - rect.left,
+      offsetY: evt.clientY - rect.top,
+    };
+    benchmarkPanelEl.style.left = `${Math.round(rect.left)}px`;
+    benchmarkPanelEl.style.top = `${Math.round(rect.top)}px`;
+    benchmarkPanelEl.style.right = "auto";
+    benchmarkPanelEl.style.bottom = "auto";
+    benchmarkHeaderEl.setPointerCapture?.(evt.pointerId);
+    benchmarkHeaderEl.style.cursor = "grabbing";
+    evt.preventDefault();
+  });
+
+  benchmarkHeaderEl?.addEventListener("pointermove", (evt) => {
+    if (!benchmarkDrag || !(benchmarkPanelEl instanceof HTMLElement)) return;
+    const nextLeft = clamp(
+      Math.round(evt.clientX - benchmarkDrag.offsetX),
+      4,
+      Math.max(4, window.innerWidth - benchmarkPanelEl.offsetWidth - 4)
+    );
+    const nextTop = clamp(
+      Math.round(evt.clientY - benchmarkDrag.offsetY),
+      4,
+      Math.max(4, window.innerHeight - benchmarkPanelEl.offsetHeight - 4)
+    );
+    benchmarkPanelEl.style.left = `${nextLeft}px`;
+    benchmarkPanelEl.style.top = `${nextTop}px`;
+  });
+
+  benchmarkHeaderEl?.addEventListener("pointerup", (evt) => {
+    benchmarkDrag = null;
+    benchmarkHeaderEl.releasePointerCapture?.(evt.pointerId);
+    benchmarkHeaderEl.style.cursor = "grab";
+  });
+
+  benchmarkHeaderEl?.addEventListener("pointercancel", () => {
+    benchmarkDrag = null;
+    if (benchmarkHeaderEl instanceof HTMLElement) benchmarkHeaderEl.style.cursor = "grab";
+  });
+
+  regionFocusCloseBtn?.addEventListener("click", () => {
+    closeRegionFocusOverlay();
+  });
+
+  regionFocusOverlayEl?.addEventListener("click", (evt) => {
+    if (evt.target === regionFocusOverlayEl) closeRegionFocusOverlay();
+  });
+
+  document.addEventListener("keydown", (evt) => {
+    if (evt.key === "Escape") closeRegionFocusOverlay();
+  });
+
+  setActiveTab("workspace");
+  renderItemLibrary();
+  renderBenchmarkPanel();
+  setBenchmarkCollapsed(false);
+  updateZoomReadout();
+  if (benchmarkHeaderEl instanceof HTMLElement) benchmarkHeaderEl.style.cursor = "grab";
+  updateUndoUi();
+  updateBaselineReadout();
+  void loadLibraryFromFolder();
+  void autoLoadDefaultDrawing();
+</script>
