@@ -4,7 +4,7 @@
     const formForPDF = document.querySelector("form[data-project-id]");
     if (formForPDF) {
       const currentRoleForPDF = formForPDF.getAttribute("data-current-role");
-      if (currentRoleForPDF === "Admin" || currentRoleForPDF === "Staff") {
+      if (currentRoleForPDF === "Admin" || currentRoleForPDF === "Staff" || currentRoleForPDF === "superAdmin") {
         let buildFieldsToFill = function() {
           if (!formForPDF) {
             console.warn("Form not found, cannot build fields list");

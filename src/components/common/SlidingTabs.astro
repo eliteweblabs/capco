@@ -176,20 +176,47 @@ const filteredItems = items.filter((item) => {
       }, 300);
     }
 
-    // Handle button clicks - update indicator position
-    buttons.forEach((button) => {
-      button.addEventListener("click", function () {
-        // Prefer declarative target switching to avoid relying only on inline onclick handlers.
-        const switchTarget = this.getAttribute("data-switch-target");
-        if (switchTarget) {
-          const handlerName = nav.getAttribute("data-switch-handler") || "switchTab";
-          const fn = window[handlerName];
-          if (typeof fn === "function") {
-            fn(switchTarget);
-          }
+    let lastTouchActivationAt = 0;
+
+    function activateButton(button) {
+      // Prefer declarative target switching to avoid relying only on inline onclick handlers.
+      const switchTarget = button.getAttribute("data-switch-target");
+      if (switchTarget) {
+        const handlerName = nav.getAttribute("data-switch-handler") || "switchTab";
+        const fn = window[handlerName];
+        if (typeof fn === "function") {
+          fn(switchTarget);
         }
-        updateActiveButton(this);
-        updateSlidingTabsIndicator(this);
+      }
+
+      updateActiveButton(button);
+      updateSlidingTabsIndicator(button);
+
+      const index = parseInt(button.getAttribute("data-index") || "-1", 10);
+      nav.dispatchEvent(
+        new CustomEvent("sliding-tabs:change", {
+          bubbles: true,
+          detail: {
+            index: Number.isNaN(index) ? -1 : index,
+            switchTarget: switchTarget || "",
+          },
+        })
+      );
+    }
+
+    // Handle button activation for click + iOS touch interactions.
+    buttons.forEach((button) => {
+      button.addEventListener("touchend", function (event) {
+        // iOS Safari can skip click handlers in some nested/wrapped tab layouts.
+        if (event.cancelable) event.preventDefault();
+        lastTouchActivationAt = Date.now();
+        activateButton(this);
+      });
+
+      button.addEventListener("click", function () {
+        // Ignore synthetic click that follows touchend on mobile.
+        if (Date.now() - lastTouchActivationAt < 600) return;
+        activateButton(this);
       });
     });
 

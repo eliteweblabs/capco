@@ -670,6 +670,11 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
 }
 <script is:inline>
   (function () {
+    function isIOSDevice() {
+      var ua = window.navigator.userAgent;
+      return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    }
+
     document.addEventListener("multistep-step-change", function (e) {
       var stepNumber = (e.detail && e.detail.stepNumber) || 0;
       var form =
@@ -713,8 +718,12 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
           console.log("[MULTISTEP-FOCUS] inline: no focusable field in step", stepNumber);
         }
       }
-      setTimeout(focusFirstInActive, 50);
-      setTimeout(focusFirstInActive, 450);
+      // Typeform-style iOS behavior: don't rely on delayed autofocus timers.
+      // iOS keyboard opens reliably only from a direct user gesture.
+      if (!isIOSDevice()) {
+        setTimeout(focusFirstInActive, 50);
+        setTimeout(focusFirstInActive, 450);
+      }
     });
   })();
 </script>

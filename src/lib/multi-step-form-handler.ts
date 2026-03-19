@@ -519,16 +519,35 @@ export function createMultiStepFormHandler(
         }
       }
     };
+    const ua = window.navigator.userAgent;
+    const isIOSDevice = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     const hasTypewriter = targetStep.classList.contains("has-typewriter");
-    const focusDelayMs = hasTypewriter ? 900 : 400; // typewriter: after cascade; else soon
-    console.log(
-      "[MULTISTEP-FOCUS] scheduling doFocus in",
-      focusDelayMs,
-      "ms for step",
-      stepNumber,
-      { hasTypewriter }
-    );
-    setTimeout(doFocus, focusDelayMs);
+
+    // Typeform-style iOS flow: don't attempt delayed programmatic input focus.
+    // iOS only opens the keyboard from direct user gesture; MultiStepForm arms
+    // first-tap focus for the newly active step.
+    if (isIOSDevice) {
+      const smsChoiceButtons = targetStep.querySelectorAll("button.sms-choice");
+      if (smsChoiceButtons.length > 0) {
+        // Safe on iOS: focusing a button doesn't require opening software keyboard.
+        doFocus();
+      } else {
+        console.log("[MULTISTEP-FOCUS] iOS detected: skipping delayed input autofocus", {
+          stepNumber,
+          hasTypewriter,
+        });
+      }
+    } else {
+      const focusDelayMs = hasTypewriter ? 900 : 400; // typewriter: after cascade; else soon
+      console.log(
+        "[MULTISTEP-FOCUS] scheduling doFocus in",
+        focusDelayMs,
+        "ms for step",
+        stepNumber,
+        { hasTypewriter }
+      );
+      setTimeout(doFocus, focusDelayMs);
+    }
   }
 
   // Validate current step

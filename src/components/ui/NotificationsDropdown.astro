@@ -984,6 +984,47 @@ import Button from "../common/Button.astro";
 </script>
 
 <style>
+  @keyframes notification-delete-draw-ring {
+    from {
+      stroke-dashoffset: 113.1;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  .delete-confirm-wrapper {
+    display: inline-flex;
+    position: relative;
+  }
+
+  .delete-confirm-btn {
+    position: relative;
+  }
+
+  .timer-ring-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    z-index: 1;
+    transition: opacity 0.2s;
+    pointer-events: none;
+  }
+
+  .delete-confirm-wrapper:has(.delete-confirm-btn[data-state="confirm"]) .timer-ring-overlay {
+    opacity: 1;
+  }
+
+  .delete-confirm-wrapper:has(.delete-confirm-btn[data-state="confirm"]) .timer-icon-test {
+    animation: notification-delete-draw-ring 3000ms linear forwards;
+  }
+
+  .delete-confirm-btn[data-state="confirm"] .delete-confirm-icon {
+    display: none;
+  }
+
   /* Custom scrollbar for notification list */
   #notification-list::-webkit-scrollbar {
     width: 4px;
