@@ -37,12 +37,6 @@ interface ImportMetaEnv {
   readonly STRIPE_SECRET_KEY?: string;
   readonly STRIPE_PUBLISHABLE_KEY?: string;
 
-  // Square (e-commerce)
-  readonly SQUARE_ACCESS_TOKEN?: string;
-  readonly SQUARE_APPLICATION_ID?: string;
-  readonly SQUARE_LOCATION_ID?: string;
-  readonly SQUARE_ENVIRONMENT?: "sandbox" | "production";
-
   // Company branding
   readonly RAILWAY_PROJECT_NAME?: string;
   readonly GLOBAL_COMPANY_SLOGAN?: string;

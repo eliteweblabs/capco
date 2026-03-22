@@ -1,10 +1,10 @@
 # E-commerce & Social Media Module
 
-Module for luxemeds.com and similar e-commerce sites. Uses Square for payments; no projects dependency.
+Module for luxemeds.com and similar e-commerce sites. No projects dependency.
 
 ## Overview
 
-- **E-commerce**: Products, cart, checkout, Square payments
+- **E-commerce**: Products, cart, order browsing
 - **Social media**: Create posts, publish to Instagram, Facebook, TikTok, Bluesky
 
 ## Setup
@@ -16,18 +16,7 @@ supabase db push
 # Or apply: supabase/migrations/20260307000000_ecommerce_and_social.sql
 ```
 
-### 2. Square env vars
-
-```
-SQUARE_APPLICATION_ID=sandbox-sq0idb-xxx
-SQUARE_LOCATION_ID=sandbox-xxx
-SQUARE_ACCESS_TOKEN=sandbox-xxx
-SQUARE_ENVIRONMENT=sandbox
-```
-
-For production, use production keys and `SQUARE_ENVIRONMENT=production`.
-
-### 3. Luxemeds config
+### 2. Luxemeds config
 
 Create `public/data/config-luxemeds.json` (or set `RAILWAY_PROJECT_NAME=Luxemeds` and add config). Add to `.gitignore` exceptions if committing:
 
@@ -35,7 +24,7 @@ Create `public/data/config-luxemeds.json` (or set `RAILWAY_PROJECT_NAME=Luxemeds
 !public/data/config-luxemeds.json
 ```
 
-### 4. Social media OAuth (per platform)
+### 3. Social media OAuth (per platform)
 
 Each platform requires separate setup:
 
@@ -51,8 +40,6 @@ Store tokens in env or a secure store. The publish API (`/api/social/publish`) i
 |-------|-------------|
 | `/shop` | Product listing |
 | `/shop/cart` | Cart |
-| `/shop/checkout` | Step 1: email |
-| `/shop/checkout/pay?orderId=` | Step 2: Square payment |
 | `/shop/confirmation?order=` | Order confirmed |
 | `/admin/social-posts` | Social media manager (to build) |
 
@@ -63,9 +50,7 @@ Store tokens in env or a secure store. The publish API (`/api/social/publish`) i
 | `/api/shop/cart` | GET | Get cart |
 | `/api/shop/cart` | POST | Add/update/remove items |
 | `/api/shop/products` | GET | List products |
-| `/api/square/create-order` | POST | Create order from cart |
-| `/api/square/create-payment` | POST | Process Square payment |
-| `/api/shop/order?orderId=` | GET | Get order (for pay page) |
+| `/api/shop/order?orderId=` | GET | Get order details |
 | `/api/social/publish` | POST | Publish post to platforms |
 
 ## Database tables

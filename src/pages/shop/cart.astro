@@ -17,13 +17,7 @@ const { globalContainer, globalTextH2, mutedTextClasses } = globalClasses();
     </div>
 
     <div id="cart-actions" class="mt-8 hidden">
-      <a
-        href="/shop/checkout"
-        id="checkout-btn"
-        class="inline-block rounded-lg bg-primary-600 px-6 py-3 font-medium text-white hover:bg-primary-700"
-      >
-        Checkout
-      </a>
+      <p class={mutedTextClasses}>Online checkout is currently unavailable.</p>
     </div>
   </main>
 </App>
@@ -76,7 +70,7 @@ const { globalContainer, globalTextH2, mutedTextClasses } = globalClasses();
 
     content.querySelectorAll("[data-remove]").forEach((btn) => {
       btn.addEventListener("click", async () => {
-        const productId = (btn as HTMLElement).dataset.productId;
+        const productId = btn instanceof HTMLElement ? btn.dataset.productId : undefined;
         await fetch("/api/shop/cart", {
           method: "POST",
           headers: { "Content-Type": "application/json" },

@@ -1638,14 +1638,18 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
 
         if (!isInputFocused) return;
 
-        // Define interactive elements that SHOULD be allowed to take focus
+        // Define interactive elements that SHOULD be allowed to take focus.
+        // Include labels/toggle wrappers so SlideToggle clicks can toggle the hidden checkbox.
         const isInteractiveElement =
           target.tagName === "INPUT" ||
           target.tagName === "TEXTAREA" ||
           target.tagName === "SELECT" ||
+          target.tagName === "LABEL" ||
           target.tagName === "BUTTON" ||
           target.tagName === "A" ||
           target.hasAttribute("contenteditable") ||
+          target.closest("label") ||
+          target.closest(".toggle-wrapper") ||
           target.closest("button") || // Check if inside a button
           target.closest("a"); // Check if inside a link
 

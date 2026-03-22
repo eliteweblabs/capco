@@ -56,8 +56,6 @@ await esbuild
       "import.meta.env.STRIPE_PUBLISHABLE_KEY": JSON.stringify(
         env.STRIPE_PUBLISHABLE_KEY || env.PUBLIC_STRIPE_PUBLISHABLE_KEY || ""
       ),
-      "import.meta.env.SQUARE_APPLICATION_ID": JSON.stringify(env.SQUARE_APPLICATION_ID || ""),
-      "import.meta.env.SQUARE_LOCATION_ID": JSON.stringify(env.SQUARE_LOCATION_ID || ""),
       "import.meta.env.PUBLIC_SUPABASE_URL": JSON.stringify(env.PUBLIC_SUPABASE_URL || ""),
       "import.meta.env.SUPABASE_URI": JSON.stringify(env.SUPABASE_URI || ""),
       "import.meta.env.SUPABASE_SECRET": JSON.stringify(env.SUPABASE_SECRET || ""),
