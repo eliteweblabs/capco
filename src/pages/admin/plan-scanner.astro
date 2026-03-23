@@ -434,10 +434,16 @@ if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) return Astro.redirect("
     }
   }
 
-  // ==================== Symbol Library ====================
+  // ==================== Symbol Library (removed for simplified UI) ====================
+  
+  // Removed btn-add-symbol functionality
+  
+  /*
   var cropMode = false;
   var cropStart = null;
 
+  // Removed btn-add-symbol event listener (element doesn't exist in simplified UI)
+  /*
   document.getElementById('btn-add-symbol').addEventListener('click', function() {
     if (!fullImageSrc) return;
     cropMode = true;
@@ -484,66 +490,14 @@ if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) return Astro.redirect("
       var w = Math.abs(cx - cropStart.x);
       var h = Math.abs(cy - cropStart.y);
 
-      cropStart = null;
-      overlay.remove();
-      cropMode = false;
-
-      if (w < 5 || h < 5) {
-        document.getElementById('plan-status').textContent = '';
-        return;
-      }
-
-      // Convert display coords to image coords
-      var img = document.getElementById('plan-img');
-      var sx = img.naturalWidth / img.clientWidth;
-      var sy = img.naturalHeight / img.clientHeight;
-
-      var imgX = Math.round(x1 * sx);
-      var imgY = Math.round(y1 * sy);
-      var imgW = Math.round(w * sx);
-      var imgH = Math.round(h * sy);
-
-      document.getElementById('plan-status').textContent = 'Cropping symbol...';
-
-      // Crop via API
-      var fd = new FormData();
-      fd.append('file', pdfFile);
-      fd.append('scale', '2');  // fullImage is at scale=2, crop needs matching scale
-      fd.append('x', imgX);
-      fd.append('y', imgY);
-      fd.append('w', imgW);
-      fd.append('h', imgH);
-
-      fetch(API + '/crop', { method: 'POST', body: fd })
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
-          if (!d.success) throw new Error(d.error);
-          promptSymbolLabel(d.image);
-        })
-        .catch(function(err) {
-          document.getElementById('plan-status').textContent = 'Crop error: ' + err.message;
-        });
+      // Removed cropping functionality
     });
   });
+  */
 
-  function promptSymbolLabel(imageData) {
-    document.getElementById('plan-status').textContent = '';
-
-    var types = ['pendent', 'sidewall', 'tee', 'elbow', 'riser', 'exclude'];
-    var label = prompt('Symbol type?\n\n' + types.join(', ') + '\n\n(or type a custom name)');
-    if (!label) return;
-
-    var symbol = {
-      id: 'sym_' + Date.now(),
-      type: label.toLowerCase().trim(),
-      label: label,
-      image: imageData
-    };
-    symbolLibrary.push(symbol);
-    renderLibrary();
-    switchTab('library');
-    scheduleRecalc();
-  }
+  */
+  
+  // Removed symbol library functions for simplified UI
 
   function renderLibrary() {
     var container = document.getElementById('library-symbols');

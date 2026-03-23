@@ -308,8 +308,31 @@ def detect():
             mask[cy:cy+ch, cx:cx+cw] = 1
             binary_inv = binary_inv * mask
 
-        # Use SimpleScan's extractBaselineRegions algorithm
-        regions = extract_baseline_regions(binary_inv, nrow, ncol)
+        # Simplified: use OpenCV connected components (much faster than manual implementation)
+        num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(binary_inv, connectivity=8)
+        
+        regions = []
+        canvas_area = nrow * ncol
+        
+        for i in range(1, num_labels):  # skip background
+            x, y, w, h, area = stats[i]
+            bbox_ratio = (w * h) / canvas_area
+            
+            # Basic SimpleScan filters
+            if bbox_ratio < 0.015 or bbox_ratio > 0.72:
+                continue
+            aspect = w / max(1, h) 
+            if aspect < 0.35 or aspect > 3.0:
+                continue
+            ink_ratio = area / max(1, w * h)
+            if ink_ratio < 0.0015 or ink_ratio > 0.24:
+                continue
+                
+            regions.append({"x": x, "y": y, "w": w, "h": h, "score": bbox_ratio})
+        
+        # Sort by size, take top 4
+        regions.sort(key=lambda r: r["score"], reverse=True)
+        regions = regions[:4]
         
         # Convert from detection scale to display scale (scale=2)  
         display_scale = 2.0
