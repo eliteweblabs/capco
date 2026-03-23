@@ -2460,7 +2460,8 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
         sourceHeight: sourceImageData.height,
       },
       {
-        title: "Step 2: Viable Area Applied",
+        key: "step2",
+        title: "Step 2: Viable Area Applied", 
         detail: "Everything outside selected viable area is removed before the heavier steps",
         imageUrl: viableBaseUrl,
       },
@@ -2570,11 +2571,12 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
         step.key === "step1" && step1SelectedRegionEntries.length > 0
           ? `<div class="mb-2 flex flex-wrap items-center gap-2">
                <p class="text-[11px] text-gray-500 dark:text-gray-400">Illustrator-style controls enabled: click a region to activate, drag to move, and drag corner/edge handles to resize.</p>
-               ${
-                 targetingOnly
-                   ? `<button type="button" id="simple-scan-confirm-overlay-targeting" class="${selectedRegions.length === 0 ? "cursor-not-allowed rounded bg-gray-400 px-2 py-1 text-[11px] font-semibold text-white" : "rounded bg-emerald-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-emerald-700"}" ${selectedRegions.length === 0 ? "disabled aria-disabled='true'" : ""}>Confirm Step 1 & run Steps 2-7</button>`
-                   : ""
-               }
+             </div>`
+          : "";
+      const step2RunButton =
+        step.key === "step2" && targetingOnly
+          ? `<div class="mb-2 flex flex-wrap items-center gap-2">
+               <button type="button" id="simple-scan-confirm-overlay-targeting" class="${selectedRegions.length === 0 ? "cursor-not-allowed rounded bg-gray-400 px-2 py-1 text-[11px] font-semibold text-white" : "rounded bg-emerald-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-emerald-700"}" ${selectedRegions.length === 0 ? "disabled aria-disabled='true'" : ""}>Run Next Step</button>
              </div>`
           : "";
       const overlayControls =
@@ -2647,6 +2649,7 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
           ${step1ResetButton}
           ${step1RegionControls}
           ${step1LayerTransforms}
+          ${step2RunButton}
           ${step55InlineSlot}
           ${step55Guide ? `<p class="mb-2 text-[11px] text-gray-500 dark:text-gray-400">${step55Guide.helpText}</p>` : ""}
           ${
