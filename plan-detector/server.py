@@ -111,16 +111,53 @@ def analyze():
         resp = client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=4096,
+            system="You are a fire protection plan analyzer. You MUST respond with ONLY a valid JSON object. No prose, no explanation, no markdown fences. Just the JSON.",
             messages=[{"role": "user", "content": content}],
         )
 
         text = resp.content[0].text.strip()
-        if text.startswith("```"):
-            text = text.split("\n", 1)[1]
-        if text.endswith("```"):
-            text = text[:-3].strip()
-
-        analysis = json.loads(text)
+        print("RAW RESPONSE (first 300 chars):", text[:300])
+        
+        # Extract JSON from response — handle markdown fences or prose wrapper
+        analysis = None
+        
+        # Try direct parse first
+        try:
+            analysis = json.loads(text)
+        except json.JSONDecodeError:
+            pass
+        
+        # Try stripping markdown fences
+        if analysis is None:
+            cleaned = text
+            if "```json" in cleaned:
+                cleaned = cleaned.split("```json", 1)[1]
+            elif "```" in cleaned:
+                cleaned = cleaned.split("```", 1)[1]
+            if "```" in cleaned:
+                cleaned = cleaned.split("```")[0]
+            try:
+                analysis = json.loads(cleaned.strip())
+            except json.JSONDecodeError:
+                pass
+        
+        # Try finding JSON object in the text
+        if analysis is None:
+            start = text.find("{")
+            if start >= 0:
+                depth = 0
+                for i in range(start, len(text)):
+                    if text[i] == "{": depth += 1
+                    elif text[i] == "}": depth -= 1
+                    if depth == 0:
+                        try:
+                            analysis = json.loads(text[start:i+1])
+                        except json.JSONDecodeError:
+                            pass
+                        break
+        
+        if analysis is None:
+            return jsonify({"error": "Could not parse AI response", "raw": text[:500]}), 500
 
         return jsonify({"success": True, "analysis": analysis, "pages": display_pages})
 
