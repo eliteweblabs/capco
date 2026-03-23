@@ -2,33 +2,38 @@
 import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
 import { checkAuth } from "../../lib/auth";
 import { isAdminOrSuperAdmin } from "../../lib/user-utils";
-import { globalClasses } from "../api/global/global-classes";
 
 const { currentUser, session } = await checkAuth(Astro.cookies);
 const currentRole = currentUser?.profile?.role;
 const isLocalBypass = Astro.url.hostname === "localhost" || Astro.url.hostname === "127.0.0.1";
-
-if (!isLocalBypass && (!currentUser || !session)) {
-  return Astro.redirect("/auth/login");
-}
-if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) {
-  return Astro.redirect("/dashboard");
-}
+if (!isLocalBypass && (!currentUser || !session)) return Astro.redirect("/auth/login");
+if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) return Astro.redirect("/dashboard");
 ---
 
 <LayoutFullWidth title="Plan Scanner" classList="p-0" description="Fire protection plan analysis">
-<div class="min-h-screen bg-gray-900 text-white flex flex-col">
+<div class="min-h-screen bg-gray-900 text-white">
 
-  <!-- UPLOAD -->
-  <div id="view-upload" class="flex-1 flex items-center justify-center">
-    <div class="text-center">
-      <svg class="mx-auto w-16 h-16 text-gray-500 mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-      </svg>
+  <!-- Step indicator -->
+  <div class="bg-gray-800 border-b border-gray-700 px-6 py-3 flex items-center gap-6">
+    <span class="text-sm font-semibold text-gray-300">Plan Scanner</span>
+    <div id="steps" class="flex items-center gap-2 text-xs">
+      <span id="step-1" class="px-2 py-1 rounded bg-blue-600">1. Upload</span>
+      <span class="text-gray-600">→</span>
+      <span id="step-2" class="px-2 py-1 rounded bg-gray-700 text-gray-400">2. Sections</span>
+      <span class="text-gray-600">→</span>
+      <span id="step-3" class="px-2 py-1 rounded bg-gray-700 text-gray-400">3. Count</span>
+      <span class="text-gray-600">→</span>
+      <span id="step-4" class="px-2 py-1 rounded bg-gray-700 text-gray-400">4. Summary</span>
+    </div>
+    <button id="btn-restart" class="ml-auto text-xs text-gray-400 hover:text-white hidden">Start Over</button>
+  </div>
+
+  <!-- STEP 1: Upload -->
+  <div id="view-1" class="p-8">
+    <div class="max-w-lg mx-auto text-center">
       <h2 class="text-xl font-semibold mb-2">Upload Fire Protection Plan</h2>
-      <p class="text-gray-400 mb-6 text-sm">PDF will be analyzed automatically</p>
+      <p class="text-gray-400 mb-6 text-sm">PDF will be rendered and you'll confirm each step</p>
       <label class="cursor-pointer inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-medium transition">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
         Choose PDF
         <input type="file" id="file-input" accept=".pdf" class="hidden" />
       </label>
@@ -36,48 +41,69 @@ if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) {
     </div>
   </div>
 
-  <!-- PROCESSING -->
-  <div id="view-processing" class="hidden flex-1 flex items-center justify-center">
-    <div class="text-center">
-      <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-      <h2 class="text-xl font-semibold mb-2">Analyzing Plan</h2>
-      <p id="proc-msg" class="text-gray-400 text-sm">Rendering PDF...</p>
+  <!-- STEP 2: Section detection -->
+  <div id="view-2" class="hidden p-4">
+    <div class="mb-4 flex items-center justify-between">
+      <div>
+        <h2 class="text-lg font-semibold">Detected Floor Plans</h2>
+        <p class="text-sm text-gray-400">Click ✕ to remove false detections. Click "Confirm" when ready.</p>
+      </div>
+      <button id="btn-confirm-sections" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg font-medium text-sm">
+        Confirm Sections →
+      </button>
+    </div>
+    <div class="relative inline-block">
+      <img id="plan-full" class="max-w-full" />
+      <div id="overlays" class="absolute top-0 left-0 w-full h-full pointer-events-none"></div>
     </div>
   </div>
 
-  <!-- RESULTS -->
-  <div id="view-results" class="hidden flex-1 flex flex-col">
-
-    <!-- Top bar -->
-    <div class="bg-gray-800 border-b border-gray-700 px-4 py-2 flex items-center gap-4 shrink-0">
-      <button id="btn-new" class="text-sm text-gray-400 hover:text-white">+ New Scan</button>
-      <span id="project-title" class="text-sm font-medium text-gray-300"></span>
+  <!-- STEP 3: Per-floor counting -->
+  <div id="view-3" class="hidden p-4">
+    <div class="mb-4">
+      <h2 class="text-lg font-semibold">Analyzing: <span id="current-floor-label" class="text-blue-400"></span></h2>
+      <p class="text-sm text-gray-400">
+        Floor <span id="floor-progress">1</span> of <span id="floor-total">5</span>
+      </p>
     </div>
-
-    <!-- Body: plan + sidebar -->
-    <div class="flex-1 flex overflow-hidden">
-
-      <!-- Plan image -->
-      <div class="flex-1 overflow-auto bg-gray-950">
-        <img id="plan-img" class="w-full" draggable="false" />
-      </div>
-
-      <!-- Sidebar -->
-      <div class="w-80 bg-gray-800 border-l border-gray-700 overflow-y-auto shrink-0">
-        <div class="p-4 border-b border-gray-700">
-          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Items Found</h3>
-          <div id="items-list"></div>
-        </div>
-        <div class="p-4 border-b border-gray-700">
-          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Equipment</h3>
-          <div id="equip-list" class="text-sm space-y-1"></div>
-        </div>
-        <div class="p-4">
-          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Project</h3>
-          <div id="project-info" class="text-sm text-gray-400 space-y-1"></div>
+    <div class="grid grid-cols-2 gap-4">
+      <!-- Left: the cropped floor image -->
+      <div>
+        <h3 class="text-sm text-gray-400 mb-2">Input image sent to AI:</h3>
+        <div class="border border-gray-700 rounded-lg overflow-hidden bg-gray-950">
+          <img id="floor-image" class="w-full" />
         </div>
       </div>
+      <!-- Right: results -->
+      <div>
+        <h3 class="text-sm text-gray-400 mb-2">AI Response:</h3>
+        <div id="floor-result" class="border border-gray-700 rounded-lg p-4 bg-gray-800 min-h-[200px]">
+          <div id="floor-loading" class="flex items-center gap-3">
+            <div class="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <span class="text-sm text-gray-400">Counting items...</span>
+          </div>
+          <div id="floor-data" class="hidden"></div>
+        </div>
+        <div id="floor-actions" class="hidden mt-4 flex gap-3">
+          <button id="btn-accept" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-sm font-medium">
+            Accept → Next Floor
+          </button>
+          <button id="btn-recount" class="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded-lg text-sm font-medium">
+            Re-count
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
+  <!-- STEP 4: Summary -->
+  <div id="view-4" class="hidden p-4">
+    <div class="max-w-2xl mx-auto">
+      <h2 class="text-xl font-semibold mb-4">Takeoff Summary</h2>
+      <div id="summary-table"></div>
+      <button id="btn-new-scan" class="mt-6 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm font-medium">
+        New Scan
+      </button>
     </div>
   </div>
 
@@ -86,231 +112,338 @@ if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) {
 <script is:inline>
 (function() {
   var API = 'http://localhost:5555';
-  var data = null;
+  var pdfFile = null;
+  var fullImage = null;
+  var sections = [];
+  var confirmedSections = [];
+  var floorResults = [];
+  var currentFloor = 0;
 
-  var fileInput   = document.getElementById('file-input');
-  var viewUpload  = document.getElementById('view-upload');
-  var viewProc    = document.getElementById('view-processing');
-  var viewResults = document.getElementById('view-results');
-  var uploadMsg   = document.getElementById('upload-msg');
-  var procMsg     = document.getElementById('proc-msg');
-  var planImg     = document.getElementById('plan-img');
+  // Elements
+  var fileInput = document.getElementById('file-input');
+  var uploadMsg = document.getElementById('upload-msg');
 
-  // Colors per item type
-  var COLORS = {
-    'Pendent Heads': '#3b82f6',
-    'Upright Heads': '#6366f1',
-    'Sidewall Heads': '#8b5cf6',
-    'Dry-Sidewall Heads': '#a855f7',
-    'Sprinkler Heads': '#3b82f6',
-    'Tee Junctions': '#f59e0b',
-    'Elbow Junctions': '#f97316',
-    'Risers': '#10b981',
-    'Control Valves': '#06b6d4',
-    'Flow Switches': '#14b8a6',
-    'FDC': '#ec4899'
-  };
+  function show(id) { document.getElementById('view-' + id).classList.remove('hidden'); }
+  function hide(id) { document.getElementById('view-' + id).classList.add('hidden'); }
 
-  function show(el) { el.classList.remove('hidden'); }
-  function hide(el) { el.classList.add('hidden'); }
+  function setStep(n) {
+    for (var i = 1; i <= 4; i++) {
+      var el = document.getElementById('step-' + i);
+      if (i === n) {
+        el.className = 'px-2 py-1 rounded bg-blue-600 text-white';
+      } else if (i < n) {
+        el.className = 'px-2 py-1 rounded bg-green-800 text-green-300';
+      } else {
+        el.className = 'px-2 py-1 rounded bg-gray-700 text-gray-400';
+      }
+    }
+    for (var i = 1; i <= 4; i++) { if (i === n) show(i); else hide(i); }
+    document.getElementById('btn-restart').classList.toggle('hidden', n === 1);
+  }
 
-  // --- Upload handler ---
+  // ==================== STEP 1: Upload & Render ====================
   fileInput.addEventListener('change', function(e) {
     var file = e.target.files[0];
     if (!file || file.type !== 'application/pdf') return;
+    pdfFile = file;
 
-    hide(viewUpload);
-    show(viewProc);
-    procMsg.textContent = 'Connecting to analyzer...';
+    uploadMsg.textContent = 'Rendering PDF...';
+    uploadMsg.style.color = '#9ca3af';
 
-    fetch(API + '/health', { signal: AbortSignal.timeout(3000) })
-      .then(function(r) {
-        if (!r.ok) throw new Error('API not running');
-        procMsg.textContent = 'Analyzing plan (this takes ~20s)...';
+    var fd = new FormData();
+    fd.append('file', file);
+    fd.append('scale', '2');
 
-        var fd = new FormData();
-        fd.append('file', file);
-        fd.append('scale', '3');
-        return fetch(API + '/analyze', { method: 'POST', body: fd });
+    fetch(API + '/render', { method: 'POST', body: fd })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (!d.success) throw new Error(d.error);
+        fullImage = d.image;
+
+        uploadMsg.textContent = 'Detecting sections...';
+
+        // Now detect sections
+        var fd2 = new FormData();
+        fd2.append('file', pdfFile);
+        fd2.append('scale', '3');
+
+        return fetch(API + '/detect', { method: 'POST', body: fd2 });
       })
       .then(function(r) { return r.json(); })
       .then(function(d) {
-        if (!d.success) throw new Error(d.error || 'Analysis failed');
-        data = d;
-        renderResults(d);
+        if (!d.success) throw new Error(d.error);
+        sections = d.sections;
+        showSections();
       })
       .catch(function(err) {
-        console.error('Analysis error:', err);
-        hide(viewProc);
-        show(viewUpload);
         uploadMsg.textContent = 'Error: ' + err.message;
         uploadMsg.style.color = '#f87171';
-        fileInput.value = '';
       });
   });
 
-  // --- Render results ---
-  function renderResults(d) {
-    hide(viewProc);
-    show(viewResults);
+  // ==================== STEP 2: Show Sections ====================
+  function showSections() {
+    setStep(2);
 
-    var a = d.analysis;
+    var img = document.getElementById('plan-full');
+    img.src = fullImage;
 
-    // Plan image
-    if (d.pages && d.pages.length) planImg.src = d.pages[0].image;
+    img.onload = function() {
+      var overlays = document.getElementById('overlays');
+      overlays.innerHTML = '';
 
-    // Title
-    var title = document.getElementById('project-title');
-    if (a.project) title.textContent = (a.project.name || '') + ' — ' + (a.project.address || '');
+      var colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
 
-    // Items
-    renderItems(a);
+      for (var i = 0; i < sections.length; i++) {
+        (function(idx) {
+          var s = sections[idx];
+          var color = colors[idx % colors.length];
 
-    // Equipment
-    renderEquipment(a);
+          // Scale coords to displayed image size
+          var scaleX = img.clientWidth / img.naturalWidth;
+          var scaleY = img.clientHeight / img.naturalHeight;
 
-    // Project info
-    renderProject(a);
+          var div = document.createElement('div');
+          div.className = 'absolute pointer-events-auto';
+          div.style.left = (s.x * scaleX) + 'px';
+          div.style.top = (s.y * scaleY) + 'px';
+          div.style.width = (s.width * scaleX) + 'px';
+          div.style.height = (s.height * scaleY) + 'px';
+          div.style.border = '2px solid ' + color;
+          div.style.backgroundColor = color + '15';
+          div.setAttribute('data-idx', idx);
+
+          // Label
+          var label = document.createElement('div');
+          label.style.cssText = 'position:absolute;top:4px;left:4px;background:' + color + ';color:white;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600;';
+          label.textContent = s.label;
+          div.appendChild(label);
+
+          // Remove button
+          var btn = document.createElement('button');
+          btn.style.cssText = 'position:absolute;top:4px;right:4px;background:#ef4444;color:white;width:24px;height:24px;border-radius:50%;border:none;cursor:pointer;font-size:14px;line-height:24px;text-align:center;';
+          btn.textContent = '✕';
+          btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            div.remove();
+            sections[idx]._removed = true;
+          });
+          div.appendChild(btn);
+
+          overlays.appendChild(div);
+        })(i);
+      }
+    };
   }
 
-  function renderItems(a) {
-    var el = document.getElementById('items-list');
-    var items = [];
-
-    // Head types
-    var heads = {};
-    var floors = a.floors || [];
-    for (var i = 0; i < floors.length; i++) {
-      var types = floors[i].sprinkler_heads && floors[i].sprinkler_heads.types || [];
-      for (var j = 0; j < types.length; j++) {
-        var t = types[j];
-        if (!heads[t.type]) heads[t.type] = { count: 0, k: t.k_factor || '' };
-        heads[t.type].count += t.count;
-      }
+  // ==================== Confirm Sections → Step 3 ====================
+  document.getElementById('btn-confirm-sections').addEventListener('click', function() {
+    confirmedSections = [];
+    for (var i = 0; i < sections.length; i++) {
+      if (!sections[i]._removed) confirmedSections.push(sections[i]);
+    }
+    if (confirmedSections.length === 0) {
+      alert('No sections selected. Please keep at least one section.');
+      return;
     }
 
-    var hk = Object.keys(heads);
-    if (hk.length > 1) {
-      for (var i = 0; i < hk.length; i++) {
-        var label = hk[i].charAt(0).toUpperCase() + hk[i].slice(1) + ' Heads';
-        items.push({ label: label, count: heads[hk[i]].count, detail: heads[hk[i]].k ? 'K=' + heads[hk[i]].k : '' });
-      }
-    } else if (hk.length === 1) {
-      var label = hk[0].charAt(0).toUpperCase() + hk[0].slice(1) + ' Heads';
-      items.push({ label: label, count: heads[hk[0]].count, detail: heads[hk[0]].k ? 'K=' + heads[hk[0]].k : '' });
-    } else {
-      items.push({ label: 'Sprinkler Heads', count: a.totals ? a.totals.total_heads || 0 : 0, detail: '' });
+    floorResults = [];
+    currentFloor = 0;
+    processFloor(0);
+  });
+
+  // ==================== STEP 3: Process each floor ====================
+  function processFloor(idx) {
+    if (idx >= confirmedSections.length) {
+      showSummary();
+      return;
     }
 
-    // Fittings
-    var totals = a.totals || {};
-    if (totals.total_tees > 0) items.push({ label: 'Tee Junctions', count: totals.total_tees });
-    if (totals.total_elbows > 0) items.push({ label: 'Elbow Junctions', count: totals.total_elbows });
-    if (totals.total_risers > 0) items.push({ label: 'Risers', count: totals.total_risers });
+    currentFloor = idx;
+    var section = confirmedSections[idx];
 
-    // Devices
-    var devs = {};
-    for (var i = 0; i < floors.length; i++) {
-      var dd = floors[i].devices || [];
-      for (var j = 0; j < dd.length; j++) {
-        var lbl = dd[j].type.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
-        devs[lbl] = (devs[lbl] || 0) + dd[j].count;
-      }
-    }
-    var dk = Object.keys(devs);
-    for (var i = 0; i < dk.length; i++) {
-      if (devs[dk[i]] > 0) items.push({ label: dk[i], count: devs[dk[i]] });
-    }
+    setStep(3);
+    document.getElementById('current-floor-label').textContent = section.label;
+    document.getElementById('floor-progress').textContent = (idx + 1);
+    document.getElementById('floor-total').textContent = confirmedSections.length;
 
-    // Build HTML
-    var html = '';
-    for (var i = 0; i < items.length; i++) {
-      var it = items[i];
-      var color = COLORS[it.label] || '#9ca3af';
+    // Show loading, hide results
+    document.getElementById('floor-loading').classList.remove('hidden');
+    document.getElementById('floor-data').classList.add('hidden');
+    document.getElementById('floor-actions').classList.add('hidden');
 
-      html += '<div class="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-gray-700/50">';
-      html += '  <div class="flex items-center gap-3">';
-      html += '    <div class="relative">';
-      html += '      <input type="checkbox" class="item-toggle peer sr-only" id="tog-' + i + '" data-label="' + it.label + '" />';
-      html += '      <label for="tog-' + i + '" class="block h-6 w-11 rounded-full bg-gray-600 cursor-pointer';
-      html += '        after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full';
-      html += '        after:border after:border-gray-500 after:bg-white after:transition-all';
-      html += '        peer-checked:after:translate-x-full peer-checked:after:border-white"></label>';
-      html += '    </div>';
-      html += '    <div>';
-      html += '      <span class="text-sm">' + it.label + '</span>';
-      if (it.detail) html += ' <span class="text-xs text-gray-500">' + it.detail + '</span>';
-      html += '    </div>';
-      html += '  </div>';
-      html += '  <span class="text-lg font-semibold font-mono" style="color:' + color + '">' + it.count + '</span>';
-      html += '</div>';
-    }
+    // Crop the section
+    var fd = new FormData();
+    fd.append('file', pdfFile);
+    fd.append('scale', '3');
+    fd.append('x', section.x);
+    fd.append('y', section.y);
+    fd.append('w', section.width);
+    fd.append('h', section.height);
 
-    // Total heads
-    if (totals.total_heads) {
-      html += '<div class="mt-3 pt-3 border-t border-gray-700 flex justify-between px-3">';
-      html += '  <span class="text-sm text-gray-400">Total Sprinkler Heads</span>';
-      html += '  <span class="text-lg font-bold">' + totals.total_heads + '</span>';
-      html += '</div>';
-    }
+    fetch(API + '/crop', { method: 'POST', body: fd })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (!d.success) throw new Error(d.error);
 
-    // Confidence
-    if (a.confidence) {
-      var cc = a.confidence === 'high' ? '#4ade80' : a.confidence === 'medium' ? '#facc15' : '#f87171';
-      html += '<div class="mt-1 px-3 text-xs text-gray-500">Confidence: <span style="color:' + cc + '">' + a.confidence + '</span></div>';
-    }
+        // Show the crop
+        document.getElementById('floor-image').src = d.image;
 
-    el.innerHTML = html;
+        // Now count
+        var fd2 = new FormData();
+        fd2.append('image', d.image);
+        fd2.append('label', section.label);
 
-    // Toggle color on check
-    var toggles = el.querySelectorAll('.item-toggle');
-    for (var i = 0; i < toggles.length; i++) {
-      toggles[i].addEventListener('change', function(e) {
-        var label = e.target.getAttribute('data-label');
-        var track = e.target.nextElementSibling;
-        var color = COLORS[label] || '#3b82f6';
-        track.style.backgroundColor = e.target.checked ? color : '';
+        return fetch(API + '/count', { method: 'POST', body: fd2 });
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (!d.success) throw new Error(d.error || d.raw || 'Count failed');
+
+        // Show results
+        document.getElementById('floor-loading').classList.add('hidden');
+        document.getElementById('floor-data').classList.remove('hidden');
+        document.getElementById('floor-actions').classList.remove('hidden');
+
+        var r = d.result;
+        var html = '';
+        html += '<div class="space-y-3">';
+
+        // Heads
+        var headTotal = r.heads ? r.heads.total : 0;
+        html += '<div class="flex justify-between items-center">';
+        html += '  <span class="text-gray-300">Sprinkler Heads</span>';
+        html += '  <span class="text-2xl font-bold text-blue-400">' + headTotal + '</span>';
+        html += '</div>';
+
+        // Head types
+        if (r.heads && r.heads.types) {
+          for (var t = 0; t < r.heads.types.length; t++) {
+            var ht = r.heads.types[t];
+            html += '<div class="flex justify-between text-sm pl-4">';
+            html += '  <span class="text-gray-500">' + ht.type + '</span>';
+            html += '  <span class="text-gray-300">' + ht.count + '</span>';
+            html += '</div>';
+          }
+        }
+
+        // Fittings
+        if (r.tees > 0) {
+          html += '<div class="flex justify-between text-sm">';
+          html += '  <span class="text-gray-400">Tee Junctions</span>';
+          html += '  <span class="text-yellow-400 font-semibold">' + r.tees + '</span>';
+          html += '</div>';
+        }
+        if (r.elbows > 0) {
+          html += '<div class="flex justify-between text-sm">';
+          html += '  <span class="text-gray-400">Elbow Junctions</span>';
+          html += '  <span class="text-orange-400 font-semibold">' + r.elbows + '</span>';
+          html += '</div>';
+        }
+        if (r.risers > 0) {
+          html += '<div class="flex justify-between text-sm">';
+          html += '  <span class="text-gray-400">Risers</span>';
+          html += '  <span class="text-green-400 font-semibold">' + r.risers + '</span>';
+          html += '</div>';
+        }
+
+        // Notes
+        if (r.notes) {
+          html += '<div class="text-xs text-gray-500 mt-2 border-t border-gray-700 pt-2">' + r.notes + '</div>';
+        }
+
+        html += '</div>';
+
+        // Raw JSON toggle
+        html += '<details class="mt-3"><summary class="text-xs text-gray-600 cursor-pointer">Raw AI response</summary>';
+        html += '<pre class="text-xs text-gray-500 mt-1 overflow-auto max-h-40 bg-gray-900 p-2 rounded">' + JSON.stringify(r, null, 2) + '</pre>';
+        html += '</details>';
+
+        document.getElementById('floor-data').innerHTML = html;
+
+        // Store result
+        floorResults[idx] = r;
+      })
+      .catch(function(err) {
+        document.getElementById('floor-loading').classList.add('hidden');
+        document.getElementById('floor-data').classList.remove('hidden');
+        document.getElementById('floor-data').innerHTML = '<p class="text-red-400">Error: ' + err.message + '</p>';
+        document.getElementById('floor-actions').classList.remove('hidden');
       });
+  }
+
+  // Accept → next floor
+  document.getElementById('btn-accept').addEventListener('click', function() {
+    processFloor(currentFloor + 1);
+  });
+
+  // Re-count current floor
+  document.getElementById('btn-recount').addEventListener('click', function() {
+    processFloor(currentFloor);
+  });
+
+  // ==================== STEP 4: Summary ====================
+  function showSummary() {
+    setStep(4);
+
+    var html = '<table class="w-full text-sm">';
+    html += '<thead><tr class="text-left text-gray-400 border-b border-gray-700">';
+    html += '<th class="py-2">Floor</th><th class="py-2 text-right">Heads</th><th class="py-2 text-right">Tees</th><th class="py-2 text-right">Elbows</th><th class="py-2 text-right">Risers</th>';
+    html += '</tr></thead><tbody>';
+
+    var totals = { heads: 0, tees: 0, elbows: 0, risers: 0 };
+
+    for (var i = 0; i < confirmedSections.length; i++) {
+      var r = floorResults[i] || {};
+      var heads = r.heads ? r.heads.total : 0;
+      var tees = r.tees || 0;
+      var elbows = r.elbows || 0;
+      var risers = r.risers || 0;
+
+      totals.heads += heads;
+      totals.tees += tees;
+      totals.elbows += elbows;
+      totals.risers += risers;
+
+      html += '<tr class="border-b border-gray-800">';
+      html += '<td class="py-2">' + confirmedSections[i].label + '</td>';
+      html += '<td class="py-2 text-right font-mono text-blue-400">' + heads + '</td>';
+      html += '<td class="py-2 text-right font-mono text-yellow-400">' + tees + '</td>';
+      html += '<td class="py-2 text-right font-mono text-orange-400">' + elbows + '</td>';
+      html += '<td class="py-2 text-right font-mono text-green-400">' + risers + '</td>';
+      html += '</tr>';
     }
+
+    html += '<tr class="font-bold text-lg">';
+    html += '<td class="py-3">TOTAL</td>';
+    html += '<td class="py-3 text-right font-mono text-blue-400">' + totals.heads + '</td>';
+    html += '<td class="py-3 text-right font-mono text-yellow-400">' + totals.tees + '</td>';
+    html += '<td class="py-3 text-right font-mono text-orange-400">' + totals.elbows + '</td>';
+    html += '<td class="py-3 text-right font-mono text-green-400">' + totals.risers + '</td>';
+    html += '</tr>';
+
+    html += '</tbody></table>';
+
+    document.getElementById('summary-table').innerHTML = html;
   }
 
-  function renderEquipment(a) {
-    var el = document.getElementById('equip-list');
-    var eq = a.equipment || {};
-    var html = '';
-
-    if (eq.fdc && eq.fdc.count > 0) html += row('FDC', eq.fdc.count + '× ' + (eq.fdc.size || '') + ' ' + (eq.fdc.type || ''));
-    if (eq.fire_pump && eq.fire_pump.count > 0) html += row('Fire Pump', (eq.fire_pump.model || '') + ' ' + (eq.fire_pump.hp || '') + 'HP');
-    if (eq.tank && eq.tank.count > 0) html += row('Tank', (eq.tank.capacity_gallons || 0) + ' gal');
-    if (eq.backflow_preventer && eq.backflow_preventer.count > 0) html += row('Backflow', eq.backflow_preventer.size || '');
-
-    el.innerHTML = html || '<p class="text-gray-500">None detected</p>';
-  }
-
-  function renderProject(a) {
-    var el = document.getElementById('project-info');
-    var p = a.project || {};
-    var html = '';
-    if (p.engineer) html += '<div><span class="text-gray-500">Engineer:</span> ' + p.engineer + '</div>';
-    if (p.standard) html += '<div><span class="text-gray-500">Standard:</span> ' + p.standard + '</div>';
-    if (p.system_type) html += '<div><span class="text-gray-500">System:</span> ' + p.system_type + '</div>';
-    if (p.hazard_class) html += '<div><span class="text-gray-500">Hazard:</span> ' + p.hazard_class + '</div>';
-    el.innerHTML = html;
-  }
-
-  function row(label, value) {
-    return '<div class="flex justify-between"><span class="text-gray-400">' + label + '</span><span>' + value + '</span></div>';
-  }
-
-  // New scan
-  document.getElementById('btn-new').addEventListener('click', function() {
-    hide(viewResults);
-    show(viewUpload);
+  // ==================== Restart ====================
+  document.getElementById('btn-restart').addEventListener('click', function() {
+    pdfFile = null;
+    fullImage = null;
+    sections = [];
+    confirmedSections = [];
+    floorResults = [];
+    currentFloor = 0;
+    fileInput.value = '';
     uploadMsg.textContent = '';
     uploadMsg.style.color = '';
-    fileInput.value = '';
-    data = null;
-    planImg.src = '';
+    document.getElementById('plan-full').src = '';
+    setStep(1);
+  });
+
+  document.getElementById('btn-new-scan').addEventListener('click', function() {
+    document.getElementById('btn-restart').click();
   });
 
 })();

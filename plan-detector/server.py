@@ -1,15 +1,25 @@
 """
-Plan Detector API — Fire Protection Plan Analysis
-Renders PDF → sends to Claude Vision → returns structured takeoff data.
-Usage: python3 server.py
+Plan Detector API — Step-by-step fire protection plan analysis
+Each step is a separate endpoint. Nothing is hidden.
+
+Endpoints:
+  POST /render       → Render PDF page, return image
+  POST /detect       → Detect floor plan sections, return coordinates
+  POST /crop         → Crop a section, return image
+  POST /count        → Count items on a single cropped floor plan
+  GET  /health       → Health check
 """
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import fitz
 import base64
 import anthropic
 import json
 import os
+import re
+import cv2
+import numpy as np
+from scipy.ndimage import uniform_filter1d
 from dotenv import load_dotenv
 
 load_dotenv(os.path.expanduser("~/Astro/rothcobuilt/.env"))
@@ -19,130 +29,219 @@ CORS(app)
 
 client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 
-PROMPT = """You are analyzing a fire protection plan (sprinkler system drawing). Produce an accurate material takeoff.
 
-RULES:
-- Count items ONLY on floor plan layouts. IGNORE detail cutaway/zoom sections — symbols in those are scaled up (larger) and must not be double-counted.
-- Pipes are ALWAYS horizontal or vertical. Diagonal lines are architectural — ignore them.
-- Look at the legend/schedule if present for exact counts and head types.
-- Be precise. Every head matters.
-
-For each floor plan visible, count:
-1. Sprinkler heads by type (pendent, upright, sidewall, dry-sidewall)
-2. Tee junctions (where a pipe branches)
-3. Elbow junctions (where a pipe turns 90°)
-4. Risers (vertical pipe connections between floors)
-5. Other devices (FDC, valves, flow switches, inspector test)
-
-Return ONLY valid JSON:
-{
-  "project": {
-    "name": "",
-    "address": "",
-    "engineer": "",
-    "standard": "",
-    "system_type": "",
-    "hazard_class": ""
-  },
-  "floors": [
-    {
-      "name": "Basement Level",
-      "sprinkler_heads": {
-        "total": 14,
-        "types": [
-          {"type": "pendent", "count": 12, "k_factor": "4.9"},
-          {"type": "sidewall", "count": 2, "k_factor": "5.6"}
-        ]
-      },
-      "tees": 8,
-      "elbows": 4,
-      "risers": [{"size": "1.5 inch", "direction": "up"}],
-      "devices": [{"type": "flow_switch", "count": 1}]
-    }
-  ],
-  "equipment": {
-    "fdc": {"count": 0, "size": "", "type": ""},
-    "fire_pump": {"count": 0, "model": "", "hp": ""},
-    "tank": {"count": 0, "capacity_gallons": 0},
-    "backflow_preventer": {"count": 0, "size": ""}
-  },
-  "totals": {
-    "total_heads": 63,
-    "total_tees": 0,
-    "total_elbows": 0,
-    "total_risers": 1,
-    "head_types_summary": "57 pendent, 6 sidewall"
-  },
-  "confidence": "high",
-  "notes": ""
-}"""
+@app.route("/health")
+def health():
+    return jsonify({"status": "ok"})
 
 
-@app.route("/analyze", methods=["POST"])
-def analyze():
+@app.route("/render", methods=["POST"])
+def render():
+    """Step 1: Render a PDF page. Returns base64 PNG."""
     if "file" not in request.files:
         return jsonify({"error": "No file"}), 400
 
     pdf_bytes = request.files["file"].read()
+    page_num = int(request.form.get("page", 0))
+    scale = float(request.form.get("scale", 2))
+
+    try:
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        if page_num >= len(doc):
+            return jsonify({"error": f"Page {page_num} not found, PDF has {len(doc)} pages"}), 400
+
+        pix = doc[page_num].get_pixmap(matrix=fitz.Matrix(scale, scale))
+        b64 = base64.b64encode(pix.tobytes("png")).decode()
+        page_count = len(doc)
+        doc.close()
+
+        return jsonify({
+            "success": True,
+            "image": "data:image/png;base64," + b64,
+            "width": pix.width,
+            "height": pix.height,
+            "page": page_num,
+            "pageCount": page_count,
+            "scale": scale
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/detect", methods=["POST"])
+def detect():
+    """Step 2: Detect floor plan sections. Returns section coordinates."""
+    if "file" not in request.files:
+        return jsonify({"error": "No file"}), 400
+
+    pdf_bytes = request.files["file"].read()
+    page_num = int(request.form.get("page", 0))
     scale = float(request.form.get("scale", 3))
 
     try:
-        # Render pages
         doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-        content = []
-        display_pages = []
-
-        for i in range(len(doc)):
-            # High-res for AI
-            pix = doc[i].get_pixmap(matrix=fitz.Matrix(scale, scale))
-            b64 = base64.b64encode(pix.tobytes("png")).decode()
-            content.append({"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": b64}})
-
-            # Lower-res for browser display
-            pix2 = doc[i].get_pixmap(matrix=fitz.Matrix(2, 2))
-            b64_display = base64.b64encode(pix2.tobytes("png")).decode()
-            display_pages.append({"page": i + 1, "image": "data:image/png;base64," + b64_display, "width": pix2.width, "height": pix2.height})
-
+        pix = doc[page_num].get_pixmap(matrix=fitz.Matrix(scale, scale))
+        img_data = pix.tobytes("png")
         doc.close()
 
-        content.append({"type": "text", "text": PROMPT})
+        # Convert to opencv
+        nparr = np.frombuffer(img_data, np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_GRAYSCALE)
+        nrow, ncol = img.shape
 
-        # Call Claude
+        # Use vertical projection profiling on top portion
+        _, bin_img = cv2.threshold(img, 200, 255, cv2.THRESH_BINARY_INV)
+
+        # Try multiple heights to find best section split
+        best = []
+        for frac in [0.40, 0.45, 0.50, 0.55]:
+            top_h = int(nrow * frac)
+            top_bin = bin_img[50:top_h, :]
+            col_density = np.mean(top_bin > 0, axis=0)
+            col_smooth = uniform_filter1d(col_density, size=15)
+
+            # Find gaps
+            threshold = 0.03
+            gaps = []
+            start = None
+            for i in range(len(col_smooth)):
+                if col_smooth[i] < threshold and start is None:
+                    start = i
+                elif col_smooth[i] >= threshold and start is not None:
+                    if i - start >= 20:
+                        gaps.append((start, i))
+                    start = None
+
+            # Build sections from gaps
+            bounds = [0]
+            for s, e in gaps:
+                bounds.append(s)
+                bounds.append(e)
+            bounds.append(ncol)
+
+            sections = []
+            for i in range(0, len(bounds) - 1, 2):
+                x1, x2 = bounds[i], bounds[i + 1]
+                if x2 - x1 > 150:
+                    sections.append({
+                        "x": int(x1),
+                        "y": 0,
+                        "width": int(x2 - x1),
+                        "height": int(top_h + 50),
+                        "label": f"Section {len(sections) + 1}"
+                    })
+
+            if len(sections) > len(best):
+                best = sections
+
+        # Convert coordinates from detection scale to display scale (scale=2)
+        display_scale = 2.0
+        ratio = display_scale / scale
+        for s in best:
+            s["x"] = int(s["x"] * ratio)
+            s["y"] = int(s["y"] * ratio)
+            s["width"] = int(s["width"] * ratio)
+            s["height"] = int(s["height"] * ratio)
+
+        return jsonify({"success": True, "sections": best})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/crop", methods=["POST"])
+def crop():
+    """Step 3: Crop a section from the rendered image. Returns base64 PNG."""
+    if "file" not in request.files:
+        return jsonify({"error": "No file"}), 400
+
+    pdf_bytes = request.files["file"].read()
+    page_num = int(request.form.get("page", 0))
+    scale = float(request.form.get("scale", 3))
+    x = int(float(request.form.get("x", 0)) * (scale / 2.0))  # Convert from display coords
+    y = int(float(request.form.get("y", 0)) * (scale / 2.0))
+    w = int(float(request.form.get("w", 100)) * (scale / 2.0))
+    h = int(float(request.form.get("h", 100)) * (scale / 2.0))
+
+    try:
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        pix = doc[page_num].get_pixmap(matrix=fitz.Matrix(scale, scale))
+
+        # Crop using PIL
+        from PIL import Image
+        import io
+        img = Image.open(io.BytesIO(pix.tobytes("png")))
+
+        # Clamp
+        x = max(0, min(x, img.width))
+        y = max(0, min(y, img.height))
+        x2 = min(x + w, img.width)
+        y2 = min(y + h, img.height)
+
+        cropped = img.crop((x, y, x2, y2))
+        buf = io.BytesIO()
+        cropped.save(buf, format="PNG")
+        b64 = base64.b64encode(buf.getvalue()).decode()
+        doc.close()
+
+        return jsonify({
+            "success": True,
+            "image": "data:image/png;base64," + b64,
+            "width": cropped.width,
+            "height": cropped.height
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/count", methods=["POST"])
+def count():
+    """Step 4: Count items on a single floor plan image."""
+    image_b64 = request.form.get("image")
+    label = request.form.get("label", "Floor Plan")
+
+    if not image_b64:
+        return jsonify({"error": "No image provided"}), 400
+
+    # Strip data URL prefix if present
+    if "base64," in image_b64:
+        image_b64 = image_b64.split("base64,")[1]
+
+    try:
         resp = client.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=4096,
-            system="You are a fire protection plan analyzer. You MUST respond with ONLY a valid JSON object. No prose, no explanation, no markdown fences. Just the JSON.",
-            messages=[{"role": "user", "content": content}],
+            max_tokens=2048,
+            system="You MUST respond with ONLY valid JSON. No prose, no markdown fences, no explanation. Just the JSON object.",
+            messages=[{"role": "user", "content": [
+                {
+                    "type": "image",
+                    "source": {"type": "base64", "media_type": "image/png", "data": image_b64}
+                },
+                {
+                    "type": "text",
+                    "text": f"""Count every sprinkler head on this floor plan image ("{label}").
+Also count tee junctions (pipe branches), elbow junctions (90° turns), and risers.
+IGNORE any detail cutaway sections where symbols appear larger than on the floor plan.
+Sprinkler heads in detail/zoom views are scaled up vectors — skip them.
+
+Return JSON:
+{{"label": "{label}", "heads": {{"total": N, "types": [{{"type": "pendent", "count": N}}, {{"type": "sidewall", "count": N}}]}}, "tees": N, "elbows": N, "risers": N, "notes": ""}}"""
+                }
+            ]}]
         )
 
         text = resp.content[0].text.strip()
-        print("RAW RESPONSE (first 300 chars):", text[:300])
-        
-        # Extract JSON from response — handle markdown fences or prose wrapper
-        analysis = None
-        
-        # Try direct parse first
+        print(f"COUNT [{label}] raw: {text[:200]}")
+
+        # Parse JSON robustly
+        result = None
         try:
-            analysis = json.loads(text)
+            result = json.loads(text)
         except json.JSONDecodeError:
-            pass
-        
-        # Try stripping markdown fences
-        if analysis is None:
-            cleaned = text
-            if "```json" in cleaned:
-                cleaned = cleaned.split("```json", 1)[1]
-            elif "```" in cleaned:
-                cleaned = cleaned.split("```", 1)[1]
-            if "```" in cleaned:
-                cleaned = cleaned.split("```")[0]
-            try:
-                analysis = json.loads(cleaned.strip())
-            except json.JSONDecodeError:
-                pass
-        
-        # Try finding JSON object in the text
-        if analysis is None:
+            # Find JSON in response
             start = text.find("{")
             if start >= 0:
                 depth = 0
@@ -151,29 +250,23 @@ def analyze():
                     elif text[i] == "}": depth -= 1
                     if depth == 0:
                         try:
-                            analysis = json.loads(text[start:i+1])
-                        except json.JSONDecodeError:
+                            result = json.loads(text[start:i+1])
+                        except:
                             pass
                         break
-        
-        if analysis is None:
-            return jsonify({"error": "Could not parse AI response", "raw": text[:500]}), 500
 
-        return jsonify({"success": True, "analysis": analysis, "pages": display_pages})
+        if result is None:
+            return jsonify({"error": "Could not parse response", "raw": text[:500]}), 500
 
-    except json.JSONDecodeError as e:
-        return jsonify({"error": "Bad AI response: " + str(e)}), 500
+        return jsonify({"success": True, "result": result})
+
     except Exception as e:
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/health")
-def health():
-    return jsonify({"status": "ok", "has_api_key": bool(os.environ.get("ANTHROPIC_API_KEY"))})
-
-
 if __name__ == "__main__":
     print("🔥 Plan Detector API on http://localhost:5555")
+    print("   Endpoints: /render, /detect, /crop, /count, /health")
     app.run(host="0.0.0.0", port=5555, debug=True)
