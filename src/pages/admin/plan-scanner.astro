@@ -131,6 +131,8 @@ if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) return Astro.redirect("
   function loadTestPlan(planId, fileName) {
     if (!planId) return;
     
+    currentPlanType = planId; // Track for optimization
+    
     fetch(API + '/test-plans/' + planId)
       .then(function(response) {
         if (!response.ok) throw new Error('Plan not found');
@@ -194,11 +196,16 @@ if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) return Astro.redirect("
   // ==================== Detection ====================
   function getThreshold() { return 200; }
 
+  var currentPlanType = null;
+
   function runDetect() {
     var fd = new FormData();
     fd.append('file', pdfFile);
     fd.append('scale', '3');
     fd.append('threshold', getThreshold());
+    if (currentPlanType) {
+      fd.append('plan_type', currentPlanType);
+    }
     document.getElementById('plan-status').textContent = 'Detecting sections...';
     return fetch(API + '/detect', { method: 'POST', body: fd });
   }
@@ -238,6 +245,7 @@ if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) return Astro.redirect("
     var file = e.target.files[0];
     if (!file || file.type !== 'application/pdf') return;
     pdfFile = file;
+    currentPlanType = null; // Custom upload - enable text stripping
     sections = [];
     floorResults = {};
 

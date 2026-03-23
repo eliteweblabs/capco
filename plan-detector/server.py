@@ -251,8 +251,12 @@ def detect():
 
         # --- Pre-processing: strip text and diagonal lines from the PDF ---
         # Since these are CAD PDFs, text is vector objects we can remove directly
-        strip_text = request.form.get("strip_text", "true") == "true"
-        strip_diag = request.form.get("strip_diag", "true") == "true"
+        # Skip text/diag stripping for known clean plans (demo, 85-tremont)
+        plan_type = request.form.get("plan_type", "")
+        skip_stripping = plan_type in ["demo-plan", "85-tremont"]
+        
+        strip_text = False if skip_stripping else request.form.get("strip_text", "true") == "true"
+        strip_diag = False if skip_stripping else request.form.get("strip_diag", "true") == "true"
 
         if strip_text or strip_diag:
             if strip_text:
