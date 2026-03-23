@@ -1,0 +1,319 @@
+---
+import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
+import { checkAuth } from "../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../lib/user-utils";
+import { globalClasses } from "../api/global/global-classes";
+
+const { currentUser, session } = await checkAuth(Astro.cookies);
+const currentRole = currentUser?.profile?.role;
+const isLocalBypass = Astro.url.hostname === "localhost" || Astro.url.hostname === "127.0.0.1";
+
+if (!isLocalBypass && (!currentUser || !session)) {
+  return Astro.redirect("/auth/login");
+}
+if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) {
+  return Astro.redirect("/dashboard");
+}
+---
+
+<LayoutFullWidth title="Plan Scanner" classList="p-0" description="Fire protection plan analysis">
+<div class="min-h-screen bg-gray-900 text-white flex flex-col">
+
+  <!-- UPLOAD -->
+  <div id="view-upload" class="flex-1 flex items-center justify-center">
+    <div class="text-center">
+      <svg class="mx-auto w-16 h-16 text-gray-500 mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+      </svg>
+      <h2 class="text-xl font-semibold mb-2">Upload Fire Protection Plan</h2>
+      <p class="text-gray-400 mb-6 text-sm">PDF will be analyzed automatically</p>
+      <label class="cursor-pointer inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-medium transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        Choose PDF
+        <input type="file" id="file-input" accept=".pdf" class="hidden" />
+      </label>
+      <p id="upload-msg" class="mt-4 text-sm text-gray-400"></p>
+    </div>
+  </div>
+
+  <!-- PROCESSING -->
+  <div id="view-processing" class="hidden flex-1 flex items-center justify-center">
+    <div class="text-center">
+      <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+      <h2 class="text-xl font-semibold mb-2">Analyzing Plan</h2>
+      <p id="proc-msg" class="text-gray-400 text-sm">Rendering PDF...</p>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="view-results" class="hidden flex-1 flex flex-col">
+
+    <!-- Top bar -->
+    <div class="bg-gray-800 border-b border-gray-700 px-4 py-2 flex items-center gap-4 shrink-0">
+      <button id="btn-new" class="text-sm text-gray-400 hover:text-white">+ New Scan</button>
+      <span id="project-title" class="text-sm font-medium text-gray-300"></span>
+    </div>
+
+    <!-- Body: plan + sidebar -->
+    <div class="flex-1 flex overflow-hidden">
+
+      <!-- Plan image -->
+      <div class="flex-1 overflow-auto bg-gray-950">
+        <img id="plan-img" class="w-full" draggable="false" />
+      </div>
+
+      <!-- Sidebar -->
+      <div class="w-80 bg-gray-800 border-l border-gray-700 overflow-y-auto shrink-0">
+        <div class="p-4 border-b border-gray-700">
+          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Items Found</h3>
+          <div id="items-list"></div>
+        </div>
+        <div class="p-4 border-b border-gray-700">
+          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Equipment</h3>
+          <div id="equip-list" class="text-sm space-y-1"></div>
+        </div>
+        <div class="p-4">
+          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Project</h3>
+          <div id="project-info" class="text-sm text-gray-400 space-y-1"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script is:inline>
+(function() {
+  var API = 'http://localhost:5555';
+  var data = null;
+
+  var fileInput   = document.getElementById('file-input');
+  var viewUpload  = document.getElementById('view-upload');
+  var viewProc    = document.getElementById('view-processing');
+  var viewResults = document.getElementById('view-results');
+  var uploadMsg   = document.getElementById('upload-msg');
+  var procMsg     = document.getElementById('proc-msg');
+  var planImg     = document.getElementById('plan-img');
+
+  // Colors per item type
+  var COLORS = {
+    'Pendent Heads': '#3b82f6',
+    'Upright Heads': '#6366f1',
+    'Sidewall Heads': '#8b5cf6',
+    'Dry-Sidewall Heads': '#a855f7',
+    'Sprinkler Heads': '#3b82f6',
+    'Tee Junctions': '#f59e0b',
+    'Elbow Junctions': '#f97316',
+    'Risers': '#10b981',
+    'Control Valves': '#06b6d4',
+    'Flow Switches': '#14b8a6',
+    'FDC': '#ec4899'
+  };
+
+  function show(el) { el.classList.remove('hidden'); }
+  function hide(el) { el.classList.add('hidden'); }
+
+  // --- Upload handler ---
+  fileInput.addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (!file || file.type !== 'application/pdf') return;
+
+    hide(viewUpload);
+    show(viewProc);
+    procMsg.textContent = 'Connecting to analyzer...';
+
+    fetch(API + '/health', { signal: AbortSignal.timeout(3000) })
+      .then(function(r) {
+        if (!r.ok) throw new Error('API not running');
+        procMsg.textContent = 'Analyzing plan (this takes ~20s)...';
+
+        var fd = new FormData();
+        fd.append('file', file);
+        fd.append('scale', '3');
+        return fetch(API + '/analyze', { method: 'POST', body: fd });
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (!d.success) throw new Error(d.error || 'Analysis failed');
+        data = d;
+        renderResults(d);
+      })
+      .catch(function(err) {
+        console.error('Analysis error:', err);
+        hide(viewProc);
+        show(viewUpload);
+        uploadMsg.textContent = 'Error: ' + err.message;
+        uploadMsg.style.color = '#f87171';
+        fileInput.value = '';
+      });
+  });
+
+  // --- Render results ---
+  function renderResults(d) {
+    hide(viewProc);
+    show(viewResults);
+
+    var a = d.analysis;
+
+    // Plan image
+    if (d.pages && d.pages.length) planImg.src = d.pages[0].image;
+
+    // Title
+    var title = document.getElementById('project-title');
+    if (a.project) title.textContent = (a.project.name || '') + ' — ' + (a.project.address || '');
+
+    // Items
+    renderItems(a);
+
+    // Equipment
+    renderEquipment(a);
+
+    // Project info
+    renderProject(a);
+  }
+
+  function renderItems(a) {
+    var el = document.getElementById('items-list');
+    var items = [];
+
+    // Head types
+    var heads = {};
+    var floors = a.floors || [];
+    for (var i = 0; i < floors.length; i++) {
+      var types = floors[i].sprinkler_heads && floors[i].sprinkler_heads.types || [];
+      for (var j = 0; j < types.length; j++) {
+        var t = types[j];
+        if (!heads[t.type]) heads[t.type] = { count: 0, k: t.k_factor || '' };
+        heads[t.type].count += t.count;
+      }
+    }
+
+    var hk = Object.keys(heads);
+    if (hk.length > 1) {
+      for (var i = 0; i < hk.length; i++) {
+        var label = hk[i].charAt(0).toUpperCase() + hk[i].slice(1) + ' Heads';
+        items.push({ label: label, count: heads[hk[i]].count, detail: heads[hk[i]].k ? 'K=' + heads[hk[i]].k : '' });
+      }
+    } else if (hk.length === 1) {
+      var label = hk[0].charAt(0).toUpperCase() + hk[0].slice(1) + ' Heads';
+      items.push({ label: label, count: heads[hk[0]].count, detail: heads[hk[0]].k ? 'K=' + heads[hk[0]].k : '' });
+    } else {
+      items.push({ label: 'Sprinkler Heads', count: a.totals ? a.totals.total_heads || 0 : 0, detail: '' });
+    }
+
+    // Fittings
+    var totals = a.totals || {};
+    if (totals.total_tees > 0) items.push({ label: 'Tee Junctions', count: totals.total_tees });
+    if (totals.total_elbows > 0) items.push({ label: 'Elbow Junctions', count: totals.total_elbows });
+    if (totals.total_risers > 0) items.push({ label: 'Risers', count: totals.total_risers });
+
+    // Devices
+    var devs = {};
+    for (var i = 0; i < floors.length; i++) {
+      var dd = floors[i].devices || [];
+      for (var j = 0; j < dd.length; j++) {
+        var lbl = dd[j].type.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+        devs[lbl] = (devs[lbl] || 0) + dd[j].count;
+      }
+    }
+    var dk = Object.keys(devs);
+    for (var i = 0; i < dk.length; i++) {
+      if (devs[dk[i]] > 0) items.push({ label: dk[i], count: devs[dk[i]] });
+    }
+
+    // Build HTML
+    var html = '';
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i];
+      var color = COLORS[it.label] || '#9ca3af';
+
+      html += '<div class="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-gray-700/50">';
+      html += '  <div class="flex items-center gap-3">';
+      html += '    <div class="relative">';
+      html += '      <input type="checkbox" class="item-toggle peer sr-only" id="tog-' + i + '" data-label="' + it.label + '" />';
+      html += '      <label for="tog-' + i + '" class="block h-6 w-11 rounded-full bg-gray-600 cursor-pointer';
+      html += '        after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full';
+      html += '        after:border after:border-gray-500 after:bg-white after:transition-all';
+      html += '        peer-checked:after:translate-x-full peer-checked:after:border-white"></label>';
+      html += '    </div>';
+      html += '    <div>';
+      html += '      <span class="text-sm">' + it.label + '</span>';
+      if (it.detail) html += ' <span class="text-xs text-gray-500">' + it.detail + '</span>';
+      html += '    </div>';
+      html += '  </div>';
+      html += '  <span class="text-lg font-semibold font-mono" style="color:' + color + '">' + it.count + '</span>';
+      html += '</div>';
+    }
+
+    // Total heads
+    if (totals.total_heads) {
+      html += '<div class="mt-3 pt-3 border-t border-gray-700 flex justify-between px-3">';
+      html += '  <span class="text-sm text-gray-400">Total Sprinkler Heads</span>';
+      html += '  <span class="text-lg font-bold">' + totals.total_heads + '</span>';
+      html += '</div>';
+    }
+
+    // Confidence
+    if (a.confidence) {
+      var cc = a.confidence === 'high' ? '#4ade80' : a.confidence === 'medium' ? '#facc15' : '#f87171';
+      html += '<div class="mt-1 px-3 text-xs text-gray-500">Confidence: <span style="color:' + cc + '">' + a.confidence + '</span></div>';
+    }
+
+    el.innerHTML = html;
+
+    // Toggle color on check
+    var toggles = el.querySelectorAll('.item-toggle');
+    for (var i = 0; i < toggles.length; i++) {
+      toggles[i].addEventListener('change', function(e) {
+        var label = e.target.getAttribute('data-label');
+        var track = e.target.nextElementSibling;
+        var color = COLORS[label] || '#3b82f6';
+        track.style.backgroundColor = e.target.checked ? color : '';
+      });
+    }
+  }
+
+  function renderEquipment(a) {
+    var el = document.getElementById('equip-list');
+    var eq = a.equipment || {};
+    var html = '';
+
+    if (eq.fdc && eq.fdc.count > 0) html += row('FDC', eq.fdc.count + '× ' + (eq.fdc.size || '') + ' ' + (eq.fdc.type || ''));
+    if (eq.fire_pump && eq.fire_pump.count > 0) html += row('Fire Pump', (eq.fire_pump.model || '') + ' ' + (eq.fire_pump.hp || '') + 'HP');
+    if (eq.tank && eq.tank.count > 0) html += row('Tank', (eq.tank.capacity_gallons || 0) + ' gal');
+    if (eq.backflow_preventer && eq.backflow_preventer.count > 0) html += row('Backflow', eq.backflow_preventer.size || '');
+
+    el.innerHTML = html || '<p class="text-gray-500">None detected</p>';
+  }
+
+  function renderProject(a) {
+    var el = document.getElementById('project-info');
+    var p = a.project || {};
+    var html = '';
+    if (p.engineer) html += '<div><span class="text-gray-500">Engineer:</span> ' + p.engineer + '</div>';
+    if (p.standard) html += '<div><span class="text-gray-500">Standard:</span> ' + p.standard + '</div>';
+    if (p.system_type) html += '<div><span class="text-gray-500">System:</span> ' + p.system_type + '</div>';
+    if (p.hazard_class) html += '<div><span class="text-gray-500">Hazard:</span> ' + p.hazard_class + '</div>';
+    el.innerHTML = html;
+  }
+
+  function row(label, value) {
+    return '<div class="flex justify-between"><span class="text-gray-400">' + label + '</span><span>' + value + '</span></div>';
+  }
+
+  // New scan
+  document.getElementById('btn-new').addEventListener('click', function() {
+    hide(viewResults);
+    show(viewUpload);
+    uploadMsg.textContent = '';
+    uploadMsg.style.color = '';
+    fileInput.value = '';
+    data = null;
+    planImg.src = '';
+  });
+
+})();
+</script>
+
+</LayoutFullWidth>
