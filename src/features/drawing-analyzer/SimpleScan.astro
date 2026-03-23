@@ -1366,6 +1366,75 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     return c.toDataURL("image/png");
   }
 
+  function croppedMaskedSourceToDataUrl(imageData, selectedRegions = []) {
+    if (!Array.isArray(selectedRegions) || selectedRegions.length === 0) {
+      return maskedSourceToDataUrl(imageData, selectedRegions);
+    }
+
+    // Calculate bounding box of all selected regions
+    let minX = imageData.width;
+    let minY = imageData.height;
+    let maxX = 0;
+    let maxY = 0;
+
+    selectedRegions.forEach(r => {
+      minX = Math.min(minX, r.x);
+      minY = Math.min(minY, r.y);
+      maxX = Math.max(maxX, r.x + r.w);
+      maxY = Math.max(maxY, r.y + r.h);
+    });
+
+    // Add small padding
+    const padding = 10;
+    minX = Math.max(0, minX - padding);
+    minY = Math.max(0, minY - padding);
+    maxX = Math.min(imageData.width, maxX + padding);
+    maxY = Math.min(imageData.height, maxY + padding);
+
+    const cropWidth = maxX - minX;
+    const cropHeight = maxY - minY;
+
+    // Create cropped canvas
+    const c = document.createElement("canvas");
+    c.width = cropWidth;
+    c.height = cropHeight;
+    const ctx = c.getContext("2d");
+    if (!ctx) return "";
+
+    // Extract cropped region from source
+    const sourceCanvas = document.createElement("canvas");
+    sourceCanvas.width = imageData.width;
+    sourceCanvas.height = imageData.height;
+    const sourceCtx = sourceCanvas.getContext("2d");
+    if (!sourceCtx) return "";
+    sourceCtx.putImageData(imageData, 0, 0);
+
+    // Draw cropped portion
+    ctx.drawImage(sourceCanvas, minX, minY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+
+    // Mask out areas outside selected regions (adjusted for crop offset)
+    const croppedImageData = ctx.getImageData(0, 0, cropWidth, cropHeight);
+    for (let y = 0; y < cropHeight; y += 1) {
+      const row = y * cropWidth;
+      for (let x = 0; x < cropWidth; x += 1) {
+        const originalX = x + minX;
+        const originalY = y + minY;
+        const inside = selectedRegions.some(
+          (r) => originalX >= r.x && originalY >= r.y && originalX < r.x + r.w && originalY < r.y + r.h
+        );
+        if (inside) continue;
+        const i = (row + x) * 4;
+        croppedImageData.data[i] = 255;
+        croppedImageData.data[i + 1] = 255;
+        croppedImageData.data[i + 2] = 255;
+        croppedImageData.data[i + 3] = 255;
+      }
+    }
+
+    ctx.putImageData(croppedImageData, 0, 0);
+    return c.toDataURL("image/png");
+  }
+
   function maskedImageByMaskToDataUrl(imageData, mask) {
     if (!imageData || !mask || mask.length !== imageData.width * imageData.height) return "";
     const c = document.createElement("canvas");
@@ -2366,7 +2435,7 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
   }) {
     if (!pipelineStepsEl) return;
     step1RegionClipByKey = {};
-    const viableBaseUrl = maskedSourceToDataUrl(sourceImageData, selectedRegions);
+    const viableBaseUrl = croppedMaskedSourceToDataUrl(sourceImageData, selectedRegions);
     const fullPlanRegion = [{ x: 0, y: 0, w: sourceImageData.width, h: sourceImageData.height }];
     const step3BaseUrl = targetingOnly ? "" : maskedImageByMaskToDataUrl(sourceImageData, step3SourceMask);
     const step4BaseUrl = targetingOnly ? "" : maskedImageByMaskToDataUrl(sourceImageData, step4SourceMask);
