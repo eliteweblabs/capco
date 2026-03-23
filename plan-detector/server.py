@@ -70,13 +70,15 @@ def render():
 
 @app.route("/detect", methods=["POST"])
 def detect():
-    """Step 2: Detect floor plan sections. Returns section coordinates."""
+    """Step 2: Detect floor plan sections via flood-fill from page corners."""
     if "file" not in request.files:
         return jsonify({"error": "No file"}), 400
 
     pdf_bytes = request.files["file"].read()
     page_num = int(request.form.get("page", 0))
     scale = float(request.form.get("scale", 3))
+    threshold = int(request.form.get("threshold", 200))
+    close_size = float(request.form.get("close_size", 1))
 
     try:
         doc = fitz.open(stream=pdf_bytes, filetype="pdf")
@@ -84,66 +86,164 @@ def detect():
         img_data = pix.tobytes("png")
         doc.close()
 
-        # Convert to opencv
         nparr = np.frombuffer(img_data, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_GRAYSCALE)
         nrow, ncol = img.shape
 
-        # Use vertical projection profiling on top portion
-        _, bin_img = cv2.threshold(img, 200, 255, cv2.THRESH_BINARY_INV)
+        # --- Tile-based flood fill approach ---
+        # Divide the page into a grid of tiles. For each tile, check if it's
+        # mostly white (empty). Flood-fill connect adjacent empty tiles.
+        # The largest connected group of empty tiles = the main drawing area.
 
-        # Try multiple heights to find best section split
-        best = []
-        for frac in [0.40, 0.45, 0.50, 0.55]:
-            top_h = int(nrow * frac)
-            top_bin = bin_img[50:top_h, :]
-            col_density = np.mean(top_bin > 0, axis=0)
-            col_smooth = uniform_filter1d(col_density, size=15)
+        TILE = 10  # tile size in pixels (at detection scale)
+        tile_rows = nrow // TILE
+        tile_cols = ncol // TILE
 
-            # Find gaps
-            threshold = 0.03
-            gaps = []
-            start = None
-            for i in range(len(col_smooth)):
-                if col_smooth[i] < threshold and start is None:
-                    start = i
-                elif col_smooth[i] >= threshold and start is not None:
-                    if i - start >= 20:
-                        gaps.append((start, i))
-                    start = None
+        # For each tile: is it "empty" (mostly white, little ink)?
+        # threshold controls what counts as ink
+        _, binary_inv = cv2.threshold(img, threshold, 255, cv2.THRESH_BINARY_INV)
 
-            # Build sections from gaps
-            bounds = [0]
-            for s, e in gaps:
-                bounds.append(s)
-                bounds.append(e)
-            bounds.append(ncol)
+        # Build tile grid: 1 = empty tile, 0 = has significant ink
+        # A tile is "empty" if ink fills less than close_size% of it
+        ink_tolerance = close_size / 100.0  # reuse close_size slider as ink% tolerance
+        tile_grid = np.zeros((tile_rows, tile_cols), dtype=np.uint8)
 
-            sections = []
-            for i in range(0, len(bounds) - 1, 2):
-                x1, x2 = bounds[i], bounds[i + 1]
-                if x2 - x1 > 150:
-                    sections.append({
-                        "x": int(x1),
-                        "y": 0,
-                        "width": int(x2 - x1),
-                        "height": int(top_h + 50),
-                        "label": f"Section {len(sections) + 1}"
-                    })
+        for ty in range(tile_rows):
+            for tx in range(tile_cols):
+                y0 = ty * TILE
+                x0 = tx * TILE
+                tile = binary_inv[y0:y0+TILE, x0:x0+TILE]
+                ink_ratio = np.count_nonzero(tile) / (TILE * TILE)
+                if ink_ratio < ink_tolerance:
+                    tile_grid[ty, tx] = 1
 
-            if len(sections) > len(best):
-                best = sections
+        # Connected components on the tile grid (4-connectivity)
+        num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(
+            tile_grid, connectivity=4
+        )
 
-        # Convert coordinates from detection scale to display scale (scale=2)
+        # Find the largest connected region of empty tiles — that's the main drawing area.
+        # The margin strips are narrow, detail boxes are small — the floor plan area
+        # has the most continuous white space and wins.
+        #
+        # If the largest region touches the edges (margin leaks into interior because
+        # border has gaps), try the second largest. But prefer the absolute largest
+        # as long as it's not >90% of all tiles (which would mean the whole page).
+        regions = []
+        for i in range(1, num_labels):
+            area = stats[i, cv2.CC_STAT_AREA]
+            touches_edge = False
+            lx = stats[i, cv2.CC_STAT_LEFT]
+            ly = stats[i, cv2.CC_STAT_TOP]
+            lw = stats[i, cv2.CC_STAT_WIDTH]
+            lh = stats[i, cv2.CC_STAT_HEIGHT]
+            if lx == 0 or ly == 0 or lx + lw >= tile_cols or ly + lh >= tile_rows:
+                touches_edge = True
+            regions.append({"label": i, "area": area, "edge": touches_edge})
+
+        regions.sort(key=lambda r: r["area"], reverse=True)
+
+        best_label = -1
+        total_tiles = tile_rows * tile_cols
+        for r in regions:
+            # Skip if it's basically the entire page (>85% of tiles)
+            if r["area"] / total_tiles > 0.85:
+                continue
+            best_label = r["label"]
+            break
+
+        # If nothing found (everything was too big), just take the largest non-edge
+        if best_label < 0:
+            for r in regions:
+                if not r["edge"]:
+                    best_label = r["label"]
+                    break
+
+        # Last resort: largest period
+        if best_label < 0 and regions:
+            best_label = regions[0]["label"]
+
+        best = None
+        tile_pixels = []
+        hull_points = []  # convex hull of the tile cluster in pixel coords
+        if best_label >= 0:
+            bx = int(stats[best_label, cv2.CC_STAT_LEFT]) * TILE
+            by = int(stats[best_label, cv2.CC_STAT_TOP]) * TILE
+            bw = int(stats[best_label, cv2.CC_STAT_WIDTH]) * TILE
+            bh = int(stats[best_label, cv2.CC_STAT_HEIGHT]) * TILE
+
+            if (bw * bh) / (nrow * ncol) > 0.03:
+                # Build a binary mask of winning tiles at tile resolution
+                tile_mask = np.zeros((tile_rows, tile_cols), dtype=np.uint8)
+                for ty in range(tile_rows):
+                    for tx in range(tile_cols):
+                        if labels[ty, tx] == best_label:
+                            tile_mask[ty, tx] = 255
+                            tile_pixels.append({
+                                "x": tx * TILE, "y": ty * TILE,
+                                "w": TILE, "h": TILE
+                            })
+
+                # Find outer contour of tile mask — CHAIN_APPROX_NONE gives every pixel
+                # on the boundary, so it's always 90° turns (no diagonals)
+                contours, _ = cv2.findContours(tile_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+                if contours:
+                    # Take the largest contour
+                    largest = max(contours, key=cv2.contourArea)
+                    # Convert tile-grid coords to pixel coords
+                    # Simplify: only keep points where direction changes (corners)
+                    prev_dx, prev_dy = 0, 0
+                    for i in range(len(largest)):
+                        curr = largest[i][0]
+                        nxt = largest[(i + 1) % len(largest)][0]
+                        dx = nxt[0] - curr[0]
+                        dy = nxt[1] - curr[1]
+                        if dx != prev_dx or dy != prev_dy:
+                            hull_points.append([int(curr[0]) * TILE, int(curr[1]) * TILE])
+                            prev_dx, prev_dy = dx, dy
+
+                best = {"x": bx, "y": by, "w": bw, "h": bh}
+                print(f"DETECT: tile flood-fill bbox=({bx},{by},{bw},{bh}), "
+                      f"tiles={stats[best_label, cv2.CC_STAT_AREA]}/{tile_rows*tile_cols}, "
+                      f"hull_pts={len(hull_points)}, "
+                      f"page=({ncol}x{nrow}), ratio={bw*bh/(nrow*ncol):.2%}")
+
+        # Fallback: bounding box of all ink
+        if best is None:
+            coords = cv2.findNonZero(binary_inv)
+            if coords is not None:
+                x, y, w, h = cv2.boundingRect(coords)
+                best = {"x": x, "y": y, "w": w, "h": h}
+
+        # Convert from detection scale to display scale (scale=2)
         display_scale = 2.0
         ratio = display_scale / scale
-        for s in best:
-            s["x"] = int(s["x"] * ratio)
-            s["y"] = int(s["y"] * ratio)
-            s["width"] = int(s["width"] * ratio)
-            s["height"] = int(s["height"] * ratio)
+        sections = []
+        display_tiles = []
+        if best:
+            pad = max(5, int(min(best["w"], best["h"]) * 0.01))
+            sections.append({
+                "x": int(max(0, best["x"] - pad) * ratio),
+                "y": int(max(0, best["y"] - pad) * ratio),
+                "width": int(min(best["w"] + pad * 2, ncol) * ratio),
+                "height": int(min(best["h"] + pad * 2, nrow) * ratio),
+                "label": "Floor Plans"
+            })
+            # Convert tiles to display scale
+            for t in tile_pixels:
+                display_tiles.append({
+                    "x": int(t["x"] * ratio),
+                    "y": int(t["y"] * ratio),
+                    "w": max(1, int(t["w"] * ratio)),
+                    "h": max(1, int(t["h"] * ratio)),
+                })
 
-        return jsonify({"success": True, "sections": best})
+        # Convert hull to display scale
+        display_hull = []
+        for pt in hull_points:
+            display_hull.append([int(pt[0] * ratio), int(pt[1] * ratio)])
+
+        return jsonify({"success": True, "sections": sections, "tiles": display_tiles, "hull": display_hull})
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -214,7 +314,17 @@ def count():
         resp = client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=2048,
-            system="You MUST respond with ONLY valid JSON. No prose, no markdown fences, no explanation. Just the JSON object.",
+            system="""You are a fire protection plan analyst. Respond with ONLY valid JSON — no prose, no markdown fences.
+
+Key rules:
+- Sprinkler heads are small uniform symbols on floor plans (circles with lines, dots). They are ALL the same pixel size because CAD generates them uniformly.
+- IGNORE detail/cutaway sections where symbols appear LARGER than on the main floor plan — those are vector-scaled zooms and must not be double-counted.
+- Pendent heads hang from ceiling (circle with dot or small circle). Sidewall heads mount on walls (half-circle or "D" shape near walls).
+- Pipes are ALWAYS horizontal or vertical on plans. Diagonal lines are architectural, not piping.
+- Tee junctions: where a pipe branches into two directions (T-shape intersection).
+- Elbow junctions: where a pipe turns 90 degrees (L-shape).
+- Risers: vertical pipe connections between floors (usually a circle with "R" or labeled).
+- Count methodically: go room by room, floor by floor. Every head matters.""",
             messages=[{"role": "user", "content": [
                 {
                     "type": "image",
@@ -222,10 +332,7 @@ def count():
                 },
                 {
                     "type": "text",
-                    "text": f"""Count every sprinkler head on this floor plan image ("{label}").
-Also count tee junctions (pipe branches), elbow junctions (90° turns), and risers.
-IGNORE any detail cutaway sections where symbols appear larger than on the floor plan.
-Sprinkler heads in detail/zoom views are scaled up vectors — skip them.
+                    "text": f"""Count every fire protection item on this floor plan: "{label}"
 
 Return JSON:
 {{"label": "{label}", "heads": {{"total": N, "types": [{{"type": "pendent", "count": N}}, {{"type": "sidewall", "count": N}}]}}, "tees": N, "elbows": N, "risers": N, "notes": ""}}"""

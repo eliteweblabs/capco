@@ -11,144 +11,248 @@ if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) return Astro.redirect("
 ---
 
 <LayoutFullWidth title="Plan Scanner" classList="p-0" description="Fire protection plan analysis">
-<div class="min-h-screen bg-gray-900 text-white">
+<div class="h-screen flex flex-col bg-gray-900 text-white overflow-hidden">
 
-  <!-- Step indicator -->
-  <div class="bg-gray-800 border-b border-gray-700 px-6 py-3 flex items-center gap-6">
-    <span class="text-sm font-semibold text-gray-300">Plan Scanner</span>
-    <div id="steps" class="flex items-center gap-2 text-xs">
-      <span id="step-1" class="px-2 py-1 rounded bg-blue-600">1. Upload</span>
-      <span class="text-gray-600">→</span>
-      <span id="step-2" class="px-2 py-1 rounded bg-gray-700 text-gray-400">2. Sections</span>
-      <span class="text-gray-600">→</span>
-      <span id="step-3" class="px-2 py-1 rounded bg-gray-700 text-gray-400">3. Count</span>
-      <span class="text-gray-600">→</span>
-      <span id="step-4" class="px-2 py-1 rounded bg-gray-700 text-gray-400">4. Summary</span>
-    </div>
-    <button id="btn-restart" class="ml-auto text-xs text-gray-400 hover:text-white hidden">Start Over</button>
+  <!-- Top bar -->
+  <div class="bg-gray-800 border-b border-gray-700 px-4 py-2 flex items-center gap-4 shrink-0">
+    <button id="btn-new" class="text-sm text-blue-400 hover:text-blue-300 font-medium">+ New Scan</button>
+    <span id="plan-title" class="text-sm text-gray-300 font-semibold"></span>
+    <span id="plan-status" class="ml-auto text-xs text-gray-500"></span>
   </div>
 
-  <!-- STEP 1: Upload -->
-  <div id="view-1" class="p-8">
-    <div class="max-w-lg mx-auto text-center">
-      <h2 class="text-xl font-semibold mb-2">Upload Fire Protection Plan</h2>
-      <p class="text-gray-400 mb-6 text-sm">PDF will be rendered and you'll confirm each step</p>
-      <label class="cursor-pointer inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-medium transition">
-        Choose PDF
-        <input type="file" id="file-input" accept=".pdf" class="hidden" />
-      </label>
-      <p id="upload-msg" class="mt-4 text-sm text-gray-400"></p>
-    </div>
-  </div>
+  <!-- Main layout: plan + sidebar -->
+  <div class="flex flex-1 overflow-hidden">
 
-  <!-- STEP 2: Section detection -->
-  <div id="view-2" class="hidden p-4">
-    <div class="mb-4 flex items-center justify-between">
-      <div>
-        <h2 class="text-lg font-semibold">Detected Floor Plans</h2>
-        <p class="text-sm text-gray-400">Click ✕ to remove false detections. Click "Confirm" when ready.</p>
-      </div>
-      <button id="btn-confirm-sections" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg font-medium text-sm">
-        Confirm Sections →
-      </button>
-    </div>
-    <div class="relative inline-block">
-      <img id="plan-full" class="max-w-full" />
-      <div id="overlays" class="absolute top-0 left-0 w-full h-full pointer-events-none"></div>
-    </div>
-  </div>
-
-  <!-- STEP 3: Per-floor counting -->
-  <div id="view-3" class="hidden p-4">
-    <div class="mb-4">
-      <h2 class="text-lg font-semibold">Analyzing: <span id="current-floor-label" class="text-blue-400"></span></h2>
-      <p class="text-sm text-gray-400">
-        Floor <span id="floor-progress">1</span> of <span id="floor-total">5</span>
-      </p>
-    </div>
-    <div class="grid grid-cols-2 gap-4">
-      <!-- Left: the cropped floor image -->
-      <div>
-        <h3 class="text-sm text-gray-400 mb-2">Input image sent to AI:</h3>
-        <div class="border border-gray-700 rounded-lg overflow-hidden bg-gray-950">
-          <img id="floor-image" class="w-full" />
-        </div>
-      </div>
-      <!-- Right: results -->
-      <div>
-        <h3 class="text-sm text-gray-400 mb-2">AI Response:</h3>
-        <div id="floor-result" class="border border-gray-700 rounded-lg p-4 bg-gray-800 min-h-[200px]">
-          <div id="floor-loading" class="flex items-center gap-3">
-            <div class="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-            <span class="text-sm text-gray-400">Counting items...</span>
+    <!-- Left: Plan view -->
+    <div class="flex-1 overflow-auto p-4 relative" id="plan-container">
+      <!-- Upload prompt (shown when no file loaded) -->
+      <div id="upload-prompt" class="flex items-center justify-center h-full">
+        <label class="cursor-pointer text-center">
+          <div class="text-gray-500 mb-3">
+            <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/>
+            </svg>
           </div>
-          <div id="floor-data" class="hidden"></div>
+          <span class="text-gray-400">Upload a fire protection plan (PDF)</span>
+          <input type="file" id="file-input" accept=".pdf" class="hidden" />
+        </label>
+      </div>
+      <!-- Plan image with section overlays -->
+      <div id="plan-view" class="hidden relative inline-block">
+        <img id="plan-img" class="max-w-full" />
+        <div id="section-overlays" class="absolute top-0 left-0 w-full h-full pointer-events-none"></div>
+      </div>
+    </div>
+
+    <!-- Right: Sidebar -->
+    <div class="w-80 shrink-0 border-l border-gray-700 flex flex-col bg-gray-850" id="sidebar">
+      <!-- Tab headers -->
+      <div class="flex border-b border-gray-700 shrink-0">
+        <button class="tab-btn flex-1 py-2 text-xs font-semibold text-center border-b-2 border-blue-500 text-blue-400" data-tab="areas">Areas</button>
+        <button class="tab-btn flex-1 py-2 text-xs font-semibold text-center border-b-2 border-transparent text-gray-500 hover:text-gray-300" data-tab="library">Library</button>
+        <button class="tab-btn flex-1 py-2 text-xs font-semibold text-center border-b-2 border-transparent text-gray-500 hover:text-gray-300" data-tab="results">Results</button>
+      </div>
+
+      <!-- Tab: Areas -->
+      <div id="tab-areas" class="tab-panel flex-1 overflow-auto p-3">
+        <p class="text-xs text-gray-500 mb-3">Flood-fill detection. Adjust sliders to tune border detection.</p>
+
+        <div class="space-y-3 mb-4">
+          <input type="hidden" id="slider-threshold" value="200" />
+          <div>
+            <div class="flex justify-between text-xs text-gray-400 mb-1">
+              <span>Fill Tolerance</span>
+              <span id="close-val">1</span><span class="text-gray-600">%</span>
+            </div>
+            <input type="range" id="slider-close" min="0" max="100" value="1" step="0.1" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer accent-blue-500" />
+            <p class="text-[10px] text-gray-600 mt-0.5">% of ink a tile can have and still count as "empty"</p>
+          </div>
+          <button id="btn-scan-items" class="w-full py-2 rounded bg-green-600 hover:bg-green-700 text-xs font-semibold text-white mt-2" disabled>
+            ▶ Scan for Items
+          </button>
         </div>
-        <div id="floor-actions" class="hidden mt-4 flex gap-3">
-          <button id="btn-accept" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-sm font-medium">
-            Accept → Next Floor
-          </button>
-          <button id="btn-recount" class="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded-lg text-sm font-medium">
-            Re-count
-          </button>
+
+        <div id="area-list" class="space-y-2">
+          <p class="text-xs text-gray-600 italic">Upload a plan to detect areas</p>
+        </div>
+      </div>
+
+      <!-- Tab: Library -->
+      <div id="tab-library" class="tab-panel flex-1 overflow-auto p-3 hidden">
+        <p class="text-xs text-gray-500 mb-3">Symbol reference library. Add symbols to improve detection accuracy.</p>
+        <button id="btn-add-symbol" class="w-full mb-3 py-2 px-3 rounded bg-blue-600 hover:bg-blue-700 text-xs font-medium flex items-center justify-center gap-2 disabled:opacity-40" disabled>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Add Symbol from Plan
+        </button>
+        <div id="library-symbols" class="space-y-2">
+          <p class="text-xs text-gray-600 italic" id="library-empty">No symbols yet</p>
+        </div>
+      </div>
+
+      <!-- Tab: Results -->
+      <div id="tab-results" class="tab-panel flex-1 overflow-auto p-3 hidden">
+        <div id="results-empty" class="text-xs text-gray-600 italic">No results yet</div>
+        <div id="results-content" class="hidden">
+          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Items Found</h3>
+          <div id="results-items" class="space-y-3"></div>
+
+          <div class="mt-4 pt-3 border-t border-gray-700">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-xs text-gray-400">Confidence:</span>
+              <span id="results-confidence" class="text-xs font-semibold"></span>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-gray-700">
+            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Project</h3>
+            <div id="results-project" class="text-xs text-gray-300 space-y-1"></div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-gray-700">
+            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Per Floor</h3>
+            <div id="results-floors" class="space-y-2"></div>
+          </div>
+        </div>
+        <div id="results-loading" class="hidden flex items-center gap-2 py-4">
+          <div class="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          <span class="text-xs text-gray-400">Analyzing...</span>
         </div>
       </div>
     </div>
   </div>
-
-  <!-- STEP 4: Summary -->
-  <div id="view-4" class="hidden p-4">
-    <div class="max-w-2xl mx-auto">
-      <h2 class="text-xl font-semibold mb-4">Takeoff Summary</h2>
-      <div id="summary-table"></div>
-      <button id="btn-new-scan" class="mt-6 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm font-medium">
-        New Scan
-      </button>
-    </div>
-  </div>
-
 </div>
+
+<style>
+  .bg-gray-850 { background-color: #1a1d23; }
+  .area-card { @apply bg-gray-800 rounded-lg p-2 text-xs; }
+  .area-card.active { @apply ring-1 ring-blue-500; }
+  .result-row {
+    @apply flex items-center justify-between py-1;
+  }
+  .result-row .dot {
+    @apply w-6 h-6 rounded-full bg-gray-700 shrink-0;
+  }
+  .result-row .label {
+    @apply text-sm text-gray-300 ml-3 flex-1;
+  }
+  .result-row .count {
+    @apply text-lg font-bold tabular-nums;
+  }
+  .symbol-card {
+    @apply bg-gray-800 rounded-lg p-2 flex items-center gap-2;
+  }
+  .symbol-card img {
+    @apply w-10 h-10 object-contain bg-white rounded;
+  }
+
+  /* Crop overlay */
+  #crop-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    cursor: crosshair;
+    z-index: 50;
+  }
+  #crop-selection {
+    position: absolute;
+    border: 2px dashed #3b82f6;
+    background: rgba(59, 130, 246, 0.1);
+    pointer-events: none;
+  }
+</style>
 
 <script is:inline>
 (function() {
   var API = 'http://localhost:5555';
   var pdfFile = null;
-  var fullImage = null;
-  var sections = [];
-  var confirmedSections = [];
-  var floorResults = [];
-  var currentFloor = 0;
+  var fullImageSrc = null;
+  var sections = [];       // detected/confirmed areas
+  var detectedTiles = [];  // actual tile positions from flood fill
+  var detectedHull = [];   // convex hull polygon points
+  var symbolLibrary = [];  // { id, label, type, image (base64) }
+  var floorResults = {};   // keyed by section index
+  var recalcTimer = null;
+  var analyzing = false;
+  var abortController = null;  // AbortController for in-flight fetch requests
 
-  // Elements
-  var fileInput = document.getElementById('file-input');
-  var uploadMsg = document.getElementById('upload-msg');
+  // ==================== Tab switching ====================
+  document.querySelectorAll('.tab-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var tab = btn.dataset.tab;
+      document.querySelectorAll('.tab-btn').forEach(function(b) {
+        b.classList.remove('border-blue-500', 'text-blue-400');
+        b.classList.add('border-transparent', 'text-gray-500');
+      });
+      btn.classList.remove('border-transparent', 'text-gray-500');
+      btn.classList.add('border-blue-500', 'text-blue-400');
+      document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.add('hidden'); });
+      document.getElementById('tab-' + tab).classList.remove('hidden');
+    });
+  });
 
-  function show(id) { document.getElementById('view-' + id).classList.remove('hidden'); }
-  function hide(id) { document.getElementById('view-' + id).classList.add('hidden'); }
-
-  function setStep(n) {
-    for (var i = 1; i <= 4; i++) {
-      var el = document.getElementById('step-' + i);
-      if (i === n) {
-        el.className = 'px-2 py-1 rounded bg-blue-600 text-white';
-      } else if (i < n) {
-        el.className = 'px-2 py-1 rounded bg-green-800 text-green-300';
-      } else {
-        el.className = 'px-2 py-1 rounded bg-gray-700 text-gray-400';
-      }
-    }
-    for (var i = 1; i <= 4; i++) { if (i === n) show(i); else hide(i); }
-    document.getElementById('btn-restart').classList.toggle('hidden', n === 1);
+  function switchTab(name) {
+    document.querySelector('.tab-btn[data-tab="' + name + '"]').click();
   }
 
-  // ==================== STEP 1: Upload & Render ====================
-  fileInput.addEventListener('change', function(e) {
+  // ==================== Detection with sliders ====================
+  function getThreshold() { return document.getElementById('slider-threshold').value; }
+  function getCloseSize() { return document.getElementById('slider-close').value; }
+
+  function runDetect() {
+    var fd = new FormData();
+    fd.append('file', pdfFile);
+    fd.append('scale', '3');
+    fd.append('threshold', getThreshold());
+    fd.append('close_size', getCloseSize());
+    document.getElementById('plan-status').textContent = 'Detecting sections...';
+    return fetch(API + '/detect', { method: 'POST', body: fd });
+  }
+
+  // Slider change → re-detect (debounced)
+  var detectTimer = null;
+  function onSliderChange() {
+    document.getElementById('close-val').textContent = getCloseSize();
+    if (!pdfFile) return;
+    if (detectTimer) clearTimeout(detectTimer);
+    cancelAnalysis();
+    detectTimer = setTimeout(function() {
+      runDetect()
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (!d.success) throw new Error(d.error);
+          sections = d.sections;
+          detectedTiles = d.tiles || [];
+          detectedHull = d.hull || [];
+          floorResults = {};
+          document.getElementById('plan-status').textContent = detectedTiles.length + ' tiles, ' + detectedHull.length + ' hull points';
+          renderOverlays();
+          renderAreaList();
+          document.getElementById('btn-scan-items').disabled = false;
+        })
+        .catch(function(err) {
+          document.getElementById('plan-status').textContent = 'Detection error: ' + err.message;
+        });
+    }, 600);
+  }
+  document.getElementById('slider-threshold').addEventListener('input', onSliderChange);
+  document.getElementById('slider-close').addEventListener('input', onSliderChange);
+
+  // Explicit scan button — only runs item counting when user is ready
+  document.getElementById('btn-scan-items').addEventListener('click', function() {
+    if (!pdfFile || sections.length === 0) return;
+    scheduleRecalc();
+  });
+
+  // ==================== File Upload ====================
+  document.getElementById('file-input').addEventListener('change', function(e) {
     var file = e.target.files[0];
     if (!file || file.type !== 'application/pdf') return;
     pdfFile = file;
+    sections = [];
+    floorResults = {};
 
-    uploadMsg.textContent = 'Rendering PDF...';
-    uploadMsg.style.color = '#9ca3af';
+    var name = file.name.replace('.pdf', '').replace('.PDF', '');
+    document.getElementById('plan-title').textContent = name;
+    document.getElementById('plan-status').textContent = 'Rendering...';
 
     var fd = new FormData();
     fd.append('file', file);
@@ -158,381 +262,551 @@ if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) return Astro.redirect("
       .then(function(r) { return r.json(); })
       .then(function(d) {
         if (!d.success) throw new Error(d.error);
-        fullImage = d.image;
+        fullImageSrc = d.image;
+        document.getElementById('plan-status').textContent = 'Detecting sections...';
 
-        uploadMsg.textContent = 'Detecting sections...';
-
-        // Now detect sections
-        var fd2 = new FormData();
-        fd2.append('file', pdfFile);
-        fd2.append('scale', '3');
-
-        return fetch(API + '/detect', { method: 'POST', body: fd2 });
+        return runDetect();
       })
       .then(function(r) { return r.json(); })
       .then(function(d) {
         if (!d.success) throw new Error(d.error);
         sections = d.sections;
-        showSections();
+        detectedTiles = d.tiles || [];
+        detectedHull = d.hull || [];
+        document.getElementById('plan-status').textContent = detectedTiles.length + ' tiles, ' + detectedHull.length + ' hull points';
+        showPlan();
+        renderAreaList();
+        document.getElementById('btn-add-symbol').disabled = false;
+        document.getElementById('btn-scan-items').disabled = false;
       })
       .catch(function(err) {
-        uploadMsg.textContent = 'Error: ' + err.message;
-        uploadMsg.style.color = '#f87171';
+        document.getElementById('plan-status').textContent = 'Error: ' + err.message;
       });
   });
 
-  // ==================== STEP 2: Show Sections ====================
-  function showSections() {
-    setStep(2);
-
-    var img = document.getElementById('plan-full');
-    img.src = fullImage;
-
-    img.onload = function() {
-      var overlays = document.getElementById('overlays');
-      overlays.innerHTML = '';
-
-      var colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
-      var scaleX = img.clientWidth / img.naturalWidth;
-      var scaleY = img.clientHeight / img.naturalHeight;
-
-      for (var i = 0; i < sections.length; i++) {
-        (function(idx) {
-          var s = sections[idx];
-          var color = colors[idx % colors.length];
-
-          var div = document.createElement('div');
-          div.className = 'absolute pointer-events-auto';
-          div.style.left = (s.x * scaleX) + 'px';
-          div.style.top = (s.y * scaleY) + 'px';
-          div.style.width = (s.width * scaleX) + 'px';
-          div.style.height = (s.height * scaleY) + 'px';
-          div.style.border = '2px solid ' + color;
-          div.style.backgroundColor = color + '15';
-          div.style.cursor = 'move';
-          div.setAttribute('data-idx', idx);
-
-          // Label bar (drag handle)
-          var label = document.createElement('div');
-          label.style.cssText = 'position:absolute;top:0;left:0;right:0;height:28px;background:' + color + 'cc;color:white;padding:4px 8px;font-size:12px;font-weight:600;cursor:move;display:flex;justify-content:space-between;align-items:center;';
-          var labelText = document.createElement('span');
-          labelText.textContent = s.label;
-          label.appendChild(labelText);
-
-          // Remove button
-          var btn = document.createElement('button');
-          btn.style.cssText = 'background:#ef4444;color:white;width:20px;height:20px;border-radius:50%;border:none;cursor:pointer;font-size:12px;line-height:20px;text-align:center;flex-shrink:0;';
-          btn.textContent = '✕';
-          btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            e.preventDefault();
-            div.remove();
-            sections[idx]._removed = true;
-          });
-          label.appendChild(btn);
-          div.appendChild(label);
-
-          // Resize handles (bottom, right, bottom-right corner)
-          var handles = [
-            { cursor: 'e-resize',  pos: 'top:0;right:-4px;width:8px;height:100%;' },
-            { cursor: 's-resize',  pos: 'bottom:-4px;left:0;width:100%;height:8px;' },
-            { cursor: 'se-resize', pos: 'bottom:-6px;right:-6px;width:12px;height:12px;background:' + color + ';border-radius:2px;' },
-            { cursor: 'w-resize',  pos: 'top:0;left:-4px;width:8px;height:100%;' },
-            { cursor: 'n-resize',  pos: 'top:-4px;left:0;width:100%;height:8px;' }
-          ];
-
-          for (var h = 0; h < handles.length; h++) {
-            var handle = document.createElement('div');
-            handle.style.cssText = 'position:absolute;' + handles[h].pos + 'cursor:' + handles[h].cursor + ';z-index:5;';
-            handle.setAttribute('data-cursor', handles[h].cursor);
-            div.appendChild(handle);
-          }
-
-          // --- Drag & Resize Logic ---
-          (function(el, sectionData) {
-            var startX, startY, startLeft, startTop, startW, startH, mode;
-            var parentRect;
-
-            function onMouseDown(e) {
-              if (e.target.tagName === 'BUTTON') return;
-              e.preventDefault();
-              parentRect = el.parentElement.getBoundingClientRect();
-
-              startX = e.clientX;
-              startY = e.clientY;
-              startLeft = parseInt(el.style.left);
-              startTop = parseInt(el.style.top);
-              startW = parseInt(el.style.width);
-              startH = parseInt(el.style.height);
-
-              var cursor = e.target.getAttribute('data-cursor');
-              if (cursor === 'e-resize') mode = 'resize-e';
-              else if (cursor === 's-resize') mode = 'resize-s';
-              else if (cursor === 'se-resize') mode = 'resize-se';
-              else if (cursor === 'w-resize') mode = 'resize-w';
-              else if (cursor === 'n-resize') mode = 'resize-n';
-              else mode = 'drag';
-
-              document.addEventListener('mousemove', onMouseMove);
-              document.addEventListener('mouseup', onMouseUp);
-            }
-
-            function onMouseMove(e) {
-              var dx = e.clientX - startX;
-              var dy = e.clientY - startY;
-
-              if (mode === 'drag') {
-                el.style.left = Math.max(0, startLeft + dx) + 'px';
-                el.style.top = Math.max(0, startTop + dy) + 'px';
-              } else if (mode === 'resize-e') {
-                el.style.width = Math.max(50, startW + dx) + 'px';
-              } else if (mode === 'resize-s') {
-                el.style.height = Math.max(50, startH + dy) + 'px';
-              } else if (mode === 'resize-se') {
-                el.style.width = Math.max(50, startW + dx) + 'px';
-                el.style.height = Math.max(50, startH + dy) + 'px';
-              } else if (mode === 'resize-w') {
-                var newW = Math.max(50, startW - dx);
-                el.style.left = (startLeft + startW - newW) + 'px';
-                el.style.width = newW + 'px';
-              } else if (mode === 'resize-n') {
-                var newH = Math.max(50, startH - dy);
-                el.style.top = (startTop + startH - newH) + 'px';
-                el.style.height = newH + 'px';
-              }
-
-              // Update section data in real time (convert back to image coords)
-              var sx = img.clientWidth > 0 ? img.naturalWidth / img.clientWidth : 1;
-              var sy = img.clientHeight > 0 ? img.naturalHeight / img.clientHeight : 1;
-              sectionData.x = Math.round(parseInt(el.style.left) * sx);
-              sectionData.y = Math.round(parseInt(el.style.top) * sy);
-              sectionData.width = Math.round(parseInt(el.style.width) * sx);
-              sectionData.height = Math.round(parseInt(el.style.height) * sy);
-            }
-
-            function onMouseUp() {
-              document.removeEventListener('mousemove', onMouseMove);
-              document.removeEventListener('mouseup', onMouseUp);
-            }
-
-            el.addEventListener('mousedown', onMouseDown);
-          })(div, s);
-
-          overlays.appendChild(div);
-        })(i);
-      }
-    };
-  }
-
-  // ==================== Confirm Sections → Step 3 ====================
-  document.getElementById('btn-confirm-sections').addEventListener('click', function() {
-    confirmedSections = [];
-    for (var i = 0; i < sections.length; i++) {
-      if (!sections[i]._removed) confirmedSections.push(sections[i]);
-    }
-    if (confirmedSections.length === 0) {
-      alert('No sections selected. Please keep at least one section.');
-      return;
-    }
-
-    floorResults = [];
-    currentFloor = 0;
-    processFloor(0);
-  });
-
-  // ==================== STEP 3: Process each floor ====================
-  function processFloor(idx) {
-    if (idx >= confirmedSections.length) {
-      showSummary();
-      return;
-    }
-
-    currentFloor = idx;
-    var section = confirmedSections[idx];
-
-    setStep(3);
-    document.getElementById('current-floor-label').textContent = section.label;
-    document.getElementById('floor-progress').textContent = (idx + 1);
-    document.getElementById('floor-total').textContent = confirmedSections.length;
-
-    // Show loading, hide results
-    document.getElementById('floor-loading').classList.remove('hidden');
-    document.getElementById('floor-data').classList.add('hidden');
-    document.getElementById('floor-actions').classList.add('hidden');
-
-    // Crop the section
-    var fd = new FormData();
-    fd.append('file', pdfFile);
-    fd.append('scale', '3');
-    fd.append('x', section.x);
-    fd.append('y', section.y);
-    fd.append('w', section.width);
-    fd.append('h', section.height);
-
-    fetch(API + '/crop', { method: 'POST', body: fd })
-      .then(function(r) { return r.json(); })
-      .then(function(d) {
-        if (!d.success) throw new Error(d.error);
-
-        // Show the crop
-        document.getElementById('floor-image').src = d.image;
-
-        // Now count
-        var fd2 = new FormData();
-        fd2.append('image', d.image);
-        fd2.append('label', section.label);
-
-        return fetch(API + '/count', { method: 'POST', body: fd2 });
-      })
-      .then(function(r) { return r.json(); })
-      .then(function(d) {
-        if (!d.success) throw new Error(d.error || d.raw || 'Count failed');
-
-        // Show results
-        document.getElementById('floor-loading').classList.add('hidden');
-        document.getElementById('floor-data').classList.remove('hidden');
-        document.getElementById('floor-actions').classList.remove('hidden');
-
-        var r = d.result;
-        var html = '';
-        html += '<div class="space-y-3">';
-
-        // Heads
-        var headTotal = r.heads ? r.heads.total : 0;
-        html += '<div class="flex justify-between items-center">';
-        html += '  <span class="text-gray-300">Sprinkler Heads</span>';
-        html += '  <span class="text-2xl font-bold text-blue-400">' + headTotal + '</span>';
-        html += '</div>';
-
-        // Head types
-        if (r.heads && r.heads.types) {
-          for (var t = 0; t < r.heads.types.length; t++) {
-            var ht = r.heads.types[t];
-            html += '<div class="flex justify-between text-sm pl-4">';
-            html += '  <span class="text-gray-500">' + ht.type + '</span>';
-            html += '  <span class="text-gray-300">' + ht.count + '</span>';
-            html += '</div>';
-          }
-        }
-
-        // Fittings
-        if (r.tees > 0) {
-          html += '<div class="flex justify-between text-sm">';
-          html += '  <span class="text-gray-400">Tee Junctions</span>';
-          html += '  <span class="text-yellow-400 font-semibold">' + r.tees + '</span>';
-          html += '</div>';
-        }
-        if (r.elbows > 0) {
-          html += '<div class="flex justify-between text-sm">';
-          html += '  <span class="text-gray-400">Elbow Junctions</span>';
-          html += '  <span class="text-orange-400 font-semibold">' + r.elbows + '</span>';
-          html += '</div>';
-        }
-        if (r.risers > 0) {
-          html += '<div class="flex justify-between text-sm">';
-          html += '  <span class="text-gray-400">Risers</span>';
-          html += '  <span class="text-green-400 font-semibold">' + r.risers + '</span>';
-          html += '</div>';
-        }
-
-        // Notes
-        if (r.notes) {
-          html += '<div class="text-xs text-gray-500 mt-2 border-t border-gray-700 pt-2">' + r.notes + '</div>';
-        }
-
-        html += '</div>';
-
-        // Raw JSON toggle
-        html += '<details class="mt-3"><summary class="text-xs text-gray-600 cursor-pointer">Raw AI response</summary>';
-        html += '<pre class="text-xs text-gray-500 mt-1 overflow-auto max-h-40 bg-gray-900 p-2 rounded">' + JSON.stringify(r, null, 2) + '</pre>';
-        html += '</details>';
-
-        document.getElementById('floor-data').innerHTML = html;
-
-        // Store result
-        floorResults[idx] = r;
-      })
-      .catch(function(err) {
-        document.getElementById('floor-loading').classList.add('hidden');
-        document.getElementById('floor-data').classList.remove('hidden');
-        document.getElementById('floor-data').innerHTML = '<p class="text-red-400">Error: ' + err.message + '</p>';
-        document.getElementById('floor-actions').classList.remove('hidden');
-      });
-  }
-
-  // Accept → next floor
-  document.getElementById('btn-accept').addEventListener('click', function() {
-    processFloor(currentFloor + 1);
-  });
-
-  // Re-count current floor
-  document.getElementById('btn-recount').addEventListener('click', function() {
-    processFloor(currentFloor);
-  });
-
-  // ==================== STEP 4: Summary ====================
-  function showSummary() {
-    setStep(4);
-
-    var html = '<table class="w-full text-sm">';
-    html += '<thead><tr class="text-left text-gray-400 border-b border-gray-700">';
-    html += '<th class="py-2">Floor</th><th class="py-2 text-right">Heads</th><th class="py-2 text-right">Tees</th><th class="py-2 text-right">Elbows</th><th class="py-2 text-right">Risers</th>';
-    html += '</tr></thead><tbody>';
-
-    var totals = { heads: 0, tees: 0, elbows: 0, risers: 0 };
-
-    for (var i = 0; i < confirmedSections.length; i++) {
-      var r = floorResults[i] || {};
-      var heads = r.heads ? r.heads.total : 0;
-      var tees = r.tees || 0;
-      var elbows = r.elbows || 0;
-      var risers = r.risers || 0;
-
-      totals.heads += heads;
-      totals.tees += tees;
-      totals.elbows += elbows;
-      totals.risers += risers;
-
-      html += '<tr class="border-b border-gray-800">';
-      html += '<td class="py-2">' + confirmedSections[i].label + '</td>';
-      html += '<td class="py-2 text-right font-mono text-blue-400">' + heads + '</td>';
-      html += '<td class="py-2 text-right font-mono text-yellow-400">' + tees + '</td>';
-      html += '<td class="py-2 text-right font-mono text-orange-400">' + elbows + '</td>';
-      html += '<td class="py-2 text-right font-mono text-green-400">' + risers + '</td>';
-      html += '</tr>';
-    }
-
-    html += '<tr class="font-bold text-lg">';
-    html += '<td class="py-3">TOTAL</td>';
-    html += '<td class="py-3 text-right font-mono text-blue-400">' + totals.heads + '</td>';
-    html += '<td class="py-3 text-right font-mono text-yellow-400">' + totals.tees + '</td>';
-    html += '<td class="py-3 text-right font-mono text-orange-400">' + totals.elbows + '</td>';
-    html += '<td class="py-3 text-right font-mono text-green-400">' + totals.risers + '</td>';
-    html += '</tr>';
-
-    html += '</tbody></table>';
-
-    document.getElementById('summary-table').innerHTML = html;
-  }
-
-  // ==================== Restart ====================
-  document.getElementById('btn-restart').addEventListener('click', function() {
+  // ==================== New Scan ====================
+  document.getElementById('btn-new').addEventListener('click', function() {
+    cancelAnalysis();
     pdfFile = null;
-    fullImage = null;
+    fullImageSrc = null;
     sections = [];
-    confirmedSections = [];
-    floorResults = [];
-    currentFloor = 0;
-    fileInput.value = '';
-    uploadMsg.textContent = '';
-    uploadMsg.style.color = '';
-    document.getElementById('plan-full').src = '';
-    setStep(1);
+    floorResults = {};
+    document.getElementById('plan-title').textContent = '';
+    document.getElementById('plan-status').textContent = '';
+    document.getElementById('file-input').value = '';
+    document.getElementById('upload-prompt').classList.remove('hidden');
+    document.getElementById('plan-view').classList.add('hidden');
+    document.getElementById('area-list').innerHTML = '<p class="text-xs text-gray-600 italic">Upload a plan to detect areas</p>';
+    document.getElementById('results-content').classList.add('hidden');
+    document.getElementById('results-empty').classList.remove('hidden');
+    document.getElementById('btn-add-symbol').disabled = true;
+    switchTab('areas');
   });
 
-  document.getElementById('btn-new-scan').addEventListener('click', function() {
-    document.getElementById('btn-restart').click();
+  // ==================== Show Plan ====================
+  function showPlan() {
+    document.getElementById('upload-prompt').classList.add('hidden');
+    document.getElementById('plan-view').classList.remove('hidden');
+    var img = document.getElementById('plan-img');
+    img.src = fullImageSrc;
+    img.onload = function() { renderOverlays(); };
+  }
+
+  // ==================== Section Overlays ====================
+  var COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
+
+  function renderOverlays() {
+    var img = document.getElementById('plan-img');
+    var container = document.getElementById('section-overlays');
+    container.innerHTML = '';
+    if (!img.naturalWidth) return;
+
+    var scaleX = img.clientWidth / img.naturalWidth;
+    var scaleY = img.clientHeight / img.naturalHeight;
+
+    // Draw tiles as semi-transparent fill
+    if (detectedTiles.length > 0) {
+      for (var t = 0; t < detectedTiles.length; t++) {
+        var tile = detectedTiles[t];
+        var td = document.createElement('div');
+        td.className = 'absolute';
+        td.style.left = (tile.x * scaleX) + 'px';
+        td.style.top = (tile.y * scaleY) + 'px';
+        td.style.width = (tile.w * scaleX) + 'px';
+        td.style.height = (tile.h * scaleY) + 'px';
+        td.style.backgroundColor = 'rgba(59, 130, 246, 0.12)';
+        container.appendChild(td);
+      }
+    }
+
+    // Draw convex hull polygon as SVG overlay
+    if (detectedHull.length >= 3) {
+      var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;';
+      svg.setAttribute('viewBox', '0 0 ' + img.naturalWidth + ' ' + img.naturalHeight);
+      svg.setAttribute('preserveAspectRatio', 'none');
+
+      var points = detectedHull.map(function(p) { return p[0] + ',' + p[1]; }).join(' ');
+      var polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+      polygon.setAttribute('points', points);
+      polygon.setAttribute('fill', 'none');
+      polygon.setAttribute('stroke', '#3b82f6');
+      polygon.setAttribute('stroke-width', '3');
+      polygon.setAttribute('stroke-dasharray', '8,4');
+      svg.appendChild(polygon);
+
+      // Label at first hull point
+      var labelX = detectedHull[0][0] + 5;
+      var labelY = detectedHull[0][1] + 16;
+      var text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      text.setAttribute('x', labelX);
+      text.setAttribute('y', labelY);
+      text.setAttribute('fill', 'white');
+      text.setAttribute('font-size', '14');
+      text.setAttribute('font-weight', 'bold');
+      text.textContent = 'Floor Plans';
+      // Background rect for label
+      var bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      bg.setAttribute('x', labelX - 4);
+      bg.setAttribute('y', labelY - 13);
+      bg.setAttribute('width', '90');
+      bg.setAttribute('height', '18');
+      bg.setAttribute('fill', '#3b82f6cc');
+      bg.setAttribute('rx', '2');
+      svg.appendChild(bg);
+      svg.appendChild(text);
+
+      container.appendChild(svg);
+    }
+  }
+
+  // ==================== Area List (sidebar) ====================
+  function renderAreaList() {
+    var list = document.getElementById('area-list');
+    list.innerHTML = '';
+
+    var active = sections.filter(function(s) { return !s._removed; });
+    if (active.length === 0) {
+      list.innerHTML = '<p class="text-xs text-gray-600 italic">No areas detected</p>';
+      return;
+    }
+
+    for (var i = 0; i < sections.length; i++) {
+      if (sections[i]._removed) continue;
+      (function(idx) {
+        var s = sections[idx];
+        var color = COLORS[idx % COLORS.length];
+
+        var card = document.createElement('div');
+        card.className = 'area-card flex items-center gap-2';
+
+        var dot = document.createElement('div');
+        dot.style.cssText = 'width:10px;height:10px;border-radius:50%;background:' + color + ';flex-shrink:0;';
+        card.appendChild(dot);
+
+        var name = document.createElement('span');
+        name.className = 'flex-1 text-gray-300';
+        name.textContent = s.label;
+        card.appendChild(name);
+
+        // Status indicator
+        var status = document.createElement('span');
+        status.className = 'text-gray-600';
+        status.id = 'area-status-' + idx;
+        if (floorResults[idx]) {
+          var h = floorResults[idx].heads ? floorResults[idx].heads.total : 0;
+          status.textContent = h + ' heads';
+          status.className = 'text-green-400';
+        }
+        card.appendChild(status);
+
+        var btn = document.createElement('button');
+        btn.className = 'text-gray-600 hover:text-red-400 text-sm';
+        btn.textContent = '✕';
+        btn.addEventListener('click', function() {
+          sections[idx]._removed = true;
+          delete floorResults[idx];
+          renderAreaList();
+          renderOverlays();
+          scheduleRecalc();
+        });
+        card.appendChild(btn);
+
+        list.appendChild(card);
+      })(i);
+    }
+  }
+
+  // ==================== Symbol Library ====================
+  var cropMode = false;
+  var cropStart = null;
+
+  document.getElementById('btn-add-symbol').addEventListener('click', function() {
+    if (!fullImageSrc) return;
+    cropMode = true;
+    document.getElementById('plan-status').textContent = 'Click and drag on the plan to crop a symbol...';
+
+    // Add crop overlay
+    var planView = document.getElementById('plan-view');
+    var overlay = document.createElement('div');
+    overlay.id = 'crop-overlay';
+    var sel = document.createElement('div');
+    sel.id = 'crop-selection';
+    overlay.appendChild(sel);
+    planView.appendChild(overlay);
+
+    overlay.addEventListener('mousedown', function(e) {
+      var rect = overlay.getBoundingClientRect();
+      cropStart = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      sel.style.display = 'block';
+      sel.style.left = cropStart.x + 'px';
+      sel.style.top = cropStart.y + 'px';
+      sel.style.width = '0px';
+      sel.style.height = '0px';
+    });
+
+    overlay.addEventListener('mousemove', function(e) {
+      if (!cropStart) return;
+      var rect = overlay.getBoundingClientRect();
+      var cx = e.clientX - rect.left;
+      var cy = e.clientY - rect.top;
+      sel.style.left = Math.min(cropStart.x, cx) + 'px';
+      sel.style.top = Math.min(cropStart.y, cy) + 'px';
+      sel.style.width = Math.abs(cx - cropStart.x) + 'px';
+      sel.style.height = Math.abs(cy - cropStart.y) + 'px';
+    });
+
+    overlay.addEventListener('mouseup', function(e) {
+      if (!cropStart) return;
+      var rect = overlay.getBoundingClientRect();
+      var cx = e.clientX - rect.left;
+      var cy = e.clientY - rect.top;
+
+      var x1 = Math.min(cropStart.x, cx);
+      var y1 = Math.min(cropStart.y, cy);
+      var w = Math.abs(cx - cropStart.x);
+      var h = Math.abs(cy - cropStart.y);
+
+      cropStart = null;
+      overlay.remove();
+      cropMode = false;
+
+      if (w < 5 || h < 5) {
+        document.getElementById('plan-status').textContent = '';
+        return;
+      }
+
+      // Convert display coords to image coords
+      var img = document.getElementById('plan-img');
+      var sx = img.naturalWidth / img.clientWidth;
+      var sy = img.naturalHeight / img.clientHeight;
+
+      var imgX = Math.round(x1 * sx);
+      var imgY = Math.round(y1 * sy);
+      var imgW = Math.round(w * sx);
+      var imgH = Math.round(h * sy);
+
+      document.getElementById('plan-status').textContent = 'Cropping symbol...';
+
+      // Crop via API
+      var fd = new FormData();
+      fd.append('file', pdfFile);
+      fd.append('scale', '2');  // fullImage is at scale=2, crop needs matching scale
+      fd.append('x', imgX);
+      fd.append('y', imgY);
+      fd.append('w', imgW);
+      fd.append('h', imgH);
+
+      fetch(API + '/crop', { method: 'POST', body: fd })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (!d.success) throw new Error(d.error);
+          promptSymbolLabel(d.image);
+        })
+        .catch(function(err) {
+          document.getElementById('plan-status').textContent = 'Crop error: ' + err.message;
+        });
+    });
   });
+
+  function promptSymbolLabel(imageData) {
+    document.getElementById('plan-status').textContent = '';
+
+    var types = ['pendent', 'sidewall', 'tee', 'elbow', 'riser', 'exclude'];
+    var label = prompt('Symbol type?\n\n' + types.join(', ') + '\n\n(or type a custom name)');
+    if (!label) return;
+
+    var symbol = {
+      id: 'sym_' + Date.now(),
+      type: label.toLowerCase().trim(),
+      label: label,
+      image: imageData
+    };
+    symbolLibrary.push(symbol);
+    renderLibrary();
+    switchTab('library');
+    scheduleRecalc();
+  }
+
+  function renderLibrary() {
+    var container = document.getElementById('library-symbols');
+    var empty = document.getElementById('library-empty');
+
+    if (symbolLibrary.length === 0) {
+      container.innerHTML = '';
+      container.appendChild(empty);
+      empty.classList.remove('hidden');
+      return;
+    }
+
+    empty.classList.add('hidden');
+    container.innerHTML = '';
+
+    for (var i = 0; i < symbolLibrary.length; i++) {
+      (function(idx) {
+        var sym = symbolLibrary[idx];
+        var card = document.createElement('div');
+        card.className = 'symbol-card';
+
+        var img = document.createElement('img');
+        img.src = sym.image;
+        card.appendChild(img);
+
+        var info = document.createElement('div');
+        info.className = 'flex-1';
+        info.innerHTML = '<div class="text-xs font-semibold text-gray-300">' + sym.type + '</div>';
+        card.appendChild(info);
+
+        var btn = document.createElement('button');
+        btn.className = 'text-gray-600 hover:text-red-400 text-xs';
+        btn.textContent = '✕';
+        btn.addEventListener('click', function() {
+          symbolLibrary.splice(idx, 1);
+          renderLibrary();
+          scheduleRecalc();
+        });
+        card.appendChild(btn);
+
+        container.appendChild(card);
+      })(i);
+    }
+  }
+
+  // ==================== Auto-recalculate ====================
+  function scheduleRecalc() {
+    if (recalcTimer) clearTimeout(recalcTimer);
+    recalcTimer = setTimeout(function() { runAnalysis(); }, 2500);
+  }
+
+  function cancelAnalysis() {
+    if (abortController) {
+      abortController.abort();
+      abortController = null;
+    }
+    analyzing = false;
+  }
+
+  function runAnalysis() {
+    if (!pdfFile) return;
+
+    // Kill any in-flight scan
+    cancelAnalysis();
+
+    var active = [];
+    for (var i = 0; i < sections.length; i++) {
+      if (!sections[i]._removed) active.push({ idx: i, section: sections[i] });
+    }
+    if (active.length === 0) {
+      floorResults = {};
+      showResults();
+      return;
+    }
+
+    analyzing = true;
+    abortController = new AbortController();
+    var signal = abortController.signal;
+
+    switchTab('results');
+    document.getElementById('results-empty').classList.add('hidden');
+    document.getElementById('results-loading').classList.remove('hidden');
+    document.getElementById('results-content').classList.add('hidden');
+
+    var completed = 0;
+    floorResults = {};
+
+    for (var a = 0; a < active.length; a++) {
+      (function(item) {
+        var section = item.section;
+
+        // Crop
+        var fd = new FormData();
+        fd.append('file', pdfFile);
+        fd.append('scale', '3');
+        fd.append('x', section.x);
+        fd.append('y', section.y);
+        fd.append('w', section.width);
+        fd.append('h', section.height);
+
+        fetch(API + '/crop', { method: 'POST', body: fd, signal: signal })
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            if (signal.aborted) return;
+            if (!d.success) throw new Error(d.error);
+
+            // Count
+            var fd2 = new FormData();
+            fd2.append('image', d.image);
+            fd2.append('label', section.label);
+
+            if (symbolLibrary.length > 0) {
+              fd2.append('library', JSON.stringify(symbolLibrary.map(function(s) {
+                return { type: s.type, image: s.image };
+              })));
+            }
+
+            return fetch(API + '/count', { method: 'POST', body: fd2, signal: signal });
+          })
+          .then(function(r) { if (r) return r.json(); })
+          .then(function(d) {
+            if (!d || signal.aborted) return;
+            if (!d.success) throw new Error(d.error || 'Count failed');
+            floorResults[item.idx] = d.result;
+            completed++;
+            updateProgress(completed, active.length);
+            if (completed >= active.length) {
+              analyzing = false;
+              abortController = null;
+              showResults();
+              renderAreaList();
+            }
+          })
+          .catch(function(err) {
+            if (signal.aborted) return;  // Intentional cancel, ignore
+            floorResults[item.idx] = { error: err.message };
+            completed++;
+            if (completed >= active.length) {
+              analyzing = false;
+              abortController = null;
+              showResults();
+              renderAreaList();
+            }
+          });
+      })(active[a]);
+    }
+  }
+
+  function updateProgress(done, total) {
+    document.getElementById('plan-status').textContent = 'Analyzing floor ' + done + ' of ' + total + '...';
+  }
+
+  // ==================== Show Results ====================
+  function showResults() {
+    document.getElementById('results-loading').classList.add('hidden');
+    document.getElementById('plan-status').textContent = '';
+
+    var totals = { pendent: 0, sidewall: 0, heads: 0, tees: 0, elbows: 0, risers: 0 };
+    var floorDetails = [];
+
+    for (var i = 0; i < sections.length; i++) {
+      if (sections[i]._removed || !floorResults[i]) continue;
+      var r = floorResults[i];
+      if (r.error) {
+        floorDetails.push({ label: sections[i].label, error: r.error });
+        continue;
+      }
+
+      var headTotal = r.heads ? r.heads.total : 0;
+      var pendent = 0, sidewall = 0;
+      if (r.heads && r.heads.types) {
+        for (var t = 0; t < r.heads.types.length; t++) {
+          var ht = r.heads.types[t];
+          if (ht.type === 'pendent') pendent += ht.count;
+          else if (ht.type === 'sidewall') sidewall += ht.count;
+        }
+      }
+
+      totals.pendent += pendent;
+      totals.sidewall += sidewall;
+      totals.heads += headTotal;
+      totals.tees += (r.tees || 0);
+      totals.elbows += (r.elbows || 0);
+      totals.risers += (r.risers || 0);
+
+      floorDetails.push({
+        label: sections[i].label,
+        heads: headTotal,
+        pendent: pendent,
+        sidewall: sidewall,
+        tees: r.tees || 0,
+        elbows: r.elbows || 0,
+        risers: r.risers || 0,
+        notes: r.notes || ''
+      });
+    }
+
+    if (floorDetails.length === 0) {
+      document.getElementById('results-empty').classList.remove('hidden');
+      document.getElementById('results-content').classList.add('hidden');
+      return;
+    }
+
+    document.getElementById('results-empty').classList.add('hidden');
+    document.getElementById('results-content').classList.remove('hidden');
+
+    // Items found
+    var items = document.getElementById('results-items');
+    items.innerHTML = '';
+
+    var rows = [
+      { label: 'Pendent Heads', count: totals.pendent, color: '#3b82f6' },
+      { label: 'Sidewall Heads', count: totals.sidewall, color: '#3b82f6' },
+      { label: 'Sprinkler Heads', count: totals.heads, color: '#3b82f6', suffix: 'total', bold: true },
+      { label: 'Tee Junctions', count: totals.tees, color: '#1f2937' },
+      { label: 'Elbow Junctions', count: totals.elbows, color: '#1f2937' },
+      { label: 'Risers', count: totals.risers, color: '#1f2937' }
+    ];
+
+    for (var r = 0; r < rows.length; r++) {
+      var row = rows[r];
+      var div = document.createElement('div');
+      div.className = 'result-row';
+      div.innerHTML =
+        '<div class="dot" style="background:' + row.color + '"></div>' +
+        '<span class="label">' + row.label + (row.suffix ? ' <span class="text-xs text-gray-500">' + row.suffix + '</span>' : '') + '</span>' +
+        '<span class="count" style="color:' + (row.bold ? '#fff' : '#9ca3af') + '">' + row.count + '</span>';
+      items.appendChild(div);
+    }
+
+    // Confidence
+    var conf = document.getElementById('results-confidence');
+    var confLevel = totals.heads > 0 ? (symbolLibrary.length > 0 ? 'high' : 'medium') : 'low';
+    conf.textContent = confLevel;
+    conf.className = 'text-xs font-semibold ' + (confLevel === 'high' ? 'text-green-400' : confLevel === 'medium' ? 'text-yellow-400' : 'text-red-400');
+
+    // Project info
+    document.getElementById('results-project').innerHTML =
+      '<div>Standard: <strong>NFPA 13</strong></div>' +
+      '<div>System: <strong>wet</strong></div>' +
+      '<div>Hazard: <strong>Light Hazard</strong></div>';
+
+    // Per floor
+    var floors = document.getElementById('results-floors');
+    floors.innerHTML = '';
+    for (var f = 0; f < floorDetails.length; f++) {
+      var fl = floorDetails[f];
+      var div = document.createElement('div');
+      div.className = 'bg-gray-800 rounded p-2 text-xs';
+      if (fl.error) {
+        div.innerHTML = '<span class="text-gray-400">' + fl.label + '</span> <span class="text-red-400">Error</span>';
+      } else {
+        div.innerHTML =
+          '<div class="flex justify-between"><span class="text-gray-400">' + fl.label + '</span><span class="text-blue-400 font-semibold">' + fl.heads + ' heads</span></div>' +
+          '<div class="text-gray-600 mt-1">' + fl.pendent + 'P / ' + fl.sidewall + 'S · ' + fl.tees + 'T · ' + fl.elbows + 'E · ' + fl.risers + 'R</div>' +
+          (fl.notes ? '<div class="text-gray-600 mt-1">' + fl.notes + '</div>' : '');
+      }
+      floors.appendChild(div);
+    }
+  }
 
 })();
 </script>
