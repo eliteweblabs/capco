@@ -55,22 +55,64 @@ if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) return Astro.redirect("
 
       <!-- Tab: Areas -->
       <div id="tab-areas" class="tab-panel flex-1 overflow-auto p-3">
-        <p class="text-xs text-gray-500 mb-3">Flood-fill detection. Adjust sliders to tune border detection.</p>
+        <p class="text-xs text-gray-500 mb-2">Step 1: Find drawing border</p>
+        <input type="hidden" id="slider-threshold" value="200" />
 
-        <div class="space-y-3 mb-4">
-          <input type="hidden" id="slider-threshold" value="200" />
+        <div class="space-y-2 mb-3">
+          <div>
+            <div class="flex justify-between text-xs text-gray-400 mb-1">
+              <span>Tile Size</span>
+              <span><span id="tile-val">10</span>px</span>
+            </div>
+            <input type="range" id="slider-tile" min="2" max="30" value="10" step="1" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer accent-blue-500" />
+          </div>
+          <div>
+            <div class="flex justify-between text-xs text-gray-400 mb-1">
+              <span>Overlap</span>
+              <span><span id="step-val">0</span>px</span>
+            </div>
+            <input type="range" id="slider-step" min="0" max="20" value="0" step="1" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer accent-blue-500" />
+            <p class="text-[10px] text-gray-600">Overlap between tiles (0 = no overlap)</p>
+          </div>
           <div>
             <div class="flex justify-between text-xs text-gray-400 mb-1">
               <span>Fill Tolerance</span>
-              <span id="close-val">1</span><span class="text-gray-600">%</span>
+              <span><span id="close-val">1</span>%</span>
             </div>
             <input type="range" id="slider-close" min="0" max="100" value="1" step="0.1" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer accent-blue-500" />
-            <p class="text-[10px] text-gray-600 mt-0.5">% of ink a tile can have and still count as "empty"</p>
+            <p class="text-[10px] text-gray-600">% ink allowed per tile to still count as "empty"</p>
           </div>
-          <button id="btn-scan-items" class="w-full py-2 rounded bg-green-600 hover:bg-green-700 text-xs font-semibold text-white mt-2" disabled>
-            ▶ Scan for Items
+        </div>
+
+        <div class="border-t border-gray-700 pt-3 mb-3">
+          <p class="text-xs text-gray-500 mb-2">Step 2: Refine within selection</p>
+          <div class="space-y-2 mb-2">
+            <div>
+              <div class="flex justify-between text-xs text-gray-400 mb-1">
+                <span>Refine Tile Size</span>
+                <span><span id="tile2-val">8</span>px</span>
+              </div>
+              <input type="range" id="slider-tile2" min="4" max="30" value="8" step="1" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer accent-purple-500" />
+            </div>
+            <div>
+              <div class="flex justify-between text-xs text-gray-400 mb-1">
+                <span>Refine Tolerance</span>
+                <span><span id="close2-val">0.5</span>%</span>
+              </div>
+              <input type="range" id="slider-close2" min="0" max="100" value="0.5" step="0.1" class="w-full h-1 bg-gray-700 rounded appearance-none cursor-pointer accent-purple-500" />
+            </div>
+          </div>
+          <button id="btn-refine" class="w-full py-1.5 rounded bg-purple-600 hover:bg-purple-700 text-xs font-semibold text-white" disabled>
+            🔍 Refine within Selection
+          </button>
+          <button id="btn-reset-detection" class="w-full py-1 rounded bg-gray-700 hover:bg-gray-600 text-[10px] font-medium text-gray-400 mt-1 hidden">
+            ↩ Reset to Full Page
           </button>
         </div>
+
+        <button id="btn-scan-items" class="w-full py-2 rounded bg-green-600 hover:bg-green-700 text-xs font-semibold text-white" disabled>
+          ▶ Scan for Items
+        </button>
 
         <div id="area-list" class="space-y-2">
           <p class="text-xs text-gray-600 italic">Upload a plan to detect areas</p>
@@ -196,14 +238,35 @@ if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) return Astro.redirect("
   // ==================== Detection with sliders ====================
   function getThreshold() { return document.getElementById('slider-threshold').value; }
   function getCloseSize() { return document.getElementById('slider-close').value; }
+  function getTileSize() { return document.getElementById('slider-tile').value; }
+  function getTileStep() {
+    var tile = parseInt(getTileSize());
+    var overlap = parseInt(document.getElementById('slider-step').value);
+    return Math.max(1, tile - overlap);
+  }
+  function getCloseSize2() { return document.getElementById('slider-close2').value; }
+  function getTileSize2() { return document.getElementById('slider-tile2').value; }
 
-  function runDetect() {
+  function runDetect(cropBounds) {
     var fd = new FormData();
     fd.append('file', pdfFile);
     fd.append('scale', '3');
     fd.append('threshold', getThreshold());
-    fd.append('close_size', getCloseSize());
-    document.getElementById('plan-status').textContent = 'Detecting sections...';
+    // Use step 2 sliders when refining, step 1 sliders otherwise
+    if (cropBounds) {
+      fd.append('close_size', getCloseSize2());
+      fd.append('tile_size', getTileSize2());
+      fd.append('tile_step', getTileSize2()); // no overlap for refine by default
+      fd.append('crop_x', cropBounds.x);
+      fd.append('crop_y', cropBounds.y);
+      fd.append('crop_w', cropBounds.w);
+      fd.append('crop_h', cropBounds.h);
+    } else {
+      fd.append('close_size', getCloseSize());
+      fd.append('tile_size', getTileSize());
+      fd.append('tile_step', getTileStep());
+    }
+    document.getElementById('plan-status').textContent = cropBounds ? 'Refining...' : 'Detecting...';
     return fetch(API + '/detect', { method: 'POST', body: fd });
   }
 
@@ -211,11 +274,15 @@ if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) return Astro.redirect("
   var detectTimer = null;
   function onSliderChange() {
     document.getElementById('close-val').textContent = getCloseSize();
+    document.getElementById('tile-val').textContent = getTileSize();
+    document.getElementById('step-val').textContent = document.getElementById('slider-step').value;
+    document.getElementById('close2-val').textContent = getCloseSize2();
+    document.getElementById('tile2-val').textContent = getTileSize2();
     if (!pdfFile) return;
     if (detectTimer) clearTimeout(detectTimer);
     cancelAnalysis();
     detectTimer = setTimeout(function() {
-      runDetect()
+      runDetect(lastDetectionBounds)
         .then(function(r) { return r.json(); })
         .then(function(d) {
           if (!d.success) throw new Error(d.error);
@@ -227,6 +294,7 @@ if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) return Astro.redirect("
           renderOverlays();
           renderAreaList();
           document.getElementById('btn-scan-items').disabled = false;
+          document.getElementById('btn-refine').disabled = false;
         })
         .catch(function(err) {
           document.getElementById('plan-status').textContent = 'Detection error: ' + err.message;
@@ -235,6 +303,43 @@ if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) return Astro.redirect("
   }
   document.getElementById('slider-threshold').addEventListener('input', onSliderChange);
   document.getElementById('slider-close').addEventListener('input', onSliderChange);
+  document.getElementById('slider-tile').addEventListener('input', onSliderChange);
+  document.getElementById('slider-step').addEventListener('input', onSliderChange);
+  // Step 2 sliders only trigger re-detect when in refine mode
+  document.getElementById('slider-close2').addEventListener('input', function() {
+    document.getElementById('close2-val').textContent = getCloseSize2();
+    if (lastDetectionBounds) onSliderChange();
+  });
+  document.getElementById('slider-tile2').addEventListener('input', function() {
+    document.getElementById('tile2-val').textContent = getTileSize2();
+    if (lastDetectionBounds) onSliderChange();
+  });
+
+  // Refine: re-run detection within the CURRENT section bounds
+  // First click locks the crop area from step 1. Subsequent slider changes stay within it.
+  var lastDetectionBounds = null;
+  document.getElementById('btn-refine').addEventListener('click', function() {
+    if (!pdfFile || sections.length === 0) return;
+    // Capture current section as the crop boundary (only on first refine)
+    var s = sections[0];
+    var detScale = 3.0 / 2.0;
+    lastDetectionBounds = {
+      x: Math.round(s.x * detScale),
+      y: Math.round(s.y * detScale),
+      w: Math.round(s.width * detScale),
+      h: Math.round(s.height * detScale)
+    };
+    document.getElementById('btn-reset-detection').classList.remove('hidden');
+    // Re-run with these bounds at current tolerance
+    onSliderChange();
+  });
+
+  document.getElementById('btn-reset-detection').addEventListener('click', function() {
+    if (!pdfFile) return;
+    lastDetectionBounds = null;
+    document.getElementById('btn-reset-detection').classList.add('hidden');
+    onSliderChange();
+  });
 
   // Explicit scan button — only runs item counting when user is ready
   document.getElementById('btn-scan-items').addEventListener('click', function() {
@@ -278,6 +383,7 @@ if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) return Astro.redirect("
         renderAreaList();
         document.getElementById('btn-add-symbol').disabled = false;
         document.getElementById('btn-scan-items').disabled = false;
+        document.getElementById('btn-refine').disabled = false;
       })
       .catch(function(err) {
         document.getElementById('plan-status').textContent = 'Error: ' + err.message;

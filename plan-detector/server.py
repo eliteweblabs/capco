@@ -79,10 +79,52 @@ def detect():
     scale = float(request.form.get("scale", 3))
     threshold = int(request.form.get("threshold", 200))
     close_size = float(request.form.get("close_size", 1))
+    # Optional crop bounds for refinement (in detection-scale pixels)
+    crop_x = request.form.get("crop_x")
+    crop_y = request.form.get("crop_y")
+    crop_w = request.form.get("crop_w")
+    crop_h = request.form.get("crop_h")
+    has_crop = crop_x is not None
 
     try:
         doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-        pix = doc[page_num].get_pixmap(matrix=fitz.Matrix(scale, scale))
+        page = doc[page_num]
+
+        # --- Pre-processing: strip text and diagonal lines from the PDF ---
+        # Since these are CAD PDFs, text is vector objects we can remove directly
+        strip_text = request.form.get("strip_text", "true") == "true"
+        strip_diag = request.form.get("strip_diag", "true") == "true"
+
+        if strip_text or strip_diag:
+            if strip_text:
+                # Remove all text blocks by redacting them with white
+                text_dict = page.get_text("dict")
+                for block in text_dict.get("blocks", []):
+                    if block.get("type") == 0:  # text block
+                        rect = fitz.Rect(block["bbox"])
+                        page.add_redact_annot(rect, fill=[1, 1, 1])
+
+            if strip_diag:
+                # Remove diagonal line segments (not H/V)
+                paths = page.get_drawings()
+                for path in paths:
+                    for item in path.get("items", []):
+                        if item[0] == "l":  # line segment
+                            p1, p2 = item[1], item[2]
+                            dx = abs(p2.x - p1.x)
+                            dy = abs(p2.y - p1.y)
+                            # Diagonal = neither horizontal nor vertical
+                            if dx > 2 and dy > 2:
+                                rect = fitz.Rect(
+                                    min(p1.x, p2.x) - 1, min(p1.y, p2.y) - 1,
+                                    max(p1.x, p2.x) + 1, max(p1.y, p2.y) + 1
+                                )
+                                page.add_redact_annot(rect, fill=[1, 1, 1])
+
+            page.apply_redactions()
+            print(f"DETECT: stripped text={strip_text}, diag={strip_diag}")
+
+        pix = page.get_pixmap(matrix=fitz.Matrix(scale, scale))
         img_data = pix.tobytes("png")
         doc.close()
 
@@ -91,17 +133,22 @@ def detect():
         nrow, ncol = img.shape
 
         # --- Tile-based flood fill approach ---
-        # Divide the page into a grid of tiles. For each tile, check if it's
-        # mostly white (empty). Flood-fill connect adjacent empty tiles.
-        # The largest connected group of empty tiles = the main drawing area.
-
-        TILE = 10  # tile size in pixels (at detection scale)
-        tile_rows = nrow // TILE
-        tile_cols = ncol // TILE
-
-        # For each tile: is it "empty" (mostly white, little ink)?
-        # threshold controls what counts as ink
         _, binary_inv = cv2.threshold(img, threshold, 255, cv2.THRESH_BINARY_INV)
+
+        if has_crop:
+            print(f"DETECT: refining within crop ({crop_x},{crop_y},{crop_w},{crop_h})")
+            cx = int(float(crop_x))
+            cy = int(float(crop_y))
+            cw = int(float(crop_w))
+            ch = int(float(crop_h))
+            mask = np.zeros_like(binary_inv)
+            mask[cy:cy+ch, cx:cx+cw] = 1
+            binary_inv = binary_inv * mask
+
+        TILE = int(request.form.get("tile_size", 10))
+        STEP = max(1, int(request.form.get("tile_step", TILE)))  # step < TILE = overlap
+        tile_rows = (nrow - TILE) // STEP + 1
+        tile_cols = (ncol - TILE) // STEP + 1
 
         # Build tile grid: 1 = empty tile, 0 = has significant ink
         # A tile is "empty" if ink fills less than close_size% of it
@@ -110,8 +157,8 @@ def detect():
 
         for ty in range(tile_rows):
             for tx in range(tile_cols):
-                y0 = ty * TILE
-                x0 = tx * TILE
+                y0 = ty * STEP
+                x0 = tx * STEP
                 tile = binary_inv[y0:y0+TILE, x0:x0+TILE]
                 ink_ratio = np.count_nonzero(tile) / (TILE * TILE)
                 if ink_ratio < ink_tolerance:
@@ -145,9 +192,10 @@ def detect():
 
         best_label = -1
         total_tiles = tile_rows * tile_cols
+        # When refining, the crop area is smaller — lower the "whole page" threshold
+        max_ratio = 0.85 if not has_crop else 0.95
         for r in regions:
-            # Skip if it's basically the entire page (>85% of tiles)
-            if r["area"] / total_tiles > 0.85:
+            if r["area"] / total_tiles > max_ratio:
                 continue
             best_label = r["label"]
             break
@@ -167,10 +215,10 @@ def detect():
         tile_pixels = []
         hull_points = []  # convex hull of the tile cluster in pixel coords
         if best_label >= 0:
-            bx = int(stats[best_label, cv2.CC_STAT_LEFT]) * TILE
-            by = int(stats[best_label, cv2.CC_STAT_TOP]) * TILE
-            bw = int(stats[best_label, cv2.CC_STAT_WIDTH]) * TILE
-            bh = int(stats[best_label, cv2.CC_STAT_HEIGHT]) * TILE
+            bx = int(stats[best_label, cv2.CC_STAT_LEFT]) * STEP
+            by = int(stats[best_label, cv2.CC_STAT_TOP]) * STEP
+            bw = int(stats[best_label, cv2.CC_STAT_WIDTH]) * STEP
+            bh = int(stats[best_label, cv2.CC_STAT_HEIGHT]) * STEP
 
             if (bw * bh) / (nrow * ncol) > 0.03:
                 # Build a binary mask of winning tiles at tile resolution
@@ -180,8 +228,8 @@ def detect():
                         if labels[ty, tx] == best_label:
                             tile_mask[ty, tx] = 255
                             tile_pixels.append({
-                                "x": tx * TILE, "y": ty * TILE,
-                                "w": TILE, "h": TILE
+                                "x": tx * STEP, "y": ty * STEP,
+                                "w": STEP, "h": STEP
                             })
 
                 # Find outer contour of tile mask — CHAIN_APPROX_NONE gives every pixel
@@ -199,7 +247,7 @@ def detect():
                         dx = nxt[0] - curr[0]
                         dy = nxt[1] - curr[1]
                         if dx != prev_dx or dy != prev_dy:
-                            hull_points.append([int(curr[0]) * TILE, int(curr[1]) * TILE])
+                            hull_points.append([int(curr[0]) * STEP, int(curr[1]) * STEP])
                             prev_dx, prev_dy = dx, dy
 
                 best = {"x": bx, "y": by, "w": bw, "h": bh}
