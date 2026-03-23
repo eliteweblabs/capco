@@ -193,15 +193,13 @@ if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) return Astro.redirect("
       overlays.innerHTML = '';
 
       var colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
+      var scaleX = img.clientWidth / img.naturalWidth;
+      var scaleY = img.clientHeight / img.naturalHeight;
 
       for (var i = 0; i < sections.length; i++) {
         (function(idx) {
           var s = sections[idx];
           var color = colors[idx % colors.length];
-
-          // Scale coords to displayed image size
-          var scaleX = img.clientWidth / img.naturalWidth;
-          var scaleY = img.clientHeight / img.naturalHeight;
 
           var div = document.createElement('div');
           div.className = 'absolute pointer-events-auto';
@@ -211,24 +209,114 @@ if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) return Astro.redirect("
           div.style.height = (s.height * scaleY) + 'px';
           div.style.border = '2px solid ' + color;
           div.style.backgroundColor = color + '15';
+          div.style.cursor = 'move';
           div.setAttribute('data-idx', idx);
 
-          // Label
+          // Label bar (drag handle)
           var label = document.createElement('div');
-          label.style.cssText = 'position:absolute;top:4px;left:4px;background:' + color + ';color:white;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600;';
-          label.textContent = s.label;
-          div.appendChild(label);
+          label.style.cssText = 'position:absolute;top:0;left:0;right:0;height:28px;background:' + color + 'cc;color:white;padding:4px 8px;font-size:12px;font-weight:600;cursor:move;display:flex;justify-content:space-between;align-items:center;';
+          var labelText = document.createElement('span');
+          labelText.textContent = s.label;
+          label.appendChild(labelText);
 
           // Remove button
           var btn = document.createElement('button');
-          btn.style.cssText = 'position:absolute;top:4px;right:4px;background:#ef4444;color:white;width:24px;height:24px;border-radius:50%;border:none;cursor:pointer;font-size:14px;line-height:24px;text-align:center;';
+          btn.style.cssText = 'background:#ef4444;color:white;width:20px;height:20px;border-radius:50%;border:none;cursor:pointer;font-size:12px;line-height:20px;text-align:center;flex-shrink:0;';
           btn.textContent = '✕';
           btn.addEventListener('click', function(e) {
             e.stopPropagation();
+            e.preventDefault();
             div.remove();
             sections[idx]._removed = true;
           });
-          div.appendChild(btn);
+          label.appendChild(btn);
+          div.appendChild(label);
+
+          // Resize handles (bottom, right, bottom-right corner)
+          var handles = [
+            { cursor: 'e-resize',  pos: 'top:0;right:-4px;width:8px;height:100%;' },
+            { cursor: 's-resize',  pos: 'bottom:-4px;left:0;width:100%;height:8px;' },
+            { cursor: 'se-resize', pos: 'bottom:-6px;right:-6px;width:12px;height:12px;background:' + color + ';border-radius:2px;' },
+            { cursor: 'w-resize',  pos: 'top:0;left:-4px;width:8px;height:100%;' },
+            { cursor: 'n-resize',  pos: 'top:-4px;left:0;width:100%;height:8px;' }
+          ];
+
+          for (var h = 0; h < handles.length; h++) {
+            var handle = document.createElement('div');
+            handle.style.cssText = 'position:absolute;' + handles[h].pos + 'cursor:' + handles[h].cursor + ';z-index:5;';
+            handle.setAttribute('data-cursor', handles[h].cursor);
+            div.appendChild(handle);
+          }
+
+          // --- Drag & Resize Logic ---
+          (function(el, sectionData) {
+            var startX, startY, startLeft, startTop, startW, startH, mode;
+            var parentRect;
+
+            function onMouseDown(e) {
+              if (e.target.tagName === 'BUTTON') return;
+              e.preventDefault();
+              parentRect = el.parentElement.getBoundingClientRect();
+
+              startX = e.clientX;
+              startY = e.clientY;
+              startLeft = parseInt(el.style.left);
+              startTop = parseInt(el.style.top);
+              startW = parseInt(el.style.width);
+              startH = parseInt(el.style.height);
+
+              var cursor = e.target.getAttribute('data-cursor');
+              if (cursor === 'e-resize') mode = 'resize-e';
+              else if (cursor === 's-resize') mode = 'resize-s';
+              else if (cursor === 'se-resize') mode = 'resize-se';
+              else if (cursor === 'w-resize') mode = 'resize-w';
+              else if (cursor === 'n-resize') mode = 'resize-n';
+              else mode = 'drag';
+
+              document.addEventListener('mousemove', onMouseMove);
+              document.addEventListener('mouseup', onMouseUp);
+            }
+
+            function onMouseMove(e) {
+              var dx = e.clientX - startX;
+              var dy = e.clientY - startY;
+
+              if (mode === 'drag') {
+                el.style.left = Math.max(0, startLeft + dx) + 'px';
+                el.style.top = Math.max(0, startTop + dy) + 'px';
+              } else if (mode === 'resize-e') {
+                el.style.width = Math.max(50, startW + dx) + 'px';
+              } else if (mode === 'resize-s') {
+                el.style.height = Math.max(50, startH + dy) + 'px';
+              } else if (mode === 'resize-se') {
+                el.style.width = Math.max(50, startW + dx) + 'px';
+                el.style.height = Math.max(50, startH + dy) + 'px';
+              } else if (mode === 'resize-w') {
+                var newW = Math.max(50, startW - dx);
+                el.style.left = (startLeft + startW - newW) + 'px';
+                el.style.width = newW + 'px';
+              } else if (mode === 'resize-n') {
+                var newH = Math.max(50, startH - dy);
+                el.style.top = (startTop + startH - newH) + 'px';
+                el.style.height = newH + 'px';
+              }
+
+              // Update section data in real time (convert back to image coords)
+              var sx = img.clientWidth > 0 ? img.naturalWidth / img.clientWidth : 1;
+              var sy = img.clientHeight > 0 ? img.naturalHeight / img.clientHeight : 1;
+              sectionData.x = Math.round(parseInt(el.style.left) * sx);
+              sectionData.y = Math.round(parseInt(el.style.top) * sy);
+              sectionData.width = Math.round(parseInt(el.style.width) * sx);
+              sectionData.height = Math.round(parseInt(el.style.height) * sy);
+            }
+
+            function onMouseUp() {
+              document.removeEventListener('mousemove', onMouseMove);
+              document.removeEventListener('mouseup', onMouseUp);
+            }
+
+            el.addEventListener('mousedown', onMouseDown);
+          })(div, s);
 
           overlays.appendChild(div);
         })(i);
