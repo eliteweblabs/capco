@@ -175,6 +175,24 @@ def health():
     return jsonify({"status": "ok"})
 
 
+@app.route("/test-plans/<plan_id>")
+def serve_test_plan(plan_id):
+    """Serve test plans by ID"""
+    test_plans = {
+        "85-tremont": "~/Library/Mobile Documents/com~apple~CloudDocs/Testing Files/85 Tremont Street Cambridge MA FP.pdf",
+        "lane-park": "~/Library/Mobile Documents/com~apple~CloudDocs/Testing Files/Lane Park plan.pdf"
+    }
+    
+    if plan_id not in test_plans:
+        return jsonify({"error": "Plan not found"}), 404
+        
+    file_path = os.path.expanduser(test_plans[plan_id])
+    if not os.path.exists(file_path):
+        return jsonify({"error": f"File not found: {file_path}"}), 404
+        
+    return send_file(file_path, as_attachment=True)
+
+
 @app.route("/render", methods=["POST"])
 def render():
     """Step 1: Render a PDF page. Returns base64 PNG."""
@@ -288,62 +306,25 @@ def detect():
         # Use SimpleScan's extractBaselineRegions algorithm
         regions = extract_baseline_regions(binary_inv, nrow, ncol)
         
-        best = None
-        tile_pixels = []  # For visualization compatibility
-        hull_points = []
-        
-        if regions:
-            # Take the first (best) region
-            r = regions[0]
-            best = {"x": r["x"], "y": r["y"], "w": r["w"], "h": r["h"]}
-            
-            # Create hull points from rectangle corners for visualization
-            hull_points = [
-                [r["x"], r["y"]],
-                [r["x"] + r["w"], r["y"]], 
-                [r["x"] + r["w"], r["y"] + r["h"]],
-                [r["x"], r["y"] + r["h"]]
-            ]
-            
-            print(f"DETECT: SimpleScan baseline region bbox=({r['x']},{r['y']},{r['w']},{r['h']}), "
-                  f"page=({ncol}x{nrow}), ratio={r['w']*r['h']/(nrow*ncol):.2%}")
-
-        # Fallback: bounding box of all ink  
-        if best is None:
-            coords = cv2.findNonZero(binary_inv)
-            if coords is not None:
-                x, y, w, h = cv2.boundingRect(coords)
-                best = {"x": x, "y": y, "w": w, "h": h}
-
-        # Convert from detection scale to display scale (scale=2)
+        # Convert from detection scale to display scale (scale=2)  
         display_scale = 2.0
         ratio = display_scale / scale
         sections = []
-        display_tiles = []
-        if best:
-            pad = max(5, int(min(best["w"], best["h"]) * 0.01))
+        
+        # Return ALL detected regions, not just the first one
+        for i, r in enumerate(regions):
+            pad = max(5, int(min(r["w"], r["h"]) * 0.01))
             sections.append({
-                "x": int(max(0, best["x"] - pad) * ratio),
-                "y": int(max(0, best["y"] - pad) * ratio),
-                "width": int(min(best["w"] + pad * 2, ncol) * ratio),
-                "height": int(min(best["h"] + pad * 2, nrow) * ratio),
-                "label": "Floor Plans"
+                "x": int(max(0, r["x"] - pad) * ratio),
+                "y": int(max(0, r["y"] - pad) * ratio), 
+                "width": int(min(r["w"] + pad * 2, ncol) * ratio),
+                "height": int(min(r["h"] + pad * 2, nrow) * ratio),
+                "label": f"Section {i + 1}"
             })
-            # Convert tiles to display scale
-            for t in tile_pixels:
-                display_tiles.append({
-                    "x": int(t["x"] * ratio),
-                    "y": int(t["y"] * ratio),
-                    "w": max(1, int(t["w"] * ratio)),
-                    "h": max(1, int(t["h"] * ratio)),
-                })
 
-        # Convert hull to display scale
-        display_hull = []
-        for pt in hull_points:
-            display_hull.append([int(pt[0] * ratio), int(pt[1] * ratio)])
+        print(f"DETECT: Found {len(sections)} sections using SimpleScan algorithm")
 
-        return jsonify({"success": True, "sections": sections, "tiles": display_tiles, "hull": display_hull})
+        return jsonify({"success": True, "sections": sections, "tiles": [], "hull": []})
     except Exception as e:
         import traceback
         traceback.print_exc()

@@ -15,7 +15,12 @@ if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) return Astro.redirect("
 
   <!-- Top bar -->
   <div class="bg-gray-800 border-b border-gray-700 px-4 py-2 flex items-center gap-4 shrink-0">
-    <button id="btn-new" class="text-sm text-blue-400 hover:text-blue-300 font-medium">+ New Scan</button>
+    <select id="plan-select" class="text-sm bg-gray-700 text-gray-200 border border-gray-600 rounded px-2 py-1">
+      <option value="">Select a test plan...</option>
+      <option value="85-tremont">85 Tremont Street Cambridge MA FP.pdf</option>
+      <option value="lane-park">Lane Park plan (5 heads)</option>
+    </select>
+    <button id="btn-new" class="text-sm text-blue-400 hover:text-blue-300 font-medium">Custom Upload</button>
     <span id="plan-title" class="text-sm text-gray-300 font-semibold"></span>
     <span id="plan-status" class="ml-auto text-xs text-gray-500"></span>
   </div>
@@ -121,9 +126,71 @@ if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) return Astro.redirect("
   var analyzing = false;
   var abortController = null;  // AbortController for in-flight fetch requests
 
-  // Removed tab switching - simplified to single view
+  // ==================== Test Plan Loader ====================
+  function loadTestPlan(planId, fileName) {
+    if (!planId) return;
+    
+    fetch(API + '/test-plans/' + planId)
+      .then(function(response) {
+        if (!response.ok) throw new Error('Plan not found');
+        return response.blob();
+      })
+      .then(function(blob) {
+        var file = new File([blob], fileName, { type: 'application/pdf' });
+        pdfFile = file;
+        sections = [];
+        floorResults = {};
+        
+        document.getElementById('plan-title').textContent = fileName;
+        document.getElementById('plan-status').textContent = 'Rendering...';
+        
+        var fd = new FormData();
+        fd.append('file', file);
+        fd.append('scale', '2');
+        
+        return fetch(API + '/render', { method: 'POST', body: fd });
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (!d.success) throw new Error(d.error);
+        fullImageSrc = d.image;
+        
+        return runDetect();
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (!d.success) throw new Error(d.error);
+        sections = d.sections;
+        detectedTiles = d.tiles || [];
+        detectedHull = d.hull || [];
+        document.getElementById('plan-status').textContent = sections.length + ' section(s) detected';
+        showPlan();
+        renderAreaList();
+        document.getElementById('btn-scan-items').disabled = false;
+      })
+      .catch(function(err) {
+        document.getElementById('plan-status').textContent = 'Error: ' + err.message;
+      });
+  }
 
-  // ==================== Detection with sliders ====================
+  // Plan selector dropdown
+  document.getElementById('plan-select').addEventListener('change', function(e) {
+    var planId = e.target.value;
+    var planName = e.target.options[e.target.selectedIndex].text;
+    if (planId) {
+      loadTestPlan(planId, planName);
+    }
+  });
+
+  // Auto-load 85 Tremont by default on page load
+  window.addEventListener('load', function() {
+    setTimeout(function() {
+      document.getElementById('plan-select').value = '85-tremont';
+      loadTestPlan('85-tremont', '85 Tremont Street Cambridge MA FP.pdf');
+    }, 500);
+  });
+
+  // ==================== Detection ====================
   function getThreshold() { return 200; }
 
   function runDetect() {
