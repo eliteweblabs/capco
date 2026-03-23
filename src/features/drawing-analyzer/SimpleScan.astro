@@ -4778,13 +4778,27 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
         24,
         overlayHandleDragState.regionHeightPx * Math.max(0.1, overlayHandleDragState.baseScaleY)
       );
+      // Store original scale for position compensation
+      const originalScaleX = t.scaleX || t.scale;
+      const originalScaleY = t.scaleY || t.scale;
+      
       if (horizontal !== 0) {
         const scaleDeltaX = horizontal * (dx / widthRef);
         t.scaleX = clamp(overlayHandleDragState.baseScaleX * (1 + scaleDeltaX * 1.35), 0.45, 3.2);
+        
+        // Adjust position to keep opposite edge fixed (Illustrator-style)
+        const scaleChangeX = (t.scaleX || t.scale) - originalScaleX;
+        const anchorOffsetX = horizontal === 1 ? -0.5 : 0.5; // East handle: keep west fixed, West handle: keep east fixed
+        t.x = (t.x || 0) + (anchorOffsetX * scaleChangeX * widthRef);
       }
       if (vertical !== 0) {
         const scaleDeltaY = vertical * (dy / heightRef);
         t.scaleY = clamp(overlayHandleDragState.baseScaleY * (1 + scaleDeltaY * 1.35), 0.45, 3.2);
+        
+        // Adjust position to keep opposite edge fixed (Illustrator-style)  
+        const scaleChangeY = (t.scaleY || t.scale) - originalScaleY;
+        const anchorOffsetY = vertical === 1 ? -0.5 : 0.5; // South handle: keep north fixed, North handle: keep south fixed
+        t.y = (t.y || 0) + (anchorOffsetY * scaleChangeY * heightRef);
       }
       t.scale = ((t.scaleX || t.scale) + (t.scaleY || t.scale)) / 2;
       applyOverlayTransformUi(overlayHandleDragState.key);
