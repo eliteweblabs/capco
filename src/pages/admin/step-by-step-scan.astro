@@ -85,7 +85,7 @@ if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) return Astro.redirect("
       <div id="plan-view" class="hidden relative w-full h-full flex items-center justify-center">
         <img id="plan-img" class="max-w-full max-h-full object-contain" />
         <!-- Step overlays will go here -->
-        <div id="plan-overlays" class="absolute top-0 left-0 w-full h-full pointer-events-none"></div>
+        <div id="plan-overlays" class="absolute pointer-events-none" style="top: 0; left: 0;"></div>
       </div>
     </div>
   </div>
@@ -475,7 +475,7 @@ if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) return Astro.redirect("
   }
   
   async function runStep1() {
-    if (!currentPlan || !currentPlan.file) {
+    if (!currentPlan) {
       log('ERROR: No plan loaded for step 1');
       return;
     }
@@ -484,37 +484,30 @@ if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) return Astro.redirect("
     updatePlanStatus('Detecting regions...');
     
     try {
-      // Use /detect endpoint to get mask data (like plan-scanner)
-      const formData = new FormData();
-      formData.append('file', currentPlan.file);
-      formData.append('scale', '3');
-      formData.append('threshold', '200');
+      // For now, use mock regions based on typical floor plan dimensions
+      // This will let us test the overlay functionality while fixing the server
+      log('Using mock regions for testing (server detect endpoint needs debugging)');
       
-      const response = await fetch(API + '/detect', {
-        method: 'POST',
-        body: formData
-      });
+      // Get plan image dimensions for realistic mock regions
+      const imgRect = planImg.getBoundingClientRect();
+      const naturalWidth = planImg.naturalWidth;
+      const naturalHeight = planImg.naturalHeight;
       
-      if (!response.ok) throw new Error('Detection failed');
+      log('Image dimensions: ' + naturalWidth + 'x' + naturalHeight);
       
-      const data = await response.json();
-      log('Detection response: ' + Object.keys(data).join(', '));
+      // Create mock regions that look reasonable for a floor plan
+      detectedRegions = [
+        { x: 50, y: 100, w: 800, h: 600 },
+        { x: 900, y: 150, w: 500, h: 400 },
+        { x: 200, y: 750, w: 600, h: 300 }
+      ].map(region => ({
+        x: Math.round(region.x * naturalWidth / 1400), // Scale to actual image size
+        y: Math.round(region.y * naturalHeight / 1100),
+        w: Math.round(region.w * naturalWidth / 1400),
+        h: Math.round(region.h * naturalHeight / 1100)
+      }));
       
-      // Create drawing state from response
-      drawingState = {
-        imageData: {
-          width: data.width,
-          height: data.height,
-          data: new Uint8ClampedArray(data.image_data) // Assuming this comes from server
-        },
-        mask: new Uint8Array(data.mask),
-        width: data.width,
-        height: data.height
-      };
-      
-      // Extract regions using the copied SimpleScan logic
-      detectedRegions = extractBaselineRegions(drawingState);
-      log('Detected ' + detectedRegions.length + ' regions');
+      log('Created ' + detectedRegions.length + ' mock regions');
       
       // Display regions as overlays
       displayRegionOverlays();
@@ -523,7 +516,7 @@ if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) return Astro.redirect("
       currentStep = 1; // Mark step 1 as complete, step 2 as active
       renderStepsUI();
       
-      updatePlanStatus('Found ' + detectedRegions.length + ' viable regions');
+      updatePlanStatus('Found ' + detectedRegions.length + ' viable regions (mock data)');
       
     } catch (error) {
       log('ERROR in step 1: ' + error.message);
@@ -536,22 +529,41 @@ if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) return Astro.redirect("
     
     log('Displaying ' + detectedRegions.length + ' region overlays');
     
-    // Get plan image dimensions for scaling
+    // Get plan image dimensions and position for scaling and positioning
     const imgRect = planImg.getBoundingClientRect();
-    const scaleX = imgRect.width / drawingState.width;
-    const scaleY = imgRect.height / drawingState.height;
+    const containerRect = planView.getBoundingClientRect();
+    const naturalWidth = planImg.naturalWidth;
+    const naturalHeight = planImg.naturalHeight;
     
-    // Create overlay HTML
-    const overlayHtml = detectedRegions.map((region, index) => `
-      <div class="absolute border-2 border-blue-400 bg-blue-400/10 cursor-pointer group"
-           style="left: ${region.x * scaleX}px; top: ${region.y * scaleY}px; width: ${region.w * scaleX}px; height: ${region.h * scaleY}px;">
-        <div class="absolute -top-6 left-0 text-xs bg-blue-600 text-white px-1 rounded opacity-0 group-hover:opacity-100">
-          Region ${index + 1}
+    log('Display scaling: img=' + imgRect.width + 'x' + imgRect.height + ', natural=' + naturalWidth + 'x' + naturalHeight);
+    
+    const scaleX = imgRect.width / naturalWidth;
+    const scaleY = imgRect.height / naturalHeight;
+    
+    // Position overlays relative to the container
+    const offsetX = imgRect.left - containerRect.left;
+    const offsetY = imgRect.top - containerRect.top;
+    
+    log('Overlay offset: ' + offsetX + ', ' + offsetY);
+    
+    // Create overlay HTML positioned relative to the image
+    const overlayHtml = detectedRegions.map((region, index) => {
+      const left = offsetX + region.x * scaleX;
+      const top = offsetY + region.y * scaleY;
+      const width = region.w * scaleX;
+      const height = region.h * scaleY;
+      
+      return `
+        <div class="absolute border-2 border-blue-400 bg-blue-400/10 cursor-pointer group"
+             style="left: ${left}px; top: ${top}px; width: ${width}px; height: ${height}px;">
+          <div class="absolute -top-6 left-0 text-xs bg-blue-600 text-white px-1 rounded opacity-0 group-hover:opacity-100">
+            Region ${index + 1}
+          </div>
+          <button class="absolute -top-2 -right-2 w-4 h-4 bg-red-500 text-white text-xs rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-600"
+                  onclick="removeRegion(${index})">×</button>
         </div>
-        <button class="absolute -top-2 -right-2 w-4 h-4 bg-red-500 text-white text-xs rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-600"
-                onclick="removeRegion(${index})">×</button>
-      </div>
-    `).join('');
+      `;
+    }).join('');
     
     planOverlays.innerHTML = overlayHtml;
     planOverlays.style.pointerEvents = 'auto'; // Enable interactions
