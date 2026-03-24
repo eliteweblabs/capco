@@ -224,9 +224,22 @@ if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) return Astro.redirect("
       
       if (!renderResponse.ok) throw new Error('Failed to render plan: ' + renderResponse.status);
       
-      const imageBlob = await renderResponse.blob();
+      // Parse JSON response (contains base64 image data)
+      const renderData = await renderResponse.json();
+      log('Render response keys: ' + Object.keys(renderData).join(', '));
+      
+      if (!renderData.image) throw new Error('No image data in render response');
+      
+      // Convert base64 to blob URL
+      const base64Data = renderData.image;
+      const binaryData = atob(base64Data);
+      const bytes = new Uint8Array(binaryData.length);
+      for (let i = 0; i < binaryData.length; i++) {
+        bytes[i] = binaryData.charCodeAt(i);
+      }
+      const imageBlob = new Blob([bytes], { type: 'image/png' });
       const imageUrl = URL.createObjectURL(imageBlob);
-      log('Plan image rendered, URL: ' + imageUrl.substring(0, 50) + '...');
+      log('Plan image converted from base64, URL: ' + imageUrl.substring(0, 50) + '...');
       
       // Load rendered image
       log('Setting up image load handlers');
