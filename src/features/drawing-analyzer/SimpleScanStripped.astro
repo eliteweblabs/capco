@@ -1,0 +1,873 @@
+---
+import { globalClasses } from "../../pages/api/global/global-classes";
+
+const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasses();
+---
+
+<section class="space-y-3">
+  <p class={`text-sm font-semibold ${primaryTextClasses}`}>Simple Scan — Steps 1 & 2</p>
+  <p class={mutedTextSmClasses}>
+    Region detection and viable area application only.
+  </p>
+
+  <div>
+    <label for="simple-scan-file" class={globalFormLabel}>Drawing (optional override)</label>
+    <input id="simple-scan-file" type="file" accept=".pdf,image/*" class="block w-full text-sm" />
+  </div>
+
+  <div class="flex items-center gap-2">
+    <button
+      id="simple-scan-run"
+      type="button"
+      class="rounded bg-primary-600 px-3 py-1.5 text-sm text-white"
+    >
+      Refresh Processing
+    </button>
+    <p id="simple-scan-status" class={mutedTextSmClasses}>Loading default drawing...</p>
+  </div>
+
+  <canvas
+    id="simple-scan-canvas"
+    class="block max-w-full rounded border border-gray-300 dark:border-gray-700"></canvas>
+  <pre
+    id="simple-scan-results"
+    class="max-h-[42vh] overflow-auto rounded border border-gray-300 bg-gray-50 p-3 text-xs dark:border-gray-700 dark:bg-gray-900">
+  </pre>
+
+  <div class="rounded border border-gray-300 p-3 dark:border-gray-700">
+    <p class="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
+      Preprocessing Timeline
+    </p>
+    <div id="simple-scan-pipeline-steps" class="space-y-3"></div>
+  </div>
+</section>
+
+<script src="/js/pdf.min.js" defer></script>
+<script>
+  const drawingFileInput = document.getElementById("simple-scan-file") as HTMLInputElement | null;
+  const runScanBtn = document.getElementById("simple-scan-run") as HTMLButtonElement | null;
+  const statusEl = document.getElementById("simple-scan-status") as HTMLParagraphElement | null;
+  const canvas = document.getElementById("simple-scan-canvas") as HTMLCanvasElement | null;
+  const resultsEl = document.getElementById("simple-scan-results") as HTMLPreElement | null;
+  const pipelineStepsEl = document.getElementById(
+    "simple-scan-pipeline-steps"
+  ) as HTMLDivElement | null;
+
+  const DEFAULT_DRAWING_PUBLIC_PATH = "/demo-plan.pdf";
+  const DRAWING_RENDER_MAX_SIDE = 10000;
+  const PDF_RENDER_SCALE_FALLBACKS = [14, 12, 10, 8, 6, 4, 3];
+  const MAX_REGIONS_TO_SCAN = 4;
+
+  let drawingState: {
+    width: number;
+    height: number;
+    imageData: ImageData;
+    mask: Uint8Array;
+  } | null = null;
+  let baselineRegions: Array<{ x: number; y: number; w: number; h: number }> = [];
+  let excludedRegionIndexes = new Set<number>();
+  let lastPdfRenderScale = 0;
+
+  let step1RegionClipByKey: Record<
+    string,
+    { top: number; right: number; bottom: number; left: number }
+  > = {};
+  type OverlayTransform = {
+    x: number;
+    y: number;
+    scale: number;
+    scaleX?: number;
+    scaleY?: number;
+    rotationDeg: number;
+    opacity: number;
+  };
+  let stepOverlayVisibility: Record<string, boolean> = { step1: true };
+  let stepOverlayTransforms: Record<string, OverlayTransform> = {};
+  let overlayDragState: {
+    key: string;
+    startX: number;
+    startY: number;
+    baseX: number;
+    baseY: number;
+  } | null = null;
+  let overlayHandleDragState: {
+    key: string;
+    anchor: string;
+    startX: number;
+    startY: number;
+    baseScaleX: number;
+    baseScaleY: number;
+    regionWidthPx: number;
+    regionHeightPx: number;
+  } | null = null;
+  let activeStep1LayerKey: string | null = null;
+
+  // ── Utilities ──────────────────────────────────────────────────────
+
+  const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+  const getPdfLib = () => (window as any)["pdfjsLib"];
+  const getCtx = () =>
+    canvas instanceof HTMLCanvasElement
+      ? canvas.getContext("2d", { willReadFrequently: true })
+      : null;
+  const setStatus = (text: string) => statusEl && (statusEl.textContent = text);
+
+  const isOverlayVisible = (key: string) => {
+    if (key.startsWith("step1-r")) return Boolean(stepOverlayVisibility.step1);
+    return Boolean(stepOverlayVisibility[key]);
+  };
+  const ensureOverlayTransform = (key: string) => {
+    if (!stepOverlayTransforms[key]) {
+      stepOverlayTransforms[key] = { x: 0, y: 0, scale: 1, rotationDeg: 0, opacity: 1 };
+    }
+    const t = stepOverlayTransforms[key];
+    if (typeof t.scaleX !== "number") t.scaleX = t.scale;
+    if (typeof t.scaleY !== "number") t.scaleY = t.scale;
+    return t;
+  };
+  const resetOverlayTransform = (key: string) => {
+    stepOverlayTransforms[key] = {
+      x: 0,
+      y: 0,
+      scale: 1,
+      scaleX: 1,
+      scaleY: 1,
+      rotationDeg: 0,
+      opacity: 1,
+    };
+  };
+  const overlayTransformStyle = (key: string) => {
+    const t = ensureOverlayTransform(key);
+    const step1Layer = key.startsWith("step1-r");
+    const scaleX = step1Layer ? t.scaleX || t.scale : t.scale;
+    const scaleY = step1Layer ? t.scaleY || t.scale : t.scale;
+    const zIndex = step1Layer && key === activeStep1LayerKey ? 14 : 8;
+    const cursor = step1Layer ? (overlayDragState?.key === key ? "grabbing" : "grab") : "default";
+    const clip = step1RegionClipByKey[key];
+    const clipStyle =
+      step1Layer && clip
+        ? `clip-path:inset(${clip.top}% ${clip.right}% ${clip.bottom}% ${clip.left}%);`
+        : "";
+    const activeOutline =
+      step1Layer && key === activeStep1LayerKey
+        ? "box-shadow:0 0 0 1.5px rgba(59,130,246,0.95) inset;"
+        : "";
+    return `display:${isOverlayVisible(key) ? "block" : "none"};transform:translate(${t.x}px, ${t.y}px) scale(${scaleX}, ${scaleY}) rotate(${t.rotationDeg}deg);transform-origin:center center;opacity:${t.opacity};pointer-events:auto;z-index:${zIndex};cursor:${cursor};${clipStyle}${activeOutline}`;
+  };
+
+  // ── Step 1 overlay UI helpers ──────────────────────────────────────
+
+  function updateStep1ActiveLayerUi() {
+    if (!pipelineStepsEl) return;
+    pipelineStepsEl.querySelectorAll("[data-overlay-active-key]").forEach((btn) => {
+      const key = btn.getAttribute("data-overlay-active-key") || "";
+      const active = key === activeStep1LayerKey;
+      (btn as HTMLButtonElement).classList.toggle("bg-primary-600", active);
+      (btn as HTMLButtonElement).classList.toggle("dark:bg-primary-500", active);
+      (btn as HTMLButtonElement).classList.toggle("bg-gray-700", !active);
+      (btn as HTMLButtonElement).classList.toggle("dark:bg-gray-600", !active);
+      (btn as HTMLButtonElement).textContent = active ? "Active" : "Set Active";
+    });
+  }
+
+  function applyOverlayTransformUi(key: string) {
+    if (!pipelineStepsEl) return;
+    const t = ensureOverlayTransform(key);
+    const layer = pipelineStepsEl.querySelector(
+      `.simple-scan-overlay-layer[data-overlay-key="${key}"]`
+    ) as HTMLImageElement | null;
+    if (layer) layer.style.cssText = overlayTransformStyle(key);
+    const controls = pipelineStepsEl.querySelector(
+      `[data-overlay-controls-key="${key}"]`
+    ) as HTMLElement | null;
+    if (controls) {
+      const shouldShow = key === activeStep1LayerKey && isOverlayVisible(key);
+      controls.classList.toggle("hidden", !shouldShow);
+    }
+    const scaleVal = pipelineStepsEl.querySelector(
+      `[data-overlay-scale-val="${key}"]`
+    ) as HTMLSpanElement | null;
+    if (scaleVal)
+      scaleVal.textContent = `${Math.round(((t.scaleX || t.scale) * 100 + (t.scaleY || t.scale) * 100) / 2)}%`;
+    updateStep1ActiveLayerUi();
+  }
+
+  // ── Core algorithms (copied exactly from SimpleScan) ───────────────
+
+  function getComponents(
+    mask: Uint8Array,
+    width: number,
+    height: number,
+    minArea = 18,
+    maxArea = 999999
+  ) {
+    const visited = new Uint8Array(width * height);
+    const qx = new Int32Array(width * height);
+    const qy = new Int32Array(width * height);
+    const out: Array<{ x: number; y: number; w: number; h: number; area: number }> = [];
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const start = y * width + x;
+        if (!mask[start] || visited[start]) continue;
+        let head = 0;
+        let tail = 0;
+        qx[tail] = x;
+        qy[tail] = y;
+        tail += 1;
+        visited[start] = 1;
+        let area = 0;
+        let minX = x;
+        let minY = y;
+        let maxX = x;
+        let maxY = y;
+        while (head < tail) {
+          const cx = qx[head];
+          const cy = qy[head];
+          head += 1;
+          area += 1;
+          if (cx < minX) minX = cx;
+          if (cy < minY) minY = cy;
+          if (cx > maxX) maxX = cx;
+          if (cy > maxY) maxY = cy;
+          for (let oy = -1; oy <= 1; oy += 1)
+            for (let ox = -1; ox <= 1; ox += 1) {
+              if (ox === 0 && oy === 0) continue;
+              const nx = cx + ox;
+              const ny = cy + oy;
+              if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+              const nidx = ny * width + nx;
+              if (!mask[nidx] || visited[nidx]) continue;
+              visited[nidx] = 1;
+              qx[tail] = nx;
+              qy[tail] = ny;
+              tail += 1;
+            }
+        }
+        if (area >= minArea && area <= maxArea)
+          out.push({ x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1, area });
+      }
+    }
+    return out;
+  }
+
+  function extractBaselineRegions(state: typeof drawingState) {
+    if (!state) return [];
+    const { width, height, mask } = state;
+    const canvasArea = Math.max(1, width * height);
+    const comps = getComponents(mask, width, height, 18, canvasArea * 0.9);
+    if (comps.length === 0) return [];
+
+    const edgeMargin = Math.max(6, Math.round(Math.min(width, height) * 0.02));
+    const scored: Array<{ x: number; y: number; w: number; h: number; area: number; score: number }> = [];
+    for (const c of comps) {
+      const bboxArea = c.w * c.h;
+      const bboxRatio = bboxArea / canvasArea;
+      if (bboxRatio < 0.015 || bboxRatio > 0.72) continue;
+      const aspect = c.w / Math.max(1, c.h);
+      if (aspect < 0.35 || aspect > 3.0) continue;
+      const inkRatio = c.area / Math.max(1, bboxArea);
+      if (inkRatio < 0.0015 || inkRatio > 0.24) continue;
+
+      const nearLeft = c.x <= edgeMargin;
+      const nearTop = c.y <= edgeMargin;
+      const nearRight = c.x + c.w >= width - edgeMargin;
+      const nearBottom = c.y + c.h >= height - edgeMargin;
+      const edgeTouchCount = [nearLeft, nearTop, nearRight, nearBottom].filter(Boolean).length;
+
+      const cx = c.x + c.w / 2;
+      const cy = c.y + c.h / 2;
+      const centerDist =
+        Math.hypot(cx - width / 2, cy - height / 2) /
+        Math.max(1, Math.hypot(width / 2, height / 2));
+      const centerBonus = 1 - clamp(centerDist, 0, 1);
+      const frameBonus = clamp(1 - Math.abs(inkRatio - 0.06) / 0.14, 0, 1);
+      const edgePenalty = edgeTouchCount >= 2 ? 0.22 : 0;
+      const score = bboxRatio * 1.1 + frameBonus * 0.35 + centerBonus * 0.2 - edgePenalty;
+
+      scored.push({ ...c, score });
+    }
+
+    scored.sort((a, b) => b.score - a.score);
+    const selected: Array<{ x: number; y: number; w: number; h: number }> = [];
+    for (const c of scored) {
+      const overlaps = selected.some((k) => {
+        const x0 = Math.max(c.x, k.x);
+        const y0 = Math.max(c.y, k.y);
+        const x1 = Math.min(c.x + c.w - 1, k.x + k.w - 1);
+        const y1 = Math.min(c.y + c.h - 1, k.y + k.h - 1);
+        if (x1 < x0 || y1 < y0) return false;
+        const inter = (x1 - x0 + 1) * (y1 - y0 + 1);
+        return inter / Math.max(1, Math.min(c.w * c.h, k.w * k.h)) > 0.58;
+      });
+      if (overlaps) continue;
+      const pad = Math.max(8, Math.round(Math.min(c.w, c.h) * 0.03));
+      selected.push({
+        x: clamp(c.x - pad, 0, width - 1),
+        y: clamp(c.y - pad, 0, height - 1),
+        w: clamp(c.w + pad * 2, 1, width),
+        h: clamp(c.h + pad * 2, 1, height),
+      });
+      if (selected.length >= 4) break;
+    }
+    return selected;
+  }
+
+  // ── Image / mask helpers ───────────────────────────────────────────
+
+  function imageToRegionSeedMask(imageData: ImageData) {
+    const { width, height, data } = imageData;
+    const mask = new Uint8Array(width * height);
+    for (let i = 0, p = 0; p < mask.length; p += 1, i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const a = data[i + 3];
+      const gray = r * 0.299 + g * 0.587 + b * 0.114;
+      const spread = Math.max(r, g, b) - Math.min(r, g, b);
+      mask[p] = gray < 244 && a > 6 && spread < 88 ? 1 : 0;
+    }
+    return mask;
+  }
+
+  function imageDataToDataUrl(imageData: ImageData) {
+    const c = document.createElement("canvas");
+    c.width = imageData.width;
+    c.height = imageData.height;
+    const ctx = c.getContext("2d");
+    if (!ctx) return "";
+    ctx.putImageData(imageData, 0, 0);
+    return c.toDataURL("image/png");
+  }
+
+  function regionsMaskLayerToDataUrl(
+    imageData: ImageData,
+    regions: Array<{ x: number; y: number; w: number; h: number }>,
+    selectedRegions: Array<{ x: number; y: number; w: number; h: number }> = [],
+    excludedIndexes: Set<number> = new Set<number>()
+  ) {
+    const c = document.createElement("canvas");
+    c.width = imageData.width;
+    c.height = imageData.height;
+    const ctx = c.getContext("2d");
+    if (!ctx) return "";
+    ctx.clearRect(0, 0, c.width, c.height);
+    ctx.lineWidth = 2;
+    regions.forEach((r, idx) => {
+      if (excludedIndexes.has(idx)) return;
+      ctx.strokeStyle = "rgba(56,189,248,0.95)";
+      ctx.strokeRect(r.x, r.y, r.w, r.h);
+      ctx.fillStyle = "rgba(56,189,248,0.14)";
+      ctx.fillRect(r.x, r.y, r.w, r.h);
+      ctx.fillStyle = "rgba(12,74,110,0.95)";
+      ctx.font = "12px sans-serif";
+      ctx.fillText(`R${idx + 1}`, r.x + 4, r.y + 14);
+    });
+    selectedRegions.forEach((r) => {
+      ctx.strokeStyle = "rgba(251,191,36,0.98)";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(r.x, r.y, r.w, r.h);
+    });
+    return c.toDataURL("image/png");
+  }
+
+  function croppedMaskedSourceToDataUrl(
+    imageData: ImageData,
+    selectedRegions: Array<{ x: number; y: number; w: number; h: number }> = []
+  ) {
+    if (!Array.isArray(selectedRegions) || selectedRegions.length === 0) {
+      return imageDataToDataUrl(imageData);
+    }
+    let minX = imageData.width;
+    let minY = imageData.height;
+    let maxX = 0;
+    let maxY = 0;
+    selectedRegions.forEach((r) => {
+      minX = Math.min(minX, r.x);
+      minY = Math.min(minY, r.y);
+      maxX = Math.max(maxX, r.x + r.w);
+      maxY = Math.max(maxY, r.y + r.h);
+    });
+    const padding = 10;
+    minX = Math.max(0, minX - padding);
+    minY = Math.max(0, minY - padding);
+    maxX = Math.min(imageData.width, maxX + padding);
+    maxY = Math.min(imageData.height, maxY + padding);
+    const cropWidth = maxX - minX;
+    const cropHeight = maxY - minY;
+    const c = document.createElement("canvas");
+    c.width = cropWidth;
+    c.height = cropHeight;
+    const ctx = c.getContext("2d");
+    if (!ctx) return "";
+    const sourceCanvas = document.createElement("canvas");
+    sourceCanvas.width = imageData.width;
+    sourceCanvas.height = imageData.height;
+    const sourceCtx = sourceCanvas.getContext("2d");
+    if (!sourceCtx) return "";
+    sourceCtx.putImageData(imageData, 0, 0);
+    ctx.drawImage(sourceCanvas, minX, minY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+    const croppedImageData = ctx.getImageData(0, 0, cropWidth, cropHeight);
+    for (let y = 0; y < cropHeight; y += 1) {
+      const row = y * cropWidth;
+      for (let x = 0; x < cropWidth; x += 1) {
+        const originalX = x + minX;
+        const originalY = y + minY;
+        const inside = selectedRegions.some(
+          (r) =>
+            originalX >= r.x &&
+            originalY >= r.y &&
+            originalX < r.x + r.w &&
+            originalY < r.y + r.h
+        );
+        if (inside) continue;
+        const i = (row + x) * 4;
+        croppedImageData.data[i] = 255;
+        croppedImageData.data[i + 1] = 255;
+        croppedImageData.data[i + 2] = 255;
+        croppedImageData.data[i + 3] = 255;
+      }
+    }
+    ctx.putImageData(croppedImageData, 0, 0);
+    return c.toDataURL("image/png");
+  }
+
+  function getMaskedByRegions(
+    state: typeof drawingState,
+    regions: Array<{ x: number; y: number; w: number; h: number }>
+  ) {
+    if (!state || !Array.isArray(regions) || regions.length === 0) return state!;
+    const masked = new Uint8Array(state.mask);
+    for (let y = 0; y < state.height; y += 1)
+      for (let x = 0; x < state.width; x += 1) {
+        if (!regions.some((r) => x >= r.x && y >= r.y && x < r.x + r.w && y < r.y + r.h))
+          masked[y * state.width + x] = 0;
+      }
+    return { ...state, mask: masked };
+  }
+
+  // ── Region selection ───────────────────────────────────────────────
+
+  function getActiveRegionSelection(state: typeof drawingState) {
+    if (!state) return { regionsSource: [], selectedRegions: [], selectedRegionIndexes: new Set<number>() };
+    const fallback = [{ x: 0, y: 0, w: state.width, h: state.height }];
+    const regionsSource = baselineRegions.length ? baselineRegions : fallback;
+    const selectedWithIndex = regionsSource
+      .map((region, idx) => ({ region, idx }))
+      .filter((entry) => !excludedRegionIndexes.has(entry.idx))
+      .slice(0, MAX_REGIONS_TO_SCAN);
+    return {
+      regionsSource,
+      selectedRegions: selectedWithIndex.map((entry) => entry.region),
+      selectedRegionIndexes: new Set<number>(selectedWithIndex.map((entry) => entry.idx)),
+    };
+  }
+
+  // ── Canvas overlay drawing ─────────────────────────────────────────
+
+  function drawOverlay() {
+    const ctx = getCtx();
+    if (!ctx || !drawingState) return;
+    ctx.putImageData(drawingState.imageData, 0, 0);
+    ctx.lineWidth = 2;
+    baselineRegions.forEach((r, idx) => {
+      const excluded = excludedRegionIndexes.has(idx);
+      ctx.strokeStyle = excluded ? "rgba(239,68,68,0.95)" : "rgba(56,189,248,0.95)";
+      ctx.strokeRect(r.x, r.y, r.w, r.h);
+      if (excluded) {
+        ctx.beginPath();
+        ctx.moveTo(r.x + 3, r.y + 3);
+        ctx.lineTo(r.x + r.w - 3, r.y + r.h - 3);
+        ctx.moveTo(r.x + r.w - 3, r.y + 3);
+        ctx.lineTo(r.x + 3, r.y + r.h - 3);
+        ctx.stroke();
+      }
+    });
+  }
+
+  // ── Pipeline rendering (Step 1 + Step 2 only) ─────────────────────
+
+  function renderPipelineSteps({
+    sourceImageData,
+    regions,
+    selectedRegions,
+  }: {
+    sourceImageData: ImageData;
+    regions: Array<{ x: number; y: number; w: number; h: number }>;
+    selectedRegions: Array<{ x: number; y: number; w: number; h: number }>;
+  }) {
+    if (!pipelineStepsEl) return;
+    step1RegionClipByKey = {};
+
+    const viableBaseUrl = croppedMaskedSourceToDataUrl(sourceImageData, selectedRegions);
+
+    const step1SelectedRegionEntries = regions
+      .map((region, idx) => ({ region, idx }))
+      .filter((entry) => !excludedRegionIndexes.has(entry.idx))
+      .slice(0, MAX_REGIONS_TO_SCAN);
+
+    const step1RemoveButtons =
+      step1SelectedRegionEntries.length > 0 && sourceImageData.width > 0 && sourceImageData.height > 0
+        ? step1SelectedRegionEntries
+            .map(({ region: r, idx }) => {
+              const leftPct = clamp(((r.x + r.w - 12) / sourceImageData.width) * 100, 0, 98);
+              const topPct = clamp(((r.y + 2) / sourceImageData.height) * 100, 0, 98);
+              return `<button type="button" data-remove-region-idx="${idx}" class="simple-scan-remove-region-btn absolute z-30 h-5 w-5 rounded-full border border-red-700 bg-red-600 text-[12px] font-bold leading-none text-white shadow hover:bg-red-700" style="left:${leftPct}%;top:${topPct}%;" title="Remove this section" aria-label="Remove section ${idx + 1}">×</button>`;
+            })
+            .join("")
+        : "";
+
+    const step1ResetButton =
+      regions.length > 0
+        ? `<div class="mb-2 flex flex-wrap items-center gap-2">${excludedRegionIndexes.size > 0 ? '<button type="button" id="simple-scan-reset-removed-regions" class="rounded bg-gray-700 px-2 py-1 text-[11px] font-semibold text-white dark:bg-gray-600">Reset removed sections</button>' : ""}<button type="button" id="simple-scan-remove-all-regions" class="rounded bg-red-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-red-700">Remove all sections</button></div>`
+        : "";
+
+    const step1OverlayImageUrl = regionsMaskLayerToDataUrl(
+      sourceImageData,
+      regions,
+      selectedRegions,
+      excludedRegionIndexes
+    );
+    const step1BaseImageUrl = imageDataToDataUrl(sourceImageData);
+
+    // Build Step 1 region overlays with per-region layers (drag/resize)
+    const step1RegionLayers = step1SelectedRegionEntries
+      .map(({ region, idx }) => {
+        const layerKey = `step1-r${idx}`;
+        const top = clamp((region.y / Math.max(1, sourceImageData.height)) * 100, 0, 100);
+        const left = clamp((region.x / Math.max(1, sourceImageData.width)) * 100, 0, 100);
+        const right = clamp(
+          ((sourceImageData.width - (region.x + region.w)) / Math.max(1, sourceImageData.width)) *
+            100,
+          0,
+          100
+        );
+        const bottom = clamp(
+          ((sourceImageData.height - (region.y + region.h)) / Math.max(1, sourceImageData.height)) *
+            100,
+          0,
+          100
+        );
+        step1RegionClipByKey[layerKey] = { top, right, bottom, left };
+
+        const handleHtml = [
+          { anchor: "nw", pos: "top:0;left:0;cursor:nw-resize" },
+          { anchor: "ne", pos: "top:0;right:0;cursor:ne-resize" },
+          { anchor: "sw", pos: "bottom:0;left:0;cursor:sw-resize" },
+          { anchor: "se", pos: "bottom:0;right:0;cursor:se-resize" },
+          { anchor: "n", pos: "top:0;left:50%;transform:translateX(-50%);cursor:n-resize" },
+          { anchor: "s", pos: "bottom:0;left:50%;transform:translateX(-50%);cursor:s-resize" },
+          { anchor: "w", pos: "top:50%;left:0;transform:translateY(-50%);cursor:w-resize" },
+          { anchor: "e", pos: "top:50%;right:0;transform:translateY(-50%);cursor:e-resize" },
+        ]
+          .map(
+            (h) =>
+              `<span data-overlay-handle="${h.anchor}" data-overlay-handle-key="${layerKey}" class="absolute z-20 h-2.5 w-2.5 rounded-full border border-blue-200 bg-blue-500 shadow" style="${h.pos};pointer-events:auto"></span>`
+          )
+          .join("");
+
+        return `<img src="${step1OverlayImageUrl}" data-overlay-key="${layerKey}" class="simple-scan-overlay-layer pointer-events-auto absolute inset-0 h-full w-full" style="${overlayTransformStyle(layerKey)}" />${handleHtml}`;
+      })
+      .join("");
+
+    pipelineStepsEl.innerHTML = `
+      <div class="rounded border border-gray-200 p-2 dark:border-gray-700">
+        <p class="text-xs font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-300">Step 1: Viable Area Detection</p>
+        <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">${regions.length} candidate region(s) detected, ${selectedRegions.length} selected, ${excludedRegionIndexes.size} removed</p>
+        ${step1ResetButton}
+        <div class="mb-2 flex flex-wrap items-center gap-2">
+          <button type="button" data-overlay-key="step1" class="simple-scan-overlay-toggle rounded bg-gray-700 px-2 py-1 text-[11px] font-semibold text-white dark:bg-gray-600">${isOverlayVisible("step1") ? "Show source" : "Show identified only"}</button>
+          <span class="text-[11px] font-semibold text-gray-700 dark:text-gray-300">Drag overlays directly. Drag corner/edge handles to resize.</span>
+        </div>
+        <div class="relative overflow-hidden rounded border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+          <img src="${step1BaseImageUrl}" alt="Step 1" class="block w-full" />
+          ${step1RegionLayers}
+          ${step1RemoveButtons}
+        </div>
+      </div>
+      <div class="rounded border border-gray-200 p-2 dark:border-gray-700">
+        <p class="text-xs font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-300">Step 2: Viable Area Applied</p>
+        <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">Everything outside selected viable area is removed</p>
+        <div class="relative overflow-hidden rounded border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+          <img src="${viableBaseUrl}" alt="Step 2" class="block w-full" />
+        </div>
+      </div>
+    `;
+
+    // Wire up event handlers on the newly rendered DOM
+    pipelineStepsEl.querySelectorAll(".simple-scan-remove-region-btn").forEach((btn) => {
+      btn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const idx = Number((btn as HTMLElement).getAttribute("data-remove-region-idx"));
+        if (Number.isFinite(idx)) {
+          excludedRegionIndexes.add(idx);
+          renderProcessingOnlyView();
+        }
+      });
+    });
+
+    pipelineStepsEl.querySelector("#simple-scan-reset-removed-regions")?.addEventListener("click", () => {
+      excludedRegionIndexes.clear();
+      renderProcessingOnlyView();
+    });
+
+    pipelineStepsEl.querySelector("#simple-scan-remove-all-regions")?.addEventListener("click", () => {
+      baselineRegions.forEach((_, idx) => excludedRegionIndexes.add(idx));
+      renderProcessingOnlyView();
+    });
+
+    pipelineStepsEl.querySelectorAll(".simple-scan-overlay-toggle").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const key = (btn as HTMLElement).getAttribute("data-overlay-key") || "";
+        const next = !isOverlayVisible(key);
+        stepOverlayVisibility[key] = next;
+        renderProcessingOnlyView();
+      });
+    });
+
+    // Drag to move region overlays
+    pipelineStepsEl.querySelectorAll(".simple-scan-overlay-layer").forEach((layer) => {
+      layer.addEventListener("pointerdown", (event: Event) => {
+        const e = event as PointerEvent;
+        const key = (layer as HTMLElement).getAttribute("data-overlay-key") || "";
+        if (!key.startsWith("step1-r")) return;
+        e.preventDefault();
+        activeStep1LayerKey = key;
+        const t = ensureOverlayTransform(key);
+        overlayDragState = { key, startX: e.clientX, startY: e.clientY, baseX: t.x, baseY: t.y };
+        updateStep1ActiveLayerUi();
+      });
+    });
+
+    // Handle resize handles
+    pipelineStepsEl.querySelectorAll("[data-overlay-handle]").forEach((handle) => {
+      handle.addEventListener("pointerdown", (event: Event) => {
+        const e = event as PointerEvent;
+        const key = (handle as HTMLElement).getAttribute("data-overlay-handle-key") || "";
+        const anchor = (handle as HTMLElement).getAttribute("data-overlay-handle") || "";
+        if (!key) return;
+        e.preventDefault();
+        e.stopPropagation();
+        activeStep1LayerKey = key;
+        const t = ensureOverlayTransform(key);
+        const region = step1SelectedRegionEntries.find(
+          (entry) => `step1-r${entry.idx}` === key
+        )?.region;
+        const containerEl = pipelineStepsEl?.querySelector(
+          `.simple-scan-overlay-layer[data-overlay-key="${key}"]`
+        ) as HTMLElement | null;
+        const regionWidthPx = containerEl?.offsetWidth || region?.w || 100;
+        const regionHeightPx = containerEl?.offsetHeight || region?.h || 100;
+        overlayHandleDragState = {
+          key,
+          anchor,
+          startX: e.clientX,
+          startY: e.clientY,
+          baseScaleX: t.scaleX || t.scale,
+          baseScaleY: t.scaleY || t.scale,
+          regionWidthPx,
+          regionHeightPx,
+        };
+        updateStep1ActiveLayerUi();
+      });
+    });
+  }
+
+  // ── Main processing view ───────────────────────────────────────────
+
+  function renderProcessingOnlyView() {
+    if (!drawingState) return;
+    if (!baselineRegions.length) baselineRegions = extractBaselineRegions(drawingState);
+    const { regionsSource, selectedRegions } = getActiveRegionSelection(drawingState);
+
+    renderPipelineSteps({
+      sourceImageData: drawingState.imageData,
+      regions: regionsSource,
+      selectedRegions,
+    });
+    drawOverlay();
+
+    if (resultsEl) {
+      resultsEl.textContent = JSON.stringify(
+        {
+          mode: "step1-step2-only",
+          regionsDetected: baselineRegions.length,
+          regionsSelected: selectedRegions.length,
+          regionsRemoved: excludedRegionIndexes.size,
+        },
+        null,
+        2
+      );
+    }
+    setStatus(
+      `${selectedRegions.length} viable region(s) selected out of ${baselineRegions.length} detected. ${excludedRegionIndexes.size} removed.`
+    );
+  }
+
+  // ── PDF / Image loading ────────────────────────────────────────────
+
+  async function renderPdfToImage(file: File): Promise<HTMLImageElement | null> {
+    for (const scale of PDF_RENDER_SCALE_FALLBACKS) {
+      try {
+        const pdfLib = getPdfLib();
+        if (!pdfLib) return null;
+        const pdf = await pdfLib.getDocument({ data: await file.arrayBuffer() }).promise;
+        const page = await pdf.getPage(1);
+        const viewport = page.getViewport({ scale });
+        const c = document.createElement("canvas");
+        c.width = Math.max(1, Math.floor(viewport.width));
+        c.height = Math.max(1, Math.floor(viewport.height));
+        const ctx = c.getContext("2d", { willReadFrequently: true });
+        if (!ctx) continue;
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        const img = new Image();
+        img.src = c.toDataURL("image/png");
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+        });
+        lastPdfRenderScale = scale;
+        return img;
+      } catch (error) {
+        void error;
+      }
+    }
+    return null;
+  }
+
+  async function loadImageFromFile(file: File): Promise<HTMLImageElement | null> {
+    return await new Promise((resolve: (image: HTMLImageElement | null) => void) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = String(reader.result || "");
+      };
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleDrawingUpload(file: File) {
+    if (!(file instanceof File)) return;
+    setStatus("Rendering drawing...");
+    lastPdfRenderScale = 0;
+    const isPdf = file.name.toLowerCase().endsWith(".pdf") || file.type === "application/pdf";
+    const isSvg = file.name.toLowerCase().endsWith(".svg") || file.type === "image/svg+xml";
+    const img: HTMLImageElement | null = isPdf
+      ? await renderPdfToImage(file)
+      : await loadImageFromFile(file);
+    if (!img || !(canvas instanceof HTMLCanvasElement))
+      return setStatus("Failed to render drawing");
+    const ctx = getCtx();
+    if (!ctx) return;
+    const ratio = Math.min(
+      isSvg ? 10 : 1,
+      DRAWING_RENDER_MAX_SIDE /
+        Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height)
+    );
+    canvas.width = Math.max(1, Math.round((img.naturalWidth || img.width) * ratio));
+    canvas.height = Math.max(1, Math.round((img.naturalHeight || img.height) * ratio));
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    drawingState = {
+      width: canvas.width,
+      height: canvas.height,
+      imageData,
+      mask: imageToRegionSeedMask(imageData),
+    };
+    setStatus(
+      `Rendered ${canvas.width}x${canvas.height}${lastPdfRenderScale ? ` @ PDF scale ${lastPdfRenderScale}` : ""}. Detecting regions...`
+    );
+    baselineRegions = extractBaselineRegions(drawingState);
+    excludedRegionIndexes.clear();
+    renderProcessingOnlyView();
+  }
+
+  // ── Event wiring ───────────────────────────────────────────────────
+
+  drawingFileInput?.addEventListener("change", async () => {
+    const file = drawingFileInput.files?.[0];
+    if (file) await handleDrawingUpload(file);
+  });
+
+  const handleOverlayPointerMove = (event: PointerEvent) => {
+    if (overlayHandleDragState) {
+      const t = ensureOverlayTransform(overlayHandleDragState.key);
+      const dx = event.clientX - overlayHandleDragState.startX;
+      const dy = event.clientY - overlayHandleDragState.startY;
+      const anchor = overlayHandleDragState.anchor;
+      const horizontal = anchor.includes("e") ? 1 : anchor.includes("w") ? -1 : 0;
+      const vertical = anchor.includes("s") ? 1 : anchor.includes("n") ? -1 : 0;
+      const widthRef = Math.max(
+        24,
+        overlayHandleDragState.regionWidthPx * Math.max(0.1, overlayHandleDragState.baseScaleX)
+      );
+      const heightRef = Math.max(
+        24,
+        overlayHandleDragState.regionHeightPx * Math.max(0.1, overlayHandleDragState.baseScaleY)
+      );
+      if (horizontal !== 0) {
+        const scaleDeltaX = horizontal * (dx / widthRef);
+        const newScaleX = clamp(
+          overlayHandleDragState.baseScaleX * (1 + scaleDeltaX * 1.35),
+          0.45,
+          3.2
+        );
+        const scaleChange = newScaleX - (t.scaleX || t.scale);
+        const halfWidthChange = (scaleChange * widthRef) / 2;
+        if (horizontal === 1) {
+          t.x = (t.x || 0) - halfWidthChange;
+        } else {
+          t.x = (t.x || 0) + halfWidthChange;
+        }
+        t.scaleX = newScaleX;
+      }
+      if (vertical !== 0) {
+        const scaleDeltaY = vertical * (dy / heightRef);
+        const newScaleY = clamp(
+          overlayHandleDragState.baseScaleY * (1 + scaleDeltaY * 1.35),
+          0.45,
+          3.2
+        );
+        const scaleChange = newScaleY - (t.scaleY || t.scale);
+        const halfHeightChange = (scaleChange * heightRef) / 2;
+        if (vertical === 1) {
+          t.y = (t.y || 0) - halfHeightChange;
+        } else {
+          t.y = (t.y || 0) + halfHeightChange;
+        }
+        t.scaleY = newScaleY;
+      }
+      t.scale = ((t.scaleX || t.scale) + (t.scaleY || t.scale)) / 2;
+      applyOverlayTransformUi(overlayHandleDragState.key);
+      return;
+    }
+    if (!overlayDragState) return;
+    const t = ensureOverlayTransform(overlayDragState.key);
+    t.x = overlayDragState.baseX + (event.clientX - overlayDragState.startX);
+    t.y = overlayDragState.baseY + (event.clientY - overlayDragState.startY);
+    applyOverlayTransformUi(overlayDragState.key);
+  };
+  const handleOverlayPointerUp = () => {
+    overlayHandleDragState = null;
+    overlayDragState = null;
+  };
+
+  window.addEventListener("pointermove", handleOverlayPointerMove);
+  window.addEventListener("pointerup", handleOverlayPointerUp);
+  window.addEventListener("pointercancel", handleOverlayPointerUp);
+  runScanBtn?.addEventListener("click", renderProcessingOnlyView);
+
+  // Auto-load default drawing
+  (async () => {
+    try {
+      while (!getPdfLib()) await new Promise((r) => setTimeout(r, 100));
+      const res = await fetch(DEFAULT_DRAWING_PUBLIC_PATH, { cache: "no-store" });
+      const blob = await res.blob();
+      await handleDrawingUpload(new File([blob], "demo-plan.pdf", { type: "application/pdf" }));
+    } catch {
+      setStatus("Could not auto-load default drawing.");
+    }
+  })();
+</script>
