@@ -483,6 +483,6 @@ Return JSON:
 
 
 if __name__ == "__main__":
-    print("🔥 Plan Detector API on http://localhost:5555")
-    print("   Endpoints: /render, /detect, /crop, /count, /health")
-    app.run(host="0.0.0.0", port=5555, debug=True)
+    print("🔥 Plan Detector API on http://localhost:5557")
+    print("   Endpoints: /render, /detect, /crop, /count, /health, /test-plans/<id>")
+    app.run(host="0.0.0.0", port=5557, debug=True)
