@@ -196,94 +196,76 @@ if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) return Astro.redirect("
     }
   }
 
-  async function loadTestPlan(planId) {
-    try {
-      log('Loading test plan: ' + planId);
-      updatePlanStatus('Loading plan...');
-      
-      // First get the PDF
-      log('Fetching PDF from: ' + API + '/test-plans/' + planId);
-      const pdfResponse = await fetch(`${API}/test-plans/${planId}`);
-      if (!pdfResponse.ok) throw new Error('Failed to load plan: ' + pdfResponse.status);
-      
-      const pdfBlob = await pdfResponse.blob();
-      log('Plan PDF loaded, size: ' + pdfBlob.size);
-      
-      // Convert PDF to image using /render endpoint
-      updatePlanStatus('Rendering plan...');
-      const formData = new FormData();
-      formData.append('file', pdfBlob, `${planId}.pdf`);
-      formData.append('page', '0'); // First page
-      formData.append('dpi', '150'); // Good quality
-      
-      log('Sending render request to: ' + API + '/render');
-      const renderResponse = await fetch(`${API}/render`, {
-        method: 'POST',
-        body: formData
-      });
-      
-      if (!renderResponse.ok) throw new Error('Failed to render plan: ' + renderResponse.status);
-      
-      // Parse JSON response (contains data URI)
-      const renderData = await renderResponse.json();
-      log('Render response keys: ' + Object.keys(renderData).join(', '));
-      
-      if (!renderData.image) throw new Error('No image data in render response');
-      
-      // Use data URI directly (no conversion needed)
-      const imageUrl = renderData.image;
-      log('Plan image ready, data URI length: ' + imageUrl.length);
-      
-      // Load rendered image
-      log('Setting up image load handlers');
-      
-      planImg.onload = () => {
-        log('SUCCESS: planImg.onload fired - image loaded successfully!');
-        log('Image dimensions: ' + planImg.naturalWidth + 'x' + planImg.naturalHeight);
-        log('uploadPrompt element: ' + !!uploadPrompt);
-        log('planView element: ' + !!planView);
+  // Copy working approach from plan-scanner
+  function loadTestPlan(planId) {
+    if (!planId) return;
+    
+    log('Loading test plan: ' + planId);
+    updatePlanStatus('Loading plan...');
+    
+    // Use exact same approach as plan-scanner
+    fetch(API + '/test-plans/' + planId)
+      .then(function(response) {
+        if (!response.ok) throw new Error('Plan not found');
+        return response.blob();
+      })
+      .then(function(blob) {
+        log('Plan PDF loaded, size: ' + blob.size);
         
-        log('Before UI update - uploadPrompt classes: ' + (uploadPrompt ? uploadPrompt.className : 'null'));
-        log('Before UI update - planView classes: ' + (planView ? planView.className : 'null'));
+        var file = new File([blob], planId + '.pdf', { type: 'application/pdf' });
+        currentPlan = { id: planId, file: file };
         
-        uploadPrompt?.classList.add('hidden');
-        planView?.classList.remove('hidden');
+        updatePlanStatus('Rendering...');
         
-        log('After UI update - uploadPrompt classes: ' + (uploadPrompt ? uploadPrompt.className : 'null'));
-        log('After UI update - planView classes: ' + (planView ? planView.className : 'null'));
+        var formData = new FormData();
+        formData.append('file', file);
+        formData.append('page', '0');
+        formData.append('scale', '2');
         
-        log('UI updated: uploadPrompt hidden, planView shown');
+        return fetch(API + '/render', { method: 'POST', body: formData });
+      })
+      .then(function(response) {
+        if (!response.ok) throw new Error('Render failed');
+        return response.json();
+      })
+      .then(function(data) {
+        log('Render response received');
         
-        currentPlan = { id: planId, imageUrl: imageUrl, pdfBlob: pdfBlob };
+        if (!data.success || !data.image) {
+          throw new Error('Render response missing image data');
+        }
         
-        const planNames = {
-          'demo-plan': 'Demo Plan (SimpleScan default)',
-          '85-tremont': '85 Tremont Street Cambridge MA FP.pdf',
-          'lane-park': 'Lane Park plan (5 heads)'
+        // Set image source directly
+        planImg.onload = function() {
+          log('SUCCESS: Plan image loaded!');
+          uploadPrompt?.classList.add('hidden');
+          planView?.classList.remove('hidden');
+          
+          const planNames = {
+            'demo-plan': 'Demo Plan (SimpleScan default)',
+            '85-tremont': '85 Tremont Street Cambridge MA FP.pdf',
+            'lane-park': 'Lane Park plan (5 heads)'
+          };
+          
+          const planName = planNames[planId] || planId;
+          updatePlanStatus('Loaded: ' + planName);
+          updatePlanTitle(planName);
+          initializeSteps();
         };
         
-        const planName = planNames[planId] || planId;
-        updatePlanStatus(`Loaded: ${planName}`);
-        updatePlanTitle(planName);
+        planImg.onerror = function() {
+          log('ERROR: Failed to load plan image');
+          updatePlanStatus('Failed to display plan image');
+          clearPlan();
+        };
         
-        log('Calling initializeSteps()');
-        initializeSteps();
-      };
-      
-      planImg.onerror = (e) => {
-        log('ERROR: planImg.onerror fired: ' + e);
-        updatePlanStatus('Failed to display plan image');
+        planImg.src = data.image;
+      })
+      .catch(function(error) {
+        log('ERROR loading plan: ' + error.message);
+        updatePlanStatus('Error: ' + error.message);
         clearPlan();
-      };
-      
-      log('Setting planImg.src to: ' + imageUrl.substring(0, 50) + '...');
-      planImg.src = imageUrl;
-      
-    } catch (error) {
-      log('ERROR loading plan: ' + error.message);
-      updatePlanStatus('Error loading plan: ' + error.message);
-      clearPlan();
-    }
+      });
   }
 
   function initializeSteps() {
