@@ -104,6 +104,133 @@ if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) return Astro.redirect("
   const API = 'http://localhost:5557';
   let currentPlan = null;
   let currentStep = 0;
+  let drawingState = null; // Will hold the image data and mask
+  let detectedRegions = [];
+  
+  // Copy working functions from SimpleScan
+  const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+  
+  function getComponents(mask, width, height, minArea = 18, maxArea = 999999) {
+    const visited = new Uint8Array(width * height);
+    const qx = new Int32Array(width * height);
+    const qy = new Int32Array(width * height);
+    const out = [];
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const start = y * width + x;
+        if (!mask[start] || visited[start]) continue;
+        let head = 0;
+        let tail = 0;
+        qx[tail] = x;
+        qy[tail] = y;
+        tail += 1;
+        visited[start] = 1;
+        let area = 0;
+        let minX = x;
+        let minY = y;
+        let maxX = x;
+        let maxY = y;
+        while (head < tail) {
+          const hx = qx[head];
+          const hy = qy[head];
+          head += 1;
+          area += 1;
+          const dirs = [
+            { dx: -1, dy: 0 },
+            { dx: 1, dy: 0 },
+            { dx: 0, dy: -1 },
+            { dx: 0, dy: 1 },
+          ];
+          for (const { dx, dy } of dirs) {
+            const nx = hx + dx;
+            const ny = hy + dy;
+            if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+            const ni = ny * width + nx;
+            if (!mask[ni] || visited[ni]) continue;
+            visited[ni] = 1;
+            qx[tail] = nx;
+            qy[tail] = ny;
+            tail += 1;
+            minX = Math.min(minX, nx);
+            minY = Math.min(minY, ny);
+            maxX = Math.max(maxX, nx);
+            maxY = Math.max(maxY, ny);
+          }
+        }
+        if (area >= minArea && area <= maxArea) {
+          out.push({
+            x: minX,
+            y: minY,
+            w: maxX - minX + 1,
+            h: maxY - minY + 1,
+            area,
+          });
+        }
+      }
+    }
+    return out;
+  }
+
+  function extractBaselineRegions(state) {
+    if (!state) return [];
+    const { width, height, mask } = state;
+    const canvasArea = Math.max(1, width * height);
+    const comps = getComponents(mask, width, height, 18, canvasArea * 0.9);
+    if (comps.length === 0) return [];
+
+    const edgeMargin = Math.max(6, Math.round(Math.min(width, height) * 0.02));
+    const scored = [];
+    for (const c of comps) {
+      const bboxArea = c.w * c.h;
+      const bboxRatio = bboxArea / canvasArea;
+      if (bboxRatio < 0.015 || bboxRatio > 0.72) continue;
+      const aspect = c.w / Math.max(1, c.h);
+      if (aspect < 0.35 || aspect > 3.0) continue;
+      const inkRatio = c.area / Math.max(1, bboxArea);
+      if (inkRatio < 0.0015 || inkRatio > 0.24) continue;
+
+      const nearLeft = c.x <= edgeMargin;
+      const nearTop = c.y <= edgeMargin;
+      const nearRight = c.x + c.w >= width - edgeMargin;
+      const nearBottom = c.y + c.h >= height - edgeMargin;
+      const edgeTouchCount = [nearLeft, nearTop, nearRight, nearBottom].filter(Boolean).length;
+
+      const cx = c.x + c.w / 2;
+      const cy = c.y + c.h / 2;
+      const centerDist =
+        Math.hypot(cx - width / 2, cy - height / 2) /
+        Math.max(1, Math.hypot(width / 2, height / 2));
+      const centerBonus = 1 - clamp(centerDist, 0, 1);
+      const frameBonus = clamp(1 - Math.abs(inkRatio - 0.06) / 0.14, 0, 1);
+      const edgePenalty = edgeTouchCount >= 2 ? 0.22 : 0;
+      const score = bboxRatio * 1.1 + frameBonus * 0.35 + centerBonus * 0.2 - edgePenalty;
+
+      scored.push({ ...c, score });
+    }
+
+    scored.sort((a, b) => b.score - a.score);
+    const selected = [];
+    for (const c of scored) {
+      const overlaps = selected.some((k) => {
+        const x0 = Math.max(c.x, k.x);
+        const y0 = Math.max(c.y, k.y);
+        const x1 = Math.min(c.x + c.w - 1, k.x + k.w - 1);
+        const y1 = Math.min(c.y + c.h - 1, k.y + k.h - 1);
+        if (x1 < x0 || y1 < y0) return false;
+        const inter = (x1 - x0 + 1) * (y1 - y0 + 1);
+        return inter / Math.max(1, Math.min(c.w * c.h, k.w * k.h)) > 0.58;
+      });
+      if (overlaps) continue;
+      const pad = Math.max(8, Math.round(Math.min(c.w, c.h) * 0.03));
+      selected.push({
+        x: Math.max(0, c.x - pad),
+        y: Math.max(0, c.y - pad),
+        w: Math.min(width, c.w + pad * 2),
+        h: Math.min(height, c.h + pad * 2),
+      });
+    }
+    return selected.slice(0, 6); // Max 6 regions
+  }
 
   // DOM elements
   const sidebar = document.getElementById('sidebar');
@@ -325,7 +452,120 @@ if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) return Astro.redirect("
     }).join('');
     
     log('Steps UI rendered successfully');
+    
+    // Add click handlers for Run buttons
+    stepsContainer.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const stepDiv = e.target.closest('.p-3');
+        const stepIndex = Array.from(stepsContainer.children).indexOf(stepDiv);
+        log('Run button clicked for step: ' + stepIndex);
+        runStep(stepIndex);
+      });
+    });
   }
+  
+  async function runStep(stepIndex) {
+    log('Running step: ' + stepIndex);
+    
+    if (stepIndex === 0) {
+      // Step 1: Detect viable regions
+      await runStep1();
+    }
+    // Add more steps here later
+  }
+  
+  async function runStep1() {
+    if (!currentPlan || !currentPlan.file) {
+      log('ERROR: No plan loaded for step 1');
+      return;
+    }
+    
+    log('Step 1: Detecting viable regions...');
+    updatePlanStatus('Detecting regions...');
+    
+    try {
+      // Use /detect endpoint to get mask data (like plan-scanner)
+      const formData = new FormData();
+      formData.append('file', currentPlan.file);
+      formData.append('scale', '3');
+      formData.append('threshold', '200');
+      
+      const response = await fetch(API + '/detect', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (!response.ok) throw new Error('Detection failed');
+      
+      const data = await response.json();
+      log('Detection response: ' + Object.keys(data).join(', '));
+      
+      // Create drawing state from response
+      drawingState = {
+        imageData: {
+          width: data.width,
+          height: data.height,
+          data: new Uint8ClampedArray(data.image_data) // Assuming this comes from server
+        },
+        mask: new Uint8Array(data.mask),
+        width: data.width,
+        height: data.height
+      };
+      
+      // Extract regions using the copied SimpleScan logic
+      detectedRegions = extractBaselineRegions(drawingState);
+      log('Detected ' + detectedRegions.length + ' regions');
+      
+      // Display regions as overlays
+      displayRegionOverlays();
+      
+      // Update step status
+      currentStep = 1; // Mark step 1 as complete, step 2 as active
+      renderStepsUI();
+      
+      updatePlanStatus('Found ' + detectedRegions.length + ' viable regions');
+      
+    } catch (error) {
+      log('ERROR in step 1: ' + error.message);
+      updatePlanStatus('Error detecting regions: ' + error.message);
+    }
+  }
+  
+  function displayRegionOverlays() {
+    if (!planOverlays || !detectedRegions.length) return;
+    
+    log('Displaying ' + detectedRegions.length + ' region overlays');
+    
+    // Get plan image dimensions for scaling
+    const imgRect = planImg.getBoundingClientRect();
+    const scaleX = imgRect.width / drawingState.width;
+    const scaleY = imgRect.height / drawingState.height;
+    
+    // Create overlay HTML
+    const overlayHtml = detectedRegions.map((region, index) => `
+      <div class="absolute border-2 border-blue-400 bg-blue-400/10 cursor-pointer group"
+           style="left: ${region.x * scaleX}px; top: ${region.y * scaleY}px; width: ${region.w * scaleX}px; height: ${region.h * scaleY}px;">
+        <div class="absolute -top-6 left-0 text-xs bg-blue-600 text-white px-1 rounded opacity-0 group-hover:opacity-100">
+          Region ${index + 1}
+        </div>
+        <button class="absolute -top-2 -right-2 w-4 h-4 bg-red-500 text-white text-xs rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-600"
+                onclick="removeRegion(${index})">×</button>
+      </div>
+    `).join('');
+    
+    planOverlays.innerHTML = overlayHtml;
+    planOverlays.style.pointerEvents = 'auto'; // Enable interactions
+  }
+  
+  function removeRegion(index) {
+    log('Removing region: ' + index);
+    detectedRegions.splice(index, 1);
+    displayRegionOverlays();
+    updatePlanStatus('Removed region. ' + detectedRegions.length + ' regions remaining');
+  }
+  
+  // Make removeRegion globally available
+  window.removeRegion = removeRegion;
 
   // Auto-load demo plan on start (same as plan-scanner approach)
   log('=== AUTO-LOAD INIT ===');
