@@ -2917,9 +2917,9 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     ) as HTMLButtonElement | null;
     confirmOverlayTargetingBtn?.addEventListener("click", () => {
       if (!drawingState) return;
-      overlayTargetingConfirmed = true;
-      setStatus("Step 1 confirmed. Running Steps 2-7...");
-      renderProcessingOnlyView();
+      // Just run Step 3 (colored lines) - the user's specific request
+      setStatus("Running Step 3: Finding colored lines...");
+      runSingleStep(3);
     });
     pipelineStepsEl.querySelectorAll("[data-overlay-active-key]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -3753,6 +3753,55 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
         ctx.arc(step55SelectedEndpoint.x, step55SelectedEndpoint.y, 7, 0, Math.PI * 2);
         ctx.stroke();
       }
+    }
+  }
+
+  // Run a single step only - user's request for incremental processing
+  async function runSingleStep(stepNumber) {
+    if (!drawingState) return;
+    
+    if (stepNumber === 3) {
+      // Step 3: Find colored lines only
+      if (!baselineRegions.length) baselineRegions = extractBaselineRegions(drawingState);
+      const { regionsSource, selectedRegions, selectedRegionIndexes } = getActiveRegionSelection(drawingState);
+      const selectedState = getMaskedByRegions(drawingState, selectedRegions);
+      
+      // Run only the color line detection (Step 3)
+      const step3AllowedMask = buildFullMask(drawingState.width, drawingState.height);
+      const colorLineInfo = detectColoredPixelsWithinAllowedMask(drawingState.imageData, step3AllowedMask);
+      
+      // Update UI to show Step 3 result
+      const emptyMask = new Uint8Array(selectedState.mask.length);
+      const previewPayload = {
+        sourceImageData: drawingState.imageData,
+        step3SourceMask: selectedState.mask,
+        step4SourceMask: emptyMask,
+        step5SourceMask: emptyMask,
+        step6SourceMask: emptyMask,
+        step7SourceMask: emptyMask,
+        colorLineDeltaMask: colorLineInfo.colorMask,
+        colorPixelCount: colorLineInfo.coloredPixelCount,
+        hairlineRemovedDeltaMask: emptyMask,
+        hairlineRemovedCount: 0,
+        hairlineWidthThreshold: 0,
+        lineRemovedDeltaMask: emptyMask,
+        lineDashedCount: 0,
+        lineJunctionCount: 0,
+        lineMagneticSeedCount: 0,
+        lineLoopClosedCount: 0,
+        textRemovedDeltaMask: emptyMask,
+        textRemovedCount: 0,
+        regions: regionsSource,
+        selectedRegions,
+        selectedRegionIndexes,
+        targetingOnly: false,
+      };
+      
+      renderPipelineSteps(previewPayload);
+      setStatus(`Step 3 complete: ${colorLineInfo.coloredPixelCount} colored pixels found`);
+      
+      // Set flag so button can advance to next step
+      overlayTargetingConfirmed = true;
     }
   }
 
