@@ -50,26 +50,13 @@ const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL || process.env.PUBLIC_S
 const SUPABASE_ANON = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || process.env.PUBLIC_SUPABASE_ANON_KEY || import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE || process.env.PUBLIC_SUPABASE_PUBLISHABLE;
 const MAPS_KEY = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY || process.env.PUBLIC_GOOGLE_MAPS_API_KEY;
 
-// Build OG image URL — Street View if available, otherwise static map
+// Build OG image — Google Maps Street View URL (platforms fetch it directly)
+// Falls back to static map if no street view, then to logo
 const projectAddress = pageData?.projectAddress || pageData?.projectTitle || '';
 const encodedAddress = encodeURIComponent(projectAddress);
-let ogImage = '';
-if (projectAddress && MAPS_KEY) {
-  // Check if Street View has coverage
-  try {
-    const svMeta = await fetch(`https://maps.googleapis.com/maps/api/streetview/metadata?location=${encodedAddress}&key=${MAPS_KEY}`);
-    const svData = await svMeta.json();
-    if (svData.status === 'OK') {
-      ogImage = `https://maps.googleapis.com/maps/api/streetview?size=1200x630&location=${encodedAddress}&key=${MAPS_KEY}&source=outdoor`;
-    } else {
-      ogImage = 'https://capcofire.com/og-default.png';
-    }
-  } catch {
-    ogImage = 'https://capcofire.com/og-default.png';
-  }
-} else {
-  ogImage = 'https://capcofire.com/og-default.png';
-}
+const ogImage = projectAddress && MAPS_KEY
+  ? `https://maps.googleapis.com/maps/api/streetview?size=1200x630&location=${encodedAddress}&key=${MAPS_KEY}&source=outdoor`
+  : 'https://capcofire.com/og-default.png';
 const ogTitle = projectAddress ? `${projectAddress} — CAP Design Group` : 'CAP Design Group';
 const ogDescription = pageData?.clientName 
   ? `Hi ${pageData.clientName}, we need a few items for your project.`
