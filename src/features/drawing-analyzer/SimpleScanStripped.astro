@@ -4,56 +4,86 @@ import { globalClasses } from "../../pages/api/global/global-classes";
 const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasses();
 ---
 
-<section class="space-y-3">
-  <p class={`text-sm font-semibold ${primaryTextClasses}`}>Simple Scan — Steps 1 & 2</p>
-  <p class={mutedTextSmClasses}>
-    Region detection and viable area application only.
-  </p>
+<section class="relative" style="min-height:calc(100dvh - 120px)">
 
-  <div class="flex flex-wrap items-end gap-4">
-    <div class="min-w-[220px] flex-1">
-      <label for="simple-scan-test-select" class={globalFormLabel}>Test Drawing</label>
-      <select
-        id="simple-scan-test-select"
-        class="block w-full rounded border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-      >
-      </select>
-    </div>
-    <div class="min-w-[220px] flex-1">
-      <label for="simple-scan-file" class={globalFormLabel}>Upload Override</label>
-      <input id="simple-scan-file" type="file" accept=".pdf,image/*" class="block w-full text-sm" />
+  {/* ── Drawer toggle button (always visible) ── */}
+  <button
+    id="drawer-toggle"
+    type="button"
+    class="absolute left-3 top-3 z-50 flex h-9 w-9 items-center justify-center rounded-lg bg-gray-900/80 text-white shadow-lg backdrop-blur hover:bg-gray-900 dark:bg-gray-100/80 dark:text-gray-900 dark:hover:bg-gray-100"
+    title="Toggle controls"
+  >
+    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
+  </button>
+
+  {/* ── Drawer (absolute, doesn't push content) ── */}
+  <div
+    id="scan-drawer"
+    class="absolute left-0 top-0 z-40 h-full w-80 translate-x-0 overflow-y-auto rounded-r-xl bg-white/95 shadow-2xl backdrop-blur-sm transition-transform duration-200 dark:bg-gray-900/95"
+  >
+    <div class="space-y-4 p-4 pt-14">
+      <p class={`text-sm font-semibold ${primaryTextClasses}`}>Drawing Analyzer</p>
+      <p class={mutedTextSmClasses}>Select a floor plan to analyze.</p>
+
+      <div>
+        <label for="simple-scan-test-select" class={globalFormLabel}>Test Drawing</label>
+        <select
+          id="simple-scan-test-select"
+          class="block w-full rounded border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+        >
+        </select>
+      </div>
+
+      <div>
+        <label for="simple-scan-file" class={globalFormLabel}>Upload Override</label>
+        <input id="simple-scan-file" type="file" accept=".pdf,image/*" class="block w-full text-sm" />
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button
+          id="simple-scan-run"
+          type="button"
+          class="rounded bg-primary-600 px-3 py-1.5 text-sm text-white"
+        >
+          Refresh
+        </button>
+      </div>
+
+      <p id="simple-scan-status" class={`${mutedTextSmClasses} break-words`}>Loading default drawing...</p>
+
+      <div id="drawer-controls" class="space-y-3"></div>
+
+      <details class="rounded border border-gray-200 dark:border-gray-700">
+        <summary class="cursor-pointer px-3 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400">Debug Output</summary>
+        <pre
+          id="simple-scan-results"
+          class="max-h-48 overflow-auto p-3 text-[10px] leading-tight dark:bg-gray-900">
+        </pre>
+      </details>
     </div>
   </div>
 
-  <div class="flex items-center gap-2">
-    <button
-      id="simple-scan-run"
-      type="button"
-      class="rounded bg-primary-600 px-3 py-1.5 text-sm text-white"
-    >
-      Refresh Processing
-    </button>
-    <p id="simple-scan-status" class={mutedTextSmClasses}>Loading default drawing...</p>
-  </div>
-
+  {/* ── Hidden canvas (processing only) ── */}
   <canvas
     id="simple-scan-canvas"
     class="hidden"></canvas>
-  <pre
-    id="simple-scan-results"
-    class="max-h-[42vh] overflow-auto rounded border border-gray-300 bg-gray-50 p-3 text-xs dark:border-gray-700 dark:bg-gray-900">
-  </pre>
 
-  <div class="rounded border border-gray-300 p-3 dark:border-gray-700">
-    <p class="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
-      Preprocessing Timeline
-    </p>
-    <div id="simple-scan-pipeline-steps" class="space-y-3"></div>
-  </div>
+  {/* ── Full-screen floor plan area ── */}
+  <div id="simple-scan-pipeline-steps" class="flex w-full items-center justify-center" style="min-height:calc(100dvh - 120px)"></div>
+
 </section>
 
 <script src="/js/pdf.min.js" defer></script>
 <script>
+  // Drawer toggle
+  const drawerEl = document.getElementById("scan-drawer") as HTMLDivElement | null;
+  const drawerToggle = document.getElementById("drawer-toggle") as HTMLButtonElement | null;
+  let drawerOpen = true;
+  drawerToggle?.addEventListener("click", () => {
+    drawerOpen = !drawerOpen;
+    if (drawerEl) drawerEl.style.transform = drawerOpen ? "translateX(0)" : "translateX(-100%)";
+  });
+
   const drawingFileInput = document.getElementById("simple-scan-file") as HTMLInputElement | null;
   const testSelect = document.getElementById("simple-scan-test-select") as HTMLSelectElement | null;
   const runScanBtn = document.getElementById("simple-scan-run") as HTMLButtonElement | null;
@@ -63,10 +93,12 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
   const pipelineStepsEl = document.getElementById(
     "simple-scan-pipeline-steps"
   ) as HTMLDivElement | null;
+  const drawerControlsEl = document.getElementById("drawer-controls") as HTMLDivElement | null;
 
   const LOG_PREFIX = "[SimpleScan]";
   const log = (...args: any[]) => console.log(LOG_PREFIX, ...args);
   const logWarn = (...args: any[]) => console.warn(LOG_PREFIX, ...args);
+  console.log("[SimpleScan] script init — testSelect:", !!testSelect, "fileInput:", !!drawingFileInput);
   const logError = (...args: any[]) => console.error(LOG_PREFIX, ...args);
   const logTime = (label: string) => console.time(`${LOG_PREFIX} ${label}`);
   const logTimeEnd = (label: string) => console.timeEnd(`${LOG_PREFIX} ${label}`);
@@ -76,6 +108,11 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
   const TEST_DRAWINGS_DIR = "/test-drawings";
   const TEST_DRAWINGS: Array<{ label: string; file: string }> = [
     { label: "Demo Plan", file: "demo-plan.pdf" },
+    { label: "1062 Beacon St, Newton", file: "1062 Beacon St, Newton MA 02459 FP.pdf" },
+    { label: "28 High St", file: "28 HIGH ST - FP.pdf" },
+    { label: "60 Lane Park, Brighton", file: "60 Lane Park, Brighton FP.pdf" },
+    { label: "63b0c5da (Unnamed)", file: "63b0c5da-2d15-428d-b5e1-26fe8cf51618.pdf" },
+    { label: "85 Tremont St, Cambridge", file: "85 Tremont Street Cambridge MA FP.pdf" },
   ];
   const DRAWING_RENDER_MAX_SIDE = 10000;
   const PDF_RENDER_SCALE_FALLBACKS = [14, 12, 10, 8, 6, 4, 3];
@@ -561,7 +598,7 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
   }
 
   function extractColored() {
-    extractPixelsByFilter("Colored Elements", (r, g, b) => {
+    extractPixelsByFilter("Pipes", (r, g, b) => {
       const max = Math.max(r, g, b);
       const min = Math.min(r, g, b);
       const sat = max > 0 ? (max - min) / max : 0;
@@ -570,11 +607,332 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     });
   }
 
+  function extractText() {
+    if (!workingImageData) return;
+    const { width, height, data } = workingImageData;
+    const visited = new Uint8Array(width * height);
+    const components: Array<{ pixels: number[]; minX: number; minY: number; maxX: number; maxY: number }> = [];
+
+    function floodFill(sx: number, sy: number) {
+      const comp = { pixels: [] as number[], minX: sx, minY: sy, maxX: sx, maxY: sy };
+      const stack = [sx + sy * width];
+      visited[sy * width + sx] = 1;
+      while (stack.length) {
+        const pos = stack.pop()!;
+        const px = pos % width;
+        const py = (pos - px) / width;
+        comp.pixels.push(pos);
+        if (px < comp.minX) comp.minX = px;
+        if (px > comp.maxX) comp.maxX = px;
+        if (py < comp.minY) comp.minY = py;
+        if (py > comp.maxY) comp.maxY = py;
+        for (const [dx, dy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+          const nx = px + dx, ny = py + dy;
+          if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+          const ni = ny * width + nx;
+          if (visited[ni]) continue;
+          const i4 = ni * 4;
+          const gray = data[i4] * 0.299 + data[i4+1] * 0.587 + data[i4+2] * 0.114;
+          if (gray < 150 && data[i4+3] > 1 && !(data[i4] === 255 && data[i4+1] === 255 && data[i4+2] === 255)) {
+            visited[ni] = 1;
+            stack.push(ni);
+          }
+        }
+      }
+      return comp;
+    }
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const idx = y * width + x;
+        if (visited[idx]) continue;
+        const i4 = idx * 4;
+        const gray = data[i4] * 0.299 + data[i4+1] * 0.587 + data[i4+2] * 0.114;
+        if (gray >= 150 || data[i4+3] < 2 || (data[i4] === 255 && data[i4+1] === 255 && data[i4+2] === 255)) continue;
+        const comp = floodFill(x, y);
+        if (comp.pixels.length >= 3) components.push(comp);
+      }
+    }
+
+    const textLayer = new ImageData(width, height);
+    const td = textLayer.data;
+    let count = 0;
+
+    for (const comp of components) {
+      const bw = comp.maxX - comp.minX + 1;
+      const bh = comp.maxY - comp.minY + 1;
+      const area = comp.pixels.length;
+      const aspect = bw / Math.max(bh, 1);
+      const density = area / (bw * bh);
+
+      const isText = (
+        bh < height * 0.04 &&
+        bw < width * 0.15 &&
+        area < 2000 &&
+        density > 0.08 &&
+        density < 0.9 &&
+        aspect > 0.15 && aspect < 12
+      );
+
+      if (isText) {
+        for (const pos of comp.pixels) {
+          const i4 = pos * 4;
+          td[i4] = data[i4]; td[i4+1] = data[i4+1]; td[i4+2] = data[i4+2]; td[i4+3] = data[i4+3];
+          data[i4] = 255; data[i4+1] = 255; data[i4+2] = 255; data[i4+3] = 255;
+          count++;
+        }
+      }
+    }
+
+    log(`extractText: analyzed ${components.length} components, ${count} text pixels extracted`);
+    if (count === 0) { logWarn("extractText: no text found"); return; }
+    layers.push({
+      name: "Text / Labels",
+      visible: true,
+      imageDataUrl: imageDataToDataUrl(textLayer),
+      rawImageData: textLayer,
+      pixelCount: count,
+    });
+  }
+
   function extractDark() {
     extractPixelsByFilter("Dark Lines", (r, g, b) => {
       const gray = r * 0.299 + g * 0.587 + b * 0.114;
       const spread = Math.max(r, g, b) - Math.min(r, g, b);
       return gray < 100 && spread < 60;
+    });
+  }
+
+  function extractDashedRectangles() {
+    if (!workingImageData) return;
+    logTime("extractDashedRectangles");
+    const { width, height, data } = workingImageData;
+
+    function isInk(x: number, y: number): boolean {
+      if (x < 0 || x >= width || y < 0 || y >= height) return false;
+      const i = (y * width + x) * 4;
+      if (data[i + 3] < 2) return false;
+      if (data[i] === 255 && data[i + 1] === 255 && data[i + 2] === 255) return false;
+      const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+      return gray < 220;
+    }
+
+    type Run = { start: number; end: number; len: number };
+
+    function getRuns(max: number, pixel: (v: number) => boolean): Run[] {
+      const runs: Run[] = [];
+      let inRun = false, runStart = 0;
+      for (let v = 0; v < max; v++) {
+        if (pixel(v)) {
+          if (!inRun) { inRun = true; runStart = v; }
+        } else if (inRun) {
+          runs.push({ start: runStart, end: v - 1, len: v - runStart });
+          inRun = false;
+        }
+      }
+      if (inRun) runs.push({ start: runStart, end: max - 1, len: max - runStart });
+      return runs;
+    }
+
+    // --- Phase 1: discover the dominant dash/gap pattern via sampling ---
+    const pairVotes = new Map<string, number>();
+    const maxDash = 80;
+    function quantize(v: number): number { return Math.round(v / 3) * 3; }
+
+    function votePairs(runs: Run[]) {
+      for (let i = 0; i < runs.length - 1; i++) {
+        const a = runs[i], b = runs[i + 1];
+        if (a.len > maxDash || b.len > maxDash || a.len < 2 || b.len < 2) continue;
+        const gap = b.start - a.end - 1;
+        if (gap < 1 || gap > 60) continue;
+        const avgLen = quantize((a.len + b.len) / 2);
+        const qGap = quantize(gap);
+        if (avgLen < 2) continue;
+        pairVotes.set(`${avgLen}:${qGap}`, (pairVotes.get(`${avgLen}:${qGap}`) || 0) + 1);
+      }
+    }
+
+    for (let y = 0; y < height; y += 3) votePairs(getRuns(width, (x) => isInk(x, y)));
+    for (let x = 0; x < width; x += 3) votePairs(getRuns(height, (y) => isInk(x, y)));
+
+    if (pairVotes.size === 0) {
+      logWarn("extractDashed: no run pairs found");
+      logTimeEnd("extractDashedRectangles");
+      return;
+    }
+
+    let bestKey = "", bestCount = 0;
+    for (const [key, count] of pairVotes) {
+      if (count > bestCount) { bestCount = count; bestKey = key; }
+    }
+    const patDash = Number(bestKey.split(":")[0]);
+    const patGap = Number(bestKey.split(":")[1]);
+    log(`extractDashed: pattern → dash ~${patDash}px, gap ~${patGap}px (${bestCount} votes)`);
+
+    // --- Phase 2: find dashed segments on every row and column ---
+    type Seg = { fixed: number; start: number; end: number; pixels: number[] };
+    const hSegs: Seg[] = [];
+    const vSegs: Seg[] = [];
+    const lenTol = Math.max(patDash * 0.5, 3);
+    const gapTol = Math.max(patGap * 0.7, 3);
+
+    function findDashSegs(runs: Run[], fixed: number, dir: "h" | "v") {
+      const segs: { start: number; end: number; runs: Run[] }[] = [];
+      let chain: Run[] = [];
+      for (let i = 0; i < runs.length; i++) {
+        const r = runs[i];
+        if (r.len > maxDash || Math.abs(r.len - patDash) > lenTol) {
+          if (chain.length >= 2) segs.push({ start: chain[0].start, end: chain[chain.length - 1].end, runs: [...chain] });
+          chain = [];
+          continue;
+        }
+        if (chain.length > 0) {
+          const prev = chain[chain.length - 1];
+          const gap = r.start - prev.end - 1;
+          if (Math.abs(gap - patGap) > gapTol) {
+            if (chain.length >= 2) segs.push({ start: chain[0].start, end: chain[chain.length - 1].end, runs: [...chain] });
+            chain = [r];
+            continue;
+          }
+        }
+        chain.push(r);
+      }
+      if (chain.length >= 2) segs.push({ start: chain[0].start, end: chain[chain.length - 1].end, runs: [...chain] });
+
+      for (const seg of segs) {
+        const pixels: number[] = [];
+        for (const r of seg.runs) {
+          for (let v = r.start; v <= r.end; v++) {
+            const idx = dir === "h" ? fixed * width + v : v * width + fixed;
+            pixels.push(idx);
+          }
+        }
+        (dir === "h" ? hSegs : vSegs).push({ fixed, start: seg.start, end: seg.end, pixels });
+      }
+    }
+
+    for (let y = 0; y < height; y++) findDashSegs(getRuns(width, (x) => isInk(x, y)), y, "h");
+    for (let x = 0; x < width; x++) findDashSegs(getRuns(height, (y) => isInk(x, y)), x, "v");
+
+    log(`extractDashed: ${hSegs.length} h-segments, ${vSegs.length} v-segments`);
+
+    // --- Phase 3: merge nearby parallel segments into edges ---
+    type Edge = { dir: "h" | "v"; fixedMin: number; fixedMax: number; fixedAvg: number; varStart: number; varEnd: number; pixels: number[] };
+
+    function mergeSegs(segs: Seg[], fixTol: number, overlapMin: number): Edge[] {
+      const sorted = [...segs].sort((a, b) => a.fixed - b.fixed || a.start - b.start);
+      const used = new Set<number>();
+      const edges: Edge[] = [];
+      for (let i = 0; i < sorted.length; i++) {
+        if (used.has(i)) continue;
+        const group = [sorted[i]];
+        used.add(i);
+        for (let j = i + 1; j < sorted.length; j++) {
+          if (used.has(j)) continue;
+          if (sorted[j].fixed - sorted[i].fixed > fixTol) break;
+          const oStart = Math.max(sorted[i].start, sorted[j].start);
+          const oEnd = Math.min(sorted[i].end, sorted[j].end);
+          if (oEnd - oStart >= overlapMin) { group.push(sorted[j]); used.add(j); }
+        }
+        const allPx: number[] = [];
+        let fMin = Infinity, fMax = -Infinity, vStart = Infinity, vEnd = -Infinity;
+        for (const s of group) {
+          fMin = Math.min(fMin, s.fixed); fMax = Math.max(fMax, s.fixed);
+          vStart = Math.min(vStart, s.start); vEnd = Math.max(vEnd, s.end);
+          allPx.push(...s.pixels);
+        }
+        edges.push({ dir: "h", fixedMin: fMin, fixedMax: fMax, fixedAvg: Math.round((fMin + fMax) / 2), varStart: vStart, varEnd: vEnd, pixels: allPx });
+      }
+      return edges;
+    }
+
+    const thickness = Math.max(patDash * 0.5, 6);
+    const hEdges = mergeSegs(hSegs, thickness, patDash);
+    const vEdges = mergeSegs(vSegs, thickness, patDash);
+    hEdges.forEach(e => e.dir = "h");
+    vEdges.forEach(e => e.dir = "v");
+
+    log(`extractDashed: ${hEdges.length} h-edges, ${vEdges.length} v-edges`);
+
+    // --- Phase 4: find closed rectangles ---
+    type Rect = { top: Edge; bottom: Edge; left: Edge; right: Edge };
+    const rects: Rect[] = [];
+    const cornerTol = thickness + patGap;
+
+    for (let ti = 0; ti < hEdges.length; ti++) {
+      const top = hEdges[ti];
+      for (let bi = ti + 1; bi < hEdges.length; bi++) {
+        const bottom = hEdges[bi];
+        if (bottom.fixedAvg - top.fixedAvg < 30) continue;
+        const oStart = Math.max(top.varStart, bottom.varStart);
+        const oEnd = Math.min(top.varEnd, bottom.varEnd);
+        if (oEnd - oStart < 30) continue;
+
+        for (const left of vEdges) {
+          if (Math.abs(left.fixedAvg - oStart) > cornerTol) continue;
+          if (left.varStart > top.fixedAvg + cornerTol) continue;
+          if (left.varEnd < bottom.fixedAvg - cornerTol) continue;
+
+          for (const right of vEdges) {
+            if (right.fixedAvg <= left.fixedAvg + 30) continue;
+            if (Math.abs(right.fixedAvg - oEnd) > cornerTol) continue;
+            if (right.varStart > top.fixedAvg + cornerTol) continue;
+            if (right.varEnd < bottom.fixedAvg - cornerTol) continue;
+
+            rects.push({ top, bottom, left, right });
+          }
+        }
+      }
+    }
+
+    log(`extractDashed: ${rects.length} closed rectangles found`);
+
+    // Collect edges to extract
+    const edgesToExtract: Edge[] = [];
+    if (rects.length > 0) {
+      const rectEdges = new Set<Edge>();
+      for (const r of rects) { rectEdges.add(r.top); rectEdges.add(r.bottom); rectEdges.add(r.left); rectEdges.add(r.right); }
+      edgesToExtract.push(...rectEdges);
+    } else {
+      log(`extractDashed: no closed rects — falling back to all ${hEdges.length + vEdges.length} dashed edges`);
+      edgesToExtract.push(...hEdges, ...vEdges);
+    }
+
+    if (edgesToExtract.length === 0) {
+      logWarn("extractDashed: nothing to extract");
+      logTimeEnd("extractDashedRectangles");
+      return;
+    }
+
+    const layerData = new ImageData(width, height);
+    const ld = layerData.data;
+    let count = 0;
+    const extracted = new Set<number>();
+
+    for (const edge of edgesToExtract) {
+      for (const pos of edge.pixels) {
+        if (extracted.has(pos)) continue;
+        extracted.add(pos);
+        const i4 = pos * 4;
+        if (data[i4] === 255 && data[i4 + 1] === 255 && data[i4 + 2] === 255) continue;
+        ld[i4] = data[i4]; ld[i4+1] = data[i4+1]; ld[i4+2] = data[i4+2]; ld[i4+3] = data[i4+3];
+        data[i4] = 255; data[i4+1] = 255; data[i4+2] = 255; data[i4+3] = 255;
+        count++;
+      }
+    }
+
+    logTimeEnd("extractDashedRectangles");
+    const label = rects.length > 0
+      ? `Dashed Rects (${rects.length}) ~${patDash}/${patGap}px`
+      : `Dashed Segs (${edgesToExtract.length}) ~${patDash}/${patGap}px`;
+    log(`extractDashed: ${count} pixels — ${label}`);
+    if (count === 0) return;
+    layers.push({
+      name: label,
+      visible: true,
+      imageDataUrl: imageDataToDataUrl(layerData),
+      rawImageData: layerData,
+      pixelCount: count,
     });
   }
 
@@ -612,8 +970,10 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     panel.innerHTML = `
       <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">${layers.length} layer(s) extracted, ${totalExtracted.toLocaleString()} total pixels</p>
       <div class="mb-3 flex flex-wrap gap-2">
-        <button type="button" data-extract="colored" class="rounded bg-amber-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-amber-700">Extract Colored</button>
+        <button type="button" data-extract="colored" class="rounded bg-amber-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-amber-700">Extract Pipes</button>
+        <button type="button" data-extract="text" class="rounded bg-indigo-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-indigo-700">Extract Text</button>
         <button type="button" data-extract="dark" class="rounded bg-gray-800 px-2 py-1 text-[11px] font-semibold text-white hover:bg-gray-900 dark:bg-gray-600">Extract Dark Lines</button>
+        <button type="button" data-extract="dashed" class="rounded bg-cyan-700 px-2 py-1 text-[11px] font-semibold text-white hover:bg-cyan-800">Extract Dashed Rects</button>
         <button type="button" data-extract="midtones" class="rounded bg-gray-500 px-2 py-1 text-[11px] font-semibold text-white hover:bg-gray-600">Extract Midtones</button>
         <button type="button" data-extract="remaining" class="rounded bg-slate-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-slate-700">Extract Remaining</button>
         ${layers.length > 0 ? '<button type="button" data-extract="reset" class="rounded bg-red-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-red-700">Reset Layers</button>' : ""}
@@ -670,7 +1030,9 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
         const action = (btn as HTMLElement).getAttribute("data-extract");
         log("Layer extraction:", action);
         if (action === "colored") extractColored();
+        else if (action === "text") extractText();
         else if (action === "dark") extractDark();
+        else if (action === "dashed") extractDashedRectangles();
         else if (action === "midtones") extractMidtones();
         else if (action === "remaining") extractRemaining();
         else if (action === "reset") resetLayers();
@@ -780,49 +1142,59 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
       if (!workingImageData) {
         initWorkingImage();
         extractColored();
+        extractText();
+        extractDashedRectangles();
         extractDark();
         extractMidtones();
         extractRemaining();
         log("Auto-extracted all layers:", layers.length);
       }
       const croppedUrl = lastCroppedImageData ? imageDataToDataUrl(lastCroppedImageData) : "";
+
+      // Image only in main area
       pipelineStepsEl.innerHTML = `
-        <div class="rounded border border-gray-200 p-2 dark:border-gray-700">
-          <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
-            <p class="text-xs font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-300">Viable Area · Layer Extraction</p>
-            <button type="button" id="simple-scan-back-to-regions" class="rounded bg-gray-700 px-2 py-1 text-[11px] font-semibold text-white dark:bg-gray-600">← Back to regions</button>
-          </div>
-          <div id="layer-inline-panel"></div>
-          <div class="relative rounded border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
-            <img id="working-canvas-img" src="${croppedUrl}" class="block w-full" />
-          </div>
+        <div class="relative bg-white dark:bg-gray-900">
+          <img id="working-canvas-img" src="${croppedUrl}" class="block w-full" />
         </div>
       `;
-      pipelineStepsEl.querySelector("#simple-scan-back-to-regions")?.addEventListener("click", () => {
-        log("Back to region confirmation");
-        confirmedRegionIndexes.clear();
-        workingImageData = null;
-        layers = [];
-        renderProcessingOnlyView();
-      });
+
+      // Controls in drawer
+      if (drawerControlsEl) {
+        drawerControlsEl.innerHTML = `
+          <button type="button" id="simple-scan-back-to-regions" class="w-full rounded bg-gray-700 px-2 py-1.5 text-[11px] font-semibold text-white dark:bg-gray-600">← Back to regions</button>
+          <div id="layer-inline-panel"></div>
+        `;
+        drawerControlsEl.querySelector("#simple-scan-back-to-regions")?.addEventListener("click", () => {
+          log("Back to region confirmation");
+          confirmedRegionIndexes.clear();
+          workingImageData = null;
+          layers = [];
+          renderProcessingOnlyView();
+        });
+      }
       renderInlineLayerPanel();
     } else {
       const pending = regions.length - confirmedRegionIndexes.size - excludedRegionIndexes.size;
+
+      // Image only in main area (with region overlays which are interactive on the image)
       pipelineStepsEl.innerHTML = `
-        <div class="rounded border border-gray-200 p-2 dark:border-gray-700">
+        <div id="step1-image-container" class="relative bg-white dark:bg-gray-900" style="overflow:visible">
+          <img src="${step1BaseImageUrl}" alt="Regions" class="block w-full select-none" draggable="false" />
+          ${regionBoxesHtml}
+        </div>
+      `;
+
+      // Controls in drawer
+      if (drawerControlsEl) {
+        drawerControlsEl.innerHTML = `
           <p class="text-xs font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-300">Confirm Viable Areas</p>
           <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">${regions.length} detected · ${confirmedRegionIndexes.size} confirmed · ${excludedRegionIndexes.size} removed · ${pending} pending</p>
           ${resetHtml}
-          <div class="mb-2 flex flex-wrap items-center gap-2">
+          <div class="flex flex-wrap items-center gap-2">
             <button type="button" id="simple-scan-toggle-overlays" class="rounded bg-gray-700 px-2 py-1 text-[11px] font-semibold text-white dark:bg-gray-600">${showRegionOverlays ? "Hide regions" : "Show regions"}</button>
-            <span class="text-[11px] text-gray-500 dark:text-gray-400">Drag to move · Drag handles to resize</span>
           </div>
-          <div id="step1-image-container" class="relative rounded border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900" style="overflow:visible">
-            <img src="${step1BaseImageUrl}" alt="Regions" class="block w-full select-none" draggable="false" />
-            ${regionBoxesHtml}
-          </div>
-        </div>
-      `;
+        `;
+      }
       wireRegionEvents();
     }
     logTimeEnd("renderPipelineSteps");
@@ -861,21 +1233,21 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
       });
     });
 
-    pipelineStepsEl.querySelector("#simple-scan-reset-removed")?.addEventListener("click", () => {
+    drawerControlsEl?.querySelector("#simple-scan-reset-removed")?.addEventListener("click", () => {
       log("Reset removed regions");
       excludedRegionIndexes.clear();
       confirmedRegionIndexes.clear();
       renderProcessingOnlyView();
     });
 
-    pipelineStepsEl.querySelector("#simple-scan-remove-all")?.addEventListener("click", () => {
+    drawerControlsEl?.querySelector("#simple-scan-remove-all")?.addEventListener("click", () => {
       log("Remove all regions");
       baselineRegions.forEach((_, i) => excludedRegionIndexes.add(i));
       confirmedRegionIndexes.clear();
       renderProcessingOnlyView();
     });
 
-    pipelineStepsEl.querySelector("#simple-scan-toggle-overlays")?.addEventListener("click", () => {
+    drawerControlsEl?.querySelector("#simple-scan-toggle-overlays")?.addEventListener("click", () => {
       showRegionOverlays = !showRegionOverlays;
       log("Toggle overlays →", showRegionOverlays);
       renderProcessingOnlyView();
@@ -1060,8 +1432,10 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     baselineRegions = extractBaselineRegions(drawingState);
     excludedRegionIndexes.clear();
     confirmedRegionIndexes.clear();
+    lastCroppedImageData = null;
     workingImageData = null;
     layers = [];
+    if (drawerControlsEl) drawerControlsEl.innerHTML = "";
     log("handleDrawingUpload: calling renderProcessingOnlyView...");
     renderProcessingOnlyView();
     logTimeEnd("handleDrawingUpload");
@@ -1070,20 +1444,25 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
 
   // ── Event wiring ───────────────────────────────────────────────────
 
-  async function loadTestDrawing(url: string) {
-    log("loadTestDrawing:", url);
-    setStatus(`Loading ${url}...`);
+  async function loadSelectedDrawing() {
+    if (!testSelect) { logWarn("loadSelectedDrawing: no select element"); return; }
+    const raw = testSelect.value;
+    if (!raw) { logWarn("loadSelectedDrawing: empty select value"); return; }
+    const url = encodeURI(raw);
+    const label = testSelect.options[testSelect.selectedIndex]?.textContent || raw;
+    log("loadSelectedDrawing:", label, "→", url);
+    setStatus(`Loading ${label}...`);
     try {
       const res = await fetch(url, { cache: "no-store" });
-      log("loadTestDrawing: fetch response", res.status, res.statusText);
-      if (!res.ok) { logError("loadTestDrawing: fetch failed", res.status); setStatus(`Failed to load ${url}`); return; }
+      log("loadSelectedDrawing: fetch", res.status, res.statusText);
+      if (!res.ok) { logError("loadSelectedDrawing: fetch failed", res.status, url); setStatus(`Failed to load ${label}`); return; }
       const blob = await res.blob();
-      const filename = url.split("/").pop() || "test-drawing";
-      log(`loadTestDrawing: blob received, ${(blob.size / 1024).toFixed(1)} KB, filename: ${filename}`);
+      const filename = raw.split("/").pop() || "drawing.pdf";
+      log(`loadSelectedDrawing: ${(blob.size / 1024).toFixed(1)} KB`);
       await handleDrawingUpload(new File([blob], filename, { type: blob.type || "application/pdf" }));
     } catch (err) {
-      logError("loadTestDrawing: error", err);
-      setStatus(`Error loading ${url}`);
+      logError("loadSelectedDrawing: error", err);
+      setStatus(`Error loading ${label}`);
     }
   }
 
@@ -1093,12 +1472,16 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     if (file) await handleDrawingUpload(file);
   });
 
-  testSelect?.addEventListener("change", async () => {
-    const url = testSelect.value;
-    log("Test drawing dropdown changed:", url);
-    if (drawingFileInput) drawingFileInput.value = "";
-    if (url) await loadTestDrawing(url);
-  });
+  if (testSelect) {
+    log("testSelect FOUND, options:", testSelect.options.length);
+    testSelect.addEventListener("change", async () => {
+      log("SELECT CHANGED →", testSelect.value);
+      if (drawingFileInput) drawingFileInput.value = "";
+      await loadSelectedDrawing();
+    });
+  } else {
+    logWarn("testSelect NOT FOUND in DOM");
+  }
 
   const onPointerMove = (e: PointerEvent) => {
     if (!drawingState) return;
@@ -1170,9 +1553,8 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     try {
       log("Auto-load: waiting for pdfjsLib...");
       while (!getPdfLib()) await new Promise((r) => setTimeout(r, 100));
-      log("Auto-load: pdfjsLib ready");
-      const initialUrl = testSelect?.value || `${TEST_DRAWINGS_DIR}/${TEST_DRAWINGS[0].file}`;
-      await loadTestDrawing(initialUrl);
+      log("Auto-load: pdfjsLib ready, loading selected drawing...");
+      await loadSelectedDrawing();
     } catch (err) {
       logError("Auto-load: error", err);
       setStatus("Could not auto-load default drawing.");
