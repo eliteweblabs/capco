@@ -33,7 +33,8 @@ Then visit: http://localhost:4321/admin/plan-scanner
 | `src/features/drawing-analyzer/SimpleScan.astro` | **THE working frontend** (~4,900 lines) |
 | `src/pages/admin/plan-scanner.astro` | Full-page scanner page |
 | `src/pages/api/drawing-analyzer/item-library.ts` | Item library REST API |
-| `public/demo-plan.pdf` | Default test plan |
+| `public/test-drawings/` | Test drawing files directory |
+| `public/test-drawings/demo-plan.pdf` | Default test plan |
 | `public/drawing-analyzer-lab/item-library/` | Symbol template images |
 | `fixtures/drawing-analyzer/` | Test fixtures and expected results |
 

@@ -98,7 +98,7 @@ This is the starting point for the re-attempt. Simple, targeted change.
 ### Test plans:
 | Plan | Location | Expected |
 |------|----------|----------|
-| Demo Plan | `public/demo-plan.pdf` | Default test |
+| Demo Plan | `public/test-drawings/demo-plan.pdf` | Default test |
 | 85 Tremont St | iCloud Testing Files | 63 heads (confirmed by manual count) |
 | Lane Park | iCloud Testing Files | 5 heads (I miscounted as 4 once — be careful) |
 
@@ -143,7 +143,8 @@ drawing-analyzer/
 
 ### Public assets:
 ```
-public/demo-plan.pdf                              ← Default test plan
+public/test-drawings/                              ← Test drawing files directory
+  demo-plan.pdf                                    ← Default test plan
 public/drawing-analyzer-lab/
   item-library/          ← Raw symbol images (Pend.png, Sprinkler Head.png)
   item-library-normalized/ ← Processed 512px PNGs

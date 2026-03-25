@@ -179,7 +179,7 @@ def health():
 def serve_test_plan(plan_id):
     """Serve test plans by ID"""
     test_plans = {
-        "demo-plan": "~/Astro/rothcobuilt/public/demo-plan.pdf",
+        "demo-plan": "~/Astro/rothcobuilt/public/test-drawings/demo-plan.pdf",
         "85-tremont": "~/Library/Mobile Documents/com~apple~CloudDocs/Testing Files/85 Tremont Street Cambridge MA FP.pdf",
         "lane-park": "~/Library/Mobile Documents/com~apple~CloudDocs/Testing Files/Lane Park plan.pdf"
     }

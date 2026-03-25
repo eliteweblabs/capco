@@ -70,7 +70,6 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
   </div>
 
   <div>
-    <label for="simple-scan-file" class={globalFormLabel}>Drawing (optional override)</label>
     <input id="simple-scan-file" type="file" accept=".pdf,image/*" class="block w-full text-sm" />
   </div>
 
@@ -602,7 +601,7 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     "simple-scan-library-list"
   ) as HTMLDivElement | null;
 
-  const DEFAULT_DRAWING_PUBLIC_PATH = "/demo-plan.pdf";
+  const DEFAULT_DRAWING_PUBLIC_PATH = "/test-drawings/demo-plan.pdf";
   const DRAWING_RENDER_MAX_SIDE = 10000;
   const PDF_RENDER_SCALE_FALLBACKS = [14, 12, 10, 8, 6, 4, 3];
   const MATCH_THRESHOLD = 0.82;
@@ -861,7 +860,8 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     const scaleVal = pipelineStepsEl.querySelector(
       `[data-overlay-scale-val="${key}"]`
     ) as HTMLSpanElement | null;
-    if (scaleVal) scaleVal.textContent = `${Math.round(((t.scaleX || t.scale) * 100 + (t.scaleY || t.scale) * 100) / 2)}%`;
+    if (scaleVal)
+      scaleVal.textContent = `${Math.round(((t.scaleX || t.scale) * 100 + (t.scaleY || t.scale) * 100) / 2)}%`;
     const rotateVal = pipelineStepsEl.querySelector(
       `[data-overlay-rotate-val="${key}"]`
     ) as HTMLSpanElement | null;
@@ -1377,7 +1377,7 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     let maxX = 0;
     let maxY = 0;
 
-    selectedRegions.forEach(r => {
+    selectedRegions.forEach((r) => {
       minX = Math.min(minX, r.x);
       minY = Math.min(minY, r.y);
       maxX = Math.max(maxX, r.x + r.w);
@@ -1420,7 +1420,8 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
         const originalX = x + minX;
         const originalY = y + minY;
         const inside = selectedRegions.some(
-          (r) => originalX >= r.x && originalY >= r.y && originalX < r.x + r.w && originalY < r.y + r.h
+          (r) =>
+            originalX >= r.x && originalY >= r.y && originalX < r.x + r.w && originalY < r.y + r.h
         );
         if (inside) continue;
         const i = (row + x) * 4;
@@ -2437,11 +2438,21 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     step1RegionClipByKey = {};
     const viableBaseUrl = croppedMaskedSourceToDataUrl(sourceImageData, selectedRegions);
     const fullPlanRegion = [{ x: 0, y: 0, w: sourceImageData.width, h: sourceImageData.height }];
-    const step3BaseUrl = targetingOnly ? "" : maskedImageByMaskToDataUrl(sourceImageData, step3SourceMask);
-    const step4BaseUrl = targetingOnly ? "" : maskedImageByMaskToDataUrl(sourceImageData, step4SourceMask);
-    const step5BaseUrl = targetingOnly ? "" : maskedImageByMaskToDataUrl(sourceImageData, step5SourceMask);
-    const step6BaseUrl = targetingOnly ? "" : maskedImageByMaskToDataUrl(sourceImageData, step6SourceMask);
-    const step7BaseUrl = targetingOnly ? "" : maskedImageByMaskToDataUrl(sourceImageData, step7SourceMask);
+    const step3BaseUrl = targetingOnly
+      ? ""
+      : maskedImageByMaskToDataUrl(sourceImageData, step3SourceMask);
+    const step4BaseUrl = targetingOnly
+      ? ""
+      : maskedImageByMaskToDataUrl(sourceImageData, step4SourceMask);
+    const step5BaseUrl = targetingOnly
+      ? ""
+      : maskedImageByMaskToDataUrl(sourceImageData, step5SourceMask);
+    const step6BaseUrl = targetingOnly
+      ? ""
+      : maskedImageByMaskToDataUrl(sourceImageData, step6SourceMask);
+    const step7BaseUrl = targetingOnly
+      ? ""
+      : maskedImageByMaskToDataUrl(sourceImageData, step7SourceMask);
     const step3OverlayRegions = layerFlowState.step2ToStep3 ? selectedRegions : fullPlanRegion;
     const step4PlusOverlayRegions = layerFlowState.step2ToStep4 ? selectedRegions : fullPlanRegion;
     const steps = [
@@ -2461,7 +2472,7 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
       },
       {
         key: "step2",
-        title: "Step 2: Viable Area Applied", 
+        title: "Step 2: Viable Area Applied",
         detail: "Everything outside selected viable area is removed before the heavier steps",
         imageUrl: viableBaseUrl,
       },
@@ -3759,17 +3770,21 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
   // Run a single step only - user's request for incremental processing
   async function runSingleStep(stepNumber) {
     if (!drawingState) return;
-    
+
     if (stepNumber === 3) {
       // Step 3: Find colored lines only
       if (!baselineRegions.length) baselineRegions = extractBaselineRegions(drawingState);
-      const { regionsSource, selectedRegions, selectedRegionIndexes } = getActiveRegionSelection(drawingState);
+      const { regionsSource, selectedRegions, selectedRegionIndexes } =
+        getActiveRegionSelection(drawingState);
       const selectedState = getMaskedByRegions(drawingState, selectedRegions);
-      
+
       // Run only the color line detection (Step 3)
       const step3AllowedMask = buildFullMask(drawingState.width, drawingState.height);
-      const colorLineInfo = detectColoredPixelsWithinAllowedMask(drawingState.imageData, step3AllowedMask);
-      
+      const colorLineInfo = detectColoredPixelsWithinAllowedMask(
+        drawingState.imageData,
+        step3AllowedMask
+      );
+
       // Update UI to show Step 3 result
       const emptyMask = new Uint8Array(selectedState.mask.length);
       const previewPayload = {
@@ -3796,10 +3811,10 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
         selectedRegionIndexes,
         targetingOnly: false,
       };
-      
+
       renderPipelineSteps(previewPayload);
       setStatus(`Step 3 complete: ${colorLineInfo.coloredPixelCount} colored pixels found`);
-      
+
       // Set flag so button can advance to next step
       overlayTargetingConfirmed = true;
     }
@@ -4829,30 +4844,38 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
       );
       if (horizontal !== 0) {
         const scaleDeltaX = horizontal * (dx / widthRef);
-        const newScaleX = clamp(overlayHandleDragState.baseScaleX * (1 + scaleDeltaX * 1.35), 0.45, 3.2);
-        
+        const newScaleX = clamp(
+          overlayHandleDragState.baseScaleX * (1 + scaleDeltaX * 1.35),
+          0.45,
+          3.2
+        );
+
         // Calculate position adjustment to keep opposite edge fixed
         const scaleChange = newScaleX - (t.scaleX || t.scale);
         const halfWidthChange = (scaleChange * widthRef) / 2;
-        
+
         if (horizontal === 1) {
           // Dragging east handle: keep west edge fixed, move position west
           t.x = (t.x || 0) - halfWidthChange;
         } else {
-          // Dragging west handle: keep east edge fixed, move position east  
+          // Dragging west handle: keep east edge fixed, move position east
           t.x = (t.x || 0) + halfWidthChange;
         }
-        
+
         t.scaleX = newScaleX;
       }
       if (vertical !== 0) {
         const scaleDeltaY = vertical * (dy / heightRef);
-        const newScaleY = clamp(overlayHandleDragState.baseScaleY * (1 + scaleDeltaY * 1.35), 0.45, 3.2);
-        
+        const newScaleY = clamp(
+          overlayHandleDragState.baseScaleY * (1 + scaleDeltaY * 1.35),
+          0.45,
+          3.2
+        );
+
         // Calculate position adjustment to keep opposite edge fixed
         const scaleChange = newScaleY - (t.scaleY || t.scale);
         const halfHeightChange = (scaleChange * heightRef) / 2;
-        
+
         if (vertical === 1) {
           // Dragging south handle: keep north edge fixed, move position north
           t.y = (t.y || 0) - halfHeightChange;
@@ -4860,7 +4883,7 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
           // Dragging north handle: keep south edge fixed, move position south
           t.y = (t.y || 0) + halfHeightChange;
         }
-        
+
         t.scaleY = newScaleY;
       }
       t.scale = ((t.scaleX || t.scale) + (t.scaleY || t.scale)) / 2;
