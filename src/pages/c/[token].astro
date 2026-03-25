@@ -48,6 +48,32 @@ if (isValid) {
 const pageData = magicLink?.pageData || {};
 const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON = import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE || process.env.PUBLIC_SUPABASE_PUBLISHABLE;
+const MAPS_KEY = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY || process.env.PUBLIC_GOOGLE_MAPS_API_KEY;
+
+// Build OG image URL — Street View if available, otherwise static map
+const projectAddress = pageData?.projectAddress || pageData?.projectTitle || '';
+const encodedAddress = encodeURIComponent(projectAddress);
+let ogImage = '';
+if (projectAddress && MAPS_KEY) {
+  // Check if Street View has coverage
+  try {
+    const svMeta = await fetch(`https://maps.googleapis.com/maps/api/streetview/metadata?location=${encodedAddress}&key=${MAPS_KEY}`);
+    const svData = await svMeta.json();
+    if (svData.status === 'OK') {
+      ogImage = `https://maps.googleapis.com/maps/api/streetview?size=1200x630&location=${encodedAddress}&key=${MAPS_KEY}&source=outdoor`;
+    } else {
+      ogImage = 'https://capcofire.com/og-default.png';
+    }
+  } catch {
+    ogImage = 'https://capcofire.com/og-default.png';
+  }
+} else {
+  ogImage = 'https://capcofire.com/og-default.png';
+}
+const ogTitle = projectAddress ? `${projectAddress} — CAP Design Group` : 'CAP Design Group';
+const ogDescription = pageData?.clientName 
+  ? `Hi ${pageData.clientName}, we need a few items for your project.`
+  : 'Action needed for your fire protection project.';
 ---
 
 <!DOCTYPE html>
@@ -55,7 +81,21 @@ const SUPABASE_ANON = import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE || process.env
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{isValid ? `${pageData.projectAddress || 'Project'} — CAP Design Group` : 'Link Invalid'}</title>
+  <title>{isValid ? ogTitle : 'Link Invalid — CAP Design Group'}</title>
+  {isValid && ogImage && (
+    <>
+      <meta property="og:title" content={ogTitle} />
+      <meta property="og:description" content={ogDescription} />
+      <meta property="og:image" content={ogImage} />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta property="og:type" content="website" />
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content={ogTitle} />
+      <meta name="twitter:description" content={ogDescription} />
+      <meta name="twitter:image" content={ogImage} />
+    </>
+  )}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
