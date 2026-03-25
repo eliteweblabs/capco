@@ -225,3 +225,17 @@ CREATE POLICY "anon_read_clientMagicLinks" ON "public"."clientMagicLinks" FOR SE
 CREATE POLICY "anon_update_clientMagicLinks" ON "public"."clientMagicLinks" FOR UPDATE USING (auth.role() = 'anon');
 CREATE POLICY "anon_insert_clientUploads" ON "public"."clientUploads" FOR INSERT WITH CHECK (auth.role() = 'anon');
 CREATE POLICY "anon_read_projectRequirements" ON "public"."projectRequirements" FOR SELECT USING (auth.role() = 'anon');
+
+-- STORAGE: Allow anon uploads to client-uploads path (for magic link pages)
+CREATE POLICY "anon_client_uploads" ON storage.objects FOR INSERT 
+WITH CHECK (
+  bucket_id = 'project-media' 
+  AND auth.role() = 'anon' 
+  AND name LIKE 'projects/%/client-uploads/%'
+);
+
+CREATE POLICY "anon_client_uploads_read" ON storage.objects FOR SELECT 
+USING (
+  bucket_id = 'project-media' 
+  AND name LIKE 'projects/%/client-uploads/%'
+);
