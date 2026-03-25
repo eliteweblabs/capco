@@ -98,3 +98,13 @@ Replace Jason's current zero-project-management chaos with an AI-driven ops laye
 - `SUPABASE_URL` — existing
 - `SUPABASE_SERVICE_KEY` — existing
 - `IMAP_*` — email polling credentials
+
+## TODO
+- [ ] Add `PUBLIC_GOOGLE_MAPS_API_KEY` to Railway (copy from `GOOGLE_MAPS_API_KEY`)
+- [ ] Fix Twilio SMS: toll-free number needs verification OR buy a local number (~$1.15/mo)
+- [ ] Get GoHighLevel API key from Jason
+- [ ] Get Slack workspace invite
+- [ ] Get document templates from Jason (narratives, affidavits, NFPA 241)
+- [ ] Wire up email ingestion (IMAP polling → emailLog → classification)
+- [ ] Build email delivery for magic links (currently SMS only)
+- [ ] Designer pipeline / nag system
