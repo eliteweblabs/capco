@@ -100,7 +100,7 @@ Replace Jason's current zero-project-management chaos with an AI-driven ops laye
 - `IMAP_*` — email polling credentials
 
 ## TODO
-- [ ] Add `PUBLIC_GOOGLE_MAPS_API_KEY` to Railway (copy from `GOOGLE_MAPS_API_KEY`)
+- [ ] Fix OG image: `PUBLIC_GOOGLE_MAPS_API_KEY` not resolving in build — Dockerfile fallback to PLACES key not working. May need to set explicitly in Railway or debug ARG/ENV order
 - [ ] Fix Twilio SMS: toll-free number needs verification OR buy a local number (~$1.15/mo)
 - [ ] Get GoHighLevel API key from Jason
 - [ ] Get Slack workspace invite
