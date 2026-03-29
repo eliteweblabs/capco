@@ -1,0 +1,474 @@
+---
+import { supabaseAdmin } from "../../lib/supabase-admin";
+
+const { token } = Astro.params;
+
+// Look up the magic link
+const { data: magicLink, error } = await supabaseAdmin
+  .from("clientMagicLinks")
+  .select("*")
+  .eq("token", token)
+  .single();
+
+// Validate
+const now = new Date();
+const isExpired = magicLink && new Date(magicLink.expiresAt) < now;
+const isCompleted = magicLink?.status === "completed" || magicLink?.status === "partial";
+const isValid = magicLink && !error && !isExpired && !isCompleted;
+
+// Mark as viewed on first visit
+if (isValid && magicLink.status === "pending") {
+  await supabaseAdmin
+    .from("clientMagicLinks")
+    .update({ status: "viewed", viewedAt: now.toISOString() })
+    .eq("id", magicLink.id);
+}
+
+// Get requirements if upload type
+let requirements: any[] = [];
+if (isValid && magicLink.linkType === "upload_docs") {
+  const { data: reqs } = await supabaseAdmin
+    .from("projectRequirements")
+    .select("*")
+    .eq("projectId", magicLink.projectId)
+    .order("isRequired", { ascending: false });
+  requirements = reqs || [];
+}
+
+// Get existing uploads
+let uploads: any[] = [];
+if (isValid) {
+  const { data: ups } = await supabaseAdmin
+    .from("clientUploads")
+    .select("*")
+    .eq("magicLinkId", magicLink.id);
+  uploads = ups || [];
+}
+
+const pageData = magicLink?.pageData || {};
+const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || process.env.PUBLIC_SUPABASE_ANON_KEY || import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE || process.env.PUBLIC_SUPABASE_PUBLISHABLE;
+// Prefer the public/client-side Maps key (has Static Maps enabled); fall back to server key
+const MAPS_KEY = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY || process.env.PUBLIC_GOOGLE_MAPS_API_KEY || import.meta.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_PLACES_API_KEY || import.meta.env.GOOGLE_MAPS_API_KEY || process.env.GOOGLE_MAPS_API_KEY;
+
+// Build OG image — Google Maps Street View URL (platforms fetch it directly)
+// Falls back to static map if no street view, then to logo
+const projectAddress = pageData?.projectAddress || pageData?.projectTitle || '';
+const encodedAddress = encodeURIComponent(projectAddress);
+const ogImage = projectAddress && MAPS_KEY
+  ? `https://maps.googleapis.com/maps/api/staticmap?size=1200x630&zoom=17&maptype=hybrid&markers=color:0x825BDD%7Csize:mid%7C${encodedAddress}&key=${MAPS_KEY}`
+  : 'https://capcofire.com/og-default.png';
+const ogTitle = projectAddress ? `${projectAddress} — CAP Design Group` : 'CAP Design Group';
+const ogDescription = pageData?.clientName 
+  ? `Hi ${pageData.clientName}, we need a few items for your project.`
+  : 'Action needed for your fire protection project.';
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{isValid ? ogTitle : 'Link Invalid — CAP Design Group'}</title>
+  {isValid && ogImage && (
+    <>
+      <meta property="og:title" content={ogTitle} />
+      <meta property="og:description" content={ogDescription} />
+      <meta property="og:image" content={ogImage} />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta property="og:type" content="website" />
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content={ogTitle} />
+      <meta name="twitter:description" content={ogDescription} />
+      <meta name="twitter:image" content={ogImage} />
+    </>
+  )}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: 'Outfit', sans-serif; 
+      background: #fafafa; color: #000; min-height: 100vh;
+    }
+    .header {
+      background: #0a0a0a; color: white; padding: 20px 24px;
+      text-align: center;
+    }
+    .header .logo { margin-bottom: 8px; }
+    .header .logo svg { height: 28px; width: auto; fill: white; }
+    .header h1 { font-size: 18px; font-weight: 600; font-family: 'Outfit', sans-serif; }
+    .header .address { font-size: 14px; color: #888; margin-top: 4px; }
+    
+    .container { max-width: 540px; margin: 0 auto; padding: 24px 16px; }
+    
+    .greeting {
+      background: white; border-radius: 12px; padding: 20px;
+      margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .greeting h2 { font-size: 16px; margin-bottom: 8px; font-weight: 600; }
+    .greeting p { font-size: 14px; color: #666; line-height: 1.5; }
+    
+    .requirement-card {
+      background: white; border-radius: 12px; padding: 16px 20px;
+      margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      border-left: 4px solid #e0e0e0;
+      transition: all 0.2s;
+    }
+    .requirement-card.met { border-left-color: #10b981; opacity: 0.7; }
+    .requirement-card.uploading { border-left-color: #f59e0b; }
+    .requirement-card .label { font-size: 15px; font-weight: 500; display: flex; justify-content: space-between; align-items: center; }
+    .requirement-card .desc { font-size: 13px; color: #888; margin-top: 4px; }
+    .requirement-card .status-badge {
+      font-size: 11px; padding: 2px 8px; border-radius: 8px; font-weight: 600;
+    }
+    .status-needed { background: #f0ecf8; color: #491ab8; }
+    .status-done { background: #d1fae5; color: #065f46; }
+    .status-uploading { background: #fef9c3; color: #854d0e; }
+    
+    .upload-zone {
+      margin-top: 12px; border: 2px dashed #d1d5db; border-radius: 8px;
+      padding: 16px; text-align: center; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .upload-zone:hover, .upload-zone.dragover { 
+      border-color: #825BDD; background: #f0ecf8; 
+    }
+    .upload-zone .icon { font-size: 24px; margin-bottom: 4px; }
+    .upload-zone .text { font-size: 13px; color: #666; }
+    .upload-zone input { display: none; }
+    
+    .uploaded-file {
+      display: flex; align-items: center; gap: 8px; margin-top: 8px;
+      padding: 8px 12px; background: #f0fdf4; border-radius: 6px; font-size: 13px;
+    }
+    .uploaded-file .name { flex: 1; color: #065f46; }
+    
+    .submit-btn {
+      display: block; width: 100%; padding: 16px; border: none; border-radius: 12px;
+      background: #825BDD; color: white; font-size: 16px; font-weight: 600;
+      cursor: pointer; margin-top: 24px; transition: all 0.2s;
+      font-family: 'Outfit', sans-serif;
+    }
+    .submit-btn:hover { background: #5f2bda; }
+    .submit-btn:disabled { background: #999; cursor: not-allowed; }
+    
+    .notes-field { 
+      width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px;
+      font-size: 14px; font-family: 'Outfit', sans-serif; resize: vertical; min-height: 60px;
+      margin-top: 16px;
+    }
+    .notes-field:focus { outline: none; border-color: #825BDD; box-shadow: 0 0 0 3px rgba(130,91,221,0.1); }
+    
+    .error-page, .done-page {
+      text-align: center; padding: 60px 24px;
+    }
+    .error-page .icon, .done-page .icon { font-size: 48px; margin-bottom: 16px; }
+    .error-page h2, .done-page h2 { font-size: 20px; margin-bottom: 8px; }
+    .error-page p, .done-page p { color: #666; font-size: 14px; }
+    
+    .progress-bar { 
+      height: 4px; background: #e5e7eb; border-radius: 2px; margin: 16px 0; overflow: hidden; 
+    }
+    .progress-bar .fill { height: 100%; background: #825BDD; transition: width 0.3s; border-radius: 2px; }
+    
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: #825BDD; color: white; padding: 12px 24px; border-radius: 8px;
+      font-size: 14px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      display: none; z-index: 100;
+    }
+    .toast.show { display: block; animation: slideUp 0.3s ease; }
+    @keyframes slideUp { from { transform: translateX(-50%) translateY(20px); opacity: 0; } }
+  </style>
+</head>
+<body>
+
+{!isValid ? (
+  <div class="container">
+    <div class="error-page">
+      <div class="icon">{isExpired ? '⏰' : '🔗'}</div>
+      <h2>{isExpired ? 'Link Expired' : 'Link Not Found'}</h2>
+      <p>{isExpired ? 'This link has expired. Please contact CAP Design Group for a new one.' : 'This link is invalid or has already been used.'}</p>
+      <p style="margin-top: 12px; font-size: 13px;">📞 617-633-3533 · ✉️ jk@capcofire.com</p>
+    </div>
+  </div>
+) : isCompleted ? (
+  <>
+    <div class="header">
+      <div class="logo">
+        <svg xmlns="http://www.w3.org/2000/svg" width="336.4" height="61.3" viewBox="0 0 336.4 61.3" fill="currentColor">
+          <path d="M184.2,12.5c-1.5-2.5-3.6-4.4-6.3-5.7-2.7-1.3-5.6-2-8.9-2h-21.7v51.8h11.6v-18.9h10.1c3.3,0,6.2-.7,8.9-2,2.7-1.3,4.8-3.2,6.3-5.7,1.5-2.5,2.3-5.4,2.3-8.8s-.8-6.4-2.3-8.8ZM173.9,25.4c-.7,1.1-1.6,2-2.8,2.5-1.1.6-2.4.8-3.9.8h-8.4v-14.9h8.4c1.4,0,2.7.3,3.9.8,1.1.6,2.1,1.4,2.8,2.5.7,1.1,1,2.5,1,4.1s-.3,2.9-1,4Z"/>
+          <path d="M290.6,20.1c-1.3-3.3-3.3-6.1-5.8-8.5-2.5-2.4-5.4-4.3-8.7-5.6-3.3-1.3-6.9-2-10.7-2s-7.5.7-10.9,2c-3.3,1.3-6.2,3.2-8.7,5.6-2.4,2.4-4.4,5.2-5.7,8.5-1.4,3.2-2.1,6.7-2.1,10.6s.7,7.3,2.1,10.5c1.4,3.3,3.3,6.1,5.8,8.5,2.5,2.4,5.4,4.4,8.7,5.7,3.3,1.4,6.9,2.1,10.9,2.1s7.4-.7,10.7-2.1c3.3-1.4,6.1-3.3,8.6-5.7,2.4-2.4,4.4-5.3,5.7-8.5,1.4-3.3,2.1-6.8,2.1-10.5s-.7-7.3-2-10.6ZM278.9,39.2c-1.3,2.4-3.1,4.4-5.4,5.7-2.3,1.4-5,2.1-8.1,2.1s-4.4-.4-6.3-1.1c-1.9-.8-3.5-1.9-4.9-3.3-1.4-1.4-2.4-3.2-3.2-5.2-.7-2-1.1-4.2-1.1-6.7s.6-6.1,1.9-8.5c1.3-2.4,3.1-4.3,5.4-5.6,2.3-1.3,5-2,8.1-2s4.3.4,6.2,1.1c1.9.8,3.5,1.9,4.9,3.3,1.4,1.4,2.4,3.2,3.2,5.1.7,2,1.1,4.2,1.1,6.6s-.6,6.1-1.9,8.5Z"/>
+          <path d="M330.3,26.8l-.3.2c-5.6,1.8-9.5.5-12.8-4.4l-1-1.5c-.7-1.1-1.4-2.2-2.2-3.2-2.6-3.8-6.8-6.3-11.4-6.8-1.7-.3-3.5-.1-5.2.4,3.2,5.5,5,11.8,5,18.6s-2.2,14.3-5.9,20.1c6.4,1.3,14.4-.3,18.4-4.6-.2,0-.5-.1-.7-.2-2.7-.5-4.6-2.9-4.5-5.7,0-2.8,1.5-4.3,4.7-4.7,1.1-.2,2.3-.2,3.5-.2h.4c2.7,0,5.2-.7,7.4-2.2,2.2-1.4,3.9-3.4,4.9-5.7h-.3Z"/>
+          <path d="M225.6,45.7c-2,.8-4.3,1.2-6.9,1.2s-4.3-.4-6.2-1.1c-1.9-.8-3.5-1.9-4.8-3.3-1.4-1.4-2.4-3.2-3.2-5.1-.7-2-1.1-4.2-1.1-6.6s.4-4.5,1.1-6.5c.7-2,1.8-3.7,3.2-5.1,1.4-1.4,3-2.5,4.8-3.3,1.9-.8,3.9-1.1,6.2-1.1s4.8.4,6.7,1.2c1.8.8,3.4,1.9,4.7,3.2,1.1-3.6,2.8-7,4.9-10.1-1.6-1.2-3.4-2.2-5.3-3-3.2-1.3-6.9-2-11-2s-7.5.7-10.8,2c-3.3,1.3-6.2,3.2-8.6,5.6-2.5,2.4-4.4,5.2-5.8,8.5-1.4,3.3-2.1,6.8-2.1,10.5s.7,7.3,2.1,10.5c1.4,3.3,3.3,6.1,5.8,8.5,2.5,2.4,5.4,4.3,8.7,5.7,3.3,1.3,6.9,2,10.7,2s8-.6,11.2-1.9c2.1-.9,4.1-2,5.9-3.3-2.2-3-4-6.3-5.3-9.9-1.4,1.5-3,2.6-4.9,3.4Z"/>
+          <path d="M4.8,26.8l.3.2c5.6,1.8,9.5.5,12.8-4.4l1-1.5c.7-1.1,1.4-2.2,2.2-3.2,2.6-3.8,6.8-6.3,11.4-6.8,1.7-.3,3.5-.1,5.2.4-3.2,5.5-5,11.8-5,18.6s2.2,14.3,5.9,20.1c-6.4,1.3-14.4-.3-18.4-4.6.2,0,.5-.1.7-.2,2.7-.5,4.6-2.9,4.5-5.7,0-2.8-1.5-4.3-4.7-4.7-1.1-.2-2.3-.2-3.5-.2h-.4c-2.7,0-5.2-.7-7.4-2.2-2.2-1.4-3.9-3.4-4.9-5.7h.3Z"/>
+          <path d="M75.6,45.7c-2,.8-4.3,1.2-6.9,1.2s-4.3-.4-6.2-1.1c-1.9-.8-3.5-1.9-4.8-3.3-1.4-1.4-2.4-3.2-3.2-5.1-.7-2-1.1-4.2-1.1-6.6s.4-4.5,1.1-6.5c.7-2,1.8-3.7,3.2-5.1,1.4-1.4,3-2.5,4.8-3.3,1.9-.8,3.9-1.1,6.2-1.1s4.8.4,6.7,1.2c1.8.8,3.4,1.9,4.7,3.2,1.1-3.6,2.8-7,4.9-10.1-1.6-1.2-3.4-2.2-5.3-3-3.2-1.3-6.9-2-11-2s-7.5.7-10.8,2c-3.3,1.3-6.2,3.2-8.6,5.6-2.5,2.4-4.4,5.2-5.8,8.5-1.4,3.3-2.1,6.8-2.1,10.5s.7,7.3,2.1,10.5c1.4,3.3,3.3,6.1,5.8,8.5,2.5,2.4,5.4,4.3,8.7,5.7,3.3,1.3,6.9,2,10.7,2s8-.6,11.2-1.9c2.1-.9,4.1-2,5.9-3.3-2.2-3-4-6.3-5.3-9.9-1.4,1.5-3,2.6-4.9,3.4Z"/>
+          <path d="M138.6,30.9s0,0,0,0c0-14.2-11.5-25.7-25.7-25.7s-25.7,11.5-25.7,25.7,11.5,25.7,25.7,25.7,10.3-1.6,14.4-4.4v4.5s11.3,0,11.3,0v-25.7s0,0,0,0ZM113,46.6c-8.8,0-15.8-7.1-15.8-15.8s7.1-15.8,15.8-15.8,15.8,7.1,15.8,15.8-7.1,15.8-15.8,15.8Z"/>
+        </svg>
+      </div>
+      <div class="address">{pageData.projectAddress || pageData.projectTitle || ''}</div>
+    </div>
+    <div class="container">
+      <div class="done-page">
+        <div class="icon">✅</div>
+        <h2>Submitted</h2>
+        <p>Your documents for <strong>{pageData.projectAddress || 'this project'}</strong> have been received. We'll be in touch with next steps.</p>
+        <p style="margin-top: 16px; font-size: 13px; color: #888;">📞 617-633-3533 · ✉️ jk@capcofire.com</p>
+      </div>
+    </div>
+  </>
+) : (
+  <>
+    <div class="header">
+      <div class="logo">
+        <svg xmlns="http://www.w3.org/2000/svg" width="336.4" height="61.3" viewBox="0 0 336.4 61.3" fill="currentColor">
+          <path d="M184.2,12.5c-1.5-2.5-3.6-4.4-6.3-5.7-2.7-1.3-5.6-2-8.9-2h-21.7v51.8h11.6v-18.9h10.1c3.3,0,6.2-.7,8.9-2,2.7-1.3,4.8-3.2,6.3-5.7,1.5-2.5,2.3-5.4,2.3-8.8s-.8-6.4-2.3-8.8ZM173.9,25.4c-.7,1.1-1.6,2-2.8,2.5-1.1.6-2.4.8-3.9.8h-8.4v-14.9h8.4c1.4,0,2.7.3,3.9.8,1.1.6,2.1,1.4,2.8,2.5.7,1.1,1,2.5,1,4.1s-.3,2.9-1,4Z"/>
+          <path d="M290.6,20.1c-1.3-3.3-3.3-6.1-5.8-8.5-2.5-2.4-5.4-4.3-8.7-5.6-3.3-1.3-6.9-2-10.7-2s-7.5.7-10.9,2c-3.3,1.3-6.2,3.2-8.7,5.6-2.4,2.4-4.4,5.2-5.7,8.5-1.4,3.2-2.1,6.7-2.1,10.6s.7,7.3,2.1,10.5c1.4,3.3,3.3,6.1,5.8,8.5,2.5,2.4,5.4,4.4,8.7,5.7,3.3,1.4,6.9,2.1,10.9,2.1s7.4-.7,10.7-2.1c3.3-1.4,6.1-3.3,8.6-5.7,2.4-2.4,4.4-5.3,5.7-8.5,1.4-3.3,2.1-6.8,2.1-10.5s-.7-7.3-2-10.6ZM278.9,39.2c-1.3,2.4-3.1,4.4-5.4,5.7-2.3,1.4-5,2.1-8.1,2.1s-4.4-.4-6.3-1.1c-1.9-.8-3.5-1.9-4.9-3.3-1.4-1.4-2.4-3.2-3.2-5.2-.7-2-1.1-4.2-1.1-6.7s.6-6.1,1.9-8.5c1.3-2.4,3.1-4.3,5.4-5.6,2.3-1.3,5-2,8.1-2s4.3.4,6.2,1.1c1.9.8,3.5,1.9,4.9,3.3,1.4,1.4,2.4,3.2,3.2,5.1.7,2,1.1,4.2,1.1,6.6s-.6,6.1-1.9,8.5Z"/>
+          <path d="M330.3,26.8l-.3.2c-5.6,1.8-9.5.5-12.8-4.4l-1-1.5c-.7-1.1-1.4-2.2-2.2-3.2-2.6-3.8-6.8-6.3-11.4-6.8-1.7-.3-3.5-.1-5.2.4,3.2,5.5,5,11.8,5,18.6s-2.2,14.3-5.9,20.1c6.4,1.3,14.4-.3,18.4-4.6-.2,0-.5-.1-.7-.2-2.7-.5-4.6-2.9-4.5-5.7,0-2.8,1.5-4.3,4.7-4.7,1.1-.2,2.3-.2,3.5-.2h.4c2.7,0,5.2-.7,7.4-2.2,2.2-1.4,3.9-3.4,4.9-5.7h-.3Z"/>
+          <path d="M225.6,45.7c-2,.8-4.3,1.2-6.9,1.2s-4.3-.4-6.2-1.1c-1.9-.8-3.5-1.9-4.8-3.3-1.4-1.4-2.4-3.2-3.2-5.1-.7-2-1.1-4.2-1.1-6.6s.4-4.5,1.1-6.5c.7-2,1.8-3.7,3.2-5.1,1.4-1.4,3-2.5,4.8-3.3,1.9-.8,3.9-1.1,6.2-1.1s4.8.4,6.7,1.2c1.8.8,3.4,1.9,4.7,3.2,1.1-3.6,2.8-7,4.9-10.1-1.6-1.2-3.4-2.2-5.3-3-3.2-1.3-6.9-2-11-2s-7.5.7-10.8,2c-3.3,1.3-6.2,3.2-8.6,5.6-2.5,2.4-4.4,5.2-5.8,8.5-1.4,3.3-2.1,6.8-2.1,10.5s.7,7.3,2.1,10.5c1.4,3.3,3.3,6.1,5.8,8.5,2.5,2.4,5.4,4.3,8.7,5.7,3.3,1.3,6.9,2,10.7,2s8-.6,11.2-1.9c2.1-.9,4.1-2,5.9-3.3-2.2-3-4-6.3-5.3-9.9-1.4,1.5-3,2.6-4.9,3.4Z"/>
+          <path d="M4.8,26.8l.3.2c5.6,1.8,9.5.5,12.8-4.4l1-1.5c.7-1.1,1.4-2.2,2.2-3.2,2.6-3.8,6.8-6.3,11.4-6.8,1.7-.3,3.5-.1,5.2.4-3.2,5.5-5,11.8-5,18.6s2.2,14.3,5.9,20.1c-6.4,1.3-14.4-.3-18.4-4.6.2,0,.5-.1.7-.2,2.7-.5,4.6-2.9,4.5-5.7,0-2.8-1.5-4.3-4.7-4.7-1.1-.2-2.3-.2-3.5-.2h-.4c-2.7,0-5.2-.7-7.4-2.2-2.2-1.4-3.9-3.4-4.9-5.7h.3Z"/>
+          <path d="M75.6,45.7c-2,.8-4.3,1.2-6.9,1.2s-4.3-.4-6.2-1.1c-1.9-.8-3.5-1.9-4.8-3.3-1.4-1.4-2.4-3.2-3.2-5.1-.7-2-1.1-4.2-1.1-6.6s.4-4.5,1.1-6.5c.7-2,1.8-3.7,3.2-5.1,1.4-1.4,3-2.5,4.8-3.3,1.9-.8,3.9-1.1,6.2-1.1s4.8.4,6.7,1.2c1.8.8,3.4,1.9,4.7,3.2,1.1-3.6,2.8-7,4.9-10.1-1.6-1.2-3.4-2.2-5.3-3-3.2-1.3-6.9-2-11-2s-7.5.7-10.8,2c-3.3,1.3-6.2,3.2-8.6,5.6-2.5,2.4-4.4,5.2-5.8,8.5-1.4,3.3-2.1,6.8-2.1,10.5s.7,7.3,2.1,10.5c1.4,3.3,3.3,6.1,5.8,8.5,2.5,2.4,5.4,4.3,8.7,5.7,3.3,1.3,6.9,2,10.7,2s8-.6,11.2-1.9c2.1-.9,4.1-2,5.9-3.3-2.2-3-4-6.3-5.3-9.9-1.4,1.5-3,2.6-4.9,3.4Z"/>
+          <path d="M138.6,30.9s0,0,0,0c0-14.2-11.5-25.7-25.7-25.7s-25.7,11.5-25.7,25.7,11.5,25.7,25.7,25.7,10.3-1.6,14.4-4.4v4.5s11.3,0,11.3,0v-25.7s0,0,0,0ZM113,46.6c-8.8,0-15.8-7.1-15.8-15.8s7.1-15.8,15.8-15.8,15.8,7.1,15.8,15.8-7.1,15.8-15.8,15.8Z"/>
+        </svg>
+      </div>
+      <div class="address">{pageData.projectAddress || pageData.projectTitle || ''}</div>
+    </div>
+
+    <div class="container">
+      <div class="greeting">
+        <h2>Hi {pageData.clientName || 'there'} 👋</h2>
+        <p>We need a few items to get started on your project. Upload them below — it only takes a minute.</p>
+      </div>
+
+      <div class="progress-bar">
+        <div class="fill" id="progressFill" style="width: 0%"></div>
+      </div>
+
+      <div id="requirementsList">
+        {requirements.map((req) => {
+          const existingUpload = uploads.find(u => u.requirementKey === req.requirementKey);
+          return (
+            <div 
+              class={`requirement-card ${req.isMet ? 'met' : ''}`} 
+              data-key={req.requirementKey}
+              data-met={req.isMet ? 'true' : 'false'}
+            >
+              <div class="label">
+                <span>{req.label} {req.isRequired ? '' : '(optional)'}</span>
+                <span class={`status-badge ${req.isMet ? 'status-done' : 'status-needed'}`}>
+                  {req.isMet ? '✓ Done' : 'Needed'}
+                </span>
+              </div>
+              {req.description && <div class="desc">{req.description}</div>}
+              {!req.isMet && (
+                <div class="upload-zone" data-key={req.requirementKey}>
+                  <div class="icon">📁</div>
+                  <div class="text">Tap to upload or drag & drop</div>
+                  <input 
+                    type="file" 
+                    multiple 
+                    accept={pageData.requirements?.find((r: any) => r.key === req.requirementKey)?.accept || '*'}
+                  />
+                </div>
+              )}
+              <div class="uploaded-files" data-key={req.requirementKey}></div>
+            </div>
+          );
+        })}
+      </div>
+
+      <textarea class="notes-field" id="clientNotes" placeholder="Any notes or questions? (optional)"></textarea>
+
+      <button class="submit-btn" id="submitBtn" disabled>
+        Submit
+      </button>
+    </div>
+
+    <div class="toast" id="toast">✓ Uploaded!</div>
+
+    <script define:vars={{ 
+      magicLinkId: magicLink.id, 
+      projectId: magicLink.projectId, 
+      token: magicLink.token,
+      supabaseUrl: SUPABASE_URL,
+      supabaseAnon: SUPABASE_ANON 
+    }}>
+      const uploadedFiles = {};
+      let totalRequired = 0;
+      let totalMet = 0;
+
+      // Count initial state
+      document.querySelectorAll('.requirement-card').forEach(card => {
+        totalRequired++;
+        if (card.dataset.met === 'true') totalMet++;
+      });
+      updateProgress();
+
+      // Upload zones
+      document.querySelectorAll('.upload-zone').forEach(zone => {
+        const key = zone.dataset.key;
+        const input = zone.querySelector('input');
+
+        zone.addEventListener('click', () => input.click());
+        zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('dragover'); });
+        zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+        zone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          zone.classList.remove('dragover');
+          handleFiles(key, e.dataTransfer.files);
+        });
+        input.addEventListener('change', () => handleFiles(key, input.files));
+      });
+
+      async function handleFiles(key, files) {
+        if (!files.length) return;
+        const zone = document.querySelector(`.upload-zone[data-key="${key}"]`);
+        const filesContainer = document.querySelector(`.uploaded-files[data-key="${key}"]`);
+        const badge = document.querySelector(`.requirement-card[data-key="${key}"] .status-badge`);
+
+        for (const file of files) {
+          // Show uploading state
+          zone.closest('.requirement-card').classList.add('uploading');
+          badge.textContent = 'Uploading...';
+          badge.className = 'status-badge status-uploading';
+
+          try {
+            // Upload to Supabase storage
+            const path = `projects/${projectId}/client-uploads/${key}/${Date.now()}-${file.name}`;
+            const res = await fetch(`${supabaseUrl}/storage/v1/object/project-media/${path}`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${supabaseAnon}`,
+                'Content-Type': file.type,
+              },
+              body: file,
+            });
+
+            if (!res.ok) throw new Error('Upload failed');
+
+            // Record the upload
+            await fetch(`${supabaseUrl}/rest/v1/clientUploads`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${supabaseAnon}`,
+                'apikey': supabaseAnon,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=minimal',
+              },
+              body: JSON.stringify({
+                magicLinkId,
+                projectId,
+                requirementKey: key,
+                fileName: file.name,
+                filePath: path,
+                fileSize: file.size,
+                mimeType: file.type,
+              }),
+            });
+
+            // Show uploaded file
+            const fileEl = document.createElement('div');
+            fileEl.className = 'uploaded-file';
+            fileEl.innerHTML = `<span>📄</span><span class="name">${file.name}</span><span>✓</span>`;
+            filesContainer.appendChild(fileEl);
+
+            if (!uploadedFiles[key]) uploadedFiles[key] = [];
+            uploadedFiles[key].push(file.name);
+
+            // Update status
+            badge.textContent = '✓ Done';
+            badge.className = 'status-badge status-done';
+            zone.style.display = 'none';
+            zone.closest('.requirement-card').classList.remove('uploading');
+            zone.closest('.requirement-card').classList.add('met');
+            totalMet++;
+            updateProgress();
+
+            showToast();
+          } catch (err) {
+            console.error('Upload error:', err);
+            badge.textContent = 'Upload failed — tap to retry';
+            badge.className = 'status-badge status-needed';
+            zone.closest('.requirement-card').classList.remove('uploading');
+          }
+        }
+      }
+
+      function updateProgress() {
+        const pct = totalRequired > 0 ? Math.round((totalMet / totalRequired) * 100) : 0;
+        document.getElementById('progressFill').style.width = pct + '%';
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = totalMet === 0;
+        btn.textContent = totalMet >= totalRequired ? 'Submit — All Done ✓' : `Submit (${totalMet}/${totalRequired} uploaded)`;
+      }
+
+      function showToast() {
+        const t = document.getElementById('toast');
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2000);
+      }
+
+      // Submit
+      document.getElementById('submitBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.textContent = 'Submitting...';
+
+        try {
+          const notes = document.getElementById('clientNotes').value;
+
+          // Update magic link status
+          await fetch(`${supabaseUrl}/rest/v1/clientMagicLinks?id=eq.${magicLinkId}`, {
+            method: 'PATCH',
+            headers: {
+              'Authorization': `Bearer ${supabaseAnon}`,
+              'apikey': supabaseAnon,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              status: totalMet >= totalRequired ? 'completed' : 'partial',
+              completedAt: new Date().toISOString(),
+              responseData: { uploadedFiles, notes },
+            }),
+          });
+
+          // Update met requirements
+          for (const key of Object.keys(uploadedFiles)) {
+            await fetch(`${supabaseUrl}/rest/v1/projectRequirements?projectId=eq.${projectId}&requirementKey=eq.${key}`, {
+              method: 'PATCH',
+              headers: {
+                'Authorization': `Bearer ${supabaseAnon}`,
+                'apikey': supabaseAnon,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                isMet: true,
+                metAt: new Date().toISOString(),
+                metBy: 'client_upload',
+              }),
+            });
+          }
+
+          // Show success
+          document.querySelector('.container').innerHTML = `
+            <div class="done-page">
+              <div class="icon">✅</div>
+              <h2>All Set!</h2>
+              <p>Thank you! We have everything we need and will be in touch soon.</p>
+              <p style="margin-top: 12px; font-size: 13px;">📞 617-633-3533 · ✉️ jk@capcofire.com</p>
+            </div>
+          `;
+        } catch (err) {
+          console.error('Submit error:', err);
+          btn.disabled = false;
+          btn.textContent = 'Error — tap to retry';
+        }
+      });
+    </script>
+  </>
+)}
+
+</body>
+</html>
