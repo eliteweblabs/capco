@@ -4,57 +4,120 @@ import { globalClasses } from "../../pages/api/global/global-classes";
 const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasses();
 ---
 
-<section class="relative" style="min-height:calc(100dvh - 120px)">
-
-  {/* ── Drawer toggle button (always visible) ── */}
+{/* ── Top bar: drawing select + upload ── */}
+<div
+  class="flex flex-wrap items-end gap-4 border-b border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-900"
+>
+  <div class="min-w-[180px]">
+    <label for="simple-scan-test-select" class={globalFormLabel}>Drawing</label>
+    <select
+      id="simple-scan-test-select"
+      class="block w-full rounded border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+    >
+    </select>
+  </div>
+  <div>
+    <label for="simple-scan-file" class={globalFormLabel}>Upload</label>
+    <input id="simple-scan-file" type="file" accept=".pdf,image/*" class="block text-sm" />
+  </div>
   <button
-    id="drawer-toggle"
+    id="simple-scan-run"
     type="button"
-    class="absolute left-3 top-3 z-50 flex h-9 w-9 items-center justify-center rounded-lg bg-gray-900/80 text-white shadow-lg backdrop-blur hover:bg-gray-900 dark:bg-gray-100/80 dark:text-gray-900 dark:hover:bg-gray-100"
-    title="Toggle controls"
+    class="rounded bg-primary-600 px-3 py-1.5 text-sm text-white"
   >
-    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
+    Refresh
   </button>
+  <p id="simple-scan-status" class={`${mutedTextSmClasses} break-words`}>
+    Loading default drawing...
+  </p>
+</div>
 
-  {/* ── Drawer (absolute, doesn't push content) ── */}
+{/* ── Main content: canvas + drawer ── */}
+<section class="flex" style="min-height:calc(100dvh - 170px)">
+  {/* ── Full-screen floor plan area ── */}
+  <div class="relative min-w-0 flex-1">
+    {/* ── Top-right controls: zoom + info ── */}
+    <div class="absolute right-3 top-3 z-50 flex items-center gap-1">
+      <button
+        id="zoom-out"
+        type="button"
+        class="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-900/80 text-sm font-bold text-white shadow-lg backdrop-blur hover:bg-gray-900 dark:bg-gray-100/80 dark:text-gray-900 dark:hover:bg-gray-100"
+        title="Zoom out">−</button
+      >
+      <span
+        id="zoom-level"
+        class="min-w-[3rem] select-none text-center text-xs font-semibold text-gray-800 drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)] dark:text-gray-200"
+        >100%</span
+      >
+      <button
+        id="zoom-in"
+        type="button"
+        class="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-900/80 text-sm font-bold text-white shadow-lg backdrop-blur hover:bg-gray-900 dark:bg-gray-100/80 dark:text-gray-900 dark:hover:bg-gray-100"
+        title="Zoom in">+</button
+      >
+      <button
+        id="zoom-reset"
+        type="button"
+        class="flex h-8 items-center justify-center rounded-lg bg-gray-900/80 px-2 text-[11px] font-semibold text-white shadow-lg backdrop-blur hover:bg-gray-900 dark:bg-gray-100/80 dark:text-gray-900 dark:hover:bg-gray-100"
+        title="Reset zoom">Fit</button
+      >
+      <button
+        id="drawer-toggle"
+        type="button"
+        class="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-900/80 text-white shadow-lg backdrop-blur hover:bg-gray-900 dark:bg-gray-100/80 dark:text-gray-900 dark:hover:bg-gray-100"
+        title="Toggle panel"
+      >
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+          ><circle cx="12" cy="12" r="10"></circle><path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M12 16v-4m0-4h.01"></path></svg
+        >
+      </button>
+    </div>
+    <canvas id="simple-scan-canvas" class="hidden"></canvas>
+    <div id="scan-zoom-scroll" class="h-full w-full overflow-auto">
+      <div id="simple-scan-pipeline-steps" class="flex w-full min-h-full flex-col origin-top-left"></div>
+    </div>
+    {/* ── Processing overlay ── */}
+    <div
+      id="scan-overlay"
+      class="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-white/70 opacity-0 backdrop-blur-sm transition-opacity duration-200 dark:bg-gray-900/70"
+      aria-hidden="true"
+    >
+      <div class="flex flex-col items-center gap-3">
+        <svg
+          class="h-10 w-10 animate-spin text-primary-600"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          ><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
+          ></circle><path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg
+        >
+        <p id="scan-overlay-msg" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+          Processing…
+        </p>
+      </div>
+    </div>
+  </div>
+
+  {/* ── Right-side drawer (flex sibling, starts off-screen) ── */}
   <div
     id="scan-drawer"
-    class="absolute left-0 top-0 z-40 h-full w-80 translate-x-0 overflow-y-auto rounded-r-xl bg-white/95 shadow-2xl backdrop-blur-sm transition-transform duration-200 dark:bg-gray-900/95"
+    class="w-80 shrink-0 self-stretch overflow-y-auto border-l border-gray-200 bg-white/95 shadow-xl backdrop-blur-sm transition-[margin] duration-200 dark:border-gray-700 dark:bg-gray-900/95"
+    style="margin-right:-20rem"
   >
-    <div class="space-y-4 p-4 pt-14">
-      <p class={`text-sm font-semibold ${primaryTextClasses}`}>Drawing Analyzer</p>
-      <p class={mutedTextSmClasses}>Select a floor plan to analyze.</p>
-
-      <div>
-        <label for="simple-scan-test-select" class={globalFormLabel}>Test Drawing</label>
-        <select
-          id="simple-scan-test-select"
-          class="block w-full rounded border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-        >
-        </select>
-      </div>
-
-      <div>
-        <label for="simple-scan-file" class={globalFormLabel}>Upload Override</label>
-        <input id="simple-scan-file" type="file" accept=".pdf,image/*" class="block w-full text-sm" />
-      </div>
-
-      <div class="flex items-center gap-2">
-        <button
-          id="simple-scan-run"
-          type="button"
-          class="rounded bg-primary-600 px-3 py-1.5 text-sm text-white"
-        >
-          Refresh
-        </button>
-      </div>
-
-      <p id="simple-scan-status" class={`${mutedTextSmClasses} break-words`}>Loading default drawing...</p>
-
+    <div class="space-y-4 p-4">
       <div id="drawer-controls" class="space-y-3"></div>
 
       <details class="rounded border border-gray-200 dark:border-gray-700">
-        <summary class="cursor-pointer px-3 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400">Debug Output</summary>
+        <summary
+          class="cursor-pointer px-3 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400"
+          >Debug Output</summary
+        >
         <pre
           id="simple-scan-results"
           class="max-h-48 overflow-auto p-3 text-[10px] leading-tight dark:bg-gray-900">
@@ -62,26 +125,41 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
       </details>
     </div>
   </div>
-
-  {/* ── Hidden canvas (processing only) ── */}
-  <canvas
-    id="simple-scan-canvas"
-    class="hidden"></canvas>
-
-  {/* ── Full-screen floor plan area ── */}
-  <div id="simple-scan-pipeline-steps" class="flex w-full items-center justify-center" style="min-height:calc(100dvh - 120px)"></div>
-
 </section>
 
 <script src="/js/pdf.min.js" defer></script>
 <script>
-  // Drawer toggle
+  // Drawer toggle (right-side, starts closed via negative margin)
   const drawerEl = document.getElementById("scan-drawer") as HTMLDivElement | null;
   const drawerToggle = document.getElementById("drawer-toggle") as HTMLButtonElement | null;
-  let drawerOpen = true;
+  let drawerOpen = false;
   drawerToggle?.addEventListener("click", () => {
     drawerOpen = !drawerOpen;
-    if (drawerEl) drawerEl.style.transform = drawerOpen ? "translateX(0)" : "translateX(-100%)";
+    if (drawerEl) drawerEl.style.marginRight = drawerOpen ? "0" : "-20rem";
+  });
+
+  // Zoom — CSS-only scale on the pipeline container
+  const ZOOM_MIN = 0.25;
+  const ZOOM_MAX = 4;
+  const ZOOM_STEP = 0.25;
+  let zoomLevel = 1;
+  const zoomTarget = document.getElementById("simple-scan-pipeline-steps") as HTMLDivElement | null;
+  const zoomLabel = document.getElementById("zoom-level") as HTMLSpanElement | null;
+  function applyZoom() {
+    if (zoomTarget) zoomTarget.style.transform = `scale(${zoomLevel})`;
+    if (zoomLabel) zoomLabel.textContent = `${Math.round(zoomLevel * 100)}%`;
+  }
+  document.getElementById("zoom-in")?.addEventListener("click", () => {
+    zoomLevel = Math.min(ZOOM_MAX, +(zoomLevel + ZOOM_STEP).toFixed(2));
+    applyZoom();
+  });
+  document.getElementById("zoom-out")?.addEventListener("click", () => {
+    zoomLevel = Math.max(ZOOM_MIN, +(zoomLevel - ZOOM_STEP).toFixed(2));
+    applyZoom();
+  });
+  document.getElementById("zoom-reset")?.addEventListener("click", () => {
+    zoomLevel = 1;
+    applyZoom();
   });
 
   const drawingFileInput = document.getElementById("simple-scan-file") as HTMLInputElement | null;
@@ -98,7 +176,12 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
   const LOG_PREFIX = "[SimpleScan]";
   const log = (...args: any[]) => console.log(LOG_PREFIX, ...args);
   const logWarn = (...args: any[]) => console.warn(LOG_PREFIX, ...args);
-  console.log("[SimpleScan] script init — testSelect:", !!testSelect, "fileInput:", !!drawingFileInput);
+  console.log(
+    "[SimpleScan] script init — testSelect:",
+    !!testSelect,
+    "fileInput:",
+    !!drawingFileInput
+  );
   const logError = (...args: any[]) => console.error(LOG_PREFIX, ...args);
   const logTime = (label: string) => console.time(`${LOG_PREFIX} ${label}`);
   const logTimeEnd = (label: string) => console.timeEnd(`${LOG_PREFIX} ${label}`);
@@ -150,8 +233,18 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     pixelCount: number;
   };
   let workingImageData: ImageData | null = null;
-  let showWorkingLayer = true;
+  let showWorkingLayer = false;
   let layers: ExtractedLayer[] = [];
+
+  type PipeSubLayer = {
+    name: string;
+    color: [number, number, number];
+    visible: boolean;
+    rawImageData: ImageData;
+    pixelCount: number;
+    count: number;
+  };
+  let pipeSubLayers: PipeSubLayer[] = [];
 
   let showRegionOverlays = true;
   let activeRegionIdx: number | null = null;
@@ -206,6 +299,36 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     log("Status →", text);
     statusEl && (statusEl.textContent = text);
   };
+
+  const overlayEl = document.getElementById("scan-overlay") as HTMLDivElement | null;
+  const overlayMsgEl = document.getElementById("scan-overlay-msg") as HTMLParagraphElement | null;
+
+  function showOverlay(msg = "Processing…") {
+    if (overlayMsgEl) overlayMsgEl.textContent = msg;
+    if (overlayEl) {
+      overlayEl.style.opacity = "1";
+      overlayEl.style.pointerEvents = "auto";
+      overlayEl.setAttribute("aria-hidden", "false");
+    }
+  }
+  function hideOverlay() {
+    if (overlayEl) {
+      overlayEl.style.opacity = "0";
+      overlayEl.style.pointerEvents = "none";
+      overlayEl.setAttribute("aria-hidden", "true");
+    }
+  }
+
+  const toast = window as any;
+  function toastInfo(title: string, msg: string, duration = 3000) {
+    toast.showInfo?.(title, msg, duration);
+  }
+  function toastSuccess(title: string, msg: string, duration = 3000) {
+    toast.showSuccess?.(title, msg, duration);
+  }
+  function toastError(title: string, msg: string, duration = 5000) {
+    toast.showError?.(title, msg, duration);
+  }
 
   function getImageScale(): { pxPerImgX: number; pxPerImgY: number } {
     if (!drawingState) return { pxPerImgX: 1, pxPerImgY: 1 };
@@ -297,15 +420,29 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
   function extractBaselineRegions(state: typeof drawingState) {
     logTime("extractBaselineRegions");
     log("extractBaselineRegions called");
-    if (!state) { logWarn("extractBaselineRegions: no state"); return []; }
+    if (!state) {
+      logWarn("extractBaselineRegions: no state");
+      return [];
+    }
     const { width, height, mask } = state;
     const canvasArea = Math.max(1, width * height);
     log("extractBaselineRegions: canvas", { width, height, canvasArea });
     const comps = getComponents(mask, width, height, 18, canvasArea * 0.9);
-    if (comps.length === 0) { log("extractBaselineRegions: 0 components, returning empty"); logTimeEnd("extractBaselineRegions"); return []; }
+    if (comps.length === 0) {
+      log("extractBaselineRegions: 0 components, returning empty");
+      logTimeEnd("extractBaselineRegions");
+      return [];
+    }
 
     const edgeMargin = Math.max(6, Math.round(Math.min(width, height) * 0.02));
-    const scored: Array<{ x: number; y: number; w: number; h: number; area: number; score: number }> = [];
+    const scored: Array<{
+      x: number;
+      y: number;
+      w: number;
+      h: number;
+      area: number;
+      score: number;
+    }> = [];
     for (const c of comps) {
       const bboxArea = c.w * c.h;
       const bboxRatio = bboxArea / canvasArea;
@@ -381,7 +518,9 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
       if (mask[p]) inkPixels++;
     }
     logTimeEnd("imageToRegionSeedMask");
-    log(`imageToRegionSeedMask: ${inkPixels} ink pixels (${((inkPixels / mask.length) * 100).toFixed(2)}% of image)`);
+    log(
+      `imageToRegionSeedMask: ${inkPixels} ink pixels (${((inkPixels / mask.length) * 100).toFixed(2)}% of image)`
+    );
     return mask;
   }
 
@@ -473,10 +612,7 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
         const originalY = y + minY;
         const inside = selectedRegions.some(
           (r) =>
-            originalX >= r.x &&
-            originalY >= r.y &&
-            originalX < r.x + r.w &&
-            originalY < r.y + r.h
+            originalX >= r.x && originalY >= r.y && originalX < r.x + r.w && originalY < r.y + r.h
         );
         if (inside) continue;
         const i = (row + x) * 4;
@@ -524,7 +660,9 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     const regionsSource = baselineRegions.length ? baselineRegions : fallback;
     const selectedWithIndex = regionsSource
       .map((region, idx) => ({ region, idx }))
-      .filter((entry) => !excludedRegionIndexes.has(entry.idx) && confirmedRegionIndexes.has(entry.idx))
+      .filter(
+        (entry) => !excludedRegionIndexes.has(entry.idx) && confirmedRegionIndexes.has(entry.idx)
+      )
       .slice(0, MAX_REGIONS_TO_SCAN);
     log("getActiveRegionSelection:", {
       totalRegions: regionsSource.length,
@@ -548,11 +686,7 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
       return;
     }
     const src = lastCroppedImageData;
-    workingImageData = new ImageData(
-      new Uint8ClampedArray(src.data),
-      src.width,
-      src.height
-    );
+    workingImageData = new ImageData(new Uint8ClampedArray(src.data), src.width, src.height);
     layers = [];
     log("initWorkingImage: cloned cropped source", { width: src.width, height: src.height });
   }
@@ -561,6 +695,9 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     log("resetLayers");
     initWorkingImage();
     layers = [];
+    symbolScanResults = null;
+    pipeAnalysisResults = null;
+    pipeSubLayers = [];
   }
 
   function extractPixelsByFilter(
@@ -576,18 +713,30 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     const ld = layerData.data;
     let count = 0;
     for (let i = 0; i < d.length; i += 4) {
-      const r = d[i], g = d[i + 1], b = d[i + 2], a = d[i + 3];
+      const r = d[i],
+        g = d[i + 1],
+        b = d[i + 2],
+        a = d[i + 3];
       if (a < 2) continue;
       if (r === 255 && g === 255 && b === 255) continue;
       if (testFn(r, g, b, a)) {
-        ld[i] = r; ld[i + 1] = g; ld[i + 2] = b; ld[i + 3] = a;
-        d[i] = 255; d[i + 1] = 255; d[i + 2] = 255; d[i + 3] = 255;
+        ld[i] = r;
+        ld[i + 1] = g;
+        ld[i + 2] = b;
+        ld[i + 3] = a;
+        d[i] = 255;
+        d[i + 1] = 255;
+        d[i + 2] = 255;
+        d[i + 3] = 255;
         count++;
       }
     }
     logTimeEnd(`extract:${filterName}`);
     log(`extract:${filterName}: ${count} pixels moved to layer`);
-    if (count === 0) { logWarn(`extract:${filterName}: nothing found`); return; }
+    if (count === 0) {
+      logWarn(`extract:${filterName}: nothing found`);
+      return;
+    }
     layers.push({
       name: filterName,
       visible: true,
@@ -611,7 +760,13 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     if (!workingImageData) return;
     const { width, height, data } = workingImageData;
     const visited = new Uint8Array(width * height);
-    const components: Array<{ pixels: number[]; minX: number; minY: number; maxX: number; maxY: number }> = [];
+    const components: Array<{
+      pixels: number[];
+      minX: number;
+      minY: number;
+      maxX: number;
+      maxY: number;
+    }> = [];
 
     function floodFill(sx: number, sy: number) {
       const comp = { pixels: [] as number[], minX: sx, minY: sy, maxX: sx, maxY: sy };
@@ -626,14 +781,24 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
         if (px > comp.maxX) comp.maxX = px;
         if (py < comp.minY) comp.minY = py;
         if (py > comp.maxY) comp.maxY = py;
-        for (const [dx, dy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
-          const nx = px + dx, ny = py + dy;
+        for (const [dx, dy] of [
+          [-1, 0],
+          [1, 0],
+          [0, -1],
+          [0, 1],
+        ]) {
+          const nx = px + dx,
+            ny = py + dy;
           if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
           const ni = ny * width + nx;
           if (visited[ni]) continue;
           const i4 = ni * 4;
-          const gray = data[i4] * 0.299 + data[i4+1] * 0.587 + data[i4+2] * 0.114;
-          if (gray < 150 && data[i4+3] > 1 && !(data[i4] === 255 && data[i4+1] === 255 && data[i4+2] === 255)) {
+          const gray = data[i4] * 0.299 + data[i4 + 1] * 0.587 + data[i4 + 2] * 0.114;
+          if (
+            gray < 150 &&
+            data[i4 + 3] > 1 &&
+            !(data[i4] === 255 && data[i4 + 1] === 255 && data[i4 + 2] === 255)
+          ) {
             visited[ni] = 1;
             stack.push(ni);
           }
@@ -647,8 +812,13 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
         const idx = y * width + x;
         if (visited[idx]) continue;
         const i4 = idx * 4;
-        const gray = data[i4] * 0.299 + data[i4+1] * 0.587 + data[i4+2] * 0.114;
-        if (gray >= 150 || data[i4+3] < 2 || (data[i4] === 255 && data[i4+1] === 255 && data[i4+2] === 255)) continue;
+        const gray = data[i4] * 0.299 + data[i4 + 1] * 0.587 + data[i4 + 2] * 0.114;
+        if (
+          gray >= 150 ||
+          data[i4 + 3] < 2 ||
+          (data[i4] === 255 && data[i4 + 1] === 255 && data[i4 + 2] === 255)
+        )
+          continue;
         const comp = floodFill(x, y);
         if (comp.pixels.length >= 3) components.push(comp);
       }
@@ -665,27 +835,36 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
       const aspect = bw / Math.max(bh, 1);
       const density = area / (bw * bh);
 
-      const isText = (
+      const isText =
         bh < height * 0.04 &&
         bw < width * 0.15 &&
         area < 2000 &&
         density > 0.08 &&
         density < 0.9 &&
-        aspect > 0.15 && aspect < 12
-      );
+        aspect > 0.15 &&
+        aspect < 12;
 
       if (isText) {
         for (const pos of comp.pixels) {
           const i4 = pos * 4;
-          td[i4] = data[i4]; td[i4+1] = data[i4+1]; td[i4+2] = data[i4+2]; td[i4+3] = data[i4+3];
-          data[i4] = 255; data[i4+1] = 255; data[i4+2] = 255; data[i4+3] = 255;
+          td[i4] = data[i4];
+          td[i4 + 1] = data[i4 + 1];
+          td[i4 + 2] = data[i4 + 2];
+          td[i4 + 3] = data[i4 + 3];
+          data[i4] = 255;
+          data[i4 + 1] = 255;
+          data[i4 + 2] = 255;
+          data[i4 + 3] = 255;
           count++;
         }
       }
     }
 
     log(`extractText: analyzed ${components.length} components, ${count} text pixels extracted`);
-    if (count === 0) { logWarn("extractText: no text found"); return; }
+    if (count === 0) {
+      logWarn("extractText: no text found");
+      return;
+    }
     layers.push({
       name: "Text / Labels",
       visible: true,
@@ -721,10 +900,14 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
 
     function getRuns(max: number, pixel: (v: number) => boolean): Run[] {
       const runs: Run[] = [];
-      let inRun = false, runStart = 0;
+      let inRun = false,
+        runStart = 0;
       for (let v = 0; v < max; v++) {
         if (pixel(v)) {
-          if (!inRun) { inRun = true; runStart = v; }
+          if (!inRun) {
+            inRun = true;
+            runStart = v;
+          }
         } else if (inRun) {
           runs.push({ start: runStart, end: v - 1, len: v - runStart });
           inRun = false;
@@ -737,11 +920,14 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     // --- Phase 1: discover the dominant dash/gap pattern via sampling ---
     const pairVotes = new Map<string, number>();
     const maxDash = 80;
-    function quantize(v: number): number { return Math.round(v / 3) * 3; }
+    function quantize(v: number): number {
+      return Math.round(v / 3) * 3;
+    }
 
     function votePairs(runs: Run[]) {
       for (let i = 0; i < runs.length - 1; i++) {
-        const a = runs[i], b = runs[i + 1];
+        const a = runs[i],
+          b = runs[i + 1];
         if (a.len > maxDash || b.len > maxDash || a.len < 2 || b.len < 2) continue;
         const gap = b.start - a.end - 1;
         if (gap < 1 || gap > 60) continue;
@@ -761,9 +947,13 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
       return;
     }
 
-    let bestKey = "", bestCount = 0;
+    let bestKey = "",
+      bestCount = 0;
     for (const [key, count] of pairVotes) {
-      if (count > bestCount) { bestCount = count; bestKey = key; }
+      if (count > bestCount) {
+        bestCount = count;
+        bestKey = key;
+      }
     }
     const patDash = Number(bestKey.split(":")[0]);
     const patGap = Number(bestKey.split(":")[1]);
@@ -782,7 +972,12 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
       for (let i = 0; i < runs.length; i++) {
         const r = runs[i];
         if (r.len > maxDash || Math.abs(r.len - patDash) > lenTol) {
-          if (chain.length >= 2) segs.push({ start: chain[0].start, end: chain[chain.length - 1].end, runs: [...chain] });
+          if (chain.length >= 2)
+            segs.push({
+              start: chain[0].start,
+              end: chain[chain.length - 1].end,
+              runs: [...chain],
+            });
           chain = [];
           continue;
         }
@@ -790,14 +985,20 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
           const prev = chain[chain.length - 1];
           const gap = r.start - prev.end - 1;
           if (Math.abs(gap - patGap) > gapTol) {
-            if (chain.length >= 2) segs.push({ start: chain[0].start, end: chain[chain.length - 1].end, runs: [...chain] });
+            if (chain.length >= 2)
+              segs.push({
+                start: chain[0].start,
+                end: chain[chain.length - 1].end,
+                runs: [...chain],
+              });
             chain = [r];
             continue;
           }
         }
         chain.push(r);
       }
-      if (chain.length >= 2) segs.push({ start: chain[0].start, end: chain[chain.length - 1].end, runs: [...chain] });
+      if (chain.length >= 2)
+        segs.push({ start: chain[0].start, end: chain[chain.length - 1].end, runs: [...chain] });
 
       for (const seg of segs) {
         const pixels: number[] = [];
@@ -811,13 +1012,31 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
       }
     }
 
-    for (let y = 0; y < height; y++) findDashSegs(getRuns(width, (x) => isInk(x, y)), y, "h");
-    for (let x = 0; x < width; x++) findDashSegs(getRuns(height, (y) => isInk(x, y)), x, "v");
+    for (let y = 0; y < height; y++)
+      findDashSegs(
+        getRuns(width, (x) => isInk(x, y)),
+        y,
+        "h"
+      );
+    for (let x = 0; x < width; x++)
+      findDashSegs(
+        getRuns(height, (y) => isInk(x, y)),
+        x,
+        "v"
+      );
 
     log(`extractDashed: ${hSegs.length} h-segments, ${vSegs.length} v-segments`);
 
     // --- Phase 3: merge nearby parallel segments into edges ---
-    type Edge = { dir: "h" | "v"; fixedMin: number; fixedMax: number; fixedAvg: number; varStart: number; varEnd: number; pixels: number[] };
+    type Edge = {
+      dir: "h" | "v";
+      fixedMin: number;
+      fixedMax: number;
+      fixedAvg: number;
+      varStart: number;
+      varEnd: number;
+      pixels: number[];
+    };
 
     function mergeSegs(segs: Seg[], fixTol: number, overlapMin: number): Edge[] {
       const sorted = [...segs].sort((a, b) => a.fixed - b.fixed || a.start - b.start);
@@ -832,16 +1051,32 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
           if (sorted[j].fixed - sorted[i].fixed > fixTol) break;
           const oStart = Math.max(sorted[i].start, sorted[j].start);
           const oEnd = Math.min(sorted[i].end, sorted[j].end);
-          if (oEnd - oStart >= overlapMin) { group.push(sorted[j]); used.add(j); }
+          if (oEnd - oStart >= overlapMin) {
+            group.push(sorted[j]);
+            used.add(j);
+          }
         }
         const allPx: number[] = [];
-        let fMin = Infinity, fMax = -Infinity, vStart = Infinity, vEnd = -Infinity;
+        let fMin = Infinity,
+          fMax = -Infinity,
+          vStart = Infinity,
+          vEnd = -Infinity;
         for (const s of group) {
-          fMin = Math.min(fMin, s.fixed); fMax = Math.max(fMax, s.fixed);
-          vStart = Math.min(vStart, s.start); vEnd = Math.max(vEnd, s.end);
+          fMin = Math.min(fMin, s.fixed);
+          fMax = Math.max(fMax, s.fixed);
+          vStart = Math.min(vStart, s.start);
+          vEnd = Math.max(vEnd, s.end);
           allPx.push(...s.pixels);
         }
-        edges.push({ dir: "h", fixedMin: fMin, fixedMax: fMax, fixedAvg: Math.round((fMin + fMax) / 2), varStart: vStart, varEnd: vEnd, pixels: allPx });
+        edges.push({
+          dir: "h",
+          fixedMin: fMin,
+          fixedMax: fMax,
+          fixedAvg: Math.round((fMin + fMax) / 2),
+          varStart: vStart,
+          varEnd: vEnd,
+          pixels: allPx,
+        });
       }
       return edges;
     }
@@ -849,8 +1084,8 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     const thickness = Math.max(patDash * 0.5, 6);
     const hEdges = mergeSegs(hSegs, thickness, patDash);
     const vEdges = mergeSegs(vSegs, thickness, patDash);
-    hEdges.forEach(e => e.dir = "h");
-    vEdges.forEach(e => e.dir = "v");
+    hEdges.forEach((e) => (e.dir = "h"));
+    vEdges.forEach((e) => (e.dir = "v"));
 
     log(`extractDashed: ${hEdges.length} h-edges, ${vEdges.length} v-edges`);
 
@@ -891,10 +1126,17 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     const edgesToExtract: Edge[] = [];
     if (rects.length > 0) {
       const rectEdges = new Set<Edge>();
-      for (const r of rects) { rectEdges.add(r.top); rectEdges.add(r.bottom); rectEdges.add(r.left); rectEdges.add(r.right); }
+      for (const r of rects) {
+        rectEdges.add(r.top);
+        rectEdges.add(r.bottom);
+        rectEdges.add(r.left);
+        rectEdges.add(r.right);
+      }
       edgesToExtract.push(...rectEdges);
     } else {
-      log(`extractDashed: no closed rects — falling back to all ${hEdges.length + vEdges.length} dashed edges`);
+      log(
+        `extractDashed: no closed rects — falling back to all ${hEdges.length + vEdges.length} dashed edges`
+      );
       edgesToExtract.push(...hEdges, ...vEdges);
     }
 
@@ -915,16 +1157,23 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
         extracted.add(pos);
         const i4 = pos * 4;
         if (data[i4] === 255 && data[i4 + 1] === 255 && data[i4 + 2] === 255) continue;
-        ld[i4] = data[i4]; ld[i4+1] = data[i4+1]; ld[i4+2] = data[i4+2]; ld[i4+3] = data[i4+3];
-        data[i4] = 255; data[i4+1] = 255; data[i4+2] = 255; data[i4+3] = 255;
+        ld[i4] = data[i4];
+        ld[i4 + 1] = data[i4 + 1];
+        ld[i4 + 2] = data[i4 + 2];
+        ld[i4 + 3] = data[i4 + 3];
+        data[i4] = 255;
+        data[i4 + 1] = 255;
+        data[i4 + 2] = 255;
+        data[i4 + 3] = 255;
         count++;
       }
     }
 
     logTimeEnd("extractDashedRectangles");
-    const label = rects.length > 0
-      ? `Dashed Rects (${rects.length}) ~${patDash}/${patGap}px`
-      : `Dashed Segs (${edgesToExtract.length}) ~${patDash}/${patGap}px`;
+    const label =
+      rects.length > 0
+        ? `Dashed Rects (${rects.length}) ~${patDash}/${patGap}px`
+        : `Dashed Segs (${edgesToExtract.length}) ~${patDash}/${patGap}px`;
     log(`extractDashed: ${count} pixels — ${label}`);
     if (count === 0) return;
     layers.push({
@@ -950,6 +1199,1256 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     });
   }
 
+  // ── Symbol detection (ported from DrawingAnalyzer) ────────────────
+
+  const REJECT_TEXT_FILTER = true;
+  let symbolScanResults: { candidates: any[]; groupCount: number; componentCount: number } | null =
+    null;
+  let pipeAnalysisResults: {
+    tJunctions: { x: number; y: number }[];
+    lJunctions: { x: number; y: number }[];
+    endpoints: { x: number; y: number }[];
+    crossings: { x: number; y: number }[];
+    skeletonPixelCount: number;
+    scale: number;
+  } | null = null;
+
+  function isNeutralInkPixel(r: number, g: number, b: number, a: number) {
+    if (a / 255 < 0.08) return false;
+    const maxC = Math.max(r, g, b);
+    const minC = Math.min(r, g, b);
+    const chroma = maxC - minC;
+    const saturation = maxC > 0 ? chroma / maxC : 0;
+    const gray = r * 0.299 + g * 0.587 + b * 0.114;
+    const chromaLimit = gray < 130 ? 20 : 14;
+    const hasBlueTint = b - Math.max(r, g) > 12;
+    return gray < 198 && chroma <= chromaLimit && saturation <= 0.12 && !hasBlueTint;
+  }
+
+  function imageDataToInkMask(imageData: ImageData) {
+    const { width, height, data } = imageData;
+    const mask = new Uint8Array(width * height);
+    let dark = 0;
+    for (let i = 0; i < width * height; i++) {
+      const idx = i * 4;
+      const isInk = isNeutralInkPixel(data[idx], data[idx + 1], data[idx + 2], data[idx + 3])
+        ? 1
+        : 0;
+      mask[i] = isInk;
+      dark += isInk;
+    }
+    return { mask, darkRatio: dark / Math.max(1, width * height) };
+  }
+
+  function trimDarkBounds(mask: Uint8Array, width: number, height: number) {
+    let minX = width,
+      minY = height,
+      maxX = -1,
+      maxY = -1;
+    for (let y = 0; y < height; y++) {
+      const row = y * width;
+      for (let x = 0; x < width; x++) {
+        if (!mask[row + x]) continue;
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+      }
+    }
+    if (maxX < minX || maxY < minY) return null;
+    return { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 };
+  }
+
+  function buildMaskSignature(mask: Uint8Array, width: number, height: number, grid = 10) {
+    const bounds = trimDarkBounds(mask, width, height);
+    if (!bounds) return null;
+    const sig: number[] = [];
+    const cw = bounds.w / grid;
+    const ch = bounds.h / grid;
+    for (let gy = 0; gy < grid; gy++) {
+      for (let gx = 0; gx < grid; gx++) {
+        const x0 = Math.floor(bounds.x + gx * cw);
+        const y0 = Math.floor(bounds.y + gy * ch);
+        const x1 = Math.max(x0 + 1, Math.floor(bounds.x + (gx + 1) * cw));
+        const y1 = Math.max(y0 + 1, Math.floor(bounds.y + (gy + 1) * ch));
+        let dark = 0,
+          total = 0;
+        for (let y = y0; y < Math.min(height, y1); y++) {
+          const row = y * width;
+          for (let x = x0; x < Math.min(width, x1); x++) {
+            dark += mask[row + x] ? 1 : 0;
+            total++;
+          }
+        }
+        sig.push(total ? dark / total : 0);
+      }
+    }
+    return {
+      values: sig,
+      aspect: bounds.w / Math.max(1, bounds.h),
+      fill: bounds.w * bounds.h ? sig.reduce((a, b) => a + b, 0) / sig.length : 0,
+    };
+  }
+
+  function passesColorNeutralityGate(imageData: ImageData, candidate: any, fuzz: number) {
+    const minX = Math.max(0, Math.floor(candidate.x));
+    const minY = Math.max(0, Math.floor(candidate.y));
+    const maxX = Math.min(imageData.width - 1, Math.floor(candidate.x + candidate.w - 1));
+    const maxY = Math.max(minY, Math.floor(candidate.y + candidate.h - 1));
+    if (maxX <= minX || maxY <= minY) return false;
+    let darkNeutral = 0,
+      darkColored = 0;
+    const data = imageData.data;
+    for (let y = minY; y <= maxY; y++) {
+      const row = y * imageData.width;
+      for (let x = minX; x <= maxX; x++) {
+        const idx = (row + x) * 4;
+        const gray = data[idx] * 0.299 + data[idx + 1] * 0.587 + data[idx + 2] * 0.114;
+        if (data[idx + 3] / 255 < 0.08 || gray > 215) continue;
+        if (isNeutralInkPixel(data[idx], data[idx + 1], data[idx + 2], data[idx + 3]))
+          darkNeutral++;
+        else darkColored++;
+      }
+    }
+    const darkTotal = darkNeutral + darkColored;
+    if (darkTotal < 10) return false;
+    return (
+      darkColored / darkTotal <= 0.015 + fuzz * 0.015 &&
+      darkNeutral / darkTotal >= 0.93 - fuzz * 0.05
+    );
+  }
+
+  function hasSecondaryColorInCandidate(
+    imageData: ImageData,
+    candidate: any,
+    maxColoredPixels = 2
+  ) {
+    const minX = Math.max(0, Math.floor(candidate.x));
+    const minY = Math.max(0, Math.floor(candidate.y));
+    const maxX = Math.min(imageData.width - 1, Math.floor(candidate.x + candidate.w - 1));
+    const maxY = Math.max(minY, Math.floor(candidate.y + candidate.h - 1));
+    if (maxX <= minX || maxY <= minY) return true;
+    const data = imageData.data;
+    let colored = 0;
+    for (let y = minY; y <= maxY; y++) {
+      const row = y * imageData.width;
+      for (let x = minX; x <= maxX; x++) {
+        const idx = (row + x) * 4;
+        const gray = data[idx] * 0.299 + data[idx + 1] * 0.587 + data[idx + 2] * 0.114;
+        if (data[idx + 3] / 255 < 0.08 || gray > 215) continue;
+        if (!isNeutralInkPixel(data[idx], data[idx + 1], data[idx + 2], data[idx + 3])) {
+          colored++;
+          if (colored > maxColoredPixels) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function refineCandidateToBlackBounds(
+    drawingMask: Uint8Array,
+    drawingWidth: number,
+    candidate: any
+  ) {
+    const minX = Math.max(0, Math.floor(candidate.x));
+    const minY = Math.max(0, Math.floor(candidate.y));
+    const maxX = Math.min(drawingWidth - 1, Math.floor(candidate.x + candidate.w - 1));
+    const maxY = Math.max(minY, Math.floor(candidate.y + candidate.h - 1));
+    if (maxX <= minX || maxY <= minY) return null;
+    let bMinX = maxX,
+      bMinY = maxY,
+      bMaxX = minX,
+      bMaxY = minY,
+      dark = 0;
+    for (let y = minY; y <= maxY; y++) {
+      const row = y * drawingWidth;
+      for (let x = minX; x <= maxX; x++) {
+        if (!drawingMask[row + x]) continue;
+        dark++;
+        if (x < bMinX) bMinX = x;
+        if (y < bMinY) bMinY = y;
+        if (x > bMaxX) bMaxX = x;
+        if (y > bMaxY) bMaxY = y;
+      }
+    }
+    if (dark < 6 || bMaxX < bMinX || bMaxY < bMinY) return null;
+    return {
+      ...candidate,
+      x: bMinX,
+      y: bMinY,
+      w: bMaxX - bMinX + 1,
+      h: bMaxY - bMinY + 1,
+      cx: bMinX + (bMaxX - bMinX + 1) / 2,
+      cy: bMinY + (bMaxY - bMinY + 1) / 2,
+    };
+  }
+
+  function getRadialRoundnessScore(drawingMask: Uint8Array, drawingWidth: number, candidate: any) {
+    const minX = Math.max(0, Math.floor(candidate.x));
+    const minY = Math.max(0, Math.floor(candidate.y));
+    const maxX = Math.min(drawingWidth - 1, Math.floor(candidate.x + candidate.w - 1));
+    const maxY = Math.max(minY, Math.floor(candidate.y + candidate.h - 1));
+    const w = maxX - minX + 1,
+      h = maxY - minY + 1;
+    if (w < 8 || h < 8) return 0;
+    const cx = (w - 1) / 2,
+      cy = (h - 1) / 2;
+    const sectors = 36;
+    const far = new Float32Array(sectors),
+      seen = new Uint8Array(sectors);
+    for (let y = 0; y < h; y++) {
+      const srcRow = (minY + y) * drawingWidth + minX;
+      for (let x = 0; x < w; x++) {
+        if (!drawingMask[srcRow + x]) continue;
+        const r = Math.hypot(x - cx, y - cy);
+        const ang = Math.floor(
+          (((Math.atan2(y - cy, x - cx) + Math.PI) / (Math.PI * 2)) * sectors) % sectors
+        );
+        if (!seen[ang] || r > far[ang]) far[ang] = r;
+        seen[ang] = 1;
+      }
+    }
+    const radii: number[] = [];
+    for (let i = 0; i < sectors; i++) if (seen[i]) radii.push(far[i]);
+    if (radii.length < 24) return 0;
+    const mean = radii.reduce((a, b) => a + b, 0) / radii.length;
+    if (mean <= 0) return 0;
+    const variance = radii.reduce((acc, r) => acc + (r - mean) * (r - mean), 0) / radii.length;
+    return Math.max(0, 1 - Math.sqrt(variance) / mean);
+  }
+
+  function isBoundsCircleLike(w: number, h: number, tolerance = 0.05) {
+    return Math.abs(w / Math.max(1, h) - 1) <= tolerance;
+  }
+
+  function passesCircleShapeGate(
+    drawingMask: Uint8Array,
+    drawingWidth: number,
+    candidate: any,
+    fuzz = 0
+  ) {
+    const minX = Math.max(0, Math.floor(candidate.x));
+    const minY = Math.max(0, Math.floor(candidate.y));
+    const maxX = Math.min(drawingWidth - 1, Math.floor(candidate.x + candidate.w - 1));
+    const maxY = Math.max(minY, Math.floor(candidate.y + candidate.h - 1));
+    const w = maxX - minX + 1,
+      h = maxY - minY + 1;
+    if (w <= 2 || h <= 2) return false;
+    if (!isBoundsCircleLike(w, h, 0.05 + fuzz * 0.12)) return false;
+    const cx = (w - 1) / 2,
+      cy = (h - 1) / 2,
+      radius = Math.min(w, h) / 2;
+    const sectors = 12,
+      sectorHits = new Uint8Array(sectors);
+    let darkCount = 0;
+    for (let y = 0; y < h; y++) {
+      const srcRow = (minY + y) * drawingWidth + minX;
+      for (let x = 0; x < w; x++) {
+        if (!drawingMask[srcRow + x]) continue;
+        darkCount++;
+        const rNorm = radius > 0 ? Math.hypot(x - cx, y - cy) / radius : 0;
+        if (rNorm < 0.72 - fuzz * 0.2 || rNorm > 1.05 + fuzz * 0.16) continue;
+        const bucket = Math.floor(
+          (((Math.atan2(y - cy, x - cx) + Math.PI) / (Math.PI * 2)) * sectors) % sectors
+        );
+        sectorHits[bucket] = 1;
+      }
+    }
+    if (darkCount < Math.max(8, Math.round(14 - fuzz * 6))) return false;
+    return (
+      sectorHits.reduce((a: number, b: number) => a + b, 0) >=
+      Math.max(4, Math.round(10 - fuzz * 5))
+    );
+  }
+
+  function scoreCircleWindow(
+    drawingMask: Uint8Array,
+    drawingWidth: number,
+    candidate: any,
+    fuzz = 0
+  ) {
+    const minX = Math.max(0, Math.floor(candidate.x));
+    const minY = Math.max(0, Math.floor(candidate.y));
+    const maxX = Math.min(drawingWidth - 1, Math.floor(candidate.x + candidate.w - 1));
+    const maxY = Math.max(minY, Math.floor(candidate.y + candidate.h - 1));
+    const w = maxX - minX + 1,
+      h = maxY - minY + 1;
+    if (w <= 4 || h <= 4) return 0;
+    if (Math.abs(w / Math.max(1, h) - 1) > 0.28 + fuzz * 0.14) return 0;
+    const cx = (w - 1) / 2,
+      cy = (h - 1) / 2,
+      radius = Math.min(w, h) / 2;
+    const sectors = 16,
+      ringHits = new Uint8Array(sectors);
+    let ringDark = 0,
+      centerDark = 0,
+      centerTotal = 0;
+    for (let y = 0; y < h; y++) {
+      const srcRow = (minY + y) * drawingWidth + minX;
+      for (let x = 0; x < w; x++) {
+        const v = drawingMask[srcRow + x] ? 1 : 0;
+        const rNorm = Math.hypot(x - cx, y - cy) / Math.max(1e-6, radius);
+        if (rNorm <= 0.22) {
+          centerTotal++;
+          centerDark += v;
+        }
+        if (!v) continue;
+        if (rNorm >= 0.74 && rNorm <= 1.05) {
+          ringDark++;
+          ringHits[
+            Math.floor(
+              (((Math.atan2(y - cy, x - cx) + Math.PI) / (Math.PI * 2)) * sectors) % sectors
+            )
+          ] = 1;
+        }
+      }
+    }
+    return (
+      (ringHits.reduce((a: number, b: number) => a + b, 0) / sectors) * 0.6 +
+      (centerDark / Math.max(1, centerTotal)) * 0.2 +
+      Math.min(1, (ringDark / Math.max(1, w * h)) * 18) * 0.2
+    );
+  }
+
+  function centerCandidateBox(
+    candidate: any,
+    imageWidth: number,
+    imageHeight: number,
+    paddingScale = 0.34
+  ) {
+    const baseSize = Math.max(candidate.w, candidate.h, 1);
+    const paddedSize = Math.max(10, Math.round(baseSize * (1 + paddingScale)));
+    let x = Math.round(candidate.x + candidate.w / 2 - paddedSize / 2);
+    let y = Math.round(candidate.y + candidate.h / 2 - paddedSize / 2);
+    if (x < 0) x = 0;
+    if (y < 0) y = 0;
+    let w = paddedSize,
+      h = paddedSize;
+    if (x + w > imageWidth) w = imageWidth - x;
+    if (y + h > imageHeight) h = imageHeight - y;
+    return { ...candidate, x, y, w, h, cx: x + w / 2, cy: y + h / 2 };
+  }
+
+  function isolateCircularCoreCandidate(
+    drawingMask: Uint8Array,
+    drawingWidth: number,
+    drawingHeight: number,
+    candidate: any,
+    fuzz = 0
+  ) {
+    const minDim = Math.max(8, Math.min(candidate.w, candidate.h));
+    const sizes = [0.34, 0.46, 0.58, 0.7].map((f) => Math.max(8, Math.round(minDim * f)));
+    const baseCx = candidate.x + candidate.w / 2,
+      baseCy = candidate.y + candidate.h / 2;
+    let best: any = null,
+      bestScore = 0;
+    for (const side of sizes) {
+      const step = Math.max(2, Math.round(side * 0.2));
+      for (let oy = -2; oy <= 2; oy++) {
+        for (let ox = -2; ox <= 2; ox++) {
+          const probe = {
+            x: Math.round(baseCx - side / 2 + ox * step),
+            y: Math.round(baseCy - side / 2 + oy * step),
+            w: side,
+            h: side,
+          };
+          if (
+            probe.x < 0 ||
+            probe.y < 0 ||
+            probe.x + probe.w > drawingWidth ||
+            probe.y + probe.h > drawingHeight
+          )
+            continue;
+          if (!passesCircleShapeGate(drawingMask, drawingWidth, probe, Math.min(1, fuzz + 0.25)))
+            continue;
+          const score = scoreCircleWindow(drawingMask, drawingWidth, probe, fuzz);
+          if (score > bestScore) {
+            bestScore = score;
+            best = probe;
+          }
+        }
+      }
+    }
+    if (!best || bestScore < 0.46) return null;
+    return centerCandidateBox(best, drawingWidth, drawingHeight, 0.22);
+  }
+
+  function hasCircularCore(
+    drawingMask: Uint8Array,
+    drawingWidth: number,
+    candidate: any,
+    fuzz = 0
+  ) {
+    const minDim = Math.min(candidate.w, candidate.h);
+    const cx = candidate.x + candidate.w / 2,
+      cy = candidate.y + candidate.h / 2;
+    for (const frac of [0.34, 0.46, 0.58]) {
+      const side = Math.max(8, Math.round(minDim * frac));
+      const probe = {
+        x: Math.round(cx - side / 2),
+        y: Math.round(cy - side / 2),
+        w: side,
+        h: side,
+      };
+      if (passesCircleShapeGate(drawingMask, drawingWidth, probe, Math.min(1, fuzz + 0.2)))
+        return true;
+    }
+    return false;
+  }
+
+  function looksTextLikeCand(drawingMask: Uint8Array, drawingWidth: number, candidate: any) {
+    const minX = Math.max(0, Math.floor(candidate.x)),
+      minY = Math.max(0, Math.floor(candidate.y));
+    const maxX = Math.min(drawingWidth - 1, Math.floor(candidate.x + candidate.w - 1));
+    const maxY = Math.max(minY, Math.floor(candidate.y + candidate.h - 1));
+    if (maxX <= minX || maxY <= minY) return false;
+    let dark = 0,
+      rowTransitions = 0,
+      colTransitions = 0;
+    for (let y = minY; y <= maxY; y++) {
+      const row = y * drawingWidth;
+      let prev = 0;
+      for (let x = minX; x <= maxX; x++) {
+        const value = drawingMask[row + x];
+        dark += value;
+        if (x > minX && value !== prev) rowTransitions++;
+        prev = value;
+      }
+    }
+    for (let x = minX; x <= maxX; x++) {
+      let prev = 0;
+      for (let y = minY; y <= maxY; y++) {
+        const value = drawingMask[y * drawingWidth + x];
+        if (y > minY && value !== prev) colTransitions++;
+        prev = value;
+      }
+    }
+    const area = Math.max(1, (maxX - minX + 1) * (maxY - minY + 1));
+    const w = maxX - minX + 1,
+      h = maxY - minY + 1;
+    const density = dark / area;
+    const elongated = w / Math.max(1, h) > 1.5 || h / Math.max(1, w) > 1.5;
+    const highTransitions = rowTransitions + colTransitions > area * 0.36;
+    const sparseGlyphLike = density < 0.34 && highTransitions;
+    const tinyAndThin = Math.min(w, h) < 11 && density < 0.38;
+    const narrowStrokeGlyph = Math.min(w, h) < 14 && area < 260 && density < 0.46;
+    return (
+      REJECT_TEXT_FILTER &&
+      (sparseGlyphLike || (elongated && density < 0.34) || tinyAndThin || narrowStrokeGlyph)
+    );
+  }
+
+  function looksAlphanumericInterference(
+    drawingMask: Uint8Array,
+    drawingWidth: number,
+    candidate: any
+  ) {
+    const minX = Math.max(0, Math.floor(candidate.x)),
+      minY = Math.max(0, Math.floor(candidate.y));
+    const maxX = Math.min(drawingWidth - 1, Math.floor(candidate.x + candidate.w - 1));
+    const maxY = Math.max(minY, Math.floor(candidate.y + candidate.h - 1));
+    const w = maxX - minX + 1,
+      h = maxY - minY + 1;
+    if (w <= 3 || h <= 3) return true;
+    const rowDensity = new Float32Array(h),
+      colDensity = new Float32Array(w);
+    let dark = 0;
+    for (let y = 0; y < h; y++) {
+      const row = (minY + y) * drawingWidth + minX;
+      let rowDark = 0;
+      for (let x = 0; x < w; x++) {
+        const v = drawingMask[row + x] ? 1 : 0;
+        rowDark += v;
+        colDensity[x] += v;
+      }
+      rowDensity[y] = rowDark / Math.max(1, w);
+      dark += rowDark;
+    }
+    for (let x = 0; x < w; x++) colDensity[x] /= Math.max(1, h);
+    const area = Math.max(1, w * h),
+      density = dark / area;
+    const activeRows = rowDensity.reduce((n, d) => n + (d > 0.08 ? 1 : 0), 0);
+    const activeCols = colDensity.reduce((n, d) => n + (d > 0.08 ? 1 : 0), 0);
+    const rowCoverage = activeRows / Math.max(1, h),
+      colCoverage = activeCols / Math.max(1, w);
+    const heavyRowBands = rowDensity.reduce((n, d) => n + (d > 0.7 ? 1 : 0), 0);
+    const heavyColBands = colDensity.reduce((n, d) => n + (d > 0.7 ? 1 : 0), 0);
+    const aspect = w / Math.max(1, h);
+    const topBand = rowDensity.slice(0, Math.max(1, Math.floor(h * 0.2)));
+    const bottomBand = rowDensity.slice(Math.max(0, h - Math.max(1, Math.floor(h * 0.2))));
+    const midBand = rowDensity.slice(
+      Math.max(0, Math.floor(h * 0.35)),
+      Math.min(h, Math.ceil(h * 0.65))
+    );
+    const topHeavy = topBand.reduce((m, v) => Math.max(m, v), 0) > 0.72;
+    const bottomHeavy = bottomBand.reduce((m, v) => Math.max(m, v), 0) > 0.72;
+    const midLight =
+      midBand.reduce((a, b) => a + b, 0) / Math.max(1, midBand.length) < 0.34 ||
+      midBand.length === 0;
+    return (
+      (aspect > 1.7 && rowCoverage < 0.6 && colCoverage > 0.45) ||
+      (heavyRowBands >= 2 && rowCoverage < 0.58) ||
+      (density < 0.5 && rowCoverage < 0.52 && colCoverage < 0.72) ||
+      (heavyRowBands >= 2 && heavyColBands >= 1 && density < 0.58) ||
+      (topHeavy && bottomHeavy && midLight)
+    );
+  }
+
+  function suppressTextInMask(sourceMask: Uint8Array, width: number, height: number) {
+    const mask = new Uint8Array(sourceMask);
+    const visited = new Uint8Array(width * height);
+    const qx = new Int32Array(width * height),
+      qy = new Int32Array(width * height);
+    let removedComponents = 0;
+    for (let y = 0; y < height; y++) {
+      const row = y * width;
+      for (let x = 0; x < width; x++) {
+        const startIdx = row + x;
+        if (!mask[startIdx] || visited[startIdx]) continue;
+        let head = 0,
+          tail = 0;
+        qx[tail] = x;
+        qy[tail] = y;
+        tail++;
+        visited[startIdx] = 1;
+        let bMinX = x,
+          bMinY = y,
+          bMaxX = x,
+          bMaxY = y;
+        const pixels: number[] = [];
+        while (head < tail) {
+          const cx = qx[head],
+            cy = qy[head];
+          head++;
+          pixels.push(cy * width + cx);
+          if (cx < bMinX) bMinX = cx;
+          if (cy < bMinY) bMinY = cy;
+          if (cx > bMaxX) bMaxX = cx;
+          if (cy > bMaxY) bMaxY = cy;
+          for (let oy = -1; oy <= 1; oy++) {
+            const ny = cy + oy;
+            if (ny < 0 || ny >= height) continue;
+            const nrow = ny * width;
+            for (let ox = -1; ox <= 1; ox++) {
+              if (ox === 0 && oy === 0) continue;
+              const nx = cx + ox;
+              if (nx < 0 || nx >= width) continue;
+              const nidx = nrow + nx;
+              if (!mask[nidx] || visited[nidx]) continue;
+              visited[nidx] = 1;
+              qx[tail] = nx;
+              qy[tail] = ny;
+              tail++;
+            }
+          }
+        }
+        if (pixels.length < 4) continue;
+        const cand = { x: bMinX, y: bMinY, w: bMaxX - bMinX + 1, h: bMaxY - bMinY + 1 };
+        const candMinDim = Math.min(cand.w, cand.h);
+        const hasCore = hasCircularCore(mask, width, cand, 0.2);
+        const tinyCircularGlyph = hasCore && (candMinDim <= 14 || cand.w * cand.h <= 230);
+        const isTextLike =
+          (looksTextLikeCand(mask, width, cand) ||
+            looksAlphanumericInterference(mask, width, cand)) &&
+          (!hasCore || tinyCircularGlyph);
+        if (!isTextLike) continue;
+        for (const idx of pixels) mask[idx] = 0;
+        removedComponents++;
+      }
+    }
+    return { mask, removedComponents };
+  }
+
+  function overlapsCandidate(a: any, b: any) {
+    const ax2 = a.x + a.w,
+      ay2 = a.y + a.h,
+      bx2 = b.x + b.w,
+      by2 = b.y + b.h;
+    if (a.x >= bx2 || b.x >= ax2 || a.y >= by2 || b.y >= ay2) return false;
+    const inter =
+      Math.max(0, Math.min(ax2, bx2) - Math.max(a.x, b.x)) *
+      Math.max(0, Math.min(ay2, by2) - Math.max(a.y, b.y));
+    if (!inter) return false;
+    const union = a.w * a.h + b.w * b.h - inter;
+    if (union > 0 && inter / union >= 0.08) return true;
+    return Math.hypot(a.cx - b.cx, a.cy - b.cy) <= Math.max(a.w, a.h, b.w, b.h, 1) * 0.55;
+  }
+
+  function imageDataToVisibleMask(imageData: ImageData) {
+    const { width, height, data } = imageData;
+    const mask = new Uint8Array(width * height);
+    let dark = 0;
+    for (let i = 0; i < width * height; i++) {
+      const idx = i * 4;
+      const r = data[idx], g = data[idx + 1], b = data[idx + 2], a = data[idx + 3];
+      const isVisible = a > 20 && !(r > 245 && g > 245 && b > 245);
+      mask[i] = isVisible ? 1 : 0;
+      dark += mask[i];
+    }
+    return { mask, darkRatio: dark / Math.max(1, width * height) };
+  }
+
+  function detectRepeatedMotifs(imageData: ImageData, fuzz = 0, similarityThreshold = 0.5, skipColorFilter = false) {
+    log("detectRepeatedMotifs: starting");
+    logTime("detectRepeatedMotifs");
+    const width = imageData.width,
+      height = imageData.height;
+    const { mask: baseMask } = skipColorFilter ? imageDataToVisibleMask(imageData) : imageDataToInkMask(imageData);
+    let drawingMask: Uint8Array;
+    if (skipColorFilter) {
+      drawingMask = baseMask;
+      log(`detectRepeatedMotifs: layer mode — visible mask, ${baseMask.reduce((a: number, b: number) => a + b, 0)} ink pixels, skipping text suppression`);
+    } else {
+      const suppressed = suppressTextInMask(baseMask, width, height);
+      drawingMask = suppressed.mask;
+      log(`detectRepeatedMotifs: text suppression removed ${suppressed.removedComponents} components`);
+    }
+
+    const fuzzNorm = Math.max(0, Math.min(1, Number(fuzz) || 0));
+    const similarityBias = Math.max(0, Math.min(1, similarityThreshold + fuzzNorm * 0.2));
+    const visited = new Uint8Array(width * height);
+    const qx = new Int32Array(width * height),
+      qy = new Int32Array(width * height);
+    const minArea = Math.max(10, Math.round(width * height * (0.000012 - fuzzNorm * 0.000006)));
+    const maxArea = Math.max(minArea + 1, Math.round(width * height * (0.022 + fuzzNorm * 0.03)));
+    const maxComponents = 2200;
+    let seenComponents = 0;
+    const components: { candidate: any; diameter: number; roundness: number }[] = [];
+    const roundThreshold = 0.72 - fuzzNorm * 0.2;
+    const lineAspectReject = 1.45 + fuzzNorm * 0.3;
+    const maxColoredPixels = Math.round(fuzzNorm * 4);
+    const minDiameterPx = Math.max(10, Math.round(Math.min(width, height) * 0.006));
+
+    const getComponentRoundness = (pixels: number[], candidate: any) => {
+      if (pixels.length < 10) return 0;
+      const ccx = candidate.x + candidate.w / 2,
+        ccy = candidate.y + candidate.h / 2;
+      const sectorCount = 36,
+        sectorFar = new Float32Array(sectorCount),
+        sectorSeen = new Uint8Array(sectorCount);
+      for (const idx of pixels) {
+        const px = idx % width,
+          py = Math.floor(idx / width);
+        const left = px <= 0 || !drawingMask[py * width + (px - 1)];
+        const right = px >= width - 1 || !drawingMask[py * width + (px + 1)];
+        const up = py <= 0 || !drawingMask[(py - 1) * width + px];
+        const down = py >= height - 1 || !drawingMask[(py + 1) * width + px];
+        if (!(left || right || up || down)) continue;
+        const dx = px + 0.5 - ccx,
+          dy = py + 0.5 - ccy;
+        const r = Math.hypot(dx, dy);
+        if (r <= 0.001) continue;
+        const sector =
+          Math.floor(
+            (((Math.atan2(dy, dx) + Math.PI) / (Math.PI * 2)) * sectorCount) % sectorCount
+          ) || 0;
+        if (!sectorSeen[sector] || r > sectorFar[sector]) sectorFar[sector] = r;
+        sectorSeen[sector] = 1;
+      }
+      const outerRadii: number[] = [];
+      for (let i = 0; i < sectorCount; i++) if (sectorSeen[i]) outerRadii.push(sectorFar[i]);
+      if (outerRadii.length < 14) return 0;
+      const mean = outerRadii.reduce((a, r) => a + r, 0) / outerRadii.length;
+      if (mean <= 0) return 0;
+      const variance =
+        outerRadii.reduce((acc, r) => acc + (r - mean) * (r - mean), 0) / outerRadii.length;
+      const sectorHits = sectorSeen.reduce((acc, v) => acc + (v ? 1 : 0), 0);
+      return Math.max(
+        0,
+        Math.min(
+          1,
+          Math.max(0, 1 - Math.sqrt(variance) / mean) * 0.72 + (sectorHits / sectorCount) * 0.28
+        )
+      );
+    };
+
+    for (let y = 0; y < height; y++) {
+      const row = y * width;
+      for (let x = 0; x < width; x++) {
+        const startIdx = row + x;
+        if (!drawingMask[startIdx] || visited[startIdx]) continue;
+        if (seenComponents >= maxComponents) break;
+        seenComponents++;
+        let head = 0,
+          tail = 0;
+        qx[tail] = x;
+        qy[tail] = y;
+        tail++;
+        visited[startIdx] = 1;
+        let area = 0,
+          bMinX = x,
+          bMinY = y,
+          bMaxX = x,
+          bMaxY = y;
+        const pixels: number[] = [];
+        while (head < tail) {
+          const cx = qx[head],
+            cy = qy[head];
+          head++;
+          area++;
+          pixels.push(cy * width + cx);
+          if (cx < bMinX) bMinX = cx;
+          if (cy < bMinY) bMinY = cy;
+          if (cx > bMaxX) bMaxX = cx;
+          if (cy > bMaxY) bMaxY = cy;
+          for (let oy = -1; oy <= 1; oy++) {
+            const ny = cy + oy;
+            if (ny < 0 || ny >= height) continue;
+            const nrow = ny * width;
+            for (let ox = -1; ox <= 1; ox++) {
+              if (ox === 0 && oy === 0) continue;
+              const nx = cx + ox;
+              if (nx < 0 || nx >= width) continue;
+              const nidx = nrow + nx;
+              if (!drawingMask[nidx] || visited[nidx]) continue;
+              visited[nidx] = 1;
+              qx[tail] = nx;
+              qy[tail] = ny;
+              tail++;
+            }
+          }
+        }
+        if (area < minArea || area > maxArea) continue;
+        const w = bMaxX - bMinX + 1,
+          h = bMaxY - bMinY + 1;
+        if (w < 6 || h < 6) continue;
+        const aspect = w / Math.max(1, h);
+        if (aspect > 2.35 || aspect < 1 / 2.35) continue;
+        const fill = area / Math.max(1, w * h);
+        if (fill < 0.03 || fill > 0.94) continue;
+        const candidate = {
+          x: bMinX,
+          y: bMinY,
+          w,
+          h,
+          cx: bMinX + w / 2,
+          cy: bMinY + h / 2,
+          symbolName: "Detected symbol",
+          score: 0,
+          cxPct: 0,
+          cyPct: 0,
+        };
+        const blackBound = refineCandidateToBlackBounds(drawingMask, width, candidate);
+        if (!blackBound) continue;
+        let finalCandidate = blackBound;
+        let refinedAspect = finalCandidate.w / Math.max(1, finalCandidate.h);
+        if (refinedAspect > lineAspectReject || refinedAspect < 1 / lineAspectReject) continue;
+        let roundness = getComponentRoundness(pixels, finalCandidate);
+        if (roundness < roundThreshold) {
+          const isolatedCore = isolateCircularCoreCandidate(
+            drawingMask,
+            width,
+            height,
+            finalCandidate,
+            fuzz
+          );
+          if (isolatedCore) {
+            const coreBounds = refineCandidateToBlackBounds(drawingMask, width, isolatedCore);
+            if (coreBounds) {
+              const coreRoundness = getRadialRoundnessScore(drawingMask, width, coreBounds);
+              if (coreRoundness >= roundThreshold - 0.03) {
+                finalCandidate = coreBounds;
+                roundness = Math.max(roundness, coreRoundness);
+              }
+            }
+          }
+        }
+        if (roundness < roundThreshold) continue;
+        if (!skipColorFilter) {
+          if (hasSecondaryColorInCandidate(imageData, finalCandidate, maxColoredPixels)) continue;
+          if (!passesColorNeutralityGate(imageData, finalCandidate, 0)) continue;
+        }
+        const diameter = Math.min(finalCandidate.w, finalCandidate.h);
+        if (diameter < minDiameterPx) continue;
+        finalCandidate.score = Math.min(
+          0.98,
+          0.56 + roundness * 0.3 + (1 - Math.abs(1 - refinedAspect)) * 0.1 + similarityBias * 0.04
+        );
+        finalCandidate.cxPct = (finalCandidate.cx / width) * 100;
+        finalCandidate.cyPct = (finalCandidate.cy / height) * 100;
+        components.push({ candidate: finalCandidate, diameter, roundness });
+      }
+    }
+
+    if (components.length < 1) {
+      logTimeEnd("detectRepeatedMotifs");
+      return { candidates: [], groupCount: 0, componentCount: seenComponents };
+    }
+
+    const ranked = [...components].sort((a, b) => b.candidate.score - a.candidate.score);
+    const diameterBandRatio = 0.04 + fuzzNorm * 0.12;
+    const clusters: { items: typeof components; meanDiameter: number; sumDiameter: number }[] = [];
+    for (const item of ranked) {
+      let placed = false;
+      for (const cluster of clusters) {
+        const ratio = item.diameter / Math.max(1e-6, cluster.meanDiameter);
+        if (ratio >= 1 - diameterBandRatio && ratio <= 1 + diameterBandRatio) {
+          cluster.items.push(item);
+          cluster.sumDiameter += item.diameter;
+          cluster.meanDiameter = cluster.sumDiameter / cluster.items.length;
+          placed = true;
+          break;
+        }
+      }
+      if (!placed)
+        clusters.push({ items: [item], sumDiameter: item.diameter, meanDiameter: item.diameter });
+    }
+    clusters.sort((a, b) => b.items.length - a.items.length || b.meanDiameter - a.meanDiameter);
+    const repeatedClusters = clusters.filter((c) => c.items.length >= 2);
+    const selectedClusters =
+      fuzzNorm >= 0.45
+        ? (repeatedClusters.length > 0 ? repeatedClusters : clusters).slice(0, 8)
+        : clusters.slice(0, 1);
+    const dominant = selectedClusters.flatMap((c) => c.items);
+    const deduped: any[] = [];
+    for (const entry of dominant) {
+      const c = entry.candidate;
+      if (
+        !deduped.some(
+          (k) =>
+            Math.hypot(c.cx - k.cx, c.cy - k.cy) <= Math.max(8, Math.min(c.w, c.h, k.w, k.h)) * 0.6
+        )
+      )
+        deduped.push(c);
+    }
+
+    log(
+      `detectRepeatedMotifs: ${deduped.length} symbols found from ${seenComponents} components, ${clusters.filter((c) => c.items.length >= 2).length} repeat groups`
+    );
+    logTimeEnd("detectRepeatedMotifs");
+    return {
+      candidates: deduped.sort((a, b) => b.score - a.score),
+      groupCount: clusters.filter((c) => c.items.length >= 2).length,
+      componentCount: seenComponents,
+    };
+  }
+
+  function getLayerByName(name: string): ExtractedLayer | undefined {
+    return layers.find(l => l.name === name);
+  }
+
+  // ── Pipe analysis (skeletonization + junction detection) ──────────
+
+  type PipeAnalysisResults = {
+    tJunctions: { x: number; y: number }[];
+    lJunctions: { x: number; y: number }[];
+    endpoints: { x: number; y: number }[];
+    crossings: { x: number; y: number }[];
+    skeletonPixelCount: number;
+    scale: number;
+  };
+
+  function zhangSuenThin(src: Uint8Array, w: number, h: number): Uint8Array {
+    const s = new Uint8Array(src);
+    let changed = true;
+    let iter = 0;
+    const MAX_ITER = 300;
+
+    while (changed && iter < MAX_ITER) {
+      changed = false;
+      iter++;
+
+      // Sub-iteration 1
+      const rem1: number[] = [];
+      for (let y = 1; y < h - 1; y++) {
+        const row = y * w;
+        for (let x = 1; x < w - 1; x++) {
+          const idx = row + x;
+          if (!s[idx]) continue;
+          const p2 = s[idx - w], p3 = s[idx - w + 1], p4 = s[idx + 1],
+                p5 = s[idx + w + 1], p6 = s[idx + w], p7 = s[idx + w - 1],
+                p8 = s[idx - 1], p9 = s[idx - w - 1];
+          const N = p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9;
+          if (N < 2 || N > 6) continue;
+          let S = 0;
+          if (!p2 && p3) S++; if (!p3 && p4) S++; if (!p4 && p5) S++;
+          if (!p5 && p6) S++; if (!p6 && p7) S++; if (!p7 && p8) S++;
+          if (!p8 && p9) S++; if (!p9 && p2) S++;
+          if (S !== 1) continue;
+          if (p2 && p4 && p6) continue;
+          if (p4 && p6 && p8) continue;
+          rem1.push(idx);
+        }
+      }
+      for (const idx of rem1) { s[idx] = 0; changed = true; }
+
+      // Sub-iteration 2
+      const rem2: number[] = [];
+      for (let y = 1; y < h - 1; y++) {
+        const row = y * w;
+        for (let x = 1; x < w - 1; x++) {
+          const idx = row + x;
+          if (!s[idx]) continue;
+          const p2 = s[idx - w], p3 = s[idx - w + 1], p4 = s[idx + 1],
+                p5 = s[idx + w + 1], p6 = s[idx + w], p7 = s[idx + w - 1],
+                p8 = s[idx - 1], p9 = s[idx - w - 1];
+          const N = p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9;
+          if (N < 2 || N > 6) continue;
+          let S = 0;
+          if (!p2 && p3) S++; if (!p3 && p4) S++; if (!p4 && p5) S++;
+          if (!p5 && p6) S++; if (!p6 && p7) S++; if (!p7 && p8) S++;
+          if (!p8 && p9) S++; if (!p9 && p2) S++;
+          if (S !== 1) continue;
+          if (p2 && p4 && p8) continue;
+          if (p2 && p6 && p8) continue;
+          rem2.push(idx);
+        }
+      }
+      for (const idx of rem2) { s[idx] = 0; changed = true; }
+    }
+    log(`zhangSuenThin: converged in ${iter} iterations`);
+    return s;
+  }
+
+  function enforceHVSkeleton(skel: Uint8Array, w: number, h: number): Uint8Array {
+    const isH = new Uint8Array(w * h);
+    const isV = new Uint8Array(w * h);
+    const MIN_RUN = 2;
+
+    for (let y = 0; y < h; y++) {
+      let runStart = -1;
+      for (let x = 0; x <= w; x++) {
+        const on = x < w && !!skel[y * w + x];
+        if (on && runStart < 0) runStart = x;
+        if (!on && runStart >= 0) {
+          if (x - runStart >= MIN_RUN) {
+            for (let rx = runStart; rx < x; rx++) isH[y * w + rx] = 1;
+          }
+          runStart = -1;
+        }
+      }
+    }
+
+    for (let x = 0; x < w; x++) {
+      let runStart = -1;
+      for (let y = 0; y <= h; y++) {
+        const on = y < h && !!skel[y * w + x];
+        if (on && runStart < 0) runStart = y;
+        if (!on && runStart >= 0) {
+          if (y - runStart >= MIN_RUN) {
+            for (let ry = runStart; ry < y; ry++) isV[ry * w + x] = 1;
+          }
+          runStart = -1;
+        }
+      }
+    }
+
+    const result = new Uint8Array(w * h);
+    let kept = 0, removed = 0;
+    for (let i = 0; i < w * h; i++) {
+      if (isH[i] || isV[i]) { result[i] = 1; kept++; }
+      else if (skel[i]) { removed++; }
+    }
+    log(`enforceHVSkeleton: kept ${kept}, removed ${removed} non-H/V pixels`);
+    return result;
+  }
+
+  function classifySkeletonJunctions(
+    skel: Uint8Array, w: number, h: number, scale: number
+  ): Omit<PipeAnalysisResults, "scale"> {
+    const rawT: { x: number; y: number }[] = [];
+    const rawL: { x: number; y: number }[] = [];
+    const rawEnd: { x: number; y: number }[] = [];
+    const rawX: { x: number; y: number }[] = [];
+    let skelCount = 0;
+
+    for (let y = 1; y < h - 1; y++) {
+      const row = y * w;
+      for (let x = 1; x < w - 1; x++) {
+        const idx = row + x;
+        if (!skel[idx]) continue;
+        skelCount++;
+        const p = [
+          skel[idx - w],      skel[idx - w + 1],
+          skel[idx + 1],      skel[idx + w + 1],
+          skel[idx + w],      skel[idx + w - 1],
+          skel[idx - 1],      skel[idx - w - 1],
+        ];
+        let cn = 0;
+        for (let k = 0; k < 8; k++) {
+          if (!p[k] && p[(k + 1) % 8]) cn++;
+        }
+        const ox = x * scale, oy = y * scale;
+        if (cn === 1) {
+          rawEnd.push({ x: ox, y: oy });
+        } else if (cn === 2) {
+          // Distinguish straight continuation from 90° bend (L-junction).
+          // Pipes are H/V, so check cardinal neighbors for perpendicular arms.
+          const hasN = !!p[0], hasE = !!p[2], hasS = !!p[4], hasW = !!p[6];
+          const perpPairs = (hasN || hasS) && (hasE || hasW);
+          const straight = (hasN && hasS && !hasE && !hasW) || (hasE && hasW && !hasN && !hasS);
+          if (perpPairs && !straight) {
+            rawL.push({ x: ox, y: oy });
+          }
+        } else if (cn === 3) {
+          rawT.push({ x: ox, y: oy });
+        } else if (cn >= 4) {
+          rawX.push({ x: ox, y: oy });
+        }
+      }
+    }
+
+    const clusterRadius = Math.max(6, 4 * scale);
+    const cluster = (pts: { x: number; y: number }[]) => {
+      const used = new Uint8Array(pts.length);
+      const out: { x: number; y: number }[] = [];
+      for (let i = 0; i < pts.length; i++) {
+        if (used[i]) continue;
+        used[i] = 1;
+        let sx = pts[i].x, sy = pts[i].y, cnt = 1;
+        for (let j = i + 1; j < pts.length; j++) {
+          if (used[j]) continue;
+          if (Math.abs(pts[j].x - pts[i].x) <= clusterRadius &&
+              Math.abs(pts[j].y - pts[i].y) <= clusterRadius) {
+            used[j] = 1;
+            sx += pts[j].x; sy += pts[j].y; cnt++;
+          }
+        }
+        out.push({ x: Math.round(sx / cnt), y: Math.round(sy / cnt) });
+      }
+      return out;
+    };
+
+    return {
+      tJunctions: cluster(rawT),
+      lJunctions: cluster(rawL),
+      endpoints: cluster(rawEnd),
+      crossings: cluster(rawX),
+      skeletonPixelCount: skelCount,
+    };
+  }
+
+  function analyzePipeLayer(): PipeAnalysisResults | null {
+    const pipesLayer = getLayerByName("Pipes");
+    if (!pipesLayer) {
+      logWarn("analyzePipeLayer: no Pipes layer");
+      return null;
+    }
+    const { width, height, data } = pipesLayer.rawImageData;
+    logTime("analyzePipeLayer");
+    log(`analyzePipeLayer: ${width}x${height} (${pipesLayer.pixelCount} px)`);
+
+    // Binary mask from visible pixels
+    const fullMask = new Uint8Array(width * height);
+    for (let i = 0; i < width * height; i++) {
+      const idx = i * 4;
+      const a = data[idx + 3], r = data[idx], g = data[idx + 1], b = data[idx + 2];
+      fullMask[i] = (a > 20 && !(r > 245 && g > 245 && b > 245)) ? 1 : 0;
+    }
+
+    // Downsample for performance if image is large
+    let workMask = fullMask, w = width, h = height;
+    let scale = 1;
+    const MAX_DIM = 2000;
+    if (width > MAX_DIM || height > MAX_DIM) {
+      scale = Math.ceil(Math.max(width, height) / MAX_DIM);
+      w = Math.ceil(width / scale);
+      h = Math.ceil(height / scale);
+      workMask = new Uint8Array(w * h);
+      for (let dy = 0; dy < h; dy++) {
+        for (let dx = 0; dx < w; dx++) {
+          let found = 0;
+          for (let sy = dy * scale; sy < Math.min((dy + 1) * scale, height); sy++) {
+            for (let sx = dx * scale; sx < Math.min((dx + 1) * scale, width); sx++) {
+              found |= fullMask[sy * width + sx];
+              if (found) break;
+            }
+            if (found) break;
+          }
+          workMask[dy * w + dx] = found as 0 | 1;
+        }
+      }
+      log(`analyzePipeLayer: downsampled ${scale}x → ${w}x${h}`);
+    }
+
+    // Skeletonize then enforce H/V only
+    logTime("zhangSuenThin");
+    const rawSkeleton = zhangSuenThin(workMask, w, h);
+    logTimeEnd("zhangSuenThin");
+    const skeleton = enforceHVSkeleton(rawSkeleton, w, h);
+
+    // Classify junctions
+    const result = classifySkeletonJunctions(skeleton, w, h, scale);
+    const analysis: PipeAnalysisResults = { ...result, scale };
+
+    log(`analyzePipeLayer: T=${analysis.tJunctions.length} L=${analysis.lJunctions.length} endpoints=${analysis.endpoints.length} crossings=${analysis.crossings.length} skelPx=${analysis.skeletonPixelCount}`);
+    logTimeEnd("analyzePipeLayer");
+    return analysis;
+  }
+
+  function createPipeSubLayers() {
+    pipeSubLayers = [];
+    if (!pipeAnalysisResults) return;
+    const pipesLayer = getLayerByName("Pipes");
+    if (!pipesLayer) return;
+
+    const { width, height } = pipesLayer.rawImageData;
+    const srcData = pipesLayer.rawImageData.data;
+    const radius = Math.max(15, pipeAnalysisResults.scale * 5);
+    const r2 = radius * radius;
+    logTime("createPipeSubLayers");
+
+    const isPipe = new Uint8Array(width * height);
+    for (let i = 0; i < width * height; i++) {
+      const idx = i * 4;
+      isPipe[i] = (srcData[idx + 3] > 20 && !(srcData[idx] > 245 && srcData[idx + 1] > 245 && srcData[idx + 2] > 245)) ? 1 : 0;
+    }
+
+    // 0=unclassified, 1=tee, 2=elbow, 3=endpoint, 4=crossing
+    const classify = new Uint8Array(width * height);
+
+    const markAround = (pts: { x: number; y: number }[], value: number) => {
+      for (const p of pts) {
+        const yMin = Math.max(0, Math.floor(p.y - radius));
+        const yMax = Math.min(height - 1, Math.ceil(p.y + radius));
+        const xMin = Math.max(0, Math.floor(p.x - radius));
+        const xMax = Math.min(width - 1, Math.ceil(p.x + radius));
+        for (let y = yMin; y <= yMax; y++) {
+          for (let x = xMin; x <= xMax; x++) {
+            const idx = y * width + x;
+            if (!isPipe[idx] || classify[idx]) continue;
+            const dx = x - p.x, dy = y - p.y;
+            if (dx * dx + dy * dy <= r2) classify[idx] = value;
+          }
+        }
+      }
+    };
+
+    markAround(pipeAnalysisResults.tJunctions, 1);
+    markAround(pipeAnalysisResults.lJunctions, 2);
+    markAround(pipeAnalysisResults.endpoints, 3);
+    if (pipeAnalysisResults.crossings.length) markAround(pipeAnalysisResults.crossings, 4);
+
+    const types: { value: number; name: string; color: [number, number, number]; count: number; defaultOn: boolean }[] = [
+      { value: 1, name: "Tees", color: [37, 99, 235], count: pipeAnalysisResults.tJunctions.length, defaultOn: true },
+      { value: 2, name: "Elbows", color: [22, 163, 106], count: pipeAnalysisResults.lJunctions.length, defaultOn: true },
+      { value: 3, name: "Endpoints", color: [245, 158, 11], count: pipeAnalysisResults.endpoints.length, defaultOn: false },
+    ];
+    if (pipeAnalysisResults.crossings.length) {
+      types.push({ value: 4, name: "Crossings", color: [147, 51, 234], count: pipeAnalysisResults.crossings.length, defaultOn: false });
+    }
+
+    for (const t of types) {
+      const imgData = new ImageData(width, height);
+      const d = imgData.data;
+      let px = 0;
+      for (let i = 0; i < width * height; i++) {
+        if (classify[i] !== t.value) continue;
+        const idx = i * 4;
+        d[idx] = t.color[0]; d[idx + 1] = t.color[1]; d[idx + 2] = t.color[2];
+        d[idx + 3] = srcData[idx + 3];
+        px++;
+      }
+      pipeSubLayers.push({ name: t.name, color: t.color, visible: t.defaultOn, rawImageData: imgData, pixelCount: px, count: t.count });
+    }
+
+    // Pipe Runs — unclassified pipe pixels (keep original color)
+    const runsData = new ImageData(width, height);
+    const rd = runsData.data;
+    let runsPx = 0;
+    for (let i = 0; i < width * height; i++) {
+      if (!isPipe[i] || classify[i]) continue;
+      const idx = i * 4;
+      rd[idx] = srcData[idx]; rd[idx + 1] = srcData[idx + 1]; rd[idx + 2] = srcData[idx + 2]; rd[idx + 3] = srcData[idx + 3];
+      runsPx++;
+    }
+    pipeSubLayers.push({ name: "Pipe Runs", color: [156, 163, 175], visible: true, rawImageData: runsData, pixelCount: runsPx, count: 0 });
+
+    log(`createPipeSubLayers: ${pipeSubLayers.length} sub-layers, radius=${radius}`);
+    logTimeEnd("createPipeSubLayers");
+  }
+
+  function runSymbolScan() {
+    const pipesLayer = getLayerByName("Pipes");
+    if (!pipesLayer) {
+      logWarn("runSymbolScan: no Pipes layer found");
+      toastError("Analyze Pipes", "No Pipes layer available. Extract pipes first.");
+      return;
+    }
+    log("runSymbolScan: analyzing Pipes layer", pipesLayer.rawImageData.width, "x", pipesLayer.rawImageData.height, `(${pipesLayer.pixelCount} px)`);
+    showOverlay("Analyzing pipe layer — skeletonizing…");
+    setTimeout(() => {
+      pipeAnalysisResults = analyzePipeLayer();
+
+      showOverlay("Building pipe sub-layers…");
+      setTimeout(() => {
+        createPipeSubLayers();
+
+        showOverlay("Scanning for sprinkler heads…");
+        setTimeout(() => {
+          symbolScanResults = detectRepeatedMotifs(pipesLayer.rawImageData, 0.15, 0.5, true);
+          hideOverlay();
+
+          const parts: string[] = [];
+          if (pipeAnalysisResults) {
+            const { tJunctions, lJunctions, endpoints, crossings } = pipeAnalysisResults;
+            parts.push(`${tJunctions.length} tee(s), ${lJunctions.length} elbow(s), ${endpoints.length} endpoint(s)`);
+            if (crossings.length) parts.push(`${crossings.length} crossing(s)`);
+          }
+          if (symbolScanResults.candidates.length > 0) {
+            parts.push(`${symbolScanResults.candidates.length} sprinkler head(s)`);
+          }
+          if (parts.length) {
+            toastSuccess("Pipe Analysis Complete", parts.join(" · "));
+          } else {
+            toastInfo("Pipe Analysis", "No junctions or symbols detected.");
+          }
+          renderSymbolMarkers();
+          renderInlineLayerPanel();
+        }, 30);
+      }, 30);
+    }, 50);
+  }
+
+  function renderSymbolMarkers() {
+    const imgEl = document.getElementById("working-canvas-img") as HTMLImageElement | null;
+    if (!imgEl || !workingImageData) return;
+    const parent = imgEl.parentElement;
+    if (!parent) return;
+    parent.querySelectorAll(".symbol-marker,.junction-marker").forEach((el) => el.remove());
+    const imgW = workingImageData.width, imgH = workingImageData.height;
+
+    // Sprinkler head markers
+    if (symbolScanResults) {
+      for (const c of symbolScanResults.candidates) {
+        const m = document.createElement("div");
+        m.className = "symbol-marker absolute pointer-events-none";
+        m.style.cssText = `left:${(c.x / imgW) * 100}%;top:${(c.y / imgH) * 100}%;width:${(c.w / imgW) * 100}%;height:${(c.h / imgH) * 100}%;border:2px solid #ef4444;border-radius:50%;box-shadow:0 0 4px rgba(239,68,68,0.5);`;
+        parent.appendChild(m);
+      }
+    }
+
+    // Junction label markers (keyed to sub-layer visibility)
+    if (pipeAnalysisResults && pipeSubLayers.length > 0) {
+      const markerSize = 10;
+      const halfX = (markerSize / 2 / imgW) * 100;
+      const halfY = (markerSize / 2 / imgH) * 100;
+      const sizeX = (markerSize / imgW) * 100;
+      const sizeY = (markerSize / imgH) * 100;
+
+      const addMarkers = (pts: { x: number; y: number }[], color: string, label: string) => {
+        for (const p of pts) {
+          const m = document.createElement("div");
+          m.className = "junction-marker absolute pointer-events-none flex items-center justify-center";
+          m.title = label;
+          m.style.cssText = `left:calc(${(p.x / imgW) * 100}% - ${halfX}%);top:calc(${(p.y / imgH) * 100}% - ${halfY}%);width:${sizeX}%;height:${sizeY}%;background:${color};border-radius:2px;opacity:0.85;`;
+          const txt = document.createElement("span");
+          txt.style.cssText = "font-size:7px;font-weight:700;color:#fff;line-height:1;";
+          txt.textContent = label;
+          m.appendChild(txt);
+          parent.appendChild(m);
+        }
+      };
+
+      const subByName = (name: string) => pipeSubLayers.find((s) => s.name === name);
+      if (subByName("Tees")?.visible) addMarkers(pipeAnalysisResults.tJunctions, "#2563eb", "T");
+      if (subByName("Elbows")?.visible) addMarkers(pipeAnalysisResults.lJunctions, "#16a34a", "L");
+      if (subByName("Endpoints")?.visible) addMarkers(pipeAnalysisResults.endpoints, "#f59e0b", "E");
+      const crossSub = subByName("Crossings");
+      if (crossSub?.visible) addMarkers(pipeAnalysisResults.crossings, "#9333ea", "X");
+    }
+  }
+
   // ── Layer panel rendering ─────────────────────────────────────────
 
   function renderInlineLayerPanel() {
@@ -959,31 +2458,53 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
 
     const totalExtracted = layers.reduce((sum, l) => sum + l.pixelCount, 0);
 
-    const layerRows = layers.map((layer, i) =>
-      `<label class="flex items-center gap-2 rounded px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer">
-        <input type="checkbox" data-layer-toggle="${i}" ${layer.visible ? "checked" : ""} class="rounded" />
-        <span class="flex-1 text-xs font-medium text-gray-800 dark:text-gray-200">${layer.name}</span>
-        <span class="text-[10px] text-gray-400">${(layer.pixelCount / 1000).toFixed(1)}k px</span>
-      </label>`
-    ).join("");
+    const layerRows = layers
+      .map((layer, i) => {
+        let row = `<label class="flex items-center gap-2 rounded px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer">
+          <input type="checkbox" data-layer-toggle="${i}" ${layer.visible ? "checked" : ""} class="rounded" />
+          <span class="flex-1 text-xs font-medium text-gray-800 dark:text-gray-200">${layer.name}</span>
+          <span class="text-[10px] text-gray-400">${(layer.pixelCount / 1000).toFixed(1)}k px</span>
+        </label>`;
+        if (layer.name === "Pipes" && pipeSubLayers.length > 0) {
+          row += pipeSubLayers
+            .map(
+              (sub, si) =>
+                `<label class="flex items-center gap-2 rounded py-0.5 pr-2 pl-8 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer">
+                <input type="checkbox" data-pipe-sub="${si}" ${sub.visible ? "checked" : ""} class="rounded" />
+                <span class="w-2.5 h-2.5 rounded-sm flex-shrink-0" style="background:rgb(${sub.color.join(",")})"></span>
+                <span class="flex-1 text-[11px] font-medium text-gray-700 dark:text-gray-300">${sub.name}</span>
+                ${sub.count ? `<span class="text-[10px] font-bold text-gray-600 dark:text-gray-200">${sub.count}</span>` : ""}
+                <span class="text-[10px] text-gray-400">${(sub.pixelCount / 1000).toFixed(1)}k</span>
+              </label>`
+            )
+            .join("");
+          if (pipeAnalysisResults) {
+            row += `<div class="flex items-center gap-2 pl-8 pr-2 py-0.5 text-[10px] text-gray-400 dark:text-gray-500">
+              <span class="flex-1">Pipe length ≈ ${(pipeAnalysisResults.skeletonPixelCount * pipeAnalysisResults.scale).toLocaleString()} px</span>
+            </div>`;
+          }
+        }
+        return row;
+      })
+      .join("");
 
     panel.innerHTML = `
       <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">${layers.length} layer(s) extracted, ${totalExtracted.toLocaleString()} total pixels</p>
       <div class="mb-3 flex flex-wrap gap-2">
-        <button type="button" data-extract="colored" class="rounded bg-amber-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-amber-700">Extract Pipes</button>
-        <button type="button" data-extract="text" class="rounded bg-indigo-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-indigo-700">Extract Text</button>
-        <button type="button" data-extract="dark" class="rounded bg-gray-800 px-2 py-1 text-[11px] font-semibold text-white hover:bg-gray-900 dark:bg-gray-600">Extract Dark Lines</button>
-        <button type="button" data-extract="dashed" class="rounded bg-cyan-700 px-2 py-1 text-[11px] font-semibold text-white hover:bg-cyan-800">Extract Dashed Rects</button>
-        <button type="button" data-extract="midtones" class="rounded bg-gray-500 px-2 py-1 text-[11px] font-semibold text-white hover:bg-gray-600">Extract Midtones</button>
-        <button type="button" data-extract="remaining" class="rounded bg-slate-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-slate-700">Extract Remaining</button>
+        <button type="button" data-extract="colored" class="hidden rounded bg-amber-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-amber-700">Extract Pipes</button>
+        <button type="button" data-extract="text" class="hidden rounded bg-indigo-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-indigo-700">Extract Text</button>
+        <button type="button" data-extract="dark" class="hidden rounded bg-gray-800 px-2 py-1 text-[11px] font-semibold text-white hover:bg-gray-900 dark:bg-gray-600">Extract Dark Lines</button>
+        <button type="button" data-extract="dashed" class="hidden rounded bg-cyan-700 px-2 py-1 text-[11px] font-semibold text-white hover:bg-cyan-800">Extract Dashed Rects</button>
+        <button type="button" data-extract="midtones" class="hidden rounded bg-gray-500 px-2 py-1 text-[11px] font-semibold text-white hover:bg-gray-600">Extract Midtones</button>
+        <button type="button" data-extract="remaining" class="hidden rounded bg-slate-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-slate-700">Extract Remaining</button>
         ${layers.length > 0 ? '<button type="button" data-extract="reset" class="rounded bg-red-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-red-700">Reset Layers</button>' : ""}
       </div>
+      <div class="mb-3 border-t border-gray-200 pt-3 dark:border-gray-700">
+        <button type="button" id="run-symbol-scan" class="w-full rounded bg-rose-600 px-2 py-1.5 text-[11px] font-semibold text-white hover:bg-rose-700">Analyze Pipes</button>
+        ${pipeAnalysisResults ? `<p class="mt-1 text-[10px] text-gray-400 dark:text-gray-500">Results shown as sub-layers under Pipes</p>` : ""}
+        ${symbolScanResults && symbolScanResults.candidates.length > 0 ? `<p class="mt-1 text-[10px] text-gray-500 dark:text-gray-400">${symbolScanResults.candidates.length} sprinkler head(s) · ${symbolScanResults.groupCount} group(s)</p>` : ""}
+      </div>
       <div class="mb-2 space-y-0.5">
-        <label class="flex items-center gap-2 rounded px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer">
-          <input type="checkbox" id="toggle-working-layer" ${showWorkingLayer ? "checked" : ""} class="rounded" />
-          <span class="flex-1 text-xs font-medium text-gray-800 dark:text-gray-200">Working Document</span>
-          <span class="text-[10px] text-gray-400">remaining</span>
-        </label>
         ${layerRows}
       </div>
     `;
@@ -1010,8 +2531,24 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
       ctx.putImageData(workingImageData, 0, 0);
     }
 
-    layers.forEach(layer => {
+    layers.forEach((layer) => {
       if (!layer.visible) return;
+
+      // If this is the Pipes layer and sub-layers exist, render those instead
+      if (layer.name === "Pipes" && pipeSubLayers.length > 0) {
+        for (const sub of pipeSubLayers) {
+          if (!sub.visible) continue;
+          const tmp = document.createElement("canvas");
+          tmp.width = sub.rawImageData.width;
+          tmp.height = sub.rawImageData.height;
+          const tmpCtx = tmp.getContext("2d");
+          if (!tmpCtx) continue;
+          tmpCtx.putImageData(sub.rawImageData, 0, 0);
+          ctx.drawImage(tmp, 0, 0);
+        }
+        return;
+      }
+
       const tmp = document.createElement("canvas");
       tmp.width = layer.rawImageData.width;
       tmp.height = layer.rawImageData.height;
@@ -1025,7 +2562,7 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
   }
 
   function wireInlineLayerEvents(el: HTMLElement) {
-    el.querySelectorAll("[data-extract]").forEach(btn => {
+    el.querySelectorAll("[data-extract]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const action = (btn as HTMLElement).getAttribute("data-extract");
         log("Layer extraction:", action);
@@ -1040,13 +2577,7 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
       });
     });
 
-    el.querySelector("#toggle-working-layer")?.addEventListener("change", (e) => {
-      showWorkingLayer = (e.target as HTMLInputElement).checked;
-      log("Toggle working layer →", showWorkingLayer);
-      updateCompositeImage();
-    });
-
-    el.querySelectorAll("[data-layer-toggle]").forEach(cb => {
+    el.querySelectorAll("[data-layer-toggle]").forEach((cb) => {
       cb.addEventListener("change", (e) => {
         const idx = Number((cb as HTMLElement).getAttribute("data-layer-toggle"));
         if (layers[idx]) {
@@ -1056,13 +2587,33 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
         }
       });
     });
+
+    el.querySelector("#run-symbol-scan")?.addEventListener("click", () => {
+      log("Symbol scan button clicked");
+      runSymbolScan();
+    });
+
+    el.querySelectorAll("[data-pipe-sub]").forEach((cb) => {
+      cb.addEventListener("change", (e) => {
+        const idx = Number((cb as HTMLElement).getAttribute("data-pipe-sub"));
+        if (pipeSubLayers[idx]) {
+          pipeSubLayers[idx].visible = (e.target as HTMLInputElement).checked;
+          log(`Toggle pipe sub-layer ${idx} (${pipeSubLayers[idx].name}) →`, pipeSubLayers[idx].visible);
+          updateCompositeImage();
+          renderSymbolMarkers();
+        }
+      });
+    });
   }
 
   // ── Canvas overlay drawing ─────────────────────────────────────────
 
   function drawOverlay() {
     const ctx = getCtx();
-    if (!ctx || !drawingState) { logWarn("drawOverlay: skipped (no ctx or state)"); return; }
+    if (!ctx || !drawingState) {
+      logWarn("drawOverlay: skipped (no ctx or state)");
+      return;
+    }
     log("drawOverlay: drawing", baselineRegions.length, "region box(es)");
     ctx.putImageData(drawingState.imageData, 0, 0);
     ctx.lineWidth = 2;
@@ -1092,7 +2643,10 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     regions: Array<{ x: number; y: number; w: number; h: number }>;
     selectedRegions: Array<{ x: number; y: number; w: number; h: number }>;
   }) {
-    if (!pipelineStepsEl) { logWarn("renderPipelineSteps: no pipelineStepsEl"); return; }
+    if (!pipelineStepsEl) {
+      logWarn("renderPipelineSteps: no pipelineStepsEl");
+      return;
+    }
     logTime("renderPipelineSteps");
     log("renderPipelineSteps:", {
       sourceSize: `${sourceImageData.width}x${sourceImageData.height}`,
@@ -1111,35 +2665,40 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
       .filter((entry) => !excludedRegionIndexes.has(entry.idx))
       .slice(0, MAX_REGIONS_TO_SCAN);
 
-    const regionBoxesHtml = step1SelectedEntries.map(({ region: r, idx }) => {
-      const leftPct = (r.x / imgW) * 100;
-      const topPct = (r.y / imgH) * 100;
-      const widthPct = (r.w / imgW) * 100;
-      const heightPct = (r.h / imgH) * 100;
-      const confirmed = confirmedRegionIndexes.has(idx);
-      const borderColor = confirmed ? "border-emerald-500" : "border-sky-400";
-      const bgColor = confirmed ? "bg-emerald-400/[0.15]" : "bg-sky-400/[0.12]";
-      const handlesHtml = HANDLE_DEFS.map(h =>
-        `<span data-handle="${h.anchor}" class="absolute z-20 h-[10px] w-[10px] rounded-full border border-white bg-blue-500 shadow-sm" style="${h.css};pointer-events:auto"></span>`
-      ).join("");
-      const checkIcon = confirmed
-        ? `<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`
-        : `<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`;
-      const checkBg = confirmed
-        ? "bg-emerald-500 border-emerald-700 text-white"
-        : "bg-white/80 border-gray-400 text-gray-400 hover:border-emerald-500 hover:text-emerald-500";
-      return `<div class="simple-scan-region-box absolute cursor-move" data-region-idx="${idx}" style="left:${leftPct}%;top:${topPct}%;width:${widthPct}%;height:${heightPct}%;display:${showRegionOverlays ? "block" : "none"}"><div class="pointer-events-none absolute inset-0 border-2 ${borderColor} ${bgColor}"></div><span class="pointer-events-none absolute left-1 top-0.5 text-[11px] font-bold text-sky-800 drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]">R${idx + 1}</span><button type="button" data-confirm-idx="${idx}" class="absolute left-1/2 top-1/2 z-30 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 ${checkBg} shadow-lg transition-colors" title="${confirmed ? "Unconfirm" : "Confirm"} R${idx + 1}">${checkIcon}</button><button type="button" data-remove-idx="${idx}" class="absolute -right-2 -top-2 z-30 flex h-5 w-5 items-center justify-center rounded-full border border-red-700 bg-red-600 text-[12px] font-bold leading-none text-white shadow hover:bg-red-700" title="Remove R${idx + 1}">×</button>${handlesHtml}</div>`;
-    }).join("");
+    const regionBoxesHtml = step1SelectedEntries
+      .map(({ region: r, idx }) => {
+        const leftPct = (r.x / imgW) * 100;
+        const topPct = (r.y / imgH) * 100;
+        const widthPct = (r.w / imgW) * 100;
+        const heightPct = (r.h / imgH) * 100;
+        const confirmed = confirmedRegionIndexes.has(idx);
+        const borderColor = confirmed ? "border-emerald-500" : "border-sky-400";
+        const bgColor = confirmed ? "bg-emerald-400/[0.15]" : "bg-sky-400/[0.12]";
+        const handlesHtml = HANDLE_DEFS.map(
+          (h) =>
+            `<span data-handle="${h.anchor}" class="absolute z-20 h-[10px] w-[10px] rounded-full border border-white bg-blue-500 shadow-sm" style="${h.css};pointer-events:auto"></span>`
+        ).join("");
+        const checkIcon = confirmed
+          ? `<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`
+          : `<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`;
+        const checkBg = confirmed
+          ? "bg-emerald-500 border-emerald-700 text-white"
+          : "bg-white/80 border-gray-400 text-gray-400 hover:border-emerald-500 hover:text-emerald-500";
+        return `<div class="simple-scan-region-box absolute cursor-move" data-region-idx="${idx}" style="left:${leftPct}%;top:${topPct}%;width:${widthPct}%;height:${heightPct}%;display:${showRegionOverlays ? "block" : "none"}"><div class="pointer-events-none absolute inset-0 border-2 ${borderColor} ${bgColor}"></div><span class="pointer-events-none absolute left-1 top-0.5 text-[11px] font-bold text-sky-800 drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]">R${idx + 1}</span><button type="button" data-confirm-idx="${idx}" class="absolute left-1/2 top-1/2 z-30 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 ${checkBg} shadow-lg transition-colors" title="${confirmed ? "Unconfirm" : "Confirm"} R${idx + 1}">${checkIcon}</button><button type="button" data-remove-idx="${idx}" class="absolute -right-2 -top-2 z-30 flex h-5 w-5 items-center justify-center rounded-full border border-red-700 bg-red-600 text-[12px] font-bold leading-none text-white shadow hover:bg-red-700" title="Remove R${idx + 1}">×</button>${handlesHtml}</div>`;
+      })
+      .join("");
 
-    const resetHtml = regions.length > 0
-      ? `<div class="mb-2 flex flex-wrap items-center gap-2">${excludedRegionIndexes.size > 0 ? '<button type="button" id="simple-scan-reset-removed" class="rounded bg-gray-700 px-2 py-1 text-[11px] font-semibold text-white dark:bg-gray-600">Reset removed sections</button>' : ""}<button type="button" id="simple-scan-remove-all" class="rounded bg-red-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-red-700">Remove all sections</button></div>`
-      : "";
+    const resetHtml =
+      regions.length > 0
+        ? `<div class="mb-2 flex flex-wrap items-center gap-2">${excludedRegionIndexes.size > 0 ? '<button type="button" id="simple-scan-reset-removed" class="rounded bg-gray-700 px-2 py-1 text-[11px] font-semibold text-white dark:bg-gray-600">Reset removed sections</button>' : ""}<button type="button" id="simple-scan-remove-all" class="rounded bg-red-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-red-700">Remove all sections</button></div>`
+        : "";
 
     const resolved = allRegionsResolved();
     const hasConfirmed = confirmedRegionIndexes.size > 0;
 
     if (resolved && hasConfirmed) {
       if (!workingImageData) {
+        showOverlay("Extracting layers…");
         initWorkingImage();
         extractColored();
         extractText();
@@ -1148,12 +2707,14 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
         extractMidtones();
         extractRemaining();
         log("Auto-extracted all layers:", layers.length);
+        hideOverlay();
+        toastSuccess("Layers Extracted", `${layers.length} layers separated from the drawing.`);
       }
       const croppedUrl = lastCroppedImageData ? imageDataToDataUrl(lastCroppedImageData) : "";
 
       // Image only in main area
       pipelineStepsEl.innerHTML = `
-        <div class="relative bg-white dark:bg-gray-900">
+        <div class="checker-bg relative flex flex-1 items-center justify-center">
           <img id="working-canvas-img" src="${croppedUrl}" class="block w-full" />
         </div>
       `;
@@ -1164,13 +2725,15 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
           <button type="button" id="simple-scan-back-to-regions" class="w-full rounded bg-gray-700 px-2 py-1.5 text-[11px] font-semibold text-white dark:bg-gray-600">← Back to regions</button>
           <div id="layer-inline-panel"></div>
         `;
-        drawerControlsEl.querySelector("#simple-scan-back-to-regions")?.addEventListener("click", () => {
-          log("Back to region confirmation");
-          confirmedRegionIndexes.clear();
-          workingImageData = null;
-          layers = [];
-          renderProcessingOnlyView();
-        });
+        drawerControlsEl
+          .querySelector("#simple-scan-back-to-regions")
+          ?.addEventListener("click", () => {
+            log("Back to region confirmation");
+            confirmedRegionIndexes.clear();
+            workingImageData = null;
+            layers = [];
+            renderProcessingOnlyView();
+          });
       }
       renderInlineLayerPanel();
     } else {
@@ -1178,7 +2741,7 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
 
       // Image only in main area (with region overlays which are interactive on the image)
       pipelineStepsEl.innerHTML = `
-        <div id="step1-image-container" class="relative bg-white dark:bg-gray-900" style="overflow:visible">
+        <div id="step1-image-container" class="checker-bg relative flex flex-1 items-center justify-center" style="overflow:visible">
           <img src="${step1BaseImageUrl}" alt="Regions" class="block w-full select-none" draggable="false" />
           ${regionBoxesHtml}
         </div>
@@ -1204,7 +2767,7 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
   function wireRegionEvents() {
     if (!pipelineStepsEl) return;
 
-    pipelineStepsEl.querySelectorAll("[data-confirm-idx]").forEach(btn => {
+    pipelineStepsEl.querySelectorAll("[data-confirm-idx]").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
         const idx = Number((btn as HTMLElement).getAttribute("data-confirm-idx"));
@@ -1220,7 +2783,7 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
       });
     });
 
-    pipelineStepsEl.querySelectorAll("[data-remove-idx]").forEach(btn => {
+    pipelineStepsEl.querySelectorAll("[data-remove-idx]").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
         const idx = Number((btn as HTMLElement).getAttribute("data-remove-idx"));
@@ -1247,16 +2810,23 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
       renderProcessingOnlyView();
     });
 
-    drawerControlsEl?.querySelector("#simple-scan-toggle-overlays")?.addEventListener("click", () => {
-      showRegionOverlays = !showRegionOverlays;
-      log("Toggle overlays →", showRegionOverlays);
-      renderProcessingOnlyView();
-    });
+    drawerControlsEl
+      ?.querySelector("#simple-scan-toggle-overlays")
+      ?.addEventListener("click", () => {
+        showRegionOverlays = !showRegionOverlays;
+        log("Toggle overlays →", showRegionOverlays);
+        renderProcessingOnlyView();
+      });
 
-    pipelineStepsEl.querySelectorAll(".simple-scan-region-box").forEach(box => {
+    pipelineStepsEl.querySelectorAll(".simple-scan-region-box").forEach((box) => {
       box.addEventListener("pointerdown", (event: Event) => {
         const e = event as PointerEvent;
-        if ((e.target as HTMLElement).closest("[data-handle]") || (e.target as HTMLElement).closest("[data-remove-idx]") || (e.target as HTMLElement).closest("[data-confirm-idx]")) return;
+        if (
+          (e.target as HTMLElement).closest("[data-handle]") ||
+          (e.target as HTMLElement).closest("[data-remove-idx]") ||
+          (e.target as HTMLElement).closest("[data-confirm-idx]")
+        )
+          return;
         e.preventDefault();
         const idx = Number((box as HTMLElement).getAttribute("data-region-idx"));
         if (!Number.isFinite(idx) || !baselineRegions[idx]) return;
@@ -1264,30 +2834,39 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
         activeRegionIdx = idx;
         const scale = getImageScale();
         regionDragState = {
-          idx, startX: e.clientX, startY: e.clientY,
+          idx,
+          startX: e.clientX,
+          startY: e.clientY,
           orig: { ...baselineRegions[idx] },
-          pxPerImgX: scale.pxPerImgX, pxPerImgY: scale.pxPerImgY,
+          pxPerImgX: scale.pxPerImgX,
+          pxPerImgY: scale.pxPerImgY,
         };
         (box as HTMLElement).style.cursor = "grabbing";
       });
     });
 
-    pipelineStepsEl.querySelectorAll("[data-handle]").forEach(handle => {
+    pipelineStepsEl.querySelectorAll("[data-handle]").forEach((handle) => {
       handle.addEventListener("pointerdown", (event: Event) => {
         const e = event as PointerEvent;
         e.preventDefault();
         e.stopPropagation();
         const anchor = (handle as HTMLElement).getAttribute("data-handle") || "";
-        const box = (handle as HTMLElement).closest(".simple-scan-region-box") as HTMLElement | null;
+        const box = (handle as HTMLElement).closest(
+          ".simple-scan-region-box"
+        ) as HTMLElement | null;
         const idx = Number(box?.getAttribute("data-region-idx"));
         if (!Number.isFinite(idx) || !baselineRegions[idx]) return;
         log("Handle drag start:", { idx, anchor });
         activeRegionIdx = idx;
         const scale = getImageScale();
         handleDragState = {
-          idx, anchor, startX: e.clientX, startY: e.clientY,
+          idx,
+          anchor,
+          startX: e.clientX,
+          startY: e.clientY,
           orig: { ...baselineRegions[idx] },
-          pxPerImgX: scale.pxPerImgX, pxPerImgY: scale.pxPerImgY,
+          pxPerImgX: scale.pxPerImgX,
+          pxPerImgY: scale.pxPerImgY,
         };
       });
     });
@@ -1298,7 +2877,10 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
   function renderProcessingOnlyView() {
     logTime("renderProcessingOnlyView");
     log("renderProcessingOnlyView called");
-    if (!drawingState) { logWarn("renderProcessingOnlyView: no drawingState, aborting"); return; }
+    if (!drawingState) {
+      logWarn("renderProcessingOnlyView: no drawingState, aborting");
+      return;
+    }
     if (!baselineRegions.length) {
       log("renderProcessingOnlyView: no baseline regions yet, running extractBaselineRegions...");
       baselineRegions = extractBaselineRegions(drawingState);
@@ -1312,7 +2894,8 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     });
     drawOverlay();
 
-    const pending = baselineRegions.length - confirmedRegionIndexes.size - excludedRegionIndexes.size;
+    const pending =
+      baselineRegions.length - confirmedRegionIndexes.size - excludedRegionIndexes.size;
     const resolved = allRegionsResolved();
     const summary = {
       mode: "detect-and-extract",
@@ -1326,11 +2909,15 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     log("renderProcessingOnlyView complete:", summary);
     logTimeEnd("renderProcessingOnlyView");
     if (resolved && confirmedRegionIndexes.size > 0) {
-      setStatus(`All regions resolved. ${confirmedRegionIndexes.size} confirmed — ready for layer extraction.`);
+      setStatus(
+        `All regions resolved. ${confirmedRegionIndexes.size} confirmed — ready for layer extraction.`
+      );
     } else if (resolved && confirmedRegionIndexes.size === 0) {
       setStatus(`All regions removed. No viable areas to process.`);
     } else {
-      setStatus(`${baselineRegions.length} region(s) detected. Confirm or remove each to continue. ${pending} pending.`);
+      setStatus(
+        `${baselineRegions.length} region(s) detected. Confirm or remove each to continue. ${pending} pending.`
+      );
     }
   }
 
@@ -1343,7 +2930,10 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
         log(`renderPdfToImage: trying scale ${scale}...`);
         logTime(`renderPdfToImage-scale-${scale}`);
         const pdfLib = getPdfLib();
-        if (!pdfLib) { logError("renderPdfToImage: pdfjsLib not available"); return null; }
+        if (!pdfLib) {
+          logError("renderPdfToImage: pdfjsLib not available");
+          return null;
+        }
         const pdf = await pdfLib.getDocument({ data: await file.arrayBuffer() }).promise;
         const page = await pdf.getPage(1);
         const viewport = page.getViewport({ scale });
@@ -1352,7 +2942,10 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
         c.height = Math.max(1, Math.floor(viewport.height));
         log(`renderPdfToImage: scale ${scale} → canvas ${c.width}x${c.height}`);
         const ctx = c.getContext("2d", { willReadFrequently: true });
-        if (!ctx) { logWarn(`renderPdfToImage: scale ${scale} no 2d context, skipping`); continue; }
+        if (!ctx) {
+          logWarn(`renderPdfToImage: scale ${scale} no 2d context, skipping`);
+          continue;
+        }
         await page.render({ canvasContext: ctx, viewport }).promise;
         const img = new Image();
         img.src = c.toDataURL("image/png");
@@ -1362,7 +2955,9 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
         });
         lastPdfRenderScale = scale;
         logTimeEnd(`renderPdfToImage-scale-${scale}`);
-        log(`renderPdfToImage: success at scale ${scale}, image ${img.naturalWidth}x${img.naturalHeight}`);
+        log(
+          `renderPdfToImage: success at scale ${scale}, image ${img.naturalWidth}x${img.naturalHeight}`
+        );
         return img;
       } catch (error) {
         logWarn(`renderPdfToImage: scale ${scale} failed:`, error);
@@ -1373,7 +2968,11 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
   }
 
   async function loadImageFromFile(file: File): Promise<HTMLImageElement | null> {
-    log("loadImageFromFile:", file.name, `(${(file.size / 1024).toFixed(1)} KB, type: ${file.type})`);
+    log(
+      "loadImageFromFile:",
+      file.name,
+      `(${(file.size / 1024).toFixed(1)} KB, type: ${file.type})`
+    );
     return await new Promise((resolve: (image: HTMLImageElement | null) => void) => {
       const reader = new FileReader();
       reader.onload = () => {
@@ -1382,19 +2981,33 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
           log(`loadImageFromFile: loaded ${img.naturalWidth}x${img.naturalHeight}`);
           resolve(img);
         };
-        img.onerror = () => { logError("loadImageFromFile: image decode failed"); resolve(null); };
+        img.onerror = () => {
+          logError("loadImageFromFile: image decode failed");
+          resolve(null);
+        };
         img.src = String(reader.result || "");
       };
-      reader.onerror = () => { logError("loadImageFromFile: FileReader error"); resolve(null); };
+      reader.onerror = () => {
+        logError("loadImageFromFile: FileReader error");
+        resolve(null);
+      };
       reader.readAsDataURL(file);
     });
   }
 
   async function handleDrawingUpload(file: File) {
-    if (!(file instanceof File)) { logWarn("handleDrawingUpload: not a File"); return; }
+    if (!(file instanceof File)) {
+      logWarn("handleDrawingUpload: not a File");
+      return;
+    }
     logTime("handleDrawingUpload");
-    log("handleDrawingUpload:", file.name, `(${(file.size / 1024).toFixed(1)} KB, type: ${file.type})`);
+    log(
+      "handleDrawingUpload:",
+      file.name,
+      `(${(file.size / 1024).toFixed(1)} KB, type: ${file.type})`
+    );
     setStatus("Rendering drawing...");
+    showOverlay("Rendering drawing…");
     lastPdfRenderScale = 0;
     const isPdf = file.name.toLowerCase().endsWith(".pdf") || file.type === "application/pdf";
     const isSvg = file.name.toLowerCase().endsWith(".svg") || file.type === "image/svg+xml";
@@ -1404,10 +3017,16 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
       : await loadImageFromFile(file);
     if (!img || !(canvas instanceof HTMLCanvasElement)) {
       logError("handleDrawingUpload: failed to render image or no canvas");
+      hideOverlay();
+      toastError("Render Failed", "Could not render the drawing file.");
       return setStatus("Failed to render drawing");
     }
     const ctx = getCtx();
-    if (!ctx) { logError("handleDrawingUpload: no 2d context"); return; }
+    if (!ctx) {
+      logError("handleDrawingUpload: no 2d context");
+      hideOverlay();
+      return;
+    }
     const ratio = Math.min(
       isSvg ? 10 : 1,
       DRAWING_RENDER_MAX_SIDE /
@@ -1415,9 +3034,17 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     );
     canvas.width = Math.max(1, Math.round((img.naturalWidth || img.width) * ratio));
     canvas.height = Math.max(1, Math.round((img.naturalHeight || img.height) * ratio));
-    log("handleDrawingUpload: canvas sized to", canvas.width, "x", canvas.height, "ratio:", ratio.toFixed(4));
+    log(
+      "handleDrawingUpload: canvas sized to",
+      canvas.width,
+      "x",
+      canvas.height,
+      "ratio:",
+      ratio.toFixed(4)
+    );
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    showOverlay("Detecting regions…");
     log("handleDrawingUpload: imageData captured, building seed mask...");
     drawingState = {
       width: canvas.width,
@@ -1435,40 +3062,69 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     lastCroppedImageData = null;
     workingImageData = null;
     layers = [];
+    symbolScanResults = null;
+    pipeAnalysisResults = null;
+    pipeSubLayers = [];
     if (drawerControlsEl) drawerControlsEl.innerHTML = "";
     log("handleDrawingUpload: calling renderProcessingOnlyView...");
     renderProcessingOnlyView();
     logTimeEnd("handleDrawingUpload");
     log("handleDrawingUpload: complete ✓");
+    hideOverlay();
+    toastSuccess(
+      "Drawing Ready",
+      `${baselineRegions.length} region(s) detected. Confirm viable areas to continue.`
+    );
   }
 
   // ── Event wiring ───────────────────────────────────────────────────
 
   async function loadSelectedDrawing() {
-    if (!testSelect) { logWarn("loadSelectedDrawing: no select element"); return; }
+    if (!testSelect) {
+      logWarn("loadSelectedDrawing: no select element");
+      return;
+    }
     const raw = testSelect.value;
-    if (!raw) { logWarn("loadSelectedDrawing: empty select value"); return; }
+    if (!raw) {
+      logWarn("loadSelectedDrawing: empty select value");
+      return;
+    }
     const url = encodeURI(raw);
     const label = testSelect.options[testSelect.selectedIndex]?.textContent || raw;
     log("loadSelectedDrawing:", label, "→", url);
     setStatus(`Loading ${label}...`);
+    showOverlay(`Loading ${label}…`);
+    toastInfo("Loading Drawing", label);
     try {
       const res = await fetch(url, { cache: "no-store" });
       log("loadSelectedDrawing: fetch", res.status, res.statusText);
-      if (!res.ok) { logError("loadSelectedDrawing: fetch failed", res.status, url); setStatus(`Failed to load ${label}`); return; }
+      if (!res.ok) {
+        logError("loadSelectedDrawing: fetch failed", res.status, url);
+        setStatus(`Failed to load ${label}`);
+        toastError("Load Failed", `Could not fetch ${label}`);
+        hideOverlay();
+        return;
+      }
       const blob = await res.blob();
       const filename = raw.split("/").pop() || "drawing.pdf";
       log(`loadSelectedDrawing: ${(blob.size / 1024).toFixed(1)} KB`);
-      await handleDrawingUpload(new File([blob], filename, { type: blob.type || "application/pdf" }));
+      await handleDrawingUpload(
+        new File([blob], filename, { type: blob.type || "application/pdf" })
+      );
     } catch (err) {
       logError("loadSelectedDrawing: error", err);
       setStatus(`Error loading ${label}`);
+      toastError("Load Error", `${label}: ${err}`);
+      hideOverlay();
     }
   }
 
   drawingFileInput?.addEventListener("change", async () => {
     const file = drawingFileInput.files?.[0];
-    log("File input changed:", file ? `${file.name} (${(file.size / 1024).toFixed(1)} KB)` : "no file");
+    log(
+      "File input changed:",
+      file ? `${file.name} (${(file.size / 1024).toFixed(1)} KB)` : "no file"
+    );
     if (file) await handleDrawingUpload(file);
   });
 
@@ -1492,21 +3148,45 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
       const dy = (e.clientY - handleDragState.startY) / handleDragState.pxPerImgY;
       const o = handleDragState.orig;
       const a = handleDragState.anchor;
-      let x = o.x, y = o.y, w = o.w, h = o.h;
+      let x = o.x,
+        y = o.y,
+        w = o.w,
+        h = o.h;
 
-      if (a.includes("w")) { x = o.x + dx; w = o.w - dx; }
-      if (a.includes("e")) { w = o.w + dx; }
-      if (a.includes("n")) { y = o.y + dy; h = o.h - dy; }
-      if (a.includes("s")) { h = o.h + dy; }
+      if (a.includes("w")) {
+        x = o.x + dx;
+        w = o.w - dx;
+      }
+      if (a.includes("e")) {
+        w = o.w + dx;
+      }
+      if (a.includes("n")) {
+        y = o.y + dy;
+        h = o.h - dy;
+      }
+      if (a.includes("s")) {
+        h = o.h + dy;
+      }
 
-      if (w < MIN_REGION_SIZE) { if (a.includes("w")) x = o.x + o.w - MIN_REGION_SIZE; w = MIN_REGION_SIZE; }
-      if (h < MIN_REGION_SIZE) { if (a.includes("n")) y = o.y + o.h - MIN_REGION_SIZE; h = MIN_REGION_SIZE; }
+      if (w < MIN_REGION_SIZE) {
+        if (a.includes("w")) x = o.x + o.w - MIN_REGION_SIZE;
+        w = MIN_REGION_SIZE;
+      }
+      if (h < MIN_REGION_SIZE) {
+        if (a.includes("n")) y = o.y + o.h - MIN_REGION_SIZE;
+        h = MIN_REGION_SIZE;
+      }
       x = clamp(x, 0, imgW - MIN_REGION_SIZE);
       y = clamp(y, 0, imgH - MIN_REGION_SIZE);
       w = clamp(w, MIN_REGION_SIZE, imgW - x);
       h = clamp(h, MIN_REGION_SIZE, imgH - y);
 
-      baselineRegions[handleDragState.idx] = { x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h) };
+      baselineRegions[handleDragState.idx] = {
+        x: Math.round(x),
+        y: Math.round(y),
+        w: Math.round(w),
+        h: Math.round(h),
+      };
       updateRegionBoxStyle(handleDragState.idx);
       return;
     }
@@ -1542,9 +3222,13 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
   window.addEventListener("pointermove", onPointerMove);
   window.addEventListener("pointerup", onPointerUp);
   window.addEventListener("pointercancel", onPointerUp);
-  runScanBtn?.addEventListener("click", () => {
-    log("Refresh Processing button clicked");
-    renderProcessingOnlyView();
+  runScanBtn?.addEventListener("click", async () => {
+    log("Refresh button clicked — reloading drawing");
+    if (drawingFileInput?.files?.[0]) {
+      await handleDrawingUpload(drawingFileInput.files[0]);
+    } else {
+      await loadSelectedDrawing();
+    }
   });
   log("Event listeners wired");
 
@@ -1561,3 +3245,24 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     }
   })();
 </script>
+
+<style>
+  .checker-bg {
+    background-image:
+      linear-gradient(45deg, #e5e5e5 25%, transparent 25%),
+      linear-gradient(-45deg, #e5e5e5 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #e5e5e5 75%),
+      linear-gradient(-45deg, transparent 75%, #e5e5e5 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+    background-color: #fff;
+  }
+  :global(.dark) .checker-bg {
+    background-image:
+      linear-gradient(45deg, #1f2937 25%, transparent 25%),
+      linear-gradient(-45deg, #1f2937 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #1f2937 75%),
+      linear-gradient(-45deg, transparent 75%, #1f2937 75%);
+    background-color: #111827;
+  }
+</style>
