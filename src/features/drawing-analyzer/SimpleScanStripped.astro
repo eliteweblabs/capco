@@ -1,7 +1,25 @@
 ---
 import { globalClasses } from "../../pages/api/global/global-classes";
+import { readdirSync } from "node:fs";
+import { join } from "node:path";
 
 const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasses();
+
+// Read PDFs from public/test-drawings at build/request time so the list is
+// always in sync with the folder — no hardcoded entries needed.
+const drawingsDir = join(process.cwd(), "public", "test-drawings");
+let testDrawings: { label: string; file: string }[] = [];
+try {
+  testDrawings = readdirSync(drawingsDir)
+    .filter(f => f.toLowerCase().endsWith(".pdf"))
+    .sort()
+    .map(f => ({
+      label: f.replace(/\s*FP\.pdf$/i, "").replace(/\.pdf$/i, "").trim(),
+      file: f,
+    }));
+} catch {
+  // folder missing or unreadable — fall back to empty list
+}
 ---
 
 {/* ── Top bar: drawing select + upload ── */}
@@ -14,6 +32,7 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
       id="simple-scan-test-select"
       class="block w-full rounded border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
     >
+      {testDrawings.map((d, i) => <option value={`/test-drawings/${d.file}`} selected={i === 0}>{d.label}</option>)}
     </select>
   </div>
   <div>
@@ -33,33 +52,16 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
 </div>
 
 {/* ── Main content: canvas + drawer ── */}
-<section class="flex" style="min-height:calc(100dvh - 170px)">
+<section class="flex overflow-hidden" style="height:calc(100dvh - 170px)">
   {/* ── Full-screen floor plan area ── */}
   <div class="relative min-w-0 flex-1">
-    {/* ── Top-right controls: zoom + info ── */}
+    {/* ── Top-right controls: fit + info ── */}
     <div class="absolute right-3 top-3 z-50 flex items-center gap-1">
-      <button
-        id="zoom-out"
-        type="button"
-        class="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-900/80 text-sm font-bold text-white shadow-lg backdrop-blur hover:bg-gray-900 dark:bg-gray-100/80 dark:text-gray-900 dark:hover:bg-gray-100"
-        title="Zoom out">−</button
-      >
-      <span
-        id="zoom-level"
-        class="min-w-[3rem] select-none text-center text-xs font-semibold text-gray-800 drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)] dark:text-gray-200"
-        >100%</span
-      >
-      <button
-        id="zoom-in"
-        type="button"
-        class="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-900/80 text-sm font-bold text-white shadow-lg backdrop-blur hover:bg-gray-900 dark:bg-gray-100/80 dark:text-gray-900 dark:hover:bg-gray-100"
-        title="Zoom in">+</button
-      >
       <button
         id="zoom-reset"
         type="button"
         class="flex h-8 items-center justify-center rounded-lg bg-gray-900/80 px-2 text-[11px] font-semibold text-white shadow-lg backdrop-blur hover:bg-gray-900 dark:bg-gray-100/80 dark:text-gray-900 dark:hover:bg-gray-100"
-        title="Reset zoom">Fit</button
+        title="Fit to view">Fit</button
       >
       <button
         id="drawer-toggle"
@@ -76,8 +78,8 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
       </button>
     </div>
     <canvas id="simple-scan-canvas" class="hidden"></canvas>
-    <div id="scan-zoom-scroll" class="h-full w-full overflow-auto">
-      <div id="simple-scan-pipeline-steps" class="flex w-full min-h-full flex-col origin-top-left"></div>
+    <div id="scan-zoom-scroll" class="relative h-full w-full overflow-hidden cursor-grab select-none">
+      <div id="simple-scan-pipeline-steps" class="w-full" style="transform-origin:0 0;will-change:transform"></div>
     </div>
     {/* ── Processing overlay ── */}
     <div
@@ -111,6 +113,9 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     style="margin-right:-20rem"
   >
     <div class="space-y-4 p-4">
+      {/* ── Drawing metadata (populated async after load) ── */}
+      <div id="drawing-info-panel"></div>
+
       <div id="drawer-controls" class="space-y-3"></div>
 
       <details class="rounded border border-gray-200 dark:border-gray-700">
@@ -138,29 +143,211 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     if (drawerEl) drawerEl.style.marginRight = drawerOpen ? "0" : "-20rem";
   });
 
-  // Zoom — CSS-only scale on the pipeline container
-  const ZOOM_MIN = 0.25;
-  const ZOOM_MAX = 4;
-  const ZOOM_STEP = 0.25;
-  let zoomLevel = 1;
-  const zoomTarget = document.getElementById("simple-scan-pipeline-steps") as HTMLDivElement | null;
-  const zoomLabel = document.getElementById("zoom-level") as HTMLSpanElement | null;
-  function applyZoom() {
-    if (zoomTarget) zoomTarget.style.transform = `scale(${zoomLevel})`;
-    if (zoomLabel) zoomLabel.textContent = `${Math.round(zoomLevel * 100)}%`;
+  // ── Pan + Zoom engine ──────────────────────────────────────────────────
+  const ZOOM_MIN = 0.05;
+  const ZOOM_MAX = 8;
+  let panX = 0, panY = 0, zoom = 1;
+  let contentNatW = 0, contentNatH = 0;
+
+  const scrollEl   = document.getElementById("scan-zoom-scroll")          as HTMLDivElement | null;
+
+  function applyTransform() {
+    if (pipelineStepsEl)
+      pipelineStepsEl.style.transform = `translate(${panX}px,${panY}px) scale(${zoom})`;
   }
-  document.getElementById("zoom-in")?.addEventListener("click", () => {
-    zoomLevel = Math.min(ZOOM_MAX, +(zoomLevel + ZOOM_STEP).toFixed(2));
-    applyZoom();
-  });
-  document.getElementById("zoom-out")?.addEventListener("click", () => {
-    zoomLevel = Math.max(ZOOM_MIN, +(zoomLevel - ZOOM_STEP).toFixed(2));
-    applyZoom();
-  });
+
+  // Center the content after a rebuild.
+  // Because images use w-full, they always fill the container width at zoom=1,
+  // so horizontal centering is automatic.  We only need to handle vertical.
+  //   • If the image is shorter than the viewport → keep zoom=1, offset panY to
+  //     push it to vertical center.
+  //   • If the image is taller than the viewport (portrait) → scale down just
+  //     enough to fit height, then re-center horizontally with panX.
+  function fitAndCenter(imgW: number, imgH: number) {
+    if (!scrollEl || imgW <= 0 || imgH <= 0) return;
+    contentNatW = imgW; contentNatH = imgH;
+    const vw = scrollEl.clientWidth, vh = scrollEl.clientHeight;
+    // Height the image occupies at zoom=1 (it fills vw at that zoom).
+    const displayedH = (imgH / imgW) * vw;
+    if (displayedH <= vh) {
+      // Landscape / wide image: fits in viewport at zoom=1, center vertically.
+      zoom = 1;
+      panX = 0;
+      panY = Math.round((vh - displayedH) / 2);
+    } else {
+      // Portrait / tall image: scale down so height fits, then center horizontally.
+      zoom = Math.max(ZOOM_MIN, vh / displayedH);
+      panX = Math.round((vw - vw * zoom) / 2);
+      panY = 0;
+    }
+    applyTransform();
+  }
+
+  // Zoom toward an arbitrary viewport point (cx, cy in container-local px).
+  function zoomToward(factor: number, cx: number, cy: number) {
+    const newZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoom * factor));
+    const ratio   = newZoom / zoom;
+    panX = cx - ratio * (cx - panX);
+    panY = cy - ratio * (cy - panY);
+    zoom = newZoom;
+    applyTransform();
+  }
+
+  // Fit button — resets pan/zoom to fill the viewport
   document.getElementById("zoom-reset")?.addEventListener("click", () => {
-    zoomLevel = 1;
-    applyZoom();
+    if (contentNatW > 0) fitAndCenter(contentNatW, contentNatH);
+    else { zoom = 1; panX = 0; panY = 0; applyTransform(); }
   });
+
+  // Wheel zoom toward cursor
+  scrollEl?.addEventListener("wheel", (e: WheelEvent) => {
+    e.preventDefault();
+    const rect   = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+    zoomToward(factor, e.clientX - rect.left, e.clientY - rect.top);
+  }, { passive: false });
+
+  // Active-layer canvas painter functions
+  function renderActiveLayerIndicator() {
+    const imgEl = document.getElementById("working-canvas-img") as HTMLImageElement | null;
+    const existing = document.getElementById("active-layer-indicator");
+    if (!activeLayerName) {
+      existing?.remove();
+      if (scrollEl) scrollEl.style.cursor = "grab";
+      return;
+    }
+    const sub = pipeSubLayers.find(s => s.name === activeLayerName);
+    const rgb = sub ? `rgb(${sub.color.join(",")})` : "#f59e0b";
+    if (!imgEl?.parentElement) return;
+    const bar = existing ?? document.createElement("div");
+    bar.id = "active-layer-indicator";
+    bar.style.cssText = `position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:50;
+      display:flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;
+      font-size:11px;font-weight:600;pointer-events:none;user-select:none;
+      background:rgba(0,0,0,0.75);color:#fff;border:2px solid ${rgb};white-space:nowrap;`;
+    bar.innerHTML = `<span style="width:8px;height:8px;border-radius:50%;background:${rgb};display:inline-block;flex-shrink:0"></span>
+      ✏ Painting: <strong style="color:${rgb}">${activeLayerName}</strong>
+      <span style="opacity:.65;font-weight:400">· click to trace · ESC to stop</span>`;
+    if (!existing) imgEl.parentElement.appendChild(bar);
+    if (scrollEl) scrollEl.style.cursor = "crosshair";
+  }
+
+  function traceAndAddAtPoint(imgX: number, imgY: number) {
+    if (!activeLayerName || !workingImageData) return;
+    const { data, width, height } = workingImageData;
+    const clickI4 = (imgY * width + imgX) * 4;
+    if (data[clickI4 + 3] < 10) return;
+    const clickGray = data[clickI4]*0.299 + data[clickI4+1]*0.587 + data[clickI4+2]*0.114;
+
+    let sub = pipeSubLayers.find(s => s.name === activeLayerName);
+    if (!sub) {
+      sub = { name: activeLayerName!, color: [230, 160, 30], visible: true,
+              rawImageData: new ImageData(width, height), pixelCount: 0, count: 0, threshold: 240 };
+      pipeSubLayers.push(sub);
+    }
+    sub.visible = true;
+
+    const THRESH = sub.threshold;
+    if (clickGray > THRESH) { log(`traceAndAddAtPoint: clicked pixel (gray=${clickGray.toFixed(0)}) above threshold ${THRESH}`); return; }
+
+    const MAX_DIST2 = 400 * 400;
+    const visited = new Uint8Array(width * height);
+    const queue: number[] = [imgY * width + imgX];
+    visited[imgY * width + imgX] = 1;
+    let head = 0, added = 0;
+    const [br, bg, bb] = sub.color;
+    const bd = sub.rawImageData.data;
+
+    while (head < queue.length) {
+      const idx = queue[head++];
+      const x = idx % width, y = (idx / width) | 0;
+      if ((x - imgX) ** 2 + (y - imgY) ** 2 > MAX_DIST2) continue;
+      if (bd[idx * 4 + 3] === 0) {
+        bd[idx*4]=br; bd[idx*4+1]=bg; bd[idx*4+2]=bb; bd[idx*4+3]=220; added++;
+      }
+      for (const ni of [x>0?idx-1:-1, x<width-1?idx+1:-1, y>0?idx-width:-1, y<height-1?idx+width:-1]) {
+        if (ni < 0 || visited[ni]) continue;
+        const g = data[ni*4]*0.299 + data[ni*4+1]*0.587 + data[ni*4+2]*0.114;
+        if (g <= THRESH && data[ni*4+3] > 10) { visited[ni]=1; queue.push(ni); }
+      }
+    }
+    sub.pixelCount += added;
+    log(`traceAndAddAtPoint: +${added} px → "${activeLayerName}" (thresh=${THRESH})`);
+    if (added > 0) updateCompositeImage();
+  }
+
+  // Pointer drag to pan. When active layer is set, a short tap (< 4px drag)
+  // triggers traceAndAddAtPoint instead of starting a pan.
+  let isPanning = false, panDragX0 = 0, panDragY0 = 0, panStartX = 0, panStartY = 0;
+  let _tapMoved = false;
+  scrollEl?.addEventListener("pointerdown", (e: PointerEvent) => {
+    if (e.button !== 0) return;
+    const t = e.target as Element;
+    if (t.closest('.simple-scan-region-box,[data-handle],button,input,select,a,[role="button"]'))
+      return;
+    isPanning = true;
+    _tapMoved = false;
+    panDragX0 = e.clientX; panDragY0 = e.clientY;
+    panStartX = panX;      panStartY = panY;
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    if (!activeLayerName) (e.currentTarget as HTMLElement).style.cursor = "grabbing";
+    e.preventDefault();
+  });
+  scrollEl?.addEventListener("pointermove", (e: PointerEvent) => {
+    if (!isPanning) return;
+    const dx = e.clientX - panDragX0, dy = e.clientY - panDragY0;
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) _tapMoved = true;
+    panX = panStartX + dx; panY = panStartY + dy;
+    applyTransform();
+  });
+  const endPan = (e: PointerEvent) => {
+    if (!isPanning) return;
+    isPanning = false;
+    if (!_tapMoved && activeLayerName) {
+      const imgEl = document.getElementById("working-canvas-img") as HTMLImageElement | null;
+      if (imgEl && workingImageData) {
+        const rect = imgEl.getBoundingClientRect();
+        const scaleX = workingImageData.width / rect.width;
+        const scaleY = workingImageData.height / rect.height;
+        const imgX = Math.round(Math.max(0, Math.min(workingImageData.width-1,  (e.clientX - rect.left) * scaleX)));
+        const imgY = Math.round(Math.max(0, Math.min(workingImageData.height-1, (e.clientY - rect.top)  * scaleY)));
+        traceAndAddAtPoint(imgX, imgY);
+      }
+    }
+    if (scrollEl) scrollEl.style.cursor = activeLayerName ? "crosshair" : "grab";
+  };
+  scrollEl?.addEventListener("pointerup",     (e) => endPan(e as PointerEvent));
+  scrollEl?.addEventListener("pointercancel", (e) => endPan(e as PointerEvent));
+
+  // Touch pinch-zoom (two-finger)
+  let pinchDist0 = 0, pinchMidX0 = 0, pinchMidY0 = 0;
+  scrollEl?.addEventListener("touchstart", (e: TouchEvent) => {
+    if (e.touches.length === 2) {
+      const [t0, t1] = [e.touches[0], e.touches[1]];
+      pinchDist0  = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+      const rect  = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      pinchMidX0  = (t0.clientX + t1.clientX) / 2 - rect.left;
+      pinchMidY0  = (t0.clientY + t1.clientY) / 2 - rect.top;
+    }
+  }, { passive: true });
+  scrollEl?.addEventListener("touchmove", (e: TouchEvent) => {
+    if (e.touches.length !== 2 || pinchDist0 === 0) return;
+    e.preventDefault();
+    const [t0, t1] = [e.touches[0], e.touches[1]];
+    const dist  = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+    const rect  = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const midX  = (t0.clientX + t1.clientX) / 2 - rect.left;
+    const midY  = (t0.clientY + t1.clientY) / 2 - rect.top;
+    const factor = dist / pinchDist0;
+    const newZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoom * factor));
+    const ratio   = newZoom / zoom;
+    panX = midX - ratio * (midX - panX) + (midX - pinchMidX0);
+    panY = midY - ratio * (midY - panY) + (midY - pinchMidY0);
+    zoom = newZoom;
+    pinchDist0 = dist; pinchMidX0 = midX; pinchMidY0 = midY;
+    applyTransform();
+  }, { passive: false });
+  scrollEl?.addEventListener("touchend", () => { pinchDist0 = 0; }, { passive: true });
 
   const drawingFileInput = document.getElementById("simple-scan-file") as HTMLInputElement | null;
   const testSelect = document.getElementById("simple-scan-test-select") as HTMLSelectElement | null;
@@ -188,30 +375,14 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
 
   log("Script loaded, initializing...");
 
-  const TEST_DRAWINGS_DIR = "/test-drawings";
-  const TEST_DRAWINGS: Array<{ label: string; file: string }> = [
-    { label: "Demo Plan", file: "demo-plan.pdf" },
-    { label: "1062 Beacon St, Newton", file: "1062 Beacon St, Newton MA 02459 FP.pdf" },
-    { label: "28 High St", file: "28 HIGH ST - FP.pdf" },
-    { label: "60 Lane Park, Brighton", file: "60 Lane Park, Brighton FP.pdf" },
-    { label: "63b0c5da (Unnamed)", file: "63b0c5da-2d15-428d-b5e1-26fe8cf51618.pdf" },
-    { label: "85 Tremont St, Cambridge", file: "85 Tremont Street Cambridge MA FP.pdf" },
-  ];
+  // File list is rendered server-side into <option> elements (full /test-drawings/ paths).
   const DRAWING_RENDER_MAX_SIDE = 10000;
-  const PDF_RENDER_SCALE_FALLBACKS = [14, 12, 10, 8, 6, 4, 3];
+  // Target longest-side pixel count for the PDF render.  Higher = sharper layers / hairlines.
+  // Capped by MAX_RENDER_PIXELS to avoid browser canvas memory limits (~268 MB for Chrome).
+  const PDF_RENDER_TARGET_LONG_PX = 8000;
+  const PDF_RENDER_MAX_PIXELS     = 60_000_000; // ~240 MB — safe on all major browsers
+  const PDF_RENDER_SCALE_FALLBACKS = [14, 12, 10, 8, 6, 4, 3]; // legacy — now only used as emergency backup
   const MAX_REGIONS_TO_SCAN = 4;
-
-  // Populate test drawing dropdown
-  if (testSelect) {
-    TEST_DRAWINGS.forEach((td, i) => {
-      const opt = document.createElement("option");
-      opt.value = `${TEST_DRAWINGS_DIR}/${td.file}`;
-      opt.textContent = td.label;
-      if (i === 0) opt.selected = true;
-      testSelect.appendChild(opt);
-    });
-    log("Test drawings dropdown populated:", TEST_DRAWINGS.length, "item(s)");
-  }
 
   let drawingState: {
     width: number;
@@ -223,6 +394,10 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
   let excludedRegionIndexes = new Set<number>();
   let confirmedRegionIndexes = new Set<number>();
   let lastPdfRenderScale = 0;
+  let lastPdfDoc: any = null;  // pdf.js PDFDocumentProxy — for OCG layers + text
+  let lastPdfPage: any = null; // pdf.js PDFPageProxy — stored so text content can be extracted later
+  let lastCropOffsetX = 0; // pixel offset of workingImageData inside the full PDF render
+  let lastCropOffsetY = 0;
 
   // ── Layer extraction state ──────────────────────────────────────────
   type ExtractedLayer = {
@@ -231,9 +406,33 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     imageDataUrl: string;
     rawImageData: ImageData;
     pixelCount: number;
+    /** Compositing opacity 0–1. Default 1. */
+    opacity?: number;
+    /**
+     * Layer-specific re-extraction threshold:
+     *   Pipes            → saturation min (0.05–0.50, default 0.15)
+     *   Text / Labels    → gray darkness  (100–220,   default 180)
+     *   Sprinkler Heads /
+     *   Without Sprinkler Heads → bbox pad % (0–50, default 15)
+     */
+    threshold?: number;
   };
   let workingImageData: ImageData | null = null;
   let showWorkingLayer = false;
+
+  // ── Drawing metadata (AI-extracted narrative from original image on load) ──
+  let drawingMetadata: string | null = null; // narrative text from Claude Vision
+  type ScheduleRow = {
+    sym: string | null; count: number | null; position: string | null;
+    finish: string | null; temp: number | null; k: number | null;
+    npt: string | null; mfg: string | null;
+  };
+  type LegendRow = { sym: string | null; meaning: string | null; category: string | null };
+  let sprinklerSchedule: ScheduleRow[] | null = null; // schedule with counts
+  let drawingLegend: LegendRow[] | null = null;       // symbol key / legend
+  let metadataLoading = false;
+  let metadataError: string | null = null;
+  let _tooltipCloseHandler: ((e: MouseEvent) => void) | null = null;
   let layers: ExtractedLayer[] = [];
 
   type PipeSubLayer = {
@@ -243,8 +442,11 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     rawImageData: ImageData;
     pixelCount: number;
     count: number;
+    /** Gray-value threshold for manual click-tracing (0–254). Higher = fuzzier. */
+    threshold: number;
   };
   let pipeSubLayers: PipeSubLayer[] = [];
+  let activeLayerName: string | null = null; // sub-layer being manually painted
 
   let showRegionOverlays = true;
   let activeRegionIdx: number | null = null;
@@ -604,6 +806,8 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     if (!sourceCtx) return { dataUrl: "", croppedImageData: null };
     sourceCtx.putImageData(imageData, 0, 0);
     ctx.drawImage(sourceCanvas, minX, minY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+    lastCropOffsetX = minX; // remember where the crop starts in the full-render coordinate space
+    lastCropOffsetY = minY;
     const croppedImageData = ctx.getImageData(0, 0, cropWidth, cropHeight);
     for (let y = 0; y < cropHeight; y += 1) {
       const row = y * cropWidth;
@@ -697,7 +901,7 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     layers = [];
     symbolScanResults = null;
     pipeAnalysisResults = null;
-    pipeSubLayers = [];
+    pipeSubLayers = []; sprinklerSubLayers = []; sprinklerConnections = [];
   }
 
   function extractPixelsByFilter(
@@ -737,26 +941,275 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
       logWarn(`extract:${filterName}: nothing found`);
       return;
     }
+    const existing = layers.find(l => l.name === filterName);
     layers.push({
       name: filterName,
       visible: true,
       imageDataUrl: imageDataToDataUrl(layerData),
       rawImageData: layerData,
       pixelCount: count,
+      threshold: existing?.threshold,
+      opacity: existing?.opacity ?? 1,
     });
   }
 
-  function extractColored() {
+  // ─── Alphanumeric pre-filter ────────────────────────────────────────────────
+  // Strategy (in priority order):
+  //   1. PDF text layer  — pdf.js getTextContent() gives exact bounding boxes
+  //                        for every character/word.  No recognition needed.
+  //   2. OCR fallback    — Tesseract.js via CDN for scanned/image-only PDFs or
+  //                        image uploads where no embedded text exists.
+  async function extractAlphanumeric(): Promise<void> {
+    if (!workingImageData) return;
+    logTime("extractAlphanumeric");
+    const { width, height, data } = workingImageData;
+    const PAD = 4; // px padding around each text bbox to catch anti-aliased edges
+
+    type TextBbox = { x0: number; y0: number; x1: number; y1: number };
+    let bboxes: TextBbox[] = [];
+
+    // ── Path 1: PDF embedded text (fast, accurate, no network) ──────────
+    if (lastPdfPage && lastPdfRenderScale > 0) {
+      try {
+        showOverlay("Extracting PDF text layer…");
+        const textContent = await lastPdfPage.getTextContent();
+        const viewport = lastPdfPage.getViewport({ scale: lastPdfRenderScale });
+
+        for (const item of textContent.items as any[]) {
+          if (!item.str?.trim()) continue;
+          // item.transform = [a, b, c, d, tx, ty]
+          //   tx, ty  = baseline origin in PDF user space
+          //   a, b    = x-column of the text matrix (encodes font size + rotation)
+          // item.height is advance height — unreliable (often 0 for horizontal text).
+          // Instead, derive visual height from the font size encoded in the matrix.
+          const tx = item.transform[4];
+          const ty = item.transform[5];
+          const fontSizePdf = Math.hypot(item.transform[0], item.transform[1])
+                           || Math.abs(item.transform[3])
+                           || 12; // fallback if matrix is degenerate
+          const ascent  = fontSizePdf * 0.85; // above baseline
+          const descent = fontSizePdf * 0.20; // below baseline (descenders)
+
+          // Four corners → viewport → crop-offset adjusted
+          const [ax, ay] = viewport.convertToViewportPoint(tx,                ty + ascent);
+          const [bx, by] = viewport.convertToViewportPoint(tx + item.width,   ty + ascent);
+          const [cx, cy] = viewport.convertToViewportPoint(tx,                ty - descent);
+          const [dx, dy] = viewport.convertToViewportPoint(tx + item.width,   ty - descent);
+          bboxes.push({
+            x0: Math.min(ax, bx, cx, dx) - lastCropOffsetX,
+            y0: Math.min(ay, by, cy, dy) - lastCropOffsetY,
+            x1: Math.max(ax, bx, cx, dx) - lastCropOffsetX,
+            y1: Math.max(ay, by, cy, dy) - lastCropOffsetY,
+          });
+        }
+        // Log a few sample bboxes to verify alignment
+        if (bboxes.length > 0) {
+          const s = bboxes.slice(0, 3).map(b => `(${Math.round(b.x0)},${Math.round(b.y0)})–(${Math.round(b.x1)},${Math.round(b.y1)})`).join("  ");
+          log(`extractAlphanumeric: PDF text layer → ${bboxes.length} items  crop=(${lastCropOffsetX},${lastCropOffsetY})  samples: ${s}`);
+        } else {
+          log(`extractAlphanumeric: PDF text layer returned 0 items — falling back to OCR`);
+        }
+      } catch (e) {
+        logWarn("extractAlphanumeric: getTextContent failed:", e);
+      }
+    }
+
+    // ── Path 2: Tesseract OCR fallback (scanned drawings / image uploads) ─
+    if (bboxes.length === 0) {
+      log("extractAlphanumeric: no PDF text found — falling back to Tesseract OCR");
+      try {
+        const OCR_MAX = 2500;
+        const ocrScale = Math.min(1, OCR_MAX / Math.max(width, height));
+        const ocrW = Math.round(width * ocrScale);
+        const ocrH = Math.round(height * ocrScale);
+
+        const srcC = document.createElement("canvas");
+        srcC.width = width; srcC.height = height;
+        srcC.getContext("2d")!.putImageData(workingImageData, 0, 0);
+        const ocrC = document.createElement("canvas");
+        ocrC.width = ocrW; ocrC.height = ocrH;
+        ocrC.getContext("2d")!.drawImage(srcC, 0, 0, ocrW, ocrH);
+
+        showOverlay("OCR: scanning for text…");
+        // @ts-ignore — CDN dynamic import
+        const { createWorker } = await import(/* @vite-ignore */ "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.esm.min.js");
+        const worker = await createWorker("eng", 1, {
+          workerPath: "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js",
+          langPath: "https://tessdata.projectnaptha.com/4.0.0",
+          corePath: "https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core-simd-lstm.wasm.js",
+          logger: (m: { status: string; progress: number }) => {
+            if (m.status === "recognizing text") showOverlay(`OCR ${Math.round(m.progress * 100)}%…`);
+          },
+        });
+        const { data: result } = await worker.recognize(ocrC);
+        await worker.terminate();
+
+        const CONF_MIN = 35;
+        for (const w of result.words as any[]) {
+          if (w.confidence < CONF_MIN) continue;
+          bboxes.push({
+            x0: Math.round(w.bbox.x0 / ocrScale),
+            y0: Math.round(w.bbox.y0 / ocrScale),
+            x1: Math.round(w.bbox.x1 / ocrScale),
+            y1: Math.round(w.bbox.y1 / ocrScale),
+          });
+        }
+        log(`extractAlphanumeric: Tesseract → ${bboxes.length} words accepted`);
+      } catch (e) {
+        logWarn("extractAlphanumeric: Tesseract also failed:", e);
+        logTimeEnd("extractAlphanumeric");
+        return;
+      }
+    }
+
+    if (bboxes.length === 0) {
+      log("extractAlphanumeric: no text found by any method");
+      logTimeEnd("extractAlphanumeric");
+      return;
+    }
+
+    // ── Build mask from bboxes then blank from workingImageData ─────────
+    const alphanumMask = new Uint8Array(width * height);
+    for (const b of bboxes) {
+      const x0 = Math.max(0,          Math.floor(b.x0) - PAD);
+      const y0 = Math.max(0,          Math.floor(b.y0) - PAD);
+      const x1 = Math.min(width  - 1, Math.ceil(b.x1)  + PAD);
+      const y1 = Math.min(height - 1, Math.ceil(b.y1)  + PAD);
+      for (let y = y0; y <= y1; y++)
+        for (let x = x0; x <= x1; x++)
+          alphanumMask[y * width + x] = 1;
+    }
+
+    const alData = new ImageData(width, height);
+    const ad = alData.data;
+    let alPx = 0;
+    for (let i = 0; i < width * height; i++) {
+      if (!alphanumMask[i]) continue;
+      const i4 = i * 4;
+      ad[i4] = data[i4]; ad[i4 + 1] = data[i4 + 1];
+      ad[i4 + 2] = data[i4 + 2]; ad[i4 + 3] = data[i4 + 3];
+      data[i4] = 255; data[i4 + 1] = 255;
+      data[i4 + 2] = 255; data[i4 + 3] = 255;
+      alPx++;
+    }
+
+    log(`extractAlphanumeric: ${alPx} px removed from data flow`);
+    logTimeEnd("extractAlphanumeric");
+
+    if (alPx === 0) return;
+
+    const origIdx = layers.findIndex((l) => l.name === "Original");
+    const entry: ExtractedLayer = {
+      name: "Alphanumeric",
+      visible: false,
+      imageDataUrl: imageDataToDataUrl(alData),
+      rawImageData: alData,
+      pixelCount: alPx,
+    };
+    if (origIdx >= 0) layers.splice(origIdx + 1, 0, entry);
+    else layers.unshift(entry);
+  }
+
+  // ─── PDF Optional Content Group (layer) extraction ──────────────────────────
+  // Renders each named PDF layer in isolation and adds it to the layer panel.
+  // Works for any CAD-exported PDF that has OCG data (AutoCAD, Revit, etc.).
+  async function extractPdfLayers(): Promise<void> {
+    if (!lastPdfDoc || !lastPdfPage || !lastPdfRenderScale || !workingImageData) return;
+    logTime("extractPdfLayers");
+
+    let optConfig: any;
+    try {
+      optConfig = await lastPdfDoc.getOptionalContentConfig();
+    } catch (e) {
+      logWarn("extractPdfLayers: getOptionalContentConfig failed:", e);
+      logTimeEnd("extractPdfLayers");
+      return;
+    }
+
+    if (!optConfig?.groups?.size) {
+      log("extractPdfLayers: no OCG groups in this PDF");
+      logTimeEnd("extractPdfLayers");
+      return;
+    }
+
+    const { width, height } = workingImageData;
+    const viewport = lastPdfPage.getViewport({ scale: lastPdfRenderScale });
+    const groupEntries: Array<[string, any]> = [];
+    optConfig.groups.forEach((grp: any, id: string) => groupEntries.push([id, grp]));
+
+    log(`extractPdfLayers: ${groupEntries.length} OCG groups found — rendering each…`);
+
+    for (const [id, grp] of groupEntries) {
+      showOverlay(`PDF layer: ${grp.name}…`);
+
+      // ── Toggle: only this layer visible ────────────────────────────
+      optConfig.groups.forEach((_g: any, gid: string) => {
+        optConfig.groups.get(gid).visible = false;
+      });
+      optConfig.groups.get(id).visible = true;
+
+      // ── Render at the same scale as the main render ─────────────────
+      const c = document.createElement("canvas");
+      c.width  = Math.floor(viewport.width);
+      c.height = Math.floor(viewport.height);
+      const ctx = c.getContext("2d", { willReadFrequently: true })!;
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, c.width, c.height);
+
+      try {
+        await lastPdfPage.render({
+          canvasContext: ctx,
+          viewport,
+          optionalContentConfigPromise: Promise.resolve(optConfig),
+        }).promise;
+      } catch (e) {
+        logWarn(`extractPdfLayers: render failed for "${grp.name}":`, e);
+        continue;
+      }
+
+      // ── Crop to match workingImageData ──────────────────────────────
+      const cropC = document.createElement("canvas");
+      cropC.width = width; cropC.height = height;
+      cropC.getContext("2d")!.drawImage(
+        c,
+        lastCropOffsetX, lastCropOffsetY, width, height,
+        0, 0, width, height
+      );
+      const layerData = cropC.getContext("2d")!.getImageData(0, 0, width, height);
+
+      layers.push({
+        name: `PDF: ${grp.name}`,
+        visible: false,
+        imageDataUrl: imageDataToDataUrl(layerData),
+        rawImageData: layerData,
+        pixelCount: width * height,
+      });
+      log(`extractPdfLayers: added layer "${grp.name}"`);
+    }
+
+    // Restore all layers to visible
+    optConfig.groups.forEach((_g: any, gid: string) => {
+      optConfig.groups.get(gid).visible = true;
+    });
+
+    log(`extractPdfLayers: done — ${groupEntries.length} PDF layers added`);
+    logTimeEnd("extractPdfLayers");
+  }
+
+  function extractColored(satMin = 0.15) {
     extractPixelsByFilter("Pipes", (r, g, b) => {
       const max = Math.max(r, g, b);
       const min = Math.min(r, g, b);
       const sat = max > 0 ? (max - min) / max : 0;
       const gray = r * 0.299 + g * 0.587 + b * 0.114;
-      return sat > 0.15 && gray < 240 && gray > 20;
+      return sat > satMin && gray < 240 && gray > 20;
     });
+    // Store threshold on the layer so the slider stays in sync
+    const pl = layers.find(l => l.name === "Pipes");
+    if (pl) pl.threshold = satMin;
   }
 
-  function extractText() {
+  function extractText(grayMax = 180) {
     if (!workingImageData) return;
     const { width, height, data } = workingImageData;
     const visited = new Uint8Array(width * height);
@@ -795,7 +1248,7 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
           const i4 = ni * 4;
           const gray = data[i4] * 0.299 + data[i4 + 1] * 0.587 + data[i4 + 2] * 0.114;
           if (
-            gray < 150 &&
+            gray < grayMax &&
             data[i4 + 3] > 1 &&
             !(data[i4] === 255 && data[i4 + 1] === 255 && data[i4 + 2] === 255)
           ) {
@@ -814,7 +1267,7 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
         const i4 = idx * 4;
         const gray = data[i4] * 0.299 + data[i4 + 1] * 0.587 + data[i4 + 2] * 0.114;
         if (
-          gray >= 150 ||
+          gray >= grayMax ||
           data[i4 + 3] < 2 ||
           (data[i4] === 255 && data[i4 + 1] === 255 && data[i4 + 2] === 255)
         )
@@ -865,12 +1318,15 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
       logWarn("extractText: no text found");
       return;
     }
+    const existingText = layers.find(l => l.name === "Text / Labels");
     layers.push({
       name: "Text / Labels",
       visible: true,
       imageDataUrl: imageDataToDataUrl(textLayer),
       rawImageData: textLayer,
       pixelCount: count,
+      threshold: existingText?.threshold ?? grayMax,
+      opacity: existingText?.opacity ?? 1,
     });
   }
 
@@ -886,303 +1342,291 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     if (!workingImageData) return;
     logTime("extractDashedRectangles");
     const { width, height, data } = workingImageData;
+    const minDim = Math.min(width, height);
 
-    function isInk(x: number, y: number): boolean {
-      if (x < 0 || x >= width || y < 0 || y >= height) return false;
-      const i = (y * width + x) * 4;
-      if (data[i + 3] < 2) return false;
-      if (data[i] === 255 && data[i + 1] === 255 && data[i + 2] === 255) return false;
-      const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
-      return gray < 220;
+    // Only near-black, axis-aligned ink. Colored pixels (pipes) are excluded
+    // because pipes run diagonally or are colored — not what we want here.
+    function isDarkInk(i4: number): boolean {
+      if (data[i4 + 3] < 2) return false;
+      if (data[i4] === 255 && data[i4 + 1] === 255 && data[i4 + 2] === 255) return false;
+      const r = data[i4], g = data[i4 + 1], b = data[i4 + 2];
+      const gray = r * 0.299 + g * 0.587 + b * 0.114;
+      const sat = (Math.max(r, g, b) - Math.min(r, g, b)) / Math.max(Math.max(r, g, b), 1);
+      return gray < 180 && sat < 0.30;  // dark AND low-saturation
     }
 
     type Run = { start: number; end: number; len: number };
-
-    function getRuns(max: number, pixel: (v: number) => boolean): Run[] {
+    function getRowRuns(y: number): Run[] {
       const runs: Run[] = [];
-      let inRun = false,
-        runStart = 0;
-      for (let v = 0; v < max; v++) {
-        if (pixel(v)) {
-          if (!inRun) {
-            inRun = true;
-            runStart = v;
-          }
-        } else if (inRun) {
-          runs.push({ start: runStart, end: v - 1, len: v - runStart });
-          inRun = false;
-        }
+      let start = -1;
+      for (let x = 0; x < width; x++) {
+        const on = isDarkInk((y * width + x) * 4);
+        if (on && start < 0) start = x;
+        else if (!on && start >= 0) { runs.push({ start, end: x - 1, len: x - start }); start = -1; }
       }
-      if (inRun) runs.push({ start: runStart, end: max - 1, len: max - runStart });
+      if (start >= 0) runs.push({ start, end: width - 1, len: width - start });
+      return runs;
+    }
+    function getColRuns(x: number): Run[] {
+      const runs: Run[] = [];
+      let start = -1;
+      for (let y = 0; y < height; y++) {
+        const on = isDarkInk((y * width + x) * 4);
+        if (on && start < 0) start = y;
+        else if (!on && start >= 0) { runs.push({ start, end: y - 1, len: y - start }); start = -1; }
+      }
+      if (start >= 0) runs.push({ start, end: height - 1, len: height - start });
       return runs;
     }
 
-    // --- Phase 1: discover the dominant dash/gap pattern via sampling ---
-    const pairVotes = new Map<string, number>();
-    const maxDash = 80;
-    function quantize(v: number): number {
-      return Math.round(v / 3) * 3;
-    }
+    // --- Phase 1: find dominant dash/gap pattern ---
+    // Votes are weighted by dash length so architectural dashes beat tiny noise.
+    // Quantize into Q-px buckets so similar lengths collapse to one vote.
+    // A pattern must be CLEARLY dominant (≥ DOM_RATIO × second-best) or we bail —
+    // this prevents latching onto random noise when no real pattern exists.
+    const minVote  = 5;                           // ignore dashes < 5px (anti-noise)
+    const maxDash  = Math.round(minDim * 0.06);   // ignore dashes > 6% of image dim
+    const Q        = 2;                           // 2px quantization bucket (tighter than before)
+    const DOM_RATIO = 2.0;                        // winner must have 2× the score of runner-up
 
-    function votePairs(runs: Run[]) {
-      for (let i = 0; i < runs.length - 1; i++) {
-        const a = runs[i],
-          b = runs[i + 1];
-        if (a.len > maxDash || b.len > maxDash || a.len < 2 || b.len < 2) continue;
+    const votes = new Map<string, number>();
+    function sampleRuns(runs: Run[]) {
+      for (let i = 0; i + 1 < runs.length; i++) {
+        const a = runs[i], b = runs[i + 1];
+        if (a.len < minVote || a.len > maxDash || b.len < minVote || b.len > maxDash) continue;
         const gap = b.start - a.end - 1;
-        if (gap < 1 || gap > 60) continue;
-        const avgLen = quantize((a.len + b.len) / 2);
-        const qGap = quantize(gap);
-        if (avgLen < 2) continue;
-        pairVotes.set(`${avgLen}:${qGap}`, (pairVotes.get(`${avgLen}:${qGap}`) || 0) + 1);
+        if (gap < 2 || gap > maxDash * 1.5) continue;
+        const avgLen = Math.round(((a.len + b.len) / 2) / Q) * Q;
+        const qGap   = Math.round(gap / Q) * Q;
+        const key = `${avgLen}:${qGap}`;
+        votes.set(key, (votes.get(key) ?? 0) + avgLen); // weight by length so longer dashes dominate
       }
     }
+    for (let y = 0; y < height; y += 3) sampleRuns(getRowRuns(y));
+    for (let x = 0; x < width;  x += 3) sampleRuns(getColRuns(x));
 
-    for (let y = 0; y < height; y += 3) votePairs(getRuns(width, (x) => isInk(x, y)));
-    for (let x = 0; x < width; x += 3) votePairs(getRuns(height, (y) => isInk(x, y)));
-
-    if (pairVotes.size === 0) {
-      logWarn("extractDashed: no run pairs found");
+    if (votes.size === 0) {
+      logWarn("extractDashed: no dash pairs found");
       logTimeEnd("extractDashedRectangles");
       return;
     }
 
-    let bestKey = "",
-      bestCount = 0;
-    for (const [key, count] of pairVotes) {
-      if (count > bestCount) {
-        bestCount = count;
-        bestKey = key;
-      }
+    // Sort scores to find winner and runner-up
+    const sorted = [...votes.entries()].sort((a, b) => b[1] - a[1]);
+    const [bestKey, bestScore] = sorted[0];
+    const runnerScore = sorted[1]?.[1] ?? 0;
+    if (runnerScore > 0 && bestScore < runnerScore * DOM_RATIO) {
+      logWarn(`extractDashed: no dominant pattern (best=${bestScore}, runner=${runnerScore}, ratio=${(bestScore/runnerScore).toFixed(2)} < ${DOM_RATIO})`);
+      logTimeEnd("extractDashedRectangles");
+      return;
     }
-    const patDash = Number(bestKey.split(":")[0]);
-    const patGap = Number(bestKey.split(":")[1]);
-    log(`extractDashed: pattern → dash ~${patDash}px, gap ~${patGap}px (${bestCount} votes)`);
 
-    // --- Phase 2: find dashed segments on every row and column ---
+    const patDash = Number(bestKey.split(":")[0]);
+    const patGap  = Number(bestKey.split(":")[1]);
+    log(`extractDashed: dominant pattern dash=${patDash}px gap=${patGap}px score=${bestScore} (runner=${runnerScore})`);
+
+    // --- Phase 2: find H and V dashed segments ---
+    // STRICT TOLERANCES: every dash in a chain must be within ±DASH_TOL of patDash
+    // and every gap within ±GAP_TOL of patGap. If any run breaks the pattern, the
+    // chain is flushed. This is the core "lock-in" step.
+    const minSegLen  = Math.max(patDash * 6, minDim * 0.04);
+    const DASH_TOL   = 0.20; // ±20% of patDash — strict
+    const GAP_TOL    = 0.20; // ±20% of patGap  — strict
+    const lenTol     = Math.max(Math.round(patDash * DASH_TOL), 2);
+    const gapTol     = Math.max(Math.round(patGap  * GAP_TOL ), 2);
+    const minDashes  = 6;    // need at least 6 consecutive matching dashes
+
     type Seg = { fixed: number; start: number; end: number; pixels: number[] };
     const hSegs: Seg[] = [];
     const vSegs: Seg[] = [];
-    const lenTol = Math.max(patDash * 0.5, 3);
-    const gapTol = Math.max(patGap * 0.7, 3);
 
-    function findDashSegs(runs: Run[], fixed: number, dir: "h" | "v") {
-      const segs: { start: number; end: number; runs: Run[] }[] = [];
+    function findSegs(runs: Run[], fixed: number, dir: "h" | "v") {
       let chain: Run[] = [];
-      for (let i = 0; i < runs.length; i++) {
-        const r = runs[i];
-        if (r.len > maxDash || Math.abs(r.len - patDash) > lenTol) {
-          if (chain.length >= 2)
-            segs.push({
-              start: chain[0].start,
-              end: chain[chain.length - 1].end,
-              runs: [...chain],
-            });
-          chain = [];
-          continue;
-        }
+      function flush() {
+        if (chain.length < minDashes) { chain = []; return; }
+        const span = chain[chain.length - 1].end - chain[0].start + 1;
+        if (span < minSegLen) { chain = []; return; }
+        const pixels: number[] = [];
+        for (const r of chain)
+          for (let v = r.start; v <= r.end; v++)
+            pixels.push(dir === "h" ? fixed * width + v : v * width + fixed);
+        (dir === "h" ? hSegs : vSegs).push({ fixed, start: chain[0].start, end: chain[chain.length - 1].end, pixels });
+        chain = [];
+      }
+      for (const r of runs) {
+        if (r.len < minVote || r.len > maxDash || Math.abs(r.len - patDash) > lenTol) { flush(); continue; }
         if (chain.length > 0) {
-          const prev = chain[chain.length - 1];
-          const gap = r.start - prev.end - 1;
-          if (Math.abs(gap - patGap) > gapTol) {
-            if (chain.length >= 2)
-              segs.push({
-                start: chain[0].start,
-                end: chain[chain.length - 1].end,
-                runs: [...chain],
-              });
-            chain = [r];
-            continue;
-          }
+          const gap = r.start - chain[chain.length - 1].end - 1;
+          if (Math.abs(gap - patGap) > gapTol) { flush(); }
         }
         chain.push(r);
       }
-      if (chain.length >= 2)
-        segs.push({ start: chain[0].start, end: chain[chain.length - 1].end, runs: [...chain] });
-
-      for (const seg of segs) {
-        const pixels: number[] = [];
-        for (const r of seg.runs) {
-          for (let v = r.start; v <= r.end; v++) {
-            const idx = dir === "h" ? fixed * width + v : v * width + fixed;
-            pixels.push(idx);
-          }
-        }
-        (dir === "h" ? hSegs : vSegs).push({ fixed, start: seg.start, end: seg.end, pixels });
-      }
+      flush();
     }
 
-    for (let y = 0; y < height; y++)
-      findDashSegs(
-        getRuns(width, (x) => isInk(x, y)),
-        y,
-        "h"
-      );
-    for (let x = 0; x < width; x++)
-      findDashSegs(
-        getRuns(height, (y) => isInk(x, y)),
-        x,
-        "v"
-      );
+    for (let y = 0; y < height; y++) findSegs(getRowRuns(y), y, "h");
+    for (let x = 0; x < width;  x++) findSegs(getColRuns(x), x, "v");
 
-    log(`extractDashed: ${hSegs.length} h-segments, ${vSegs.length} v-segments`);
+    log(`extractDashed: ${hSegs.length} h-segs, ${vSegs.length} v-segs (minLen=${Math.round(minSegLen)}px)`);
 
-    // --- Phase 3: merge nearby parallel segments into edges ---
-    type Edge = {
-      dir: "h" | "v";
-      fixedMin: number;
-      fixedMax: number;
-      fixedAvg: number;
-      varStart: number;
-      varEnd: number;
-      pixels: number[];
-    };
+    // --- Phase 2b: noise filter — discard rows/cols that have many short
+    // segments clustered in a dense band (hatching, crosshatch, etc.) ---
+    const maxParallel = 5;
+    function filterHatching(segs: Seg[]): Seg[] {
+      // Group by approximate fixed position (band of patDash*2 px)
+      const kept: Seg[] = [];
+      const band = Math.max(patDash * 2, 12);
+      // Sort by fixed, slide a window
+      const sorted = [...segs].sort((a, b) => a.fixed - b.fixed);
+      const inDense = new Set<number>();
+      for (let i = 0; i < sorted.length; i++) {
+        let count = 1;
+        for (let j = i + 1; j < sorted.length && sorted[j].fixed - sorted[i].fixed <= band; j++) count++;
+        if (count > maxParallel) {
+          for (let j = i; j < sorted.length && sorted[j].fixed - sorted[i].fixed <= band; j++) inDense.add(j);
+        }
+      }
+      sorted.forEach((s, i) => { if (!inDense.has(i)) kept.push(s); });
+      return kept;
+    }
+    const hSegsF = filterHatching(hSegs);
+    const vSegsF = filterHatching(vSegs);
+    log(`extractDashed: after hatching filter → ${hSegsF.length} h, ${vSegsF.length} v`);
 
-    function mergeSegs(segs: Seg[], fixTol: number, overlapMin: number): Edge[] {
-      const sorted = [...segs].sort((a, b) => a.fixed - b.fixed || a.start - b.start);
+    // --- Phase 2c: bridge — merge same-row/col segs split by a crossing element ---
+    const bridgeGap = Math.max(patDash * 5, 30);
+    function bridge(segs: Seg[]): Seg[] {
+      const byFixed = new Map<number, Seg[]>();
+      for (const s of segs) { if (!byFixed.has(s.fixed)) byFixed.set(s.fixed, []); byFixed.get(s.fixed)!.push(s); }
+      const out: Seg[] = [];
+      for (const grp of byFixed.values()) {
+        grp.sort((a, b) => a.start - b.start);
+        let cur: Seg = { ...grp[0], pixels: [...grp[0].pixels] };
+        for (let k = 1; k < grp.length; k++) {
+          if (grp[k].start - cur.end - 1 <= bridgeGap)
+            cur = { fixed: cur.fixed, start: cur.start, end: grp[k].end, pixels: [...cur.pixels, ...grp[k].pixels] };
+          else { out.push(cur); cur = { ...grp[k], pixels: [...grp[k].pixels] }; }
+        }
+        out.push(cur);
+      }
+      return out;
+    }
+    const hSegsB = bridge(hSegsF);
+    const vSegsB = bridge(vSegsF);
+
+    // --- Phase 3: merge adjacent parallel segments (multi-row stroke) into edges ---
+    type Edge = { fixedAvg: number; varStart: number; varEnd: number; pixels: number[] };
+    function mergeToEdges(segs: Seg[], fixTol: number): Edge[] {
+      const sorted = [...segs].sort((a, b) => a.fixed - b.fixed);
       const used = new Set<number>();
       const edges: Edge[] = [];
       for (let i = 0; i < sorted.length; i++) {
         if (used.has(i)) continue;
-        const group = [sorted[i]];
-        used.add(i);
+        const grp = [sorted[i]]; used.add(i);
         for (let j = i + 1; j < sorted.length; j++) {
-          if (used.has(j)) continue;
-          if (sorted[j].fixed - sorted[i].fixed > fixTol) break;
-          const oStart = Math.max(sorted[i].start, sorted[j].start);
-          const oEnd = Math.min(sorted[i].end, sorted[j].end);
-          if (oEnd - oStart >= overlapMin) {
-            group.push(sorted[j]);
-            used.add(j);
-          }
+          if (used.has(j) || sorted[j].fixed - sorted[i].fixed > fixTol) break;
+          const ov = Math.min(sorted[i].end, sorted[j].end) - Math.max(sorted[i].start, sorted[j].start);
+          if (ov > 0) { grp.push(sorted[j]); used.add(j); }
         }
-        const allPx: number[] = [];
-        let fMin = Infinity,
-          fMax = -Infinity,
-          vStart = Infinity,
-          vEnd = -Infinity;
-        for (const s of group) {
-          fMin = Math.min(fMin, s.fixed);
-          fMax = Math.max(fMax, s.fixed);
-          vStart = Math.min(vStart, s.start);
-          vEnd = Math.max(vEnd, s.end);
-          allPx.push(...s.pixels);
-        }
-        edges.push({
-          dir: "h",
-          fixedMin: fMin,
-          fixedMax: fMax,
-          fixedAvg: Math.round((fMin + fMax) / 2),
-          varStart: vStart,
-          varEnd: vEnd,
-          pixels: allPx,
-        });
+        let fSum = 0, vS = Infinity, vE = -Infinity;
+        const px: number[] = [];
+        for (const s of grp) { fSum += s.fixed; vS = Math.min(vS, s.start); vE = Math.max(vE, s.end); px.push(...s.pixels); }
+        edges.push({ fixedAvg: Math.round(fSum / grp.length), varStart: vS, varEnd: vE, pixels: px });
       }
       return edges;
     }
-
-    const thickness = Math.max(patDash * 0.5, 6);
-    const hEdges = mergeSegs(hSegs, thickness, patDash);
-    const vEdges = mergeSegs(vSegs, thickness, patDash);
-    hEdges.forEach((e) => (e.dir = "h"));
-    vEdges.forEach((e) => (e.dir = "v"));
-
+    const thickness = Math.max(patDash * 0.5, 4);
+    const hEdges = mergeToEdges(hSegsB, thickness);
+    const vEdges = mergeToEdges(vSegsB, thickness);
     log(`extractDashed: ${hEdges.length} h-edges, ${vEdges.length} v-edges`);
 
-    // --- Phase 4: find closed rectangles ---
-    type Rect = { top: Edge; bottom: Edge; left: Edge; right: Edge };
+    // --- Phase 4: find closed rectangles (≥60% side coverage, meaningful size) ---
+    type Rect = { x: number; y: number; w: number; h: number; edges: Edge[] };
     const rects: Rect[] = [];
-    const cornerTol = thickness + patGap;
+    const cornerTol  = Math.max(patGap * 3, thickness * 2);
+    const minRectSide = Math.max(patDash * 5, minDim * 0.04);
+    const coverFrac   = 0.55;
 
     for (let ti = 0; ti < hEdges.length; ti++) {
       const top = hEdges[ti];
       for (let bi = ti + 1; bi < hEdges.length; bi++) {
-        const bottom = hEdges[bi];
-        if (bottom.fixedAvg - top.fixedAvg < 30) continue;
-        const oStart = Math.max(top.varStart, bottom.varStart);
-        const oEnd = Math.min(top.varEnd, bottom.varEnd);
-        if (oEnd - oStart < 30) continue;
+        const bot = hEdges[bi];
+        const rh = bot.fixedAvg - top.fixedAvg;
+        if (rh < minRectSide) continue;
+        const xS = Math.max(top.varStart, bot.varStart);
+        const xE = Math.min(top.varEnd,   bot.varEnd);
+        if (xE - xS < minRectSide) continue;
 
         for (const left of vEdges) {
-          if (Math.abs(left.fixedAvg - oStart) > cornerTol) continue;
-          if (left.varStart > top.fixedAvg + cornerTol) continue;
-          if (left.varEnd < bottom.fixedAvg - cornerTol) continue;
+          if (Math.abs(left.fixedAvg - xS) > cornerTol) continue;
+          const lSpan = Math.min(left.varEnd, bot.fixedAvg + cornerTol) - Math.max(left.varStart, top.fixedAvg - cornerTol);
+          if (lSpan < rh * coverFrac) continue;
 
           for (const right of vEdges) {
-            if (right.fixedAvg <= left.fixedAvg + 30) continue;
-            if (Math.abs(right.fixedAvg - oEnd) > cornerTol) continue;
-            if (right.varStart > top.fixedAvg + cornerTol) continue;
-            if (right.varEnd < bottom.fixedAvg - cornerTol) continue;
-
-            rects.push({ top, bottom, left, right });
+            if (right.fixedAvg <= left.fixedAvg + minRectSide) continue;
+            if (Math.abs(right.fixedAvg - xE) > cornerTol) continue;
+            const rSpan = Math.min(right.varEnd, bot.fixedAvg + cornerTol) - Math.max(right.varStart, top.fixedAvg - cornerTol);
+            if (rSpan < rh * coverFrac) continue;
+            const rw = right.fixedAvg - left.fixedAvg;
+            const tCov = Math.min(top.varEnd, right.fixedAvg + cornerTol) - Math.max(top.varStart, left.fixedAvg - cornerTol);
+            const bCov = Math.min(bot.varEnd, right.fixedAvg + cornerTol) - Math.max(bot.varStart, left.fixedAvg - cornerTol);
+            if (tCov < rw * coverFrac || bCov < rw * coverFrac) continue;
+            rects.push({ x: left.fixedAvg, y: top.fixedAvg, w: rw, h: rh,
+                         edges: [top, bot, left, right] });
           }
         }
       }
     }
+    log(`extractDashed: ${rects.length} rectangle(s) found`);
 
-    log(`extractDashed: ${rects.length} closed rectangles found`);
+    // --- Phase 5: render ---
+    // Erase dash pixels from working image, add them to layer.
+    // Then draw clean dashed rectangle outlines over detected zones.
+    const edgeSet = new Set<Edge>();
+    if (rects.length > 0) rects.forEach((r) => r.edges.forEach((e) => edgeSet.add(e)));
+    else { hEdges.forEach((e) => edgeSet.add(e)); vEdges.forEach((e) => edgeSet.add(e)); }
 
-    // Collect edges to extract
-    const edgesToExtract: Edge[] = [];
-    if (rects.length > 0) {
-      const rectEdges = new Set<Edge>();
-      for (const r of rects) {
-        rectEdges.add(r.top);
-        rectEdges.add(r.bottom);
-        rectEdges.add(r.left);
-        rectEdges.add(r.right);
-      }
-      edgesToExtract.push(...rectEdges);
-    } else {
-      log(
-        `extractDashed: no closed rects — falling back to all ${hEdges.length + vEdges.length} dashed edges`
-      );
-      edgesToExtract.push(...hEdges, ...vEdges);
-    }
+    if (edgeSet.size === 0) { logWarn("extractDashed: nothing to render"); logTimeEnd("extractDashedRectangles"); return; }
 
-    if (edgesToExtract.length === 0) {
-      logWarn("extractDashed: nothing to extract");
-      logTimeEnd("extractDashedRectangles");
-      return;
-    }
-
-    const layerData = new ImageData(width, height);
-    const ld = layerData.data;
+    const tmpData = new ImageData(width, height);
     let count = 0;
-    const extracted = new Set<number>();
-
-    for (const edge of edgesToExtract) {
+    const seen = new Set<number>();
+    for (const edge of edgeSet) {
       for (const pos of edge.pixels) {
-        if (extracted.has(pos)) continue;
-        extracted.add(pos);
+        if (seen.has(pos)) continue; seen.add(pos);
         const i4 = pos * 4;
         if (data[i4] === 255 && data[i4 + 1] === 255 && data[i4 + 2] === 255) continue;
-        ld[i4] = data[i4];
-        ld[i4 + 1] = data[i4 + 1];
-        ld[i4 + 2] = data[i4 + 2];
-        ld[i4 + 3] = data[i4 + 3];
-        data[i4] = 255;
-        data[i4 + 1] = 255;
-        data[i4 + 2] = 255;
-        data[i4 + 3] = 255;
+        tmpData.data[i4] = data[i4]; tmpData.data[i4 + 1] = data[i4 + 1];
+        tmpData.data[i4 + 2] = data[i4 + 2]; tmpData.data[i4 + 3] = data[i4 + 3];
+        data[i4] = 255; data[i4 + 1] = 255; data[i4 + 2] = 255; data[i4 + 3] = 255;
         count++;
       }
     }
 
+    const lc = document.createElement("canvas");
+    lc.width = width; lc.height = height;
+    const lCtx = lc.getContext("2d");
+    let layerData = tmpData;
+    if (lCtx) {
+      lCtx.putImageData(tmpData, 0, 0);
+      if (rects.length > 0) {
+        lCtx.strokeStyle = "rgba(0,0,0,0.9)";
+        lCtx.lineWidth = Math.max(2, Math.round(thickness * 0.6));
+        lCtx.setLineDash([patDash, patGap]);
+        for (const r of rects) lCtx.strokeRect(r.x, r.y, r.w, r.h);
+      }
+      layerData = lCtx.getImageData(0, 0, width, height);
+    }
+
     logTimeEnd("extractDashedRectangles");
-    const label =
-      rects.length > 0
-        ? `Dashed Rects (${rects.length}) ~${patDash}/${patGap}px`
-        : `Dashed Segs (${edgesToExtract.length}) ~${patDash}/${patGap}px`;
-    log(`extractDashed: ${count} pixels — ${label}`);
+    const label = rects.length > 0
+      ? `Dashed Zones (${rects.length}) ~${patDash}/${patGap}px`
+      : `Dashed Segs ~${patDash}/${patGap}px`;
+    log(`extractDashed: ${count} px — ${label}`);
     if (count === 0) return;
-    layers.push({
-      name: label,
-      visible: true,
+    layers.push({ name: label, visible: true,
       imageDataUrl: imageDataToDataUrl(layerData),
-      rawImageData: layerData,
-      pixelCount: count,
-    });
+      rawImageData: layerData, pixelCount: count });
   }
 
   function extractMidtones() {
@@ -1204,14 +1648,27 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
   const REJECT_TEXT_FILTER = true;
   let symbolScanResults: { candidates: any[]; groupCount: number; componentCount: number } | null =
     null;
-  let pipeAnalysisResults: {
-    tJunctions: { x: number; y: number }[];
-    lJunctions: { x: number; y: number }[];
-    endpoints: { x: number; y: number }[];
-    crossings: { x: number; y: number }[];
-    skeletonPixelCount: number;
-    scale: number;
-  } | null = null;
+  let pipeAnalysisResults: PipeAnalysisResults | null = null;
+
+  type SprinklerHeadSubLayer = {
+    name: string;           // "Type A", "Type B", …
+    color: string;          // hex fill color for markers
+    visible: boolean;
+    candidates: any[];      // subset of symbolScanResults.candidates
+  };
+  let sprinklerSubLayers: SprinklerHeadSubLayer[] = [];
+
+  // Palette for up to 8 distinct head types
+  const SPRINKLER_COLORS = [
+    "#3b82f6", // blue
+    "#f97316", // orange
+    "#a855f7", // purple
+    "#10b981", // emerald
+    "#f59e0b", // amber
+    "#ec4899", // pink
+    "#06b6d4", // cyan
+    "#84cc16", // lime
+  ];
 
   function isNeutralInkPixel(r: number, g: number, b: number, a: number) {
     if (a / 255 < 0.08) return false;
@@ -2029,13 +2486,33 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
 
   // ── Pipe analysis (skeletonization + junction detection) ──────────
 
+  type JunctionPoint = { x: number; y: number; arms: [number, number][] };
+  type SprinklerConnection = {
+    idx: number;       // index into symbolScanResults.candidates
+    cx: number; cy: number;  // image-space center
+    connType: "primary" | "branch" | "none";
+    distPx: number;    // distance to nearest skeleton px (image-space)
+  };
+  let sprinklerConnections: SprinklerConnection[] = [];
+
   type PipeAnalysisResults = {
-    tJunctions: { x: number; y: number }[];
-    lJunctions: { x: number; y: number }[];
-    endpoints: { x: number; y: number }[];
-    crossings: { x: number; y: number }[];
+    tJunctions:    JunctionPoint[]; // all tees (kept for reference)
+    equalTees:     JunctionPoint[]; // tees where all arms are same-size primary pipe
+    reducingTees:  JunctionPoint[]; // tees at primary→branch size transitions
+    lJunctions:    JunctionPoint[];
+    endpoints:     JunctionPoint[];
+    crossings:     JunctionPoint[];
     skeletonPixelCount: number;
     scale: number;
+    // Work-space skeleton + capillary data
+    wsWidth: number;
+    wsHeight: number;
+    primarySkeleton: Uint8Array;  // work-space
+    capillaryMask:   Uint8Array;  // work-space
+    capillaryPixelCount: number;
+    /** Full-resolution primary pipe binary mask (saved so branch lines can be re-extracted without re-running the full analysis) */
+    fullPrimaryMask: Uint8Array;
+    workSpaceMask:   Uint8Array;  // work-space primary pipe mask (needed for re-extraction)
   };
 
   function zhangSuenThin(src: Uint8Array, w: number, h: number): Uint8Array {
@@ -2100,9 +2577,15 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     return s;
   }
 
-  function enforceHVSkeleton(skel: Uint8Array, w: number, h: number): Uint8Array {
+  // Returns the enforced skeleton plus the isH / isV membership maps,
+  // which are needed by classifySkeletonJunctions for accurate elbow detection.
+  function enforceHVSkeleton(
+    skel: Uint8Array, w: number, h: number
+  ): { result: Uint8Array; isH: Uint8Array; isV: Uint8Array } {
     const isH = new Uint8Array(w * h);
     const isV = new Uint8Array(w * h);
+    // Minimum 2 pixels to qualify as an H or V run.
+    // (3 was tried but cut off corner stubs, breaking elbow detection.)
     const MIN_RUN = 2;
 
     for (let y = 0; y < h; y++) {
@@ -2134,22 +2617,135 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     }
 
     const result = new Uint8Array(w * h);
-    let kept = 0, removed = 0;
+    let kept = 0, removed = 0, corners = 0;
     for (let i = 0; i < w * h; i++) {
       if (isH[i] || isV[i]) { result[i] = 1; kept++; }
       else if (skel[i]) { removed++; }
     }
-    log(`enforceHVSkeleton: kept ${kept}, removed ${removed} non-H/V pixels`);
-    return result;
+
+    // Second pass: preserve "corner bridge" pixels — skeleton pixels that sit
+    // between the end of an H run and the start of a V run (or vice versa) but
+    // were removed above because they formed a run of length < MIN_RUN in their
+    // row or column.  Without these the corner pixel is missing from the skeleton
+    // and elbows become undetectable.
+    for (let y = 1; y < h - 1; y++) {
+      for (let x = 1; x < w - 1; x++) {
+        const i = y * w + x;
+        if (!skel[i] || result[i]) continue;
+        const adjH = (x > 0 && isH[i - 1]) || (x < w - 1 && isH[i + 1]);
+        const adjV = (y > 0 && isV[i - w]) || (y < h - 1 && isV[i + w]);
+        if (adjH && adjV) {
+          result[i] = 1;
+          isH[i] = 1; // treat as part of the H run it bridges
+          isV[i] = 1; // treat as part of the V run it bridges
+          corners++;
+        }
+      }
+    }
+
+    log(`enforceHVSkeleton: kept=${kept}, corners=${corners}, removed=${removed - corners}`);
+    return { result, isH, isV };
+  }
+
+  // Remove closed-loop skeleton components that are NOT valid rectangles.
+  // Pipes are open systems on the XY axis — any closed loop must be a symbol
+  // (hexagon, circle, diamond, etc.) and should be erased before junction detection.
+  //
+  // A valid rectangular loop has EXACTLY 4 elbow pixels whose XY positions form
+  // the four corners of a rectangle.  Anything else (more elbows, tees, non-
+  // rectangular corner arrangement) is removed from the skeleton in-place.
+  function removeNonRectangularClosedLoops(skel: Uint8Array, w: number, h: number): void {
+    const visited = new Uint8Array(w * h);
+
+    for (let start = 0; start < w * h; start++) {
+      if (!skel[start] || visited[start]) continue;
+
+      // BFS to collect this connected component
+      const pixels: number[] = [];
+      const queue: number[] = [start];
+      visited[start] = 1;
+      let endpointCount = 0;
+
+      while (queue.length) {
+        const p = queue.pop()!;
+        pixels.push(p);
+        const px = p % w, py = Math.floor(p / w);
+        let neighbors = 0;
+        for (const [dx, dy] of [[-1,0],[1,0],[0,-1],[0,1]] as const) {
+          const nx = px + dx, ny = py + dy;
+          if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+          const ni = ny * w + nx;
+          if (!skel[ni]) continue;
+          neighbors++;
+          if (!visited[ni]) { visited[ni] = 1; queue.push(ni); }
+        }
+        if (neighbors === 1) endpointCount++;
+      }
+
+      // Components with endpoints are open pipe runs — keep them.
+      if (endpointCount > 0) continue;
+
+      // Pure closed loop (no endpoints).  Determine if it's a valid rectangle:
+      // exactly 4 elbow pixels (H-neighbor on one side AND V-neighbor on one side)
+      // whose positions form a rectangular corner arrangement.
+      const elbows: { x: number; y: number }[] = [];
+      for (const p of pixels) {
+        const px = p % w, py = Math.floor(p / w);
+        let hN = 0, vN = 0;
+        if (px > 0     && skel[p - 1]) hN++;
+        if (px < w - 1 && skel[p + 1]) hN++;
+        if (py > 0     && skel[p - w]) vN++;
+        if (py < h - 1 && skel[p + w]) vN++;
+        if (hN === 1 && vN === 1) elbows.push({ x: px, y: py });
+      }
+
+      let isRectangle = false;
+      if (elbows.length === 4) {
+        const xs = [...new Set(elbows.map(e => e.x))];
+        const ys = [...new Set(elbows.map(e => e.y))];
+        // Rectangle: exactly 2 distinct X values and 2 distinct Y values,
+        // and every elbow is at one of those intersections.
+        if (xs.length === 2 && ys.length === 2) {
+          const xSet = new Set(xs), ySet = new Set(ys);
+          isRectangle = elbows.every(e => xSet.has(e.x) && ySet.has(e.y));
+        }
+      }
+
+      if (!isRectangle) {
+        // Erase from skeleton — skeletonMaskClean will propagate to display
+        for (const p of pixels) skel[p] = 0;
+      }
+    }
   }
 
   function classifySkeletonJunctions(
-    skel: Uint8Array, w: number, h: number, scale: number
+    skel: Uint8Array, isH: Uint8Array, isV: Uint8Array, w: number, h: number, scale: number
   ): Omit<PipeAnalysisResults, "scale"> {
-    const rawT: { x: number; y: number }[] = [];
-    const rawL: { x: number; y: number }[] = [];
-    const rawEnd: { x: number; y: number }[] = [];
-    const rawX: { x: number; y: number }[] = [];
+    // Build per-pixel "is this at the end of its H or V run?" flags.
+    // An H-end pixel has no isH neighbor on one side (it's a run terminus).
+    // Same for V.  Elbows are H-end AND V-end at the same location.
+    const hIsEnd = new Uint8Array(w * h);
+    const vIsEnd = new Uint8Array(w * h);
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const i = y * w + x;
+        if (isH[i]) {
+          const lH = x > 0     && isH[i - 1];
+          const rH = x < w - 1 && isH[i + 1];
+          if (!lH || !rH) hIsEnd[i] = 1;
+        }
+        if (isV[i]) {
+          const tV = y > 0     && isV[i - w];
+          const bV = y < h - 1 && isV[i + w];
+          if (!tV || !bV) vIsEnd[i] = 1;
+        }
+      }
+    }
+
+    const rawT:   JunctionPoint[] = [];
+    const rawL:   JunctionPoint[] = [];
+    const rawEnd: JunctionPoint[] = [];
+    const rawX:   JunctionPoint[] = [];
     let skelCount = 0;
 
     for (let y = 1; y < h - 1; y++) {
@@ -2158,40 +2754,89 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
         const idx = row + x;
         if (!skel[idx]) continue;
         skelCount++;
-        const p = [
-          skel[idx - w],      skel[idx - w + 1],
-          skel[idx + 1],      skel[idx + w + 1],
-          skel[idx + w],      skel[idx + w - 1],
-          skel[idx - 1],      skel[idx - w - 1],
-        ];
-        let cn = 0;
-        for (let k = 0; k < 8; k++) {
-          if (!p[k] && p[(k + 1) % 8]) cn++;
-        }
-        const ox = x * scale, oy = y * scale;
-        if (cn === 1) {
-          rawEnd.push({ x: ox, y: oy });
-        } else if (cn === 2) {
-          // Distinguish straight continuation from 90° bend (L-junction).
-          // Pipes are H/V, so check cardinal neighbors for perpendicular arms.
-          const hasN = !!p[0], hasE = !!p[2], hasS = !!p[4], hasW = !!p[6];
-          const perpPairs = (hasN || hasS) && (hasE || hasW);
-          const straight = (hasN && hasS && !hasE && !hasW) || (hasE && hasW && !hasN && !hasS);
-          if (perpPairs && !straight) {
-            rawL.push({ x: ox, y: oy });
+
+        const inH = !!isH[idx], inV = !!isV[idx];
+        const eH  = !!hIsEnd[idx], eV = !!vIsEnd[idx];
+        const ox  = x * scale, oy = y * scale;
+
+        // Arm directions derived directly from the skeleton — rigid, one icon per type.
+        // H direction: toward whichever side has an H neighbor (pipe extends that way).
+        const hDir: [number,number] = (x > 0 && isH[idx - 1]) ? [-1, 0] : [1, 0];
+        // V direction: toward whichever side has a V neighbor.
+        const vDir: [number,number] = (y > 0 && isV[idx - w]) ? [0, -1] : [0, 1];
+
+        if (inH && inV) {
+          if (eH && eV) {
+            // Elbow: exactly 2 perpendicular arms — one H, one V
+            rawL.push({ x: ox, y: oy, arms: [hDir, vDir] });
+          } else if (eH) {
+            // Tee: H ends here (1 arm), V continues (2 arms)
+            rawT.push({ x: ox, y: oy, arms: [hDir, [0,-1], [0,1]] });
+          } else if (eV) {
+            // Tee: V ends here (1 arm), H continues (2 arms)
+            rawT.push({ x: ox, y: oy, arms: [vDir, [-1,0], [1,0]] });
+          } else {
+            // Crossing: all 4 arms
+            rawX.push({ x: ox, y: oy, arms: [[-1,0],[1,0],[0,-1],[0,1]] });
           }
-        } else if (cn === 3) {
-          rawT.push({ x: ox, y: oy });
-        } else if (cn >= 4) {
-          rawX.push({ x: ox, y: oy });
+        } else if (inH && eH) {
+          // Endpoint on a horizontal run
+          rawEnd.push({ x: ox, y: oy, arms: [hDir] });
+        } else if (inV && eV) {
+          // Endpoint on a vertical run
+          rawEnd.push({ x: ox, y: oy, arms: [vDir] });
         }
+        // Interior pixels are just pipe — skip.
       }
     }
 
+    // ── Post-processing: enforce "endpoints are only terminators" ────────────
+    //
+    // Post-processing: merge split corners, then keep ALL remaining endpoints.
+    //
+    // Rule (a) — perpendicular pair → elbow:
+    //   Two endpoints within MERGE_R that have perpendicular arms are the split
+    //   halves of a missed 90° corner (Zhang-Suen removed the junction pixel).
+    //   Merge them into a single elbow at the midpoint.
+    //
+    // Rule (b) — REMOVED. Every endpoint that survives rule (a) is a genuine pipe
+    //   termination and MUST receive an end-cap marker, regardless of proximity to
+    //   other junctions.  Short stubs, capped branches, supply connections — all
+    //   real terminations need to be shown.
+
+    const MERGE_R = 20 * scale; // image-space px — merge split corner stubs
+
+    // (a) Perpendicular pair → elbow
+    const mergedIdx = new Set<number>();
+    for (let i = 0; i < rawEnd.length; i++) {
+      if (mergedIdx.has(i)) continue;
+      const a = rawEnd[i];
+      const [ax, ay] = a.arms[0];
+      for (let j = i + 1; j < rawEnd.length; j++) {
+        if (mergedIdx.has(j)) continue;
+        const b = rawEnd[j];
+        const [bx, by] = b.arms[0];
+        if (ax * bx + ay * by !== 0) continue; // must be perpendicular
+        const ddx = a.x - b.x, ddy = a.y - b.y;
+        if (ddx * ddx + ddy * ddy > MERGE_R * MERGE_R) continue;
+        rawL.push({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, arms: [a.arms[0], b.arms[0]] });
+        mergedIdx.add(i);
+        mergedIdx.add(j);
+        break;
+      }
+    }
+
+    // Remove only the endpoints that were consumed by the merge above
+    const filteredEnd = rawEnd.filter((_, i) => !mergedIdx.has(i));
+    rawEnd.length = 0;
+    rawEnd.push(...filteredEnd);
+    // ─────────────────────────────────────────────────────────────────────────
+
     const clusterRadius = Math.max(6, 4 * scale);
-    const cluster = (pts: { x: number; y: number }[]) => {
+    // Cluster nearby detections; arms come from the first (seed) point in each cluster.
+    const cluster = (pts: JunctionPoint[]) => {
       const used = new Uint8Array(pts.length);
-      const out: { x: number; y: number }[] = [];
+      const out: JunctionPoint[] = [];
       for (let i = 0; i < pts.length; i++) {
         if (used[i]) continue;
         used[i] = 1;
@@ -2204,7 +2849,7 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
             sx += pts[j].x; sy += pts[j].y; cnt++;
           }
         }
-        out.push({ x: Math.round(sx / cnt), y: Math.round(sy / cnt) });
+        out.push({ x: Math.round(sx / cnt), y: Math.round(sy / cnt), arms: pts[i].arms });
       }
       return out;
     };
@@ -2212,10 +2857,318 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     return {
       tJunctions: cluster(rawT),
       lJunctions: cluster(rawL),
-      endpoints: cluster(rawEnd),
-      crossings: cluster(rawX),
+      endpoints:  cluster(rawEnd),
+      crossings:  cluster(rawX),
       skeletonPixelCount: skelCount,
-    };
+      // Extended fields filled in by analyzePipeLayer after this returns
+      equalTees: [], reducingTees: [],
+      wsWidth: 0, wsHeight: 0,
+      primarySkeleton: new Uint8Array(0),
+      capillaryMask: new Uint8Array(0),
+      capillaryPixelCount: 0,
+      fullPrimaryMask: new Uint8Array(0),
+      workSpaceMask:   new Uint8Array(0),
+    } as PipeAnalysisResults;
+  }
+
+  // Remove disconnected noise from the pipe layer.
+  // Rules (all must pass to KEEP a component):
+  //   1. Pixel count >= MIN_PIXELS
+  //   2. Bounding-box max dimension >= MIN_EXTENT  (must "flow across" the drawing)
+  //   3. Pixel count >= FRAC_OF_MAX * largest_component  (must be part of a real system)
+  // ── Morphological dilation helpers ────────────────────────────────────────
+  // Separable diamond dilation (X-pass then Y-pass) — O(w·h·r), fast enough
+  // for images up to ~4000×4000 with r ≤ 5.
+
+  // Binary mask dilation — separable (H then V), diamond-equivalent for small r.
+  function dilateMask(mask: Uint8Array, w: number, h: number, r: number): Uint8Array {
+    const tmp = new Uint8Array(w * h);
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        if (mask[y * w + x]) { tmp[y * w + x] = 1; continue; }
+        for (let d = 1; d <= r; d++) {
+          if ((x - d >= 0 && mask[y * w + x - d]) || (x + d < w && mask[y * w + x + d])) {
+            tmp[y * w + x] = 1; break;
+          }
+        }
+      }
+    }
+    const out = new Uint8Array(w * h);
+    for (let x = 0; x < w; x++) {
+      for (let y = 0; y < h; y++) {
+        if (tmp[y * w + x]) { out[y * w + x] = 1; continue; }
+        for (let d = 1; d <= r; d++) {
+          if ((y - d >= 0 && tmp[(y - d) * w + x]) || (y + d < h && tmp[(y + d) * w + x])) {
+            out[y * w + x] = 1; break;
+          }
+        }
+      }
+    }
+    return out;
+  }
+
+  // Binary mask erosion — separable (H then V).
+  function erodeMask(mask: Uint8Array, w: number, h: number, r: number): Uint8Array {
+    const tmp = new Uint8Array(w * h);
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        let ok = 1;
+        for (let d = 1; d <= r && ok; d++) {
+          if (x - d < 0 || !mask[y * w + x - d]) ok = 0;
+          if (x + d >= w || !mask[y * w + x + d]) ok = 0;
+        }
+        if (ok && mask[y * w + x]) tmp[y * w + x] = 1;
+      }
+    }
+    const out = new Uint8Array(w * h);
+    for (let x = 0; x < w; x++) {
+      for (let y = 0; y < h; y++) {
+        let ok = 1;
+        for (let d = 1; d <= r && ok; d++) {
+          if (y - d < 0 || !tmp[(y - d) * w + x]) ok = 0;
+          if (y + d >= h || !tmp[(y + d) * w + x]) ok = 0;
+        }
+        if (ok && tmp[y * w + x]) out[y * w + x] = 1;
+      }
+    }
+    return out;
+  }
+
+  // Morphological closing = dilate then erode by same radius.
+  // Fills small holes/gaps without enlarging the overall structure.
+  function closeMask(mask: Uint8Array, w: number, h: number, r: number): Uint8Array {
+    return erodeMask(dilateMask(mask, w, h, r), w, h, r);
+  }
+
+  // RGBA dilation — expands visible pipe pixels outward by r, copying
+  // the source pipe pixel's color so the drawn lines look wider.
+  // Only non-pipe pixels (near-white / transparent) are overwritten.
+  function dilateRawPipeData(data: Uint8ClampedArray, w: number, h: number, r: number): void {
+    const isPipe = new Uint8Array(w * h);
+    for (let i = 0; i < w * h; i++) {
+      const d = i * 4;
+      isPipe[i] = (data[d + 3] > 20 && !(data[d] > 245 && data[d + 1] > 245 && data[d + 2] > 245)) ? 1 : 0;
+    }
+    // X-pass: for each pixel, record the nearest pipe pixel index in the same row.
+    const xSrc = new Int32Array(w * h).fill(-1);
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const i = y * w + x;
+        if (isPipe[i]) { xSrc[i] = i; continue; }
+        for (let d = 1; d <= r; d++) {
+          if (x - d >= 0 && isPipe[y * w + x - d]) { xSrc[i] = y * w + x - d; break; }
+          if (x + d <  w && isPipe[y * w + x + d]) { xSrc[i] = y * w + x + d; break; }
+        }
+      }
+    }
+    // Y-pass: smear the X-dilated sources downward/upward.
+    // All reads (data[si]) are from original pipe pixels — safe to write in-place.
+    for (let x = 0; x < w; x++) {
+      for (let y = 0; y < h; y++) {
+        const i = y * w + x;
+        if (isPipe[i]) continue; // never overwrite original pipe pixels
+        let src = xSrc[i];
+        if (src === -1) {
+          for (let d = 1; d <= r; d++) {
+            if (y - d >= 0 && xSrc[(y - d) * w + x] !== -1) { src = xSrc[(y - d) * w + x]; break; }
+            if (y + d <  h && xSrc[(y + d) * w + x] !== -1) { src = xSrc[(y + d) * w + x]; break; }
+          }
+        }
+        if (src === -1) continue;
+        const si = src * 4, di = i * 4;
+        data[di] = data[si]; data[di + 1] = data[si + 1]; data[di + 2] = data[si + 2];
+        data[di + 3] = Math.round(data[si + 3] * 0.9);
+      }
+    }
+  }
+
+  // Any component that fails is erased from both fullMask AND rawImageData so the
+  // visual layer display also updates.
+  function cleanIsolatedPipeComponents(
+    fullMask: Uint8Array,
+    imgData: Uint8ClampedArray,
+    width: number,
+    height: number
+  ): number {
+    const minDim     = Math.min(width, height);
+    const MIN_PIXELS = Math.max(40, Math.round(minDim * 0.3));   // absolute floor
+    const MIN_EXTENT = Math.max(20, Math.round(minDim * 0.015)); // must span at least 1.5% of image
+    const FRAC_OF_MAX = 0.03; // must be ≥ 3% of the largest component
+
+    // BFS with head-pointer for O(n) dequeue
+    const labels  = new Int32Array(width * height).fill(-1);
+    const compMeta: { count: number; minX: number; maxX: number; minY: number; maxY: number; start: number }[] = [];
+
+    for (let si = 0; si < width * height; si++) {
+      if (!fullMask[si] || labels[si] !== -1) continue;
+      const compIdx = compMeta.length;
+      const meta = { count: 0, minX: width, maxX: 0, minY: height, maxY: 0, start: si };
+      const queue: number[] = [si];
+      labels[si] = compIdx;
+      let head = 0;
+      while (head < queue.length) {
+        const idx = queue[head++];
+        meta.count++;
+        const x = idx % width, y = (idx / width) | 0;
+        if (x < meta.minX) meta.minX = x; if (x > meta.maxX) meta.maxX = x;
+        if (y < meta.minY) meta.minY = y; if (y > meta.maxY) meta.maxY = y;
+        // 4-connected neighbors
+        if (x > 0         && fullMask[idx - 1]     && labels[idx - 1]     === -1) { labels[idx - 1]     = compIdx; queue.push(idx - 1); }
+        if (x < width - 1 && fullMask[idx + 1]     && labels[idx + 1]     === -1) { labels[idx + 1]     = compIdx; queue.push(idx + 1); }
+        if (y > 0         && fullMask[idx - width]  && labels[idx - width]  === -1) { labels[idx - width]  = compIdx; queue.push(idx - width); }
+        if (y < height - 1 && fullMask[idx + width] && labels[idx + width] === -1) { labels[idx + width] = compIdx; queue.push(idx + width); }
+      }
+      compMeta.push(meta);
+    }
+
+    const maxCount = compMeta.reduce((m, c) => Math.max(m, c.count), 1);
+    const minFracCount = maxCount * FRAC_OF_MAX;
+
+    // Determine which components to erase
+    const erase = new Uint8Array(compMeta.length);
+    for (let ci = 0; ci < compMeta.length; ci++) {
+      const c = compMeta[ci];
+      const extent = Math.max(c.maxX - c.minX + 1, c.maxY - c.minY + 1);
+      if (c.count < MIN_PIXELS || extent < MIN_EXTENT || c.count < minFracCount) {
+        erase[ci] = 1;
+      }
+    }
+
+    let removed = 0;
+    for (let i = 0; i < width * height; i++) {
+      if (fullMask[i] && erase[labels[i]]) {
+        fullMask[i] = 0;
+        const i4 = i * 4;
+        imgData[i4] = 255; imgData[i4 + 1] = 255; imgData[i4 + 2] = 255; imgData[i4 + 3] = 255;
+        removed++;
+      }
+    }
+
+    const kept = compMeta.filter((_, ci) => !erase[ci]).length;
+    log(`cleanIsolatedPipeComponents: ${compMeta.length} components → kept ${kept}, erased ${compMeta.length - kept} (${removed} px)`);
+    return removed;
+  }
+
+  /**
+   * Magnetized branch-line extraction.
+   *
+   * Branch lines can ONLY emerge from the primary pipe body — they are seeded
+   * at points where the primary mask edge directly contacts a dark-neutral pixel,
+   * then the BFS grows strictly outward through connected dark pixels.
+   * Any dark segment that doesn't physically touch the primary pipe body is ignored,
+   * no matter how close it is spatially.
+   *
+   * Algorithm:
+   *  1. Build a dark-neutral pixel mask (gray < 140, sat < 0.20, not in primary).
+   *  2. Compute the "exit edge" of the primary pipe body: pixels adjacent (4-conn)
+   *     to primary mask pixels that are themselves dark-neutral.  These are the
+   *     only valid branch-line entry points ("sockets").
+   *  3. BFS from sockets through darkWS — grows only through connected dark lines
+   *     anchored to the primary network.
+   *  4. Keep only H or V runs ≥ MIN_RUN pixels (removes single-pixel noise).
+   */
+  function extractCapillaryLines(
+    primaryMaskFull: Uint8Array,  // full-res primary pipe mask (after skeleton clean)
+    primaryWorkMask: Uint8Array,  // work-space primary pipe mask (for edge seeding)
+    primarySkel: Uint8Array,      // work-space primary skeleton (unused here, kept for API compat)
+    fullW: number, fullH: number, // full-res dims
+    w: number,     h: number,     // work-space dims
+    scale: number,
+    grayThreshold = 190           // max gray to qualify as a dark capillary pixel (lower = stricter)
+  ): Uint8Array {
+    if (!workingImageData) return new Uint8Array(w * h);
+    const fData = workingImageData.data;
+    logTime("extractCapillaryLines");
+
+    // ── 1. Dark-neutral mask in work-space ─────────────────────────────
+    const darkWS = new Uint8Array(w * h);
+    for (let dy = 0; dy < h; dy++) {
+      for (let dx = 0; dx < w; dx++) {
+        let found = false;
+        for (let sy = dy * scale; sy < Math.min((dy + 1) * scale, fullH) && !found; sy++) {
+          for (let sx = dx * scale; sx < Math.min((dx + 1) * scale, fullW) && !found; sx++) {
+            const fi = sy * fullW + sx;
+            if (primaryMaskFull[fi]) continue;   // already a primary pipe pixel
+            const i4 = fi * 4;
+            const r = fData[i4], g = fData[i4+1], b = fData[i4+2], a = fData[i4+3];
+            if (a < 20 || (r > 235 && g > 235 && b > 235)) continue;
+            const gray = r * 0.299 + g * 0.587 + b * 0.114;
+            // No saturation filter — pixels adjacent to the colored primary pipe
+            // pick up color bleed from PDF rendering and would otherwise be excluded.
+            if (gray < grayThreshold) found = true;
+          }
+        }
+        darkWS[dy * w + dx] = found ? 1 : 0;
+      }
+    }
+
+    // ── 2. Socket seeding: dark pixels that directly touch the primary body ─
+    // A socket is any darkWS pixel whose 4-connected neighborhood contains
+    // at least one primary-mask pixel.  These are the "exit points" where branch
+    // lines leave the colored main.
+    // We also allow a 1-pixel gap to handle the natural 1-px boundary between
+    // the colored pipe body and the adjacent dark branch line — achieved by
+    // dilating the primaryWorkMask by 1 before the adjacency check.
+    const dilPrimary1 = dilateMask(primaryWorkMask, w, h, 1);
+    const capMask = new Uint8Array(w * h);
+    const visited = new Uint8Array(w * h);
+    // Mark primary body as visited so BFS cannot enter it
+    for (let i = 0; i < w * h; i++) {
+      if (primaryWorkMask[i]) visited[i] = 1;
+    }
+
+    const queue: number[] = [];
+    let qHead = 0;
+    for (let i = 0; i < w * h; i++) {
+      if (darkWS[i] && dilPrimary1[i] && !visited[i]) {
+        capMask[i] = 1; visited[i] = 1; queue.push(i);
+      }
+    }
+
+    // ── 3. BFS — grows only through connected darkWS ───────────────────
+    while (qHead < queue.length) {
+      const idx = queue[qHead++];
+      const x = idx % w, y = (idx / w) | 0;
+      const nbrs = [
+        x > 0     ? idx - 1 : -1,
+        x < w - 1 ? idx + 1 : -1,
+        y > 0     ? idx - w : -1,
+        y < h - 1 ? idx + w : -1,
+      ];
+      for (const ni of nbrs) {
+        if (ni < 0 || visited[ni] || !darkWS[ni]) continue;
+        visited[ni] = 1; capMask[ni] = 1; queue.push(ni);
+      }
+    }
+
+    // ── 4. Keep only pixels in H or V runs ≥ MIN_RUN ──────────────────
+    const MIN_RUN = 2;
+    const keep = new Uint8Array(w * h);
+    for (let y = 0; y < h; y++) {
+      let rs = -1;
+      for (let x = 0; x <= w; x++) {
+        if (x < w && capMask[y * w + x]) { if (rs < 0) rs = x; }
+        else if (rs >= 0) {
+          if (x - rs >= MIN_RUN) for (let sx = rs; sx < x; sx++) keep[y * w + sx] = 1;
+          rs = -1;
+        }
+      }
+    }
+    for (let x = 0; x < w; x++) {
+      let rs = -1;
+      for (let y = 0; y <= h; y++) {
+        if (y < h && capMask[y * w + x]) { if (rs < 0) rs = y; }
+        else if (rs >= 0) {
+          if (y - rs >= MIN_RUN) for (let sy = rs; sy < y; sy++) keep[sy * w + x] = 1;
+          rs = -1;
+        }
+      }
+    }
+
+    const capPx = keep.reduce((s, v) => s + v, 0);
+    log(`extractCapillaryLines: ${capPx} branch px (socket-seeded from primary body)`);
+    logTimeEnd("extractCapillaryLines");
+    return keep;
   }
 
   function analyzePipeLayer(): PipeAnalysisResults | null {
@@ -2235,6 +3188,36 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
       const a = data[idx + 3], r = data[idx], g = data[idx + 1], b = data[idx + 2];
       fullMask[i] = (a > 20 && !(r > 245 && g > 245 && b > 245)) ? 1 : 0;
     }
+
+    // Erase disconnected noise — isolated blobs, T-stubs with no arms, short dead-end
+    // clusters that aren't connected to any real pipe system.
+    // This also writes back to rawImageData.data so the visual layer is cleaned too.
+    logTime("cleanIsolatedPipeComponents");
+    cleanIsolatedPipeComponents(fullMask, data, width, height);
+    logTimeEnd("cleanIsolatedPipeComponents");
+
+    // Morphological closing — fills tiny gaps at corners and interruptions in pipe
+    // runs (e.g. where thinning removed the corner pixel at a 90° bend, causing
+    // the two run-ends to read as separate endpoints instead of a single elbow).
+    // Closing = dilate(r) then erode(r): gaps ≤ 2r are bridged but the overall
+    // pipe boundary returns to its original extent, so nearby parallel pipes
+    // don't merge the way plain dilation would cause them to.
+    logTime("closeMask");
+    // Scale closing radius relative to image size so the same physical gap is
+    // bridged regardless of how large the PDF rendered (scale 6 vs scale 14).
+    // ~0.15% of the short edge, clamped between 2 and 8 px.
+    const CLOSE_R = Math.min(8, Math.max(2, Math.round(Math.min(width, height) * 0.0015)));
+    log(`analyzePipeLayer: CLOSE_R=${CLOSE_R} for ${width}x${height}`);
+    const closedMask = closeMask(fullMask, width, height, CLOSE_R);
+    // Write newly bridged pixels back into fullMask and the display data
+    for (let i = 0; i < width * height; i++) {
+      if (closedMask[i] && !fullMask[i]) {
+        fullMask[i] = 1;
+        const d4 = i * 4;
+        data[d4] = 60; data[d4 + 1] = 60; data[d4 + 2] = 60; data[d4 + 3] = 220;
+      }
+    }
+    logTimeEnd("closeMask");
 
     // Downsample for performance if image is large
     let workMask = fullMask, w = width, h = height;
@@ -2265,19 +3248,131 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     logTime("zhangSuenThin");
     const rawSkeleton = zhangSuenThin(workMask, w, h);
     logTimeEnd("zhangSuenThin");
-    const skeleton = enforceHVSkeleton(rawSkeleton, w, h);
+    const { result: skeleton, isH, isV } = enforceHVSkeleton(rawSkeleton, w, h);
 
-    // Classify junctions
-    const result = classifySkeletonJunctions(skeleton, w, h, scale);
-    const analysis: PipeAnalysisResults = { ...result, scale };
+    // Remove closed-loop components that aren't valid rectangles (hexagons, circles,
+    // diamonds, etc.) — these are drawing symbols, not pipe runs.
+    logTime("removeNonRectangularClosedLoops");
+    removeNonRectangularClosedLoops(skeleton, w, h);
+    logTimeEnd("removeNonRectangularClosedLoops");
+
+    // Classify junctions (isH/isV maps are needed for accurate elbow detection)
+    const result = classifySkeletonJunctions(skeleton, isH, isV, w, h, scale);
+    const analysis: PipeAnalysisResults = {
+      ...result, scale,
+      wsWidth: w, wsHeight: h,
+      primarySkeleton: skeleton,
+      capillaryMask: new Uint8Array(w * h),  // filled below
+      capillaryPixelCount: 0,
+    };
 
     log(`analyzePipeLayer: T=${analysis.tJunctions.length} L=${analysis.lJunctions.length} endpoints=${analysis.endpoints.length} crossings=${analysis.crossings.length} skelPx=${analysis.skeletonPixelCount}`);
+
+    // Erase display pixels that have no corresponding H/V skeleton pixel.
+    // The skeleton is computed in work-space (possibly downsampled by `scale`).
+    // Any fullMask pixel that didn't survive enforceHVSkeleton is not a real
+    // H/V pipe — curved arcs, circular annotations, stray noise, etc. all get
+    // cleared from rawImageData before the visual widening pass runs.
+    logTime("skeletonMaskClean");
+    for (let fy = 0; fy < height; fy++) {
+      for (let fx = 0; fx < width; fx++) {
+        const fi = fy * width + fx;
+        if (!fullMask[fi]) continue;
+        // Map full-res pixel → work-space pixel
+        const wx = Math.floor(fx / scale), wy = Math.floor(fy / scale);
+        const wi = wy * w + wx;
+        if (!skeleton[wi]) {
+          // Not part of any validated H/V run — erase from display
+          fullMask[fi] = 0;
+          const d4 = fi * 4;
+          data[d4] = 0; data[d4 + 1] = 0; data[d4 + 2] = 0; data[d4 + 3] = 0;
+        }
+      }
+    }
+    logTimeEnd("skeletonMaskClean");
+
+    // Save masks for later branch-line re-extraction without re-running full analysis
+    analysis.fullPrimaryMask = fullMask;
+    analysis.workSpaceMask   = workMask;
+
+    // ── Capillary (branch) line extraction ───────────────────────────────────
+    // Finds dark-neutral thin lines connected to the primary colored pipes.
+    // These are the branch lines feeding individual sprinkler heads.
+    logTime("extractCapillaryLines");
+    const branchSubLayer = pipeSubLayers.find(s => s.name === "Branch Lines");
+    const capGrayThresh = branchSubLayer?.threshold ?? 190;
+    const capMask = extractCapillaryLines(fullMask, workMask, skeleton, width, height, w, h, scale, capGrayThresh);
+    analysis.capillaryMask = capMask;
+    analysis.capillaryPixelCount = capMask.reduce((s, v) => s + v, 0);
+    logTimeEnd("extractCapillaryLines");
+
+    // ── Tee classification: equal vs. reducing ──────────────────────────────
+    // A tee is "reducing" if any capillary (branch) pixel is within CHECK_R
+    // work-space pixels of the junction — i.e. this is where the pipe network
+    // transitions from a large primary main to a smaller branch line.
+    // Tees with no nearby capillary pixels are same-size "equal" joins.
+    {
+      const CHECK_R = 3;
+      analysis.equalTees = [];
+      analysis.reducingTees = [];
+      for (const t of analysis.tJunctions) {
+        const wtx = Math.floor(t.x / scale), wty = Math.floor(t.y / scale);
+        let nearCap = false;
+        for (let dy = -CHECK_R; dy <= CHECK_R && !nearCap; dy++) {
+          for (let dx = -CHECK_R; dx <= CHECK_R && !nearCap; dx++) {
+            const nx = wtx + dx, ny = wty + dy;
+            if (nx >= 0 && nx < w && ny >= 0 && ny < h && capMask[ny * w + nx]) nearCap = true;
+          }
+        }
+        if (nearCap) analysis.reducingTees.push(t);
+        else         analysis.equalTees.push(t);
+      }
+      log(`analyzePipeLayer: ${analysis.equalTees.length} equal tees, ${analysis.reducingTees.length} reducing tees`);
+    }
+
+    // Repaint all pipe pixels with a single uniform solid color.
+    // Collects the R/G/B of surviving skeleton pixels, ignoring black interference
+    // spots (gray < 40) and near-white noise (gray > 220), sorts each channel and
+    // takes the median — this is robust to outliers from overlapping layers.
+    // Every pipe pixel then gets that clean color at full opacity, eliminating
+    // discoloration, faded sections, and black spots before widening runs.
+    logTime("repaintPipe");
+    const pRs: number[] = [], pGs: number[] = [], pBs: number[] = [];
+    for (let i = 0; i < width * height; i++) {
+      if (!fullMask[i]) continue;
+      const d4 = i * 4;
+      const r = data[d4], g = data[d4 + 1], b = data[d4 + 2];
+      const gray = r * 0.299 + g * 0.587 + b * 0.114;
+      if (gray < 40 || gray > 220) continue;
+      pRs.push(r); pGs.push(g); pBs.push(b);
+    }
+    if (pRs.length > 0) {
+      pRs.sort((a, b) => a - b); pGs.sort((a, b) => a - b); pBs.sort((a, b) => a - b);
+      const mid = Math.floor(pRs.length / 2);
+      const pR = pRs[mid], pG = pGs[mid], pB = pBs[mid];
+      for (let i = 0; i < width * height; i++) {
+        if (!fullMask[i]) continue;
+        const d4 = i * 4;
+        data[d4] = pR; data[d4 + 1] = pG; data[d4 + 2] = pB; data[d4 + 3] = 255;
+      }
+      log(`repaintPipe: uniform color rgb(${pR},${pG},${pB}) applied to ${pRs.length} sample px`);
+    }
+    logTimeEnd("repaintPipe");
+
+    // Visual widening — expand each pipe pixel outward by DISP_R so the rendered
+    // lines appear roughly 3× their natural stroke width.  Applied after analysis
+    // so skeletonization/junction detection still operates on the clean thin mask.
+    const DISP_R = 3;
+    logTime("dilateDisplay");
+    dilateRawPipeData(data, width, height, DISP_R);
+    logTimeEnd("dilateDisplay");
+
     logTimeEnd("analyzePipeLayer");
     return analysis;
   }
 
   function createPipeSubLayers() {
-    pipeSubLayers = [];
+    pipeSubLayers = []; sprinklerSubLayers = []; sprinklerConnections = [];
     if (!pipeAnalysisResults) return;
     const pipesLayer = getLayerByName("Pipes");
     if (!pipesLayer) return;
@@ -2314,15 +3409,19 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
       }
     };
 
-    markAround(pipeAnalysisResults.tJunctions, 1);
-    markAround(pipeAnalysisResults.lJunctions, 2);
-    markAround(pipeAnalysisResults.endpoints, 3);
-    if (pipeAnalysisResults.crossings.length) markAround(pipeAnalysisResults.crossings, 4);
+    // 0=unclassified, 1=reducing tee, 2=elbow, 3=endpoint, 4=crossing, 5=equal tee
+    // Reducing tees marked before equal tees so they win on overlap.
+    if (pipeAnalysisResults.crossings.length)   markAround(pipeAnalysisResults.crossings,    4);
+    markAround(pipeAnalysisResults.reducingTees, 1);
+    markAround(pipeAnalysisResults.equalTees,    5);
+    markAround(pipeAnalysisResults.lJunctions,   2);
+    markAround(pipeAnalysisResults.endpoints,    3);
 
     const types: { value: number; name: string; color: [number, number, number]; count: number; defaultOn: boolean }[] = [
-      { value: 1, name: "Tees", color: [37, 99, 235], count: pipeAnalysisResults.tJunctions.length, defaultOn: true },
-      { value: 2, name: "Elbows", color: [22, 163, 106], count: pipeAnalysisResults.lJunctions.length, defaultOn: true },
-      { value: 3, name: "Endpoints", color: [245, 158, 11], count: pipeAnalysisResults.endpoints.length, defaultOn: false },
+      { value: 1, name: "Reducing Tees", color: [234, 88, 12],  count: pipeAnalysisResults.reducingTees.length, defaultOn: true  },
+      { value: 5, name: "Equal Tees",    color: [37, 99, 235],  count: pipeAnalysisResults.equalTees.length,    defaultOn: true  },
+      { value: 2, name: "Elbows",        color: [22, 163, 106], count: pipeAnalysisResults.lJunctions.length,   defaultOn: true  },
+      { value: 3, name: "Endpoints",     color: [245, 158, 11], count: pipeAnalysisResults.endpoints.length,    defaultOn: false },
     ];
     if (pipeAnalysisResults.crossings.length) {
       types.push({ value: 4, name: "Crossings", color: [147, 51, 234], count: pipeAnalysisResults.crossings.length, defaultOn: false });
@@ -2339,10 +3438,10 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
         d[idx + 3] = srcData[idx + 3];
         px++;
       }
-      pipeSubLayers.push({ name: t.name, color: t.color, visible: t.defaultOn, rawImageData: imgData, pixelCount: px, count: t.count });
+      pipeSubLayers.push({ name: t.name, color: t.color, visible: t.defaultOn, rawImageData: imgData, pixelCount: px, count: t.count, threshold: 220 });
     }
 
-    // Pipe Runs — unclassified pipe pixels (keep original color)
+    // Primary Mains — unclassified pipe pixels (the main colored runs)
     const runsData = new ImageData(width, height);
     const rd = runsData.data;
     let runsPx = 0;
@@ -2352,10 +3451,473 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
       rd[idx] = srcData[idx]; rd[idx + 1] = srcData[idx + 1]; rd[idx + 2] = srcData[idx + 2]; rd[idx + 3] = srcData[idx + 3];
       runsPx++;
     }
-    pipeSubLayers.push({ name: "Pipe Runs", color: [156, 163, 175], visible: true, rawImageData: runsData, pixelCount: runsPx, count: 0 });
+    pipeSubLayers.push({ name: "Primary Mains", color: [156, 163, 175], visible: true, rawImageData: runsData, pixelCount: runsPx, count: 0, threshold: 220 });
+
+    // Branch Lines — capillary (dark-neutral) lines connected to primary network
+    if (pipeAnalysisResults.capillaryPixelCount > 0) {
+      const { capillaryMask, wsWidth: ww, wsHeight: wh, scale: sc } = pipeAnalysisResults;
+      const BRANCH_R = 230, BRANCH_G = 160, BRANCH_B = 30; // amber/gold
+      const branchData = new ImageData(width, height);
+      const bd = branchData.data;
+      let branchPx = 0;
+      for (let wy = 0; wy < wh; wy++) {
+        for (let wx = 0; wx < ww; wx++) {
+          if (!capillaryMask[wy * ww + wx]) continue;
+          // Map back to full-res region
+          const fy0 = wy * sc, fy1 = Math.min((wy + 1) * sc, height);
+          const fx0 = wx * sc, fx1 = Math.min((wx + 1) * sc, width);
+          for (let fy = fy0; fy < fy1; fy++) {
+            for (let fx = fx0; fx < fx1; fx++) {
+              const i4 = (fy * width + fx) * 4;
+              bd[i4] = BRANCH_R; bd[i4+1] = BRANCH_G; bd[i4+2] = BRANCH_B; bd[i4+3] = 220;
+              branchPx++;
+            }
+          }
+        }
+      }
+      pipeSubLayers.push({ name: "Branch Lines", color: [BRANCH_R, BRANCH_G, BRANCH_B], visible: true, rawImageData: branchData, pixelCount: branchPx, count: 0, threshold: 240 });
+    }
 
     log(`createPipeSubLayers: ${pipeSubLayers.length} sub-layers, radius=${radius}`);
     logTimeEnd("createPipeSubLayers");
+  }
+
+  /**
+   * For each detected sprinkler head, finds the nearest pipe skeleton pixel
+   * (primary or branch) and records whether the head is connected.
+   *
+   * MAX_CONN_R: how far (in work-space px) to search.  Converted to image-space
+   * by multiplying by `scale` so the physical search radius stays consistent
+   * regardless of PDF render size.
+   */
+  /**
+   * Removes pipe endpoints that terminate AT a sprinkler head rather than as
+   * a true dead-end.  A sprinkler head IS the termination device — showing an
+   * end-cap there is incorrect.
+   *
+   * Called AFTER sprinkler head detection so head positions are available.
+   * Rebuilds the Endpoints pipe sub-layer in place so the visual updates
+   * without re-running the full pipe analysis.
+   */
+  function suppressEndpointsNearHeads() {
+    if (!pipeAnalysisResults || !symbolScanResults) return;
+    if (symbolScanResults.candidates.length === 0) return;
+
+    const { primarySkeleton, wsWidth: ww, wsHeight: wh, scale } = pipeAnalysisResults;
+    const before = pipeAnalysisResults.endpoints.length;
+
+    // Domain rule for fire-protection systems:
+    //   • Primary-main endpoints are drawing-edge cutoffs — the pipe continues off-sheet.
+    //     These must never appear as end-caps.
+    //   • Branch (capillary) dead-ends only exist because a sprinkler head sits there.
+    //     Any branch endpoint with no head within MAX_STUB_PX is an artifact.
+    //   • Endpoints whose bbox overlaps a head symbol also get removed (original rule).
+    //
+    // MAX_STUB_PX: generous upper bound on how far past the last head a stub can run
+    // (~40 work-space pixels = 200 image-px at scale 5 ≈ 25 ft at 1/8"=1' scale).
+    const MAX_STUB_SQ = Math.pow(scale * 40, 2);
+
+    const PAD = 0.55;
+    pipeAnalysisResults.endpoints = pipeAnalysisResults.endpoints.filter(ep => {
+      // Rule 1 — primary-main endpoints → always suppress
+      const wsX = Math.floor(ep.x / scale), wsY = Math.floor(ep.y / scale);
+      if (wsX >= 0 && wsX < ww && wsY >= 0 && wsY < wh && primarySkeleton[wsY * ww + wsX]) return false;
+
+      // Rule 2 — bbox overlap with sprinkler head (original close-proximity check)
+      for (const c of symbolScanResults!.candidates) {
+        const bx = c.x ?? (c.cx - c.w / 2);
+        const by = c.y ?? (c.cy - c.h / 2);
+        const padX = c.w * PAD, padY = c.h * PAD;
+        if (ep.x >= bx - padX && ep.x <= bx + c.w + padX &&
+            ep.y >= by - padY && ep.y <= by + c.h + padY) return false;
+      }
+
+      // Rule 3 — branch endpoint with no sprinkler head within MAX_STUB_PX → artifact
+      let hasHead = false;
+      for (const c of symbolScanResults!.candidates) {
+        const cx = c.cx ?? (c.x + c.w / 2);
+        const cy = c.cy ?? (c.y + c.h / 2);
+        const dx = cx - ep.x, dy = cy - ep.y;
+        if (dx * dx + dy * dy <= MAX_STUB_SQ) { hasHead = true; break; }
+      }
+      if (!hasHead) return false;
+
+      return true;
+    });
+
+    const removed = before - pipeAnalysisResults.endpoints.length;
+    log(`suppressEndpointsNearHeads: suppressed ${removed} of ${before} endpoints`);
+    if (removed === 0) return;
+
+    // ── Rebuild the Endpoints pipeSubLayer ──────────────────────────────
+    const subIdx = pipeSubLayers.findIndex(s => s.name === "Endpoints");
+    const pipesLayer = getLayerByName("Pipes");
+    if (subIdx < 0 || !pipesLayer) return;
+
+    const { width, height } = pipesLayer.rawImageData;
+    const srcData = pipesLayer.rawImageData.data;
+    const radius = Math.max(15, pipeAnalysisResults.scale * 5);
+    const r2 = radius * radius;
+    const [cr, cg, cb] = pipeSubLayers[subIdx].color;
+
+    const isPipe = new Uint8Array(width * height);
+    for (let i = 0; i < width * height; i++) {
+      const i4 = i * 4;
+      isPipe[i] = (srcData[i4 + 3] > 20 && !(srcData[i4] > 245 && srcData[i4 + 1] > 245 && srcData[i4 + 2] > 245)) ? 1 : 0;
+    }
+
+    const imgData = new ImageData(width, height);
+    const d = imgData.data;
+    let px = 0;
+    for (const p of pipeAnalysisResults.endpoints) {
+      const yMin = Math.max(0, Math.floor(p.y - radius));
+      const yMax = Math.min(height - 1, Math.ceil(p.y + radius));
+      const xMin = Math.max(0, Math.floor(p.x - radius));
+      const xMax = Math.min(width - 1, Math.ceil(p.x + radius));
+      for (let y = yMin; y <= yMax; y++) {
+        for (let x = xMin; x <= xMax; x++) {
+          const i = y * width + x;
+          if (!isPipe[i]) continue;
+          const dx = x - p.x, dy = y - p.y;
+          if (dx * dx + dy * dy > r2) continue;
+          const i4 = i * 4;
+          d[i4] = cr; d[i4 + 1] = cg; d[i4 + 2] = cb; d[i4 + 3] = srcData[i4 + 3];
+          px++;
+        }
+      }
+    }
+    pipeSubLayers[subIdx] = { ...pipeSubLayers[subIdx], rawImageData: imgData, pixelCount: px, count: pipeAnalysisResults.endpoints.length };
+  }
+
+  function computeSprinklerConnectivity() {
+    sprinklerConnections = [];
+    if (!pipeAnalysisResults || !symbolScanResults) return;
+    const { primarySkeleton, capillaryMask, wsWidth: ww, wsHeight: wh, scale } = pipeAnalysisResults;
+    // Tight radius: a head is "directly on the primary" only if the skeleton is
+    // within ~2 work-space cells (≈ 10 px at scale 5).  Wider snap was marking
+    // heads at the end of branch lines as "primary connected," suppressing tracing.
+    const MAX_CONN_WS = Math.max(3, Math.round(10 / scale));
+
+    for (let idx = 0; idx < symbolScanResults.candidates.length; idx++) {
+      const c = symbolScanResults.candidates[idx];
+      const cx = Math.round(c.cx ?? (c.x + c.w / 2));
+      const cy = Math.round(c.cy ?? (c.y + c.h / 2));
+      // Convert to work-space
+      const wsCx = Math.floor(cx / scale);
+      const wsCy = Math.floor(cy / scale);
+
+      let best: SprinklerConnection = { idx, cx, cy, connType: "none", distPx: Infinity };
+
+      for (let dy = -MAX_CONN_WS; dy <= MAX_CONN_WS; dy++) {
+        for (let dx = -MAX_CONN_WS; dx <= MAX_CONN_WS; dx++) {
+          const dist2 = dx * dx + dy * dy;
+          if (dist2 > MAX_CONN_WS * MAX_CONN_WS) continue;
+          const wx = wsCx + dx, wy = wsCy + dy;
+          if (wx < 0 || wx >= ww || wy < 0 || wy >= wh) continue;
+          const wi = wy * ww + wx;
+          const imgDist = Math.sqrt(dist2) * scale;
+          if (primarySkeleton[wi] && imgDist < best.distPx) {
+            best = { idx, cx, cy, connType: "primary", distPx: imgDist };
+          } else if (capillaryMask[wi] && imgDist < best.distPx && best.connType !== "primary") {
+            best = { idx, cx, cy, connType: "branch", distPx: imgDist };
+          }
+        }
+      }
+      sprinklerConnections.push(best);
+    }
+
+    const connected = sprinklerConnections.filter(c => c.connType !== "none").length;
+    const orphaned  = sprinklerConnections.length - connected;
+    log(`computeSprinklerConnectivity: ${connected} connected, ${orphaned} orphaned (of ${sprinklerConnections.length} heads)`);
+  }
+
+  // ─── Geometric branch-line tracing ──────────────────────────────────────────
+  // Runs AFTER computeSprinklerConnectivity.
+  //
+  // Core insight: we already know the PRIMARY PIPE (skeleton) and the SPRINKLER
+  // HEAD positions.  In fire-protection drawings, branches are ALWAYS perpendicular
+  // (90°) to the primary main.  So instead of trying to detect faint hairline
+  // pixels — which fails for very light lines — we INFER the branch geometry:
+  //
+  //   For each non-primary head, cast rays in all 4 cardinal directions.
+  //   Accept the direction that first reaches the primary skeleton OR an already-
+  //   traced branch segment (handles chains of heads on the same branch).
+  //   Mark every cell along that straight segment as a branch-line pixel.
+  //
+  // Multi-pass loop resolves chains: the upper head is resolved first, its
+  // segment becomes capillaryMask, and the lower head connects to it next pass.
+  // No pixel intensity or image data needed — purely geometric.
+  function traceInkDropBranches() {
+    if (!pipeAnalysisResults || !symbolScanResults) return;
+    logTime("traceInkDropBranches");
+
+    const { primarySkeleton, capillaryMask, wsWidth: ww, wsHeight: wh, scale } = pipeAnalysisResults;
+
+    // ±BAND cells of perpendicular offset when probing — tolerates slight
+    // misalignment between the head centre and the branch centreline.
+    const BAND    = 4;
+    const MAX_RAY = Math.max(ww, wh); // generous; real branches are much shorter
+
+    const DIRS = [
+      { dx:  0, dy: -1 }, // ↑
+      { dx:  0, dy:  1 }, // ↓
+      { dx: -1, dy:  0 }, // ←
+      { dx:  1, dy:  0 }, // →
+    ] as const;
+
+    let totalNewPx = 0, totalResolved = 0;
+    let changed = true, passes = 0;
+
+    while (changed && passes < 10) {
+      changed = false;
+      passes++;
+
+      for (const conn of sprinklerConnections) {
+        if (conn.connType === "primary") continue;
+
+        const c   = symbolScanResults!.candidates[conn.idx];
+        const wsCx = Math.floor((c.cx ?? (c.x + c.w / 2)) / scale);
+        const wsCy = Math.floor((c.cy ?? (c.y + c.h / 2)) / scale);
+
+        // ── Find best cardinal direction ──────────────────────────────────────
+        // Try ±BAND parallel offsets to tolerate head-centre misalignment.
+        let bestDir  = -1;
+        let bestDist = Infinity;
+
+        for (let d = 0; d < DIRS.length; d++) {
+          const { dx, dy } = DIRS[d];
+          const isVert = dx === 0;
+
+          for (let off = -BAND; off <= BAND; off++) {
+            const sx = wsCx + (isVert  ? off : 0);
+            const sy = wsCy + (!isVert ? off : 0);
+            if (sx < 0 || sx >= ww || sy < 0 || sy >= wh) continue;
+
+            for (let step = 1; step <= MAX_RAY; step++) {
+              const nx = sx + dx * step, ny = sy + dy * step;
+              if (nx < 0 || nx >= ww || ny < 0 || ny >= wh) break;
+              const ni = ny * ww + nx;
+              if (primarySkeleton[ni] || capillaryMask[ni]) {
+                if (step < bestDist) { bestDist = step; bestDir = d; }
+                break;
+              }
+            }
+          }
+        }
+
+        if (bestDir < 0) continue; // no primary/branch found in any direction
+
+        // ── Draw ray from head CENTRE outward in bestDir ──────────────────────
+        // Mark cells until we hit the skeleton or an existing branch segment.
+        const { dx, dy } = DIRS[bestDir];
+        for (let step = 1; step <= MAX_RAY; step++) {
+          const nx = wsCx + dx * step, ny = wsCy + dy * step;
+          if (nx < 0 || nx >= ww || ny < 0 || ny >= wh) break;
+          const ni = ny * ww + nx;
+          const already = capillaryMask[ni] === 1;
+          if (!already) { capillaryMask[ni] = 1; totalNewPx++; changed = true; }
+          if (primarySkeleton[ni] || already) break; // reached the pipe or another branch
+        }
+
+        conn.connType = "branch";
+        conn.distPx   = bestDist * scale;
+        totalResolved++;
+      }
+    }
+
+    log(`traceInkDropBranches: ${passes} pass(es), resolved ${totalResolved}/${sprinklerConnections.length} heads, +${totalNewPx} capillary px`);
+
+    if (totalNewPx === 0) { logTimeEnd("traceInkDropBranches"); return; }
+
+    // ── Rebuild Branch Lines sub-layer ────────────────────────────────────────
+    const pipesLayer = getLayerByName("Pipes");
+    if (!pipesLayer) { logTimeEnd("traceInkDropBranches"); return; }
+
+    const { width, height } = pipesLayer.rawImageData;
+    const BRANCH_R = 230, BRANCH_G = 160, BRANCH_B = 30;
+    const branchData = new ImageData(width, height);
+    const bd = branchData.data;
+    let branchPx = 0;
+    for (let wy = 0; wy < wh; wy++) {
+      for (let wx = 0; wx < ww; wx++) {
+        if (!capillaryMask[wy * ww + wx]) continue;
+        const fy0 = wy * scale, fy1 = Math.min((wy + 1) * scale, height);
+        const fx0 = wx * scale, fx1 = Math.min((wx + 1) * scale, width);
+        for (let fy = fy0; fy < fy1; fy++) {
+          for (let fx = fx0; fx < fx1; fx++) {
+            const i4 = (fy * width + fx) * 4;
+            bd[i4] = BRANCH_R; bd[i4 + 1] = BRANCH_G; bd[i4 + 2] = BRANCH_B; bd[i4 + 3] = 220;
+            branchPx++;
+          }
+        }
+      }
+    }
+    pipeAnalysisResults.capillaryPixelCount = branchPx;
+    const existingBranch = pipeSubLayers.find(s => s.name === "Branch Lines");
+    const newSub = {
+      name: "Branch Lines",
+      color: [BRANCH_R, BRANCH_G, BRANCH_B] as [number, number, number],
+      visible: true, rawImageData: branchData, pixelCount: branchPx, count: 0,
+      threshold: existingBranch?.threshold ?? 240, // preserve user-set threshold
+    };
+    const branchIdx = pipeSubLayers.findIndex(s => s.name === "Branch Lines");
+    if (branchIdx >= 0) pipeSubLayers[branchIdx] = newSub;
+    else pipeSubLayers.push(newSub);
+
+    logTimeEnd("traceInkDropBranches");
+  }
+
+  function createSprinklerHeadLayer(bboxPadPct = 15) {
+    if (!symbolScanResults || symbolScanResults.candidates.length === 0) return;
+    if (!workingImageData) return;
+    sprinklerSubLayers = [];
+
+    // Group candidates into size bands (±10% diameter tolerance)
+    const BAND = 0.10;
+    const groups: any[][] = [];
+    const means: number[] = [];
+    for (const c of symbolScanResults.candidates) {
+      const d = Math.min(c.w, c.h);
+      let placed = false;
+      for (let gi = 0; gi < groups.length; gi++) {
+        const ratio = d / Math.max(1e-6, means[gi]);
+        if (ratio >= 1 - BAND && ratio <= 1 + BAND) {
+          groups[gi].push(c);
+          means[gi] = groups[gi].reduce((s, x) => s + Math.min(x.w, x.h), 0) / groups[gi].length;
+          placed = true; break;
+        }
+      }
+      if (!placed) { groups.push([c]); means.push(d); }
+    }
+    groups.sort((a, b) => b.length - a.length);
+
+    const labels = ["A","B","C","D","E","F","G","H"];
+    groups.forEach((grp, gi) => {
+      sprinklerSubLayers.push({
+        name: `Type ${labels[gi] ?? gi + 1} — ${grp.length} head${grp.length !== 1 ? "s" : ""}`,
+        color: SPRINKLER_COLORS[gi % SPRINKLER_COLORS.length],
+        visible: true,
+        candidates: grp,
+      });
+    });
+
+    // Remove stale layers (iterate in reverse so splice indices stay valid)
+    for (let li = layers.length - 1; li >= 0; li--) {
+      if (layers[li].name === "Sprinkler Heads" || layers[li].name === "Without Sprinkler Heads") {
+        layers.splice(li, 1);
+      }
+    }
+
+    const W = workingImageData.width, H = workingImageData.height;
+    const src = workingImageData.data;
+
+    // Build a per-pixel mask of which pixels belong to any head bounding box
+    const headMask = new Uint8Array(W * H);
+    const padFrac = bboxPadPct / 100;
+    for (const c of symbolScanResults.candidates) {
+      // Expand bounding box by bboxPadPct% to ensure full symbol is captured
+      const padX = Math.round(c.w * padFrac), padY = Math.round(c.h * padFrac);
+      const x0 = Math.max(0, c.x - padX), y0 = Math.max(0, c.y - padY);
+      const x1 = Math.min(W - 1, c.x + c.w + padX), y1 = Math.min(H - 1, c.y + c.h + padY);
+      for (let py = y0; py <= y1; py++) {
+        for (let px = x0; px <= x1; px++) {
+          headMask[py * W + px] = 1;
+        }
+      }
+    }
+
+    // ── Sprinkler Heads layer: actual source pixels within head boxes ──────
+    const headsData = new ImageData(W, H);
+    const hd = headsData.data;
+    let headPx = 0;
+    for (let i = 0; i < W * H; i++) {
+      if (!headMask[i]) continue;
+      const i4 = i * 4;
+      hd[i4]     = src[i4];
+      hd[i4 + 1] = src[i4 + 1];
+      hd[i4 + 2] = src[i4 + 2];
+      hd[i4 + 3] = src[i4 + 3];
+      headPx++;
+    }
+
+    // ── Without Sprinkler Heads layer: source with head boxes blanked white ─
+    const remainData = new ImageData(W, H);
+    const rd = remainData.data;
+    let remainPx = 0;
+    for (let i = 0; i < W * H; i++) {
+      const i4 = i * 4;
+      if (headMask[i]) {
+        // White out head areas
+        rd[i4] = 255; rd[i4+1] = 255; rd[i4+2] = 255; rd[i4+3] = 255;
+      } else {
+        rd[i4]     = src[i4];
+        rd[i4 + 1] = src[i4 + 1];
+        rd[i4 + 2] = src[i4 + 2];
+        rd[i4 + 3] = src[i4 + 3];
+        if (src[i4 + 3] > 0) remainPx++;
+      }
+    }
+
+    // "Without Sprinkler Heads" must render BELOW the Pipes layer so that
+    // enabling it acts as a background replacement, not an opaque overlay
+    // that hides the pipe analysis on top.  Insert it just before "Pipes".
+    const pipesIdx = layers.findIndex(l => l.name === "Pipes");
+    const existingWithout = layers.find(l => l.name === "Without Sprinkler Heads");
+    const withoutEntry: ExtractedLayer = {
+      name: "Without Sprinkler Heads",
+      visible: existingWithout?.visible ?? false,
+      imageDataUrl: imageDataToDataUrl(remainData),
+      rawImageData: remainData,
+      pixelCount: remainPx,
+      threshold: existingWithout?.threshold ?? bboxPadPct,
+      opacity: existingWithout?.opacity ?? 1,
+    };
+    // Remove old "Without Sprinkler Heads" if recalculating
+    const oldWithoutIdx = layers.findIndex(l => l.name === "Without Sprinkler Heads");
+    if (oldWithoutIdx >= 0) layers.splice(oldWithoutIdx, 1);
+    const insertAt = layers.findIndex(l => l.name === "Pipes");
+    if (insertAt >= 0) layers.splice(insertAt, 0, withoutEntry);
+    else layers.push(withoutEntry);
+
+    const existingHeads = layers.find(l => l.name === "Sprinkler Heads");
+    // Remove old "Sprinkler Heads" if recalculating
+    const oldHeadsIdx = layers.findIndex(l => l.name === "Sprinkler Heads");
+    if (oldHeadsIdx >= 0) layers.splice(oldHeadsIdx, 1);
+    // Sprinkler Heads renders on top of everything (after Pipes)
+    layers.push({
+      name: "Sprinkler Heads",
+      visible: existingHeads?.visible ?? true,
+      imageDataUrl: imageDataToDataUrl(headsData),
+      rawImageData: headsData,
+      pixelCount: headPx,
+      threshold: existingHeads?.threshold ?? bboxPadPct,
+      opacity: existingHeads?.opacity ?? 1,
+    });
+
+    // ── Scrub head pixels from the "Text / Labels" layer ─────────────────
+    // extractText() runs before sprinkler heads are known, so it occasionally
+    // captures head symbols as text-like shapes.  Now that we have the headMask
+    // we can remove that overlap — each pixel lives in exactly one layer.
+    const textLayer = layers.find(l => l.name === "Text / Labels");
+    if (textLayer?.rawImageData) {
+      const td = textLayer.rawImageData.data;
+      let scrubbed = 0;
+      for (let i = 0; i < W * H; i++) {
+        if (!headMask[i]) continue;
+        const i4 = i * 4;
+        if (td[i4 + 3] > 0) {
+          td[i4] = 0; td[i4 + 1] = 0; td[i4 + 2] = 0; td[i4 + 3] = 0;
+          scrubbed++;
+        }
+      }
+      if (scrubbed > 0) {
+        // Rebuild the data URL so the toggled layer reflects the cleaned data
+        textLayer.imageDataUrl = imageDataToDataUrl(textLayer.rawImageData);
+        log(`createSprinklerHeadLayer: scrubbed ${scrubbed} px from "Text / Labels"`);
+      }
+    }
+
+    log(`createSprinklerHeadLayer: ${symbolScanResults.candidates.length} heads, ${sprinklerSubLayers.length} type(s). Layers added.`);
   }
 
   function runSymbolScan() {
@@ -2365,6 +3927,14 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
       toastError("Analyze Pipes", "No Pipes layer available. Extract pipes first.");
       return;
     }
+
+    // Sprinkler heads live on the Text / Labels layer (after the midtones-first swap).
+    // Fall back to the Pipes layer if no text layer exists yet.
+    const symbolSourceLayer = getLayerByName("Text / Labels") ?? pipesLayer;
+    log("runSymbolScan: symbol source layer →", symbolSourceLayer === pipesLayer ? "Pipes (fallback)" : "Text / Labels",
+      symbolSourceLayer.rawImageData.width, "x", symbolSourceLayer.rawImageData.height,
+      `(${symbolSourceLayer.pixelCount} px)`);
+
     log("runSymbolScan: analyzing Pipes layer", pipesLayer.rawImageData.width, "x", pipesLayer.rawImageData.height, `(${pipesLayer.pixelCount} px)`);
     showOverlay("Analyzing pipe layer — skeletonizing…");
     setTimeout(() => {
@@ -2376,13 +3946,17 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
 
         showOverlay("Scanning for sprinkler heads…");
         setTimeout(() => {
-          symbolScanResults = detectRepeatedMotifs(pipesLayer.rawImageData, 0.15, 0.5, true);
+          symbolScanResults = detectRepeatedMotifs(symbolSourceLayer.rawImageData, 0.15, 0.5, true);
+          suppressEndpointsNearHeads();   // remove end-caps that are actually sprinkler heads
+          computeSprinklerConnectivity(); // classify heads: primary / branch / none
+          traceInkDropBranches();        // flood-fill from primary, keep paths that reach heads
+          createSprinklerHeadLayer();
           hideOverlay();
 
           const parts: string[] = [];
           if (pipeAnalysisResults) {
-            const { tJunctions, lJunctions, endpoints, crossings } = pipeAnalysisResults;
-            parts.push(`${tJunctions.length} tee(s), ${lJunctions.length} elbow(s), ${endpoints.length} endpoint(s)`);
+            const { reducingTees, equalTees, lJunctions, endpoints, crossings } = pipeAnalysisResults;
+            parts.push(`${reducingTees.length} reducing tee(s), ${equalTees.length} equal tee(s), ${lJunctions.length} elbow(s), ${endpoints.length} endpoint(s)`);
             if (crossings.length) parts.push(`${crossings.length} crossing(s)`);
           }
           if (symbolScanResults.candidates.length > 0) {
@@ -2405,51 +3979,376 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     if (!imgEl || !workingImageData) return;
     const parent = imgEl.parentElement;
     if (!parent) return;
-    parent.querySelectorAll(".symbol-marker,.junction-marker").forEach((el) => el.remove());
+
+    // Clear old markers and the previous junction canvas
+    parent.querySelectorAll(".symbol-marker, #junction-highlight-canvas").forEach((el) => el.remove());
     const imgW = workingImageData.width, imgH = workingImageData.height;
 
-    // Sprinkler head markers
+    // ── Sprinkler head markers — disabled until detection is reliable ──────
+    // symbolScanResults candidates are still counted in the layer panel but
+    // no visual circles are drawn on the canvas (too many false positives).
+    // To re-enable: uncomment the block below.
+    /*
     if (symbolScanResults) {
       for (const c of symbolScanResults.candidates) {
         const m = document.createElement("div");
         m.className = "symbol-marker absolute pointer-events-none";
-        m.style.cssText = `left:${(c.x / imgW) * 100}%;top:${(c.y / imgH) * 100}%;width:${(c.w / imgW) * 100}%;height:${(c.h / imgH) * 100}%;border:2px solid #ef4444;border-radius:50%;box-shadow:0 0 4px rgba(239,68,68,0.5);`;
+        m.style.cssText = [
+          `left:${(c.x / imgW) * 100}%`,
+          `top:${(c.y / imgH) * 100}%`,
+          `width:${(c.w / imgW) * 100}%`,
+          `height:${(c.h / imgH) * 100}%`,
+          `border:3px solid #ef4444`,
+          `border-radius:50%`,
+          `box-shadow:0 0 0 2px rgba(239,68,68,0.3),0 0 8px 2px rgba(239,68,68,0.4)`,
+        ].join(";");
         parent.appendChild(m);
       }
     }
+    */
 
-    // Junction label markers (keyed to sub-layer visibility)
-    if (pipeAnalysisResults && pipeSubLayers.length > 0) {
-      const markerSize = 10;
-      const halfX = (markerSize / 2 / imgW) * 100;
-      const halfY = (markerSize / 2 / imgH) * 100;
-      const sizeX = (markerSize / imgW) * 100;
-      const sizeY = (markerSize / imgH) * 100;
+    // ── Junction pipe highlights: drawn directly on a canvas overlay ────────
+    // Each junction is a filled circle sized at 2× the local pipe width,
+    // colored by type, so it looks like the real-world fitting that accepts the pipe.
+    if (!pipeAnalysisResults || pipeSubLayers.length === 0) return;
 
-      const addMarkers = (pts: { x: number; y: number }[], color: string, label: string) => {
-        for (const p of pts) {
-          const m = document.createElement("div");
-          m.className = "junction-marker absolute pointer-events-none flex items-center justify-center";
-          m.title = label;
-          m.style.cssText = `left:calc(${(p.x / imgW) * 100}% - ${halfX}%);top:calc(${(p.y / imgH) * 100}% - ${halfY}%);width:${sizeX}%;height:${sizeY}%;background:${color};border-radius:2px;opacity:0.85;`;
-          const txt = document.createElement("span");
-          txt.style.cssText = "font-size:7px;font-weight:700;color:#fff;line-height:1;";
-          txt.textContent = label;
-          m.appendChild(txt);
-          parent.appendChild(m);
+    const pipesLayer = getLayerByName("Pipes");
+    if (!pipesLayer) return;
+
+    const hlCanvas = document.createElement("canvas");
+    hlCanvas.id = "junction-highlight-canvas";
+    hlCanvas.width  = imgW;
+    hlCanvas.height = imgH;
+    // pointer-events:auto so clicks are intercepted for tooltips
+    hlCanvas.style.cssText = "position:absolute;inset:0;width:100%;height:100%;cursor:crosshair;";
+    const ctx = hlCanvas.getContext("2d");
+    if (!ctx) { parent.appendChild(hlCanvas); return; }
+
+    const subByName = (name: string) => pipeSubLayers.find((s) => s.name === name);
+
+    // Priority order: higher-priority types "win" when two junctions are too close.
+    // Crossings > Tees > Elbows > Endpoints.
+    const TYPES = [
+      { name: "Crossings",     pts: pipeAnalysisResults.crossings,    color: "#a855f7" },
+      { name: "Reducing Tees", pts: pipeAnalysisResults.reducingTees, color: "#ea580c" },
+      { name: "Equal Tees",    pts: pipeAnalysisResults.equalTees,    color: "#3b82f6" },
+      { name: "Elbows",        pts: pipeAnalysisResults.lJunctions,   color: "#22c55e" },
+      { name: "Endpoints",     pts: pipeAnalysisResults.endpoints,    color: "#f97316" },
+    ];
+
+    // ── Fixed icon sizing ─────────────────────────────────────────────────────
+    // Icon sizing anchored to the analysis scale factor, NOT raw image dimensions.
+    // pipeAnalysisResults.scale = the factor by which the image was downsampled for
+    // skeleton analysis (work space is always ≤ MAX_DIM=2000px).  Multiplying by a
+    // fixed work-space constant gives an image-space size that stays visually
+    // consistent however large the PDF happened to render (scale 6 vs scale 14).
+    //
+    // Formula: ~5 work-space pixels × analysis_scale.
+    //   scale=1 (≤2000px image)  → ICON_R ≈  8px  (min-clamped)
+    //   scale=2 (≤4000px image)  → ICON_R ≈ 10px
+    //   scale=5 (≤8500px image)  → ICON_R ≈ 25px
+    // All render to roughly the same ~0.3% of image width when CSS-scaled to fit.
+    const analysisScale = pipeAnalysisResults.scale;
+    const ICON_R  = Math.max(8,  Math.round(5 * analysisScale)); // arm length
+    const ICON_SW = Math.max(2,  Math.round(ICON_R * 0.4));      // stroke width
+    // Exclusion zone: only ONE junction icon within this radius (prevents icon pileups)
+    const EXCL_R  = ICON_R * 2.0;
+
+    // hitMap: stores per-junction data for tooltip hit-testing
+    type JunctionHit = {
+      cx: number; cy: number;
+      type: string; color: string;
+      arms: { dir: string }[];
+      hitRadius: number;
+    };
+    const hitMap: JunctionHit[] = [];
+    const DIR_LABELS: Record<string, string> = { "1,0": "E", "-1,0": "W", "0,1": "S", "0,-1": "N" };
+
+    // Draw icon: colored arms radiating from (cx,cy), each ICON_R long.
+    // White halo pass first for contrast, then the type color.
+    // All types use identical drawing logic — the arm count determines the shape:
+    //   1 arm = endpoint (colored line segment), 2 arms = L elbow, 3 arms = T, 4 arms = +
+    function drawIcon(cx: number, cy: number, arms: [number,number][], color: string) {
+      ctx.lineCap = "round";
+
+      // White halo
+      ctx.lineWidth   = ICON_SW + 3;
+      ctx.strokeStyle = "rgba(255,255,255,0.85)";
+      for (const [dx, dy] of arms) {
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + dx * ICON_R, cy + dy * ICON_R);
+        ctx.stroke();
+      }
+
+      // Colored core
+      ctx.lineWidth   = ICON_SW;
+      ctx.strokeStyle = color;
+      for (const [dx, dy] of arms) {
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + dx * ICON_R, cy + dy * ICON_R);
+        ctx.stroke();
+      }
+    }
+
+    // Global exclusion zone: walk TYPES in priority order, skip any junction
+    // that falls within EXCL_R of an already-placed icon.
+    const placed: { cx: number; cy: number }[] = [];
+
+    function isTooClose(cx: number, cy: number): boolean {
+      for (const p of placed) {
+        const dx = cx - p.cx, dy = cy - p.cy;
+        if (dx * dx + dy * dy < EXCL_R * EXCL_R) return true;
+      }
+      return false;
+    }
+
+    for (const type of TYPES) {
+      if (!subByName(type.name)?.visible) continue;
+
+      for (const p of type.pts) {
+        const cx = Math.round(p.x), cy = Math.round(p.y);
+        const arms = p.arms as [number, number][];
+        if (arms.length === 0) continue;
+        if (isTooClose(cx, cy)) continue;
+
+        drawIcon(cx, cy, arms, type.color);
+        placed.push({ cx, cy });
+
+        hitMap.push({
+          cx, cy,
+          type: type.name,
+          color: type.color,
+          arms: arms.map(([dx, dy]) => ({ dir: DIR_LABELS[`${dx},${dy}`] ?? "?" })),
+          hitRadius: ICON_R * 1.5,
+        });
+      }
+    }
+
+    parent.appendChild(hlCanvas);
+
+    // ── Sprinkler head markers canvas ─────────────────────────────────────
+    parent.querySelectorAll("#sprinkler-head-canvas").forEach(el => el.remove());
+    if (sprinklerSubLayers.length > 0 && getLayerByName("Sprinkler Heads")?.visible) {
+      const shCanvas = document.createElement("canvas");
+      shCanvas.id = "sprinkler-head-canvas";
+      shCanvas.width = imgW; shCanvas.height = imgH;
+      shCanvas.style.cssText = "position:absolute;inset:0;width:100%;height:100%;pointer-events:none;";
+      const shCtx = shCanvas.getContext("2d");
+      if (shCtx) {
+        // Build connection lookup by candidate index
+        const connLookup = new Map<number, SprinklerConnection>();
+        for (const conn of sprinklerConnections) connLookup.set(conn.idx, conn);
+
+        for (const sub of sprinklerSubLayers) {
+          if (!sub.visible) continue;
+          for (const c of sub.candidates) {
+            const globalIdx = symbolScanResults!.candidates.indexOf(c);
+            const conn = connLookup.get(globalIdx);
+            const cx = Math.round(c.cx ?? (c.x + c.w / 2));
+            const cy = Math.round(c.cy ?? (c.y + c.h / 2));
+            const r  = Math.max(4, Math.round(Math.min(c.w, c.h) * 0.45));
+            // Connection-coded ring color
+            const ringColor =
+              conn?.connType === "primary" ? "#22c55e"  // green  = on main
+              : conn?.connType === "branch" ? "#f59e0b"  // amber  = via branch
+              : "#ef4444";                               // red    = orphaned
+            // White halo
+            shCtx.beginPath();
+            shCtx.arc(cx, cy, r + 2, 0, Math.PI * 2);
+            shCtx.strokeStyle = "rgba(255,255,255,0.8)";
+            shCtx.lineWidth = 3;
+            shCtx.stroke();
+            // Colored ring
+            shCtx.beginPath();
+            shCtx.arc(cx, cy, r, 0, Math.PI * 2);
+            shCtx.strokeStyle = ringColor;
+            shCtx.lineWidth = 2;
+            shCtx.stroke();
+            // Center dot (type color)
+            shCtx.beginPath();
+            shCtx.arc(cx, cy, Math.max(2, r * 0.25), 0, Math.PI * 2);
+            shCtx.fillStyle = sub.color;
+            shCtx.fill();
+          }
         }
+      }
+      parent.appendChild(shCanvas);
+    }
+
+    // ── Tooltip on click ────────────────────────────────────────────────────
+    // Remove any leftover tooltip from a previous render
+    document.getElementById("junction-tooltip")?.remove();
+
+    function closeTooltip() {
+      document.getElementById("junction-tooltip")?.remove();
+    }
+
+    hlCanvas.addEventListener("click", (e: MouseEvent) => {
+      closeTooltip();
+
+      // Scale from CSS pixels → image pixels
+      const rect = hlCanvas.getBoundingClientRect();
+      const scaleX = imgW / rect.width;
+      const scaleY = imgH / rect.height;
+      const ix = (e.clientX - rect.left)  * scaleX;
+      const iy = (e.clientY - rect.top)   * scaleY;
+
+      // Find closest junction within its hit radius
+      let best: JunctionHit | null = null;
+      let bestDist = Infinity;
+      for (const h of hitMap) {
+        const d = Math.hypot(ix - h.cx, iy - h.cy);
+        if (d < h.hitRadius && d < bestDist) { bestDist = d; best = h; }
+      }
+      if (!best) return;
+
+      const dirDesc = best.arms.map((a) => a.dir).join(", ");
+      const typeDesc: Record<string, string> = {
+        Tees:      "3 pipe arms meet — one pipe continues through, one branches off",
+        Elbows:    "2 perpendicular arms — pipe makes a 90° turn",
+        Endpoints: "1 arm — pipe terminates here (cap or open end)",
+        Crossings: "4 arms — two pipes cross at this point",
       };
 
-      const subByName = (name: string) => pipeSubLayers.find((s) => s.name === name);
-      if (subByName("Tees")?.visible) addMarkers(pipeAnalysisResults.tJunctions, "#2563eb", "T");
-      if (subByName("Elbows")?.visible) addMarkers(pipeAnalysisResults.lJunctions, "#16a34a", "L");
-      if (subByName("Endpoints")?.visible) addMarkers(pipeAnalysisResults.endpoints, "#f59e0b", "E");
-      const crossSub = subByName("Crossings");
-      if (crossSub?.visible) addMarkers(pipeAnalysisResults.crossings, "#9333ea", "X");
-    }
+      const tip = document.createElement("div");
+      tip.id = "junction-tooltip";
+      tip.style.cssText = [
+        "position:fixed",
+        `left:${e.clientX + 12}px`,
+        `top:${e.clientY - 8}px`,
+        "z-index:9999",
+        "background:#1e293b",
+        "color:#f1f5f9",
+        "border:1px solid #334155",
+        "border-radius:8px",
+        "padding:10px 13px",
+        "font-size:12px",
+        "line-height:1.6",
+        "max-width:280px",
+        "box-shadow:0 8px 24px rgba(0,0,0,0.5)",
+        "pointer-events:none",
+      ].join(";");
+
+      tip.innerHTML = `
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px">
+          <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${best.color};flex-shrink:0"></span>
+          <span style="font-weight:700;font-size:13px">${best.type.slice(0,-1)}</span>
+          <span style="margin-left:auto;color:#94a3b8;font-size:11px">(${best.cx}, ${best.cy})</span>
+        </div>
+        <div style="color:#cbd5e1;margin-bottom:4px">${typeDesc[best.type] ?? ""}</div>
+        <div style="color:#94a3b8;font-size:11px"><b style="color:#cbd5e1">Arms detected:</b> ${dirDesc}</div>
+        <div style="color:#64748b;font-size:10px;margin-top:5px">Click elsewhere to dismiss</div>`;
+
+      document.body.appendChild(tip);
+
+      // Keep tooltip inside the viewport
+      const tipRect = tip.getBoundingClientRect();
+      if (tipRect.right  > window.innerWidth  - 8) tip.style.left = `${e.clientX - tipRect.width - 12}px`;
+      if (tipRect.bottom > window.innerHeight - 8) tip.style.top  = `${e.clientY - tipRect.height + 8}px`;
+    });
+
+    // Close on any click outside the canvas — remove previous listener first
+    if (_tooltipCloseHandler) document.removeEventListener("click", _tooltipCloseHandler, true);
+    _tooltipCloseHandler = (e: MouseEvent) => {
+      if ((e.target as HTMLElement)?.id !== "junction-highlight-canvas") closeTooltip();
+    };
+    document.addEventListener("click", _tooltipCloseHandler, true);
   }
 
   // ── Layer panel rendering ─────────────────────────────────────────
+
+  /**
+   * Re-run branch line detection for a specific pipe sub-layer.
+   * Uses the stored fullPrimaryMask / workSpaceMask from the last full analysis
+   * so we don't need to re-run the expensive colored pipe extraction.
+   *
+   * si — index into pipeSubLayers; finds the "Branch Lines" sub-layer by name
+   * and uses its threshold as the capillary gray cutoff.
+   */
+  function reExtractBranchLines(si: number) {
+    const sub = pipeSubLayers[si];
+    if (!sub || sub.name !== "Branch Lines") return;
+    if (!pipeAnalysisResults || !workingImageData) {
+      log("reExtractBranchLines: no pipe analysis results"); return;
+    }
+    const { fullPrimaryMask, workSpaceMask, primarySkeleton, wsWidth: ww, wsHeight: wh, scale } = pipeAnalysisResults;
+    if (!fullPrimaryMask.length || !workSpaceMask.length) {
+      log("reExtractBranchLines: masks not saved — need to re-run full scan"); return;
+    }
+    const { width, height } = workingImageData;
+    const grayThresh = sub.threshold ?? 190;
+    log(`reExtractBranchLines: re-extracting with gray threshold ${grayThresh}`);
+
+    // Reset capillaryMask to zeros, then re-build it from scratch
+    pipeAnalysisResults.capillaryMask.fill(0);
+    const newCapMask = extractCapillaryLines(
+      fullPrimaryMask, workSpaceMask, primarySkeleton,
+      width, height, ww, wh, scale, grayThresh
+    );
+    for (let i = 0; i < newCapMask.length; i++) pipeAnalysisResults.capillaryMask[i] = newCapMask[i];
+    pipeAnalysisResults.capillaryPixelCount = newCapMask.reduce((s, v) => s + v, 0);
+
+    // Re-run geometric branch tracing on the fresh capillary mask
+    computeSprinklerConnectivity();
+    traceInkDropBranches();
+    // traceInkDropBranches() already rebuilds the Branch Lines sub-layer; just refresh the panel
+    renderInlineLayerPanel();
+    renderSymbolMarkers();
+  }
+
+  /**
+   * Re-extract a single layer using its stored threshold. For Pipes/Text the
+   * original pixels are restored to workingImageData first so the filter runs
+   * on a clean copy. For Sprinkler Head layers no pixel restore is needed.
+   */
+  function reExtractLayer(layerIdx: number) {
+    const layer = layers[layerIdx];
+    if (!layer || !workingImageData) return;
+
+    if (layer.name === "Pipes") {
+      // Restore pipe pixels back to workingImageData
+      const src = layer.rawImageData.data;
+      const dst = workingImageData.data;
+      for (let i = 0; i < src.length; i += 4) {
+        if (src[i + 3] > 0) {
+          dst[i] = src[i]; dst[i + 1] = src[i + 1];
+          dst[i + 2] = src[i + 2]; dst[i + 3] = src[i + 3];
+        }
+      }
+      layers.splice(layerIdx, 1);
+      pipeSubLayers = [];
+      (pipeAnalysisResults as unknown) = null;
+      extractColored(layer.threshold ?? 0.15);
+      renderInlineLayerPanel();
+      return;
+    }
+
+    if (layer.name === "Text / Labels") {
+      const src = layer.rawImageData.data;
+      const dst = workingImageData.data;
+      for (let i = 0; i < src.length; i += 4) {
+        if (src[i + 3] > 0) {
+          dst[i] = src[i]; dst[i + 1] = src[i + 1];
+          dst[i + 2] = src[i + 2]; dst[i + 3] = src[i + 3];
+        }
+      }
+      layers.splice(layerIdx, 1);
+      extractText(layer.threshold ?? 180);
+      renderInlineLayerPanel();
+      return;
+    }
+
+    if (layer.name === "Sprinkler Heads" || layer.name === "Without Sprinkler Heads") {
+      const padPct = layer.threshold ??
+        layers.find(l => l.name === "Sprinkler Heads")?.threshold ??
+        layers.find(l => l.name === "Without Sprinkler Heads")?.threshold ?? 15;
+      createSprinklerHeadLayer(padPct);
+      renderInlineLayerPanel();
+      return;
+    }
+  }
 
   function renderInlineLayerPanel() {
     const panel = document.getElementById("layer-inline-panel");
@@ -2458,25 +4357,94 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
 
     const totalExtracted = layers.reduce((sum, l) => sum + l.pixelCount, 0);
 
+    /** Returns threshold slider + recalc button HTML for layers that support it */
+    function thresholdControls(i: number, layer: ExtractedLayer): string {
+      const name = layer.name;
+      if (name === "Pipes") {
+        const raw = layer.threshold ?? 0.15;
+        const val = Math.round(raw * 100); // stored 0.05–0.50 → display 5–50
+        return `<div class="flex items-center gap-1.5 px-2 pb-1">
+          <span class="text-[9px] text-amber-600 dark:text-amber-400 w-10 flex-shrink-0">sat min</span>
+          <input type="range" data-layer-threshold="${i}" min="5" max="50" step="1" value="${val}"
+            class="flex-1 h-1 accent-amber-500 cursor-pointer" />
+          <span class="text-[9px] text-gray-400 w-8 text-right flex-shrink-0" id="lthr-${i}">${val}%</span>
+          <button type="button" data-layer-recalc="${i}" title="Re-extract with new threshold"
+            class="flex-shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 hover:bg-amber-500 hover:text-white transition-colors">↻</button>
+        </div>`;
+      }
+      if (name === "Text / Labels") {
+        const val = layer.threshold ?? 180;
+        return `<div class="flex items-center gap-1.5 px-2 pb-1">
+          <span class="text-[9px] text-indigo-600 dark:text-indigo-400 w-10 flex-shrink-0">darkness</span>
+          <input type="range" data-layer-threshold="${i}" min="100" max="220" step="1" value="${val}"
+            class="flex-1 h-1 accent-indigo-500 cursor-pointer" />
+          <span class="text-[9px] text-gray-400 w-8 text-right flex-shrink-0" id="lthr-${i}">${val}</span>
+          <button type="button" data-layer-recalc="${i}" title="Re-extract with new threshold"
+            class="flex-shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500 hover:text-white transition-colors">↻</button>
+        </div>`;
+      }
+      if (name === "Sprinkler Heads" || name === "Without Sprinkler Heads") {
+        const val = layer.threshold ?? 15;
+        return `<div class="flex items-center gap-1.5 px-2 pb-1">
+          <span class="text-[9px] text-emerald-600 dark:text-emerald-400 w-10 flex-shrink-0">bbox pad</span>
+          <input type="range" data-layer-threshold="${i}" min="0" max="50" step="1" value="${val}"
+            class="flex-1 h-1 accent-emerald-500 cursor-pointer" />
+          <span class="text-[9px] text-gray-400 w-8 text-right flex-shrink-0" id="lthr-${i}">${val}%</span>
+          <button type="button" data-layer-recalc="${i}" title="Re-extract with new threshold"
+            class="flex-shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500 hover:text-white transition-colors">↻</button>
+        </div>`;
+      }
+      return "";
+    }
+
     const layerRows = layers
       .map((layer, i) => {
-        let row = `<label class="flex items-center gap-2 rounded px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer">
-          <input type="checkbox" data-layer-toggle="${i}" ${layer.visible ? "checked" : ""} class="rounded" />
-          <span class="flex-1 text-xs font-medium text-gray-800 dark:text-gray-200">${layer.name}</span>
-          <span class="text-[10px] text-gray-400">${(layer.pixelCount / 1000).toFixed(1)}k px</span>
-        </label>`;
+        const opacityVal = Math.round((layer.opacity ?? 1) * 100);
+        let row = `<div class="rounded border border-transparent hover:border-gray-200 dark:hover:border-gray-700 mb-0.5">
+          <label class="flex items-center gap-2 px-2 py-1 cursor-pointer">
+            <input type="checkbox" data-layer-toggle="${i}" ${layer.visible ? "checked" : ""} class="rounded" />
+            <span class="flex-1 text-xs font-medium text-gray-800 dark:text-gray-200">${layer.name}</span>
+            <span class="text-[10px] text-gray-400">${(layer.pixelCount / 1000).toFixed(1)}k px</span>
+          </label>
+          <div class="flex items-center gap-1.5 px-2 pb-1">
+            <span class="text-[9px] text-gray-400 w-10 flex-shrink-0">opacity</span>
+            <input type="range" data-layer-opacity="${i}" min="0" max="100" step="1" value="${opacityVal}"
+              class="flex-1 h-1 accent-gray-500 cursor-pointer" />
+            <span class="text-[9px] text-gray-400 w-8 text-right flex-shrink-0" id="lopa-${i}">${opacityVal}%</span>
+          </div>
+          ${thresholdControls(i, layer)}`;
         if (layer.name === "Pipes" && pipeSubLayers.length > 0) {
           row += pipeSubLayers
-            .map(
-              (sub, si) =>
-                `<label class="flex items-center gap-2 rounded py-0.5 pr-2 pl-8 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer">
-                <input type="checkbox" data-pipe-sub="${si}" ${sub.visible ? "checked" : ""} class="rounded" />
-                <span class="w-2.5 h-2.5 rounded-sm flex-shrink-0" style="background:rgb(${sub.color.join(",")})"></span>
-                <span class="flex-1 text-[11px] font-medium text-gray-700 dark:text-gray-300">${sub.name}</span>
-                ${sub.count ? `<span class="text-[10px] font-bold text-gray-600 dark:text-gray-200">${sub.count}</span>` : ""}
-                <span class="text-[10px] text-gray-400">${(sub.pixelCount / 1000).toFixed(1)}k</span>
-              </label>`
-            )
+            .map((sub, si) => {
+              const isActive = activeLayerName === sub.name;
+              const thr = sub.threshold ?? 220;
+              const isBranch = sub.name === "Branch Lines";
+              const canRecalc = isBranch && !!pipeAnalysisResults?.fullPrimaryMask?.length;
+              return `<div class="pl-8 pr-1 ${isActive ? "bg-amber-50 dark:bg-amber-900/30 rounded ring-1 ring-amber-400" : ""}">
+                <div class="flex items-center gap-1 py-0.5 ${isActive ? "" : "hover:bg-gray-100 dark:hover:bg-gray-800"} rounded cursor-default">
+                  <label class="flex flex-1 items-center gap-2 cursor-pointer min-w-0">
+                    <input type="checkbox" data-pipe-sub="${si}" ${sub.visible ? "checked" : ""} class="rounded flex-shrink-0" />
+                    <span class="w-2.5 h-2.5 rounded-sm flex-shrink-0" style="background:rgb(${sub.color.join(",")})"></span>
+                    <span class="flex-1 text-[11px] font-medium text-gray-700 dark:text-gray-300 truncate">${sub.name}</span>
+                    ${sub.count ? `<span class="text-[10px] font-bold text-gray-500 dark:text-gray-300">${sub.count}</span>` : ""}
+                    <span class="text-[10px] text-gray-400">${(sub.pixelCount / 1000).toFixed(1)}k</span>
+                  </label>
+                  <button type="button" data-activate-layer="${si}" title="${isActive ? "Stop painting (ESC)" : "Activate — click canvas to paint pixels"}"
+                    class="flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none transition-colors
+                      ${isActive ? "bg-amber-500 text-white" : "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-300 hover:bg-amber-400 hover:text-white"}">
+                    ✏${isActive ? " on" : ""}
+                  </button>
+                </div>
+                <div class="flex items-center gap-1.5 pb-1 pr-1">
+                  <span class="text-[9px] ${isBranch ? "text-amber-600 dark:text-amber-400" : "text-gray-400"} w-10 flex-shrink-0">${isBranch ? "dark px" : "fuzz"}</span>
+                  <input type="range" data-pipe-threshold="${si}" min="140" max="254" value="${thr}"
+                    class="flex-1 h-1 accent-amber-500 cursor-pointer" />
+                  <span class="text-[9px] text-gray-400 w-5 text-right flex-shrink-0" id="thr-val-${si}">${thr}</span>
+                  ${canRecalc ? `<button type="button" data-pipe-recalc="${si}" title="Re-detect branch lines with this threshold"
+                    class="flex-shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 hover:bg-amber-500 hover:text-white transition-colors">↻</button>` : ""}
+                </div>
+              </div>`;
+            })
             .join("");
           if (pipeAnalysisResults) {
             row += `<div class="flex items-center gap-2 pl-8 pr-2 py-0.5 text-[10px] text-gray-400 dark:text-gray-500">
@@ -2484,6 +4452,31 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
             </div>`;
           }
         }
+        if (layer.name === "Sprinkler Heads" && sprinklerSubLayers.length > 0) {
+          row += sprinklerSubLayers.map((sub, si) =>
+            `<label class="flex items-center gap-2 rounded py-0.5 pr-2 pl-8 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer">
+              <input type="checkbox" data-sprinkler-sub="${si}" ${sub.visible ? "checked" : ""} class="rounded" />
+              <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:${sub.color}"></span>
+              <span class="flex-1 text-[11px] font-medium text-gray-700 dark:text-gray-300">${sub.name}</span>
+            </label>`
+          ).join("");
+          // Connectivity summary
+          if (sprinklerConnections.length > 0) {
+            const byPrimary  = sprinklerConnections.filter(c => c.connType === "primary").length;
+            const byBranch   = sprinklerConnections.filter(c => c.connType === "branch").length;
+            const orphaned   = sprinklerConnections.filter(c => c.connType === "none").length;
+            row += `<div class="pl-8 pr-2 py-1 flex flex-col gap-0.5">
+              ${byPrimary  ? `<span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">✔ ${byPrimary} on primary mains</span>` : ""}
+              ${byBranch   ? `<span class="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">⤷ ${byBranch} via branch lines</span>` : ""}
+              ${orphaned   ? `<span class="text-[10px] text-red-500 dark:text-red-400 font-semibold">✖ ${orphaned} unconnected</span>` : ""}
+            </div>`;
+          } else {
+            row += `<div class="pl-8 pr-2 py-0.5 text-[10px] font-bold text-gray-600 dark:text-gray-300">
+              ${symbolScanResults!.candidates.length} head${symbolScanResults!.candidates.length !== 1 ? "s" : ""} detected
+            </div>`;
+          }
+        }
+        row += `</div>`;
         return row;
       })
       .join("");
@@ -2499,11 +4492,7 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
         <button type="button" data-extract="remaining" class="hidden rounded bg-slate-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-slate-700">Extract Remaining</button>
         ${layers.length > 0 ? '<button type="button" data-extract="reset" class="rounded bg-red-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-red-700">Reset Layers</button>' : ""}
       </div>
-      <div class="mb-3 border-t border-gray-200 pt-3 dark:border-gray-700">
-        <button type="button" id="run-symbol-scan" class="w-full rounded bg-rose-600 px-2 py-1.5 text-[11px] font-semibold text-white hover:bg-rose-700">Analyze Pipes</button>
-        ${pipeAnalysisResults ? `<p class="mt-1 text-[10px] text-gray-400 dark:text-gray-500">Results shown as sub-layers under Pipes</p>` : ""}
-        ${symbolScanResults && symbolScanResults.candidates.length > 0 ? `<p class="mt-1 text-[10px] text-gray-500 dark:text-gray-400">${symbolScanResults.candidates.length} sprinkler head(s) · ${symbolScanResults.groupCount} group(s)</p>` : ""}
-      </div>
+      ${symbolScanResults && symbolScanResults.candidates.length > 0 ? `<p class="mb-2 text-[10px] text-gray-500 dark:text-gray-400">${symbolScanResults.candidates.length} sprinkler head(s) · ${symbolScanResults.groupCount} group(s)</p>` : ""}
       <div class="mb-2 space-y-0.5">
         ${layerRows}
       </div>
@@ -2531,32 +4520,43 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
       ctx.putImageData(workingImageData, 0, 0);
     }
 
-    layers.forEach((layer) => {
-      if (!layer.visible) return;
+    // Two-pass compositing so that "background" layers (e.g. Without Sprinkler Heads)
+    // always render BELOW the analysis layers regardless of array order.
+    const BACKGROUND_LAYERS = new Set(["Original", "Without Sprinkler Heads"]);
 
-      // If this is the Pipes layer and sub-layers exist, render those instead
+    const renderLayer = (layer: ExtractedLayer) => {
+      if (!layer.visible) return;
+      const alpha = layer.opacity ?? 1;
       if (layer.name === "Pipes" && pipeSubLayers.length > 0) {
+        const prevAlpha = ctx.globalAlpha;
+        ctx.globalAlpha = alpha;
         for (const sub of pipeSubLayers) {
           if (!sub.visible) continue;
           const tmp = document.createElement("canvas");
-          tmp.width = sub.rawImageData.width;
-          tmp.height = sub.rawImageData.height;
+          tmp.width = sub.rawImageData.width; tmp.height = sub.rawImageData.height;
           const tmpCtx = tmp.getContext("2d");
           if (!tmpCtx) continue;
           tmpCtx.putImageData(sub.rawImageData, 0, 0);
           ctx.drawImage(tmp, 0, 0);
         }
+        ctx.globalAlpha = prevAlpha;
         return;
       }
-
       const tmp = document.createElement("canvas");
-      tmp.width = layer.rawImageData.width;
-      tmp.height = layer.rawImageData.height;
+      tmp.width = layer.rawImageData.width; tmp.height = layer.rawImageData.height;
       const tmpCtx = tmp.getContext("2d");
       if (!tmpCtx) return;
       tmpCtx.putImageData(layer.rawImageData, 0, 0);
+      const prevAlpha = ctx.globalAlpha;
+      ctx.globalAlpha = alpha;
       ctx.drawImage(tmp, 0, 0);
-    });
+      ctx.globalAlpha = prevAlpha;
+    };
+
+    // Pass 1 — background layers
+    layers.forEach(layer => { if (BACKGROUND_LAYERS.has(layer.name)) renderLayer(layer); });
+    // Pass 2 — analysis/overlay layers
+    layers.forEach(layer => { if (!BACKGROUND_LAYERS.has(layer.name)) renderLayer(layer); });
 
     imgEl.src = compositeCanvas.toDataURL("image/png");
   }
@@ -2580,17 +4580,31 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     el.querySelectorAll("[data-layer-toggle]").forEach((cb) => {
       cb.addEventListener("change", (e) => {
         const idx = Number((cb as HTMLElement).getAttribute("data-layer-toggle"));
-        if (layers[idx]) {
-          layers[idx].visible = (e.target as HTMLInputElement).checked;
-          log(`Toggle layer ${idx} (${layers[idx].name}) →`, layers[idx].visible);
-          updateCompositeImage();
-        }
-      });
-    });
+        if (!layers[idx]) return;
+        const checked = (e.target as HTMLInputElement).checked;
+        layers[idx].visible = checked;
+        log(`Toggle layer ${idx} (${layers[idx].name}) →`, checked);
 
-    el.querySelector("#run-symbol-scan")?.addEventListener("click", () => {
-      log("Symbol scan button clicked");
-      runSymbolScan();
+        // When a parent layer is toggled, cascade to all its sub-layers.
+        if (layers[idx].name === "Pipes" && pipeSubLayers.length > 0) {
+          pipeSubLayers.forEach((sub, si) => {
+            sub.visible = checked;
+            const subCb = el.querySelector(`[data-pipe-sub="${si}"]`) as HTMLInputElement | null;
+            if (subCb) subCb.checked = checked;
+          });
+          renderSymbolMarkers();
+        }
+        if (layers[idx].name === "Sprinkler Heads" && sprinklerSubLayers.length > 0) {
+          sprinklerSubLayers.forEach((sub, si) => {
+            sub.visible = checked;
+            const subCb = el.querySelector(`[data-sprinkler-sub="${si}"]`) as HTMLInputElement | null;
+            if (subCb) subCb.checked = checked;
+          });
+          renderSymbolMarkers();
+        }
+
+        updateCompositeImage();
+      });
     });
 
     el.querySelectorAll("[data-pipe-sub]").forEach((cb) => {
@@ -2604,7 +4618,101 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
         }
       });
     });
+
+    el.querySelectorAll("[data-sprinkler-sub]").forEach((cb) => {
+      cb.addEventListener("change", (e) => {
+        const idx = Number((cb as HTMLElement).getAttribute("data-sprinkler-sub"));
+        if (sprinklerSubLayers[idx]) {
+          sprinklerSubLayers[idx].visible = (e.target as HTMLInputElement).checked;
+          renderSymbolMarkers();
+        }
+      });
+    });
+
+    // Activate/deactivate layer painting
+    el.querySelectorAll("[data-activate-layer]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const si = Number((btn as HTMLElement).getAttribute("data-activate-layer"));
+        const sub = pipeSubLayers[si];
+        if (!sub) return;
+        activeLayerName = (activeLayerName === sub.name) ? null : sub.name;
+        log(`Active layer → ${activeLayerName ?? "none"}`);
+        renderActiveLayerIndicator();
+        renderInlineLayerPanel();
+      });
+    });
+
+    // Fuzziness threshold sliders (pipe sub-layers)
+    el.querySelectorAll("[data-pipe-threshold]").forEach((slider) => {
+      const update = () => {
+        const si = Number((slider as HTMLElement).getAttribute("data-pipe-threshold"));
+        const val = Number((slider as HTMLInputElement).value);
+        if (pipeSubLayers[si]) {
+          pipeSubLayers[si].threshold = val;
+          const valEl = el.querySelector(`#thr-val-${si}`);
+          if (valEl) valEl.textContent = String(val);
+        }
+      };
+      slider.addEventListener("input", update);
+    });
+
+    // ── Layer-level opacity sliders ────────────────────────────────────
+    el.querySelectorAll("[data-layer-opacity]").forEach((slider) => {
+      slider.addEventListener("input", () => {
+        const i = Number((slider as HTMLElement).getAttribute("data-layer-opacity"));
+        const val = Number((slider as HTMLInputElement).value);
+        if (layers[i]) {
+          layers[i].opacity = val / 100;
+          const valEl = el.querySelector(`#lopa-${i}`);
+          if (valEl) valEl.textContent = `${val}%`;
+          updateCompositeImage();
+        }
+      });
+    });
+
+    // ── Layer-level threshold sliders ──────────────────────────────────
+    el.querySelectorAll("[data-layer-threshold]").forEach((slider) => {
+      slider.addEventListener("input", () => {
+        const i = Number((slider as HTMLElement).getAttribute("data-layer-threshold"));
+        const raw = Number((slider as HTMLInputElement).value);
+        if (!layers[i]) return;
+        const name = layers[i].name;
+        // Pipes stores saturation as fraction; slider is 5–50 (percentage)
+        layers[i].threshold = name === "Pipes" ? raw / 100 : raw;
+        const valEl = el.querySelector(`#lthr-${i}`);
+        if (valEl) {
+          const suffix = (name === "Pipes" || name === "Sprinkler Heads" || name === "Without Sprinkler Heads") ? "%" : "";
+          valEl.textContent = `${raw}${suffix}`;
+        }
+      });
+    });
+
+    // ── Recalculate buttons (top-level layers) ────────────────────────
+    el.querySelectorAll("[data-layer-recalc]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const i = Number((btn as HTMLElement).getAttribute("data-layer-recalc"));
+        reExtractLayer(i);
+      });
+    });
+
+    // ── Pipe sub-layer recalculate buttons (Branch Lines ↻) ───────────
+    el.querySelectorAll("[data-pipe-recalc]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const si = Number((btn as HTMLElement).getAttribute("data-pipe-recalc"));
+        reExtractBranchLines(si);
+      });
+    });
   }
+
+  // Escape key deactivates the painter
+  document.addEventListener("keydown", (e: KeyboardEvent) => {
+    if (e.key === "Escape" && activeLayerName) {
+      activeLayerName = null;
+      renderActiveLayerIndicator();
+      renderInlineLayerPanel();
+    }
+  });
 
   // ── Canvas overlay drawing ─────────────────────────────────────────
 
@@ -2697,27 +4805,57 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     const hasConfirmed = confirmedRegionIndexes.size > 0;
 
     if (resolved && hasConfirmed) {
+      // First time only: run the async extraction pipeline (OCR + layer separation).
+      // We wrap it in an IIFE, return early from the sync path, and re-invoke
+      // renderPipelineSteps once extraction finishes so the DOM is built then.
       if (!workingImageData) {
         showOverlay("Extracting layers…");
         initWorkingImage();
-        extractColored();
-        extractText();
-        extractDashedRectangles();
-        extractDark();
-        extractMidtones();
-        extractRemaining();
-        log("Auto-extracted all layers:", layers.length);
-        hideOverlay();
-        toastSuccess("Layers Extracted", `${layers.length} layers separated from the drawing.`);
+        // Snapshot the untouched original BEFORE any extraction runs
+        if (lastCroppedImageData) {
+          const origData = new ImageData(
+            new Uint8ClampedArray(lastCroppedImageData.data),
+            lastCroppedImageData.width,
+            lastCroppedImageData.height
+          );
+          layers.unshift({
+            name: "Original",
+            visible: false,
+            imageDataUrl: imageDataToDataUrl(origData),
+            rawImageData: origData,
+            pixelCount: origData.width * origData.height,
+          });
+        }
+        (async () => {
+          await extractPdfLayers();    // PDF OCG layers — added to panel as-is
+          showOverlay("Extracting layers…");
+          extractColored();
+          extractMidtones();
+          extractText();
+          extractDashedRectangles();
+          extractRemaining();
+          log("Auto-extracted all layers:", layers.length);
+          hideOverlay();
+          toastSuccess("Layers Extracted", `${layers.length} layers separated from the drawing.`);
+          // Re-invoke to build the DOM now that workingImageData is populated.
+          // workingImageData is set so the extraction block is skipped.
+          renderPipelineSteps({ sourceImageData, regions, selectedRegions });
+          setTimeout(() => runSymbolScan(), 80);
+        })();
+        return; // DOM setup will happen inside the IIFE above
       }
       const croppedUrl = lastCroppedImageData ? imageDataToDataUrl(lastCroppedImageData) : "";
 
-      // Image only in main area
+      // Image only in main area — keeps w-full so UI elements (buttons, labels)
+      // stay at their CSS pixel size regardless of zoom level.
       pipelineStepsEl.innerHTML = `
-        <div class="checker-bg relative flex flex-1 items-center justify-center">
-          <img id="working-canvas-img" src="${croppedUrl}" class="block w-full" />
+        <div class="checker-bg">
+          <div class="relative w-full">
+            <img id="working-canvas-img" src="${croppedUrl}" class="block w-full" />
+          </div>
         </div>
       `;
+      fitAndCenter(imgW, imgH);
 
       // Controls in drawer
       if (drawerControlsEl) {
@@ -2732,6 +4870,10 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
             confirmedRegionIndexes.clear();
             workingImageData = null;
             layers = [];
+            // Reset pipe analysis so it re-runs on next confirmation
+            pipeAnalysisResults = null;
+            pipeSubLayers = []; sprinklerSubLayers = []; sprinklerConnections = [];
+            symbolScanResults = null;
             renderProcessingOnlyView();
           });
       }
@@ -2739,13 +4881,17 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     } else {
       const pending = regions.length - confirmedRegionIndexes.size - excludedRegionIndexes.size;
 
-      // Image only in main area (with region overlays which are interactive on the image)
+      // Image only in main area (with region overlays) — keeps w-full so UI
+      // elements (buttons, handles, labels) stay at their CSS pixel size.
       pipelineStepsEl.innerHTML = `
-        <div id="step1-image-container" class="checker-bg relative flex flex-1 items-center justify-center" style="overflow:visible">
-          <img src="${step1BaseImageUrl}" alt="Regions" class="block w-full select-none" draggable="false" />
-          ${regionBoxesHtml}
+        <div class="checker-bg">
+          <div id="step1-image-container" class="relative w-full">
+            <img src="${step1BaseImageUrl}" alt="Regions" class="block w-full select-none" draggable="false" />
+            ${regionBoxesHtml}
+          </div>
         </div>
       `;
+      fitAndCenter(imgW, imgH);
 
       // Controls in drawer
       if (drawerControlsEl) {
@@ -2923,41 +5069,287 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
 
   // ── PDF / Image loading ────────────────────────────────────────────
 
+  // ── Drawing info panel ─────────────────────────────────────────────
+
+  // Convert Claude's markdown-style response into simple HTML for the panel.
+  function narrativeToHtml(text: string): string {
+    return text
+      .split("\n")
+      .map((line) => {
+        const trimmed = line.trim();
+        if (!trimmed) return "";
+        // **Section Header** → styled heading
+        if (trimmed.startsWith("**") && trimmed.endsWith("**")) {
+          const heading = trimmed.slice(2, -2);
+          return `<p class="mt-3 mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-400">${heading}</p>`;
+        }
+        // Bullet points
+        if (trimmed.startsWith("- ")) {
+          const content = trimmed.slice(2).replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+          return `<p class="flex gap-1 text-[11px] text-gray-700 dark:text-gray-300 leading-snug mb-0.5"><span class="shrink-0 text-sky-400">•</span><span>${content}</span></p>`;
+        }
+        // Plain line with bold inline
+        const content = trimmed.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+        return `<p class="text-[11px] text-gray-600 dark:text-gray-400 leading-snug mb-0.5">${content}</p>`;
+      })
+      .join("");
+  }
+
+  function renderDrawingInfoPanel() {
+    const panel = document.getElementById("drawing-info-panel");
+    if (!panel) return;
+
+    if (metadataLoading) {
+      panel.innerHTML = `
+        <div class="mb-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800/60">
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Drawing Info</p>
+          <p class="mt-1 flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
+            <svg class="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+            </svg>
+            Analyzing drawing…
+          </p>
+        </div>`;
+      return;
+    }
+
+    if (!drawingMetadata) {
+      if (metadataError) {
+        panel.innerHTML = `<div class="mb-3 rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2 dark:border-amber-800 dark:bg-amber-950/40">
+          <p class="text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">Drawing Info</p>
+          <p class="mt-0.5 text-[10px] text-amber-500 dark:text-amber-400">Could not analyze: ${metadataError}</p>
+        </div>`;
+      } else {
+        panel.innerHTML = "";
+      }
+      return;
+    }
+
+    // Build symbol schedule block if the drawing legend has explicit counts
+    let scheduleHtml = "";
+    if (sprinklerSchedule && sprinklerSchedule.length > 0) {
+      const countsFound  = sprinklerSchedule.filter(r => r.count !== null && r.count !== undefined);
+      const totalCount   = countsFound.reduce((s, r) => s + (r.count ?? 0), 0);
+      const hasCounts    = countsFound.length > 0;
+
+      // Badge: green with total when counts exist; amber "counts not in drawing" when absent
+      const badgeHtml = hasCounts
+        ? `<span class="rounded-full bg-emerald-600 px-2 py-0.5 text-[11px] font-bold text-white">${totalCount} total</span>`
+        : `<span class="rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-semibold text-white">counts not in drawing</span>`;
+
+      // Show CNT column only when at least one count was found
+      const cntHeader = hasCounts ? `<th class="pb-1 pr-2">Cnt</th>` : "";
+      const rows = sprinklerSchedule.map(r => {
+        const cntCell = hasCounts
+          ? `<td class="py-1 pr-2 text-center font-bold text-[12px] text-emerald-700 dark:text-emerald-400">${r.count ?? "—"}</td>`
+          : "";
+        return `
+        <tr class="border-t border-emerald-100 dark:border-emerald-800/50">
+          <td class="py-1 pr-2 text-center font-mono text-[11px]">${r.sym ?? "—"}</td>
+          ${cntCell}
+          <td class="py-1 pr-2 text-[10px]">${r.position ?? "—"}</td>
+          <td class="py-1 pr-2 text-[10px] text-gray-500 dark:text-gray-400">${[r.finish, r.temp ? r.temp + "°" : null, r.k ? "K=" + r.k : null, r.npt].filter(Boolean).join(" · ")}</td>
+          <td class="py-1 text-[10px] text-gray-500 dark:text-gray-400">${r.mfg ?? ""}</td>
+        </tr>`;
+      }).join("");
+
+      scheduleHtml = `
+        <div class="mb-2 rounded-lg border border-emerald-300 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-950/50">
+          <div class="flex items-center justify-between px-3 py-2">
+            <p class="text-[11px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
+              Symbol Schedule
+            </p>
+            ${badgeHtml}
+          </div>
+          <div class="overflow-x-auto px-3 pb-3">
+            <table class="w-full text-left text-gray-700 dark:text-gray-300">
+              <thead>
+                <tr class="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                  <th class="pb-1 pr-2">Sym</th>
+                  ${cntHeader}
+                  <th class="pb-1 pr-2">Position</th>
+                  <th class="pb-1 pr-2">Specs</th>
+                  <th class="pb-1">Mfg</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        </div>`;
+    }
+
+    // Build legend block if the drawing has a symbol key
+    let legendHtml = "";
+    if (drawingLegend && drawingLegend.length > 0) {
+      const CATEGORY_COLORS: Record<string, string> = {
+        sprinkler: "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300",
+        pipe:      "bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300",
+        valve:     "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300",
+        other:     "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
+      };
+      const legendRows = drawingLegend.map(r => {
+        const cat = (r.category ?? "other").toLowerCase();
+        const badge = CATEGORY_COLORS[cat] ?? CATEGORY_COLORS.other;
+        return `<tr class="border-t border-amber-100 dark:border-amber-800/40">
+          <td class="py-1 pr-3 font-mono text-[12px] text-center">${r.sym ?? "—"}</td>
+          <td class="py-1 pr-2 text-[10px]">${r.meaning ?? "—"}</td>
+          <td class="py-1">
+            <span class="rounded px-1 py-0.5 text-[9px] font-semibold uppercase ${badge}">${cat}</span>
+          </td>
+        </tr>`;
+      }).join("");
+
+      legendHtml = `
+        <details open class="mb-2 rounded-lg border border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/50">
+          <summary class="cursor-pointer px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400 select-none">
+            Symbol Legend
+          </summary>
+          <div class="overflow-x-auto px-3 pb-3">
+            <table class="w-full text-left text-gray-700 dark:text-gray-300">
+              <thead>
+                <tr class="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                  <th class="pb-1 pr-3">Symbol</th>
+                  <th class="pb-1 pr-2">Meaning</th>
+                  <th class="pb-1">Type</th>
+                </tr>
+              </thead>
+              <tbody>${legendRows}</tbody>
+            </table>
+          </div>
+        </details>`;
+    }
+
+    panel.innerHTML = `
+      ${scheduleHtml}
+      ${legendHtml}
+      <details ${sprinklerSchedule ? "" : "open"} class="rounded-lg border border-sky-200 bg-sky-50/60 dark:border-sky-800 dark:bg-sky-950/40">
+        <summary class="cursor-pointer px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-400 select-none">
+          Drawing Info
+        </summary>
+        <div class="px-3 pb-3">
+          ${narrativeToHtml(drawingMetadata)}
+        </div>
+      </details>`;
+  }
+
+  // Scales the rendered drawing before sending to the API.
+  // Larger = better text recognition but bigger payload; 1800px is a good balance for CAD drawings.
+  function resizeForAnalysis(imageData: ImageData, maxSide = 1800): string {
+    const scale = Math.min(1, maxSide / Math.max(imageData.width, imageData.height));
+    const w = Math.round(imageData.width * scale);
+    const h = Math.round(imageData.height * scale);
+    const src = document.createElement("canvas");
+    src.width = imageData.width; src.height = imageData.height;
+    src.getContext("2d")?.putImageData(imageData, 0, 0);
+    const out = document.createElement("canvas");
+    out.width = w; out.height = h;
+    const ctx = out.getContext("2d");
+    if (!ctx) return "";
+    ctx.drawImage(src, 0, 0, w, h);
+    return out.toDataURL("image/jpeg", 0.82);
+  }
+
+  async function analyzeDrawingMetadata(imageData: ImageData) {
+    const infoPanel = document.getElementById("drawing-info-panel");
+    if (!infoPanel) return;
+    metadataLoading = true;
+    drawingMetadata = null;
+    metadataError = null;
+    sprinklerSchedule = null;
+    drawingLegend = null;
+    renderDrawingInfoPanel();
+
+    try {
+      const imageDataUrl = resizeForAnalysis(imageData);
+      if (!imageDataUrl) { metadataLoading = false; renderDrawingInfoPanel(); return; }
+
+      const res = await fetch("/api/drawing-analyzer/analyze-metadata", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageData: imageDataUrl }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        metadataError = json?.error ?? `HTTP ${res.status}`;
+      } else {
+        drawingMetadata = json.summary ?? null;
+        sprinklerSchedule = Array.isArray(json.schedule) && json.schedule.length > 0
+          ? json.schedule as ScheduleRow[]
+          : null;
+        drawingLegend = Array.isArray(json.legend) && json.legend.length > 0
+          ? json.legend as LegendRow[]
+          : null;
+      }
+    } catch (err: any) {
+      log("analyzeDrawingMetadata failed:", err);
+      metadataError = err?.message ?? "Network error";
+    } finally {
+      metadataLoading = false;
+      renderDrawingInfoPanel();
+    }
+  }
+
   async function renderPdfToImage(file: File): Promise<HTMLImageElement | null> {
     log("renderPdfToImage: starting with", file.name, `(${(file.size / 1024).toFixed(1)} KB)`);
-    for (const scale of PDF_RENDER_SCALE_FALLBACKS) {
+    const pdfLib = getPdfLib();
+    if (!pdfLib) { logError("renderPdfToImage: pdfjsLib not available"); return null; }
+
+    // ── Cache PDF bytes so we only read the File once ─────────────────────────
+    const pdfBytes = await file.arrayBuffer();
+
+    // ── Step 1: probe native page dimensions at scale 1 ──────────────────────
+    // This lets us compute the EXACT scale needed to hit our target resolution
+    // instead of blindly trying high scales and falling back when they OOM.
+    let scaleFallbacks: number[] = PDF_RENDER_SCALE_FALLBACKS;
+    try {
+      const probe = await pdfLib.getDocument({ data: pdfBytes.slice(0) }).promise;
+      const pg1   = await probe.getPage(1);
+      const vp1   = pg1.getViewport({ scale: 1 });
+      const nW = vp1.width, nH = vp1.height;
+      log(`renderPdfToImage: native page ${nW.toFixed(0)} × ${nH.toFixed(0)} pt (72 DPI units)`);
+
+      // Scale to fill PDF_RENDER_TARGET_LONG_PX on the longest side
+      let s = PDF_RENDER_TARGET_LONG_PX / Math.max(nW, nH);
+      // Back off proportionally if total pixel count exceeds budget
+      const totalPx = nW * s * nH * s;
+      if (totalPx > PDF_RENDER_MAX_PIXELS) s *= Math.sqrt(PDF_RENDER_MAX_PIXELS / totalPx);
+      // Round to one decimal place, floor at 2
+      const s1 = Math.max(2, Math.round(s * 10) / 10);
+      const s2 = Math.max(2, Math.round(s1 * 0.7 * 10) / 10);
+      const s3 = Math.max(2, Math.round(s1 * 0.5 * 10) / 10);
+      scaleFallbacks = [s1, s2, s3].filter((v, i, a) => a.indexOf(v) === i);
+      log(`renderPdfToImage: target scale ${s1} (${(nW * s1).toFixed(0)}×${(nH * s1).toFixed(0)} px), fallbacks: ${scaleFallbacks.join(", ")}`);
+    } catch (e) {
+      logWarn("renderPdfToImage: probe failed, using legacy scale list", e);
+    }
+
+    // ── Step 2: render at the best scale that succeeds ────────────────────────
+    for (const scale of scaleFallbacks) {
       try {
         log(`renderPdfToImage: trying scale ${scale}...`);
         logTime(`renderPdfToImage-scale-${scale}`);
-        const pdfLib = getPdfLib();
-        if (!pdfLib) {
-          logError("renderPdfToImage: pdfjsLib not available");
-          return null;
-        }
-        const pdf = await pdfLib.getDocument({ data: await file.arrayBuffer() }).promise;
+        const pdf  = await pdfLib.getDocument({ data: pdfBytes.slice(0) }).promise;
         const page = await pdf.getPage(1);
         const viewport = page.getViewport({ scale });
         const c = document.createElement("canvas");
-        c.width = Math.max(1, Math.floor(viewport.width));
+        c.width  = Math.max(1, Math.floor(viewport.width));
         c.height = Math.max(1, Math.floor(viewport.height));
-        log(`renderPdfToImage: scale ${scale} → canvas ${c.width}x${c.height}`);
+        log(`renderPdfToImage: scale ${scale} → canvas ${c.width}×${c.height}`);
         const ctx = c.getContext("2d", { willReadFrequently: true });
         if (!ctx) {
-          logWarn(`renderPdfToImage: scale ${scale} no 2d context, skipping`);
+          logWarn(`renderPdfToImage: scale ${scale} — no 2d context, skipping`);
           continue;
         }
         await page.render({ canvasContext: ctx, viewport }).promise;
         const img = new Image();
         img.src = c.toDataURL("image/png");
-        await new Promise((resolve, reject) => {
-          img.onload = resolve;
-          img.onerror = reject;
-        });
+        await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; });
         lastPdfRenderScale = scale;
+        lastPdfPage = page;
+        lastPdfDoc  = pdf;
         logTimeEnd(`renderPdfToImage-scale-${scale}`);
-        log(
-          `renderPdfToImage: success at scale ${scale}, image ${img.naturalWidth}x${img.naturalHeight}`
-        );
+        log(`renderPdfToImage: success at scale ${scale} → ${img.naturalWidth}×${img.naturalHeight} px`);
         return img;
       } catch (error) {
         logWarn(`renderPdfToImage: scale ${scale} failed:`, error);
@@ -3009,6 +5401,10 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     setStatus("Rendering drawing...");
     showOverlay("Rendering drawing…");
     lastPdfRenderScale = 0;
+    lastPdfDoc  = null;
+    lastPdfPage = null;
+    lastCropOffsetX = 0;
+    lastCropOffsetY = 0;
     const isPdf = file.name.toLowerCase().endsWith(".pdf") || file.type === "application/pdf";
     const isSvg = file.name.toLowerCase().endsWith(".svg") || file.type === "image/svg+xml";
     log("handleDrawingUpload: format detected →", isPdf ? "PDF" : isSvg ? "SVG" : "Image");
@@ -3064,8 +5460,13 @@ const { globalFormLabel, mutedTextSmClasses, primaryTextClasses } = globalClasse
     layers = [];
     symbolScanResults = null;
     pipeAnalysisResults = null;
-    pipeSubLayers = [];
+    pipeSubLayers = []; sprinklerSubLayers = []; sprinklerConnections = [];
     if (drawerControlsEl) drawerControlsEl.innerHTML = "";
+
+    // Kick off metadata analysis on the original image (before any layer extraction).
+    // Fire-and-forget — the info panel updates itself when the response arrives.
+    analyzeDrawingMetadata(imageData);
+
     log("handleDrawingUpload: calling renderProcessingOnlyView...");
     renderProcessingOnlyView();
     logTimeEnd("handleDrawingUpload");
