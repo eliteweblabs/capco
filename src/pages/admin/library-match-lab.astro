@@ -1,0 +1,24 @@
+---
+import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
+import { checkAuth } from "../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../lib/user-utils";
+import SimpleScanFeature from "../../features/drawing-analyzer/SimpleScanStripped.astro";
+
+const { currentUser, session } = await checkAuth(Astro.cookies);
+const currentRole = currentUser?.profile?.role;
+const isLocalBypass = Astro.url.hostname === "localhost" || Astro.url.hostname === "127.0.0.1";
+
+if (!isLocalBypass && (!currentUser || !session)) {
+  return Astro.redirect("/auth/login");
+}
+if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) {
+  return Astro.redirect("/dashboard");
+}
+---
+
+<LayoutFullWidth
+  title="Library Match Lab"
+  description="Tune clutter and symbol templates on a full sheet — same layer stack as Simple Scan; no pipe extraction"
+>
+  <SimpleScanFeature libraryMatchLab />
+</LayoutFullWidth>

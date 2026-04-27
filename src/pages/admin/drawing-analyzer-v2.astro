@@ -1,0 +1,20 @@
+---
+import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
+import { checkAuth } from "../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../lib/user-utils";
+import SimpleScanV2 from "../../features/drawing-analyzer/SimpleScanV2.astro";
+
+const { currentUser, session } = await checkAuth(Astro.cookies);
+const currentRole = currentUser?.profile?.role;
+const isLocalBypass = Astro.url.hostname === "localhost" || Astro.url.hostname === "127.0.0.1";
+if (!isLocalBypass && (!currentUser || !session)) return Astro.redirect("/auth/login");
+if (!isLocalBypass && !isAdminOrSuperAdmin(currentRole)) return Astro.redirect("/dashboard");
+---
+
+<LayoutFullWidth
+  title="Drawing Analyzer"
+  classList="p-0"
+  description="Step-by-step fire protection drawing analyzer — pipe network review"
+>
+  <SimpleScanV2 />
+</LayoutFullWidth>

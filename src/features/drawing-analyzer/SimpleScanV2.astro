@@ -1,0 +1,2676 @@
+---
+import { globalClasses } from "../../pages/api/global/global-classes";
+import { readdirSync } from "node:fs";
+import { join } from "node:path";
+
+const { globalFormLabel, mutedTextSmClasses } = globalClasses();
+
+const drawingsDir = join(process.cwd(), "public", "test-drawings");
+let testDrawings: { label: string; file: string }[] = [];
+try {
+  testDrawings = readdirSync(drawingsDir)
+    .filter(f => f.toLowerCase().endsWith(".pdf"))
+    .sort()
+    .map(f => ({
+      label: f.replace(/\s*FP\.pdf$/i, "").replace(/\.pdf$/i, "").trim(),
+      file: f,
+    }));
+} catch { /* folder missing */ }
+---
+
+{/* ── Upload bar ── */}
+<div class="flex flex-wrap items-end gap-4 border-b border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-900">
+  <div class="min-w-[180px]">
+    <label for="v2-test-select" class={globalFormLabel}>Drawing</label>
+    <select id="v2-test-select"
+      class="block w-full rounded border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+      {testDrawings.map((d, i) => <option value={`/test-drawings/${d.file}`} selected={i === 0}>{d.label}</option>)}
+    </select>
+  </div>
+  <div>
+    <label for="v2-file-input" class={globalFormLabel}>Upload</label>
+    <input id="v2-file-input" type="file" accept=".pdf,image/*" class="block text-sm" />
+  </div>
+  <button id="v2-run-btn" type="button"
+    class="rounded bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700">
+    Load Drawing
+  </button>
+  <p id="v2-status" class={`${mutedTextSmClasses} break-words`}>Select a drawing to begin.</p>
+</div>
+
+{/* ── Step bar ── */}
+<div id="v2-step-bar"
+  class="flex items-center gap-0 border-b border-gray-200 bg-gray-50 px-4 dark:border-gray-700 dark:bg-gray-800/60">
+  {["Regions", "Pipe Review", "Summary"].map((label, i) => (
+    <div class="flex items-center">
+      <div data-step-btn={i}
+        class="flex cursor-default items-center gap-2 px-4 py-2 text-xs font-medium text-gray-400 dark:text-gray-500 transition-colors">
+        <span data-step-num={i}
+          class="flex h-5 w-5 items-center justify-center rounded-full bg-gray-300 text-[10px] font-bold text-gray-600 dark:bg-gray-600 dark:text-gray-300">
+          {i + 1}
+        </span>
+        {label}
+      </div>
+      {i < 2 && <span class="text-gray-300 dark:text-gray-600">›</span>}
+    </div>
+  ))}
+</div>
+
+{/* ── Main area: canvas + sidebar ── */}
+<section class="flex overflow-hidden" style="height:calc(100dvh - 178px)">
+
+  {/* ── Canvas area ── */}
+  <div class="relative min-w-0 flex-1 bg-gray-100 dark:bg-gray-800">
+    {/* Zoom controls */}
+    <div class="absolute right-3 top-3 z-50 flex items-center gap-1">
+      <div class="flex items-center overflow-hidden rounded-lg bg-gray-900/80 shadow-lg backdrop-blur dark:bg-gray-100/80">
+        <button id="v2-zoom-out" type="button"
+          class="flex h-8 w-7 items-center justify-center text-lg font-bold text-white hover:bg-white/10 dark:text-gray-900 dark:hover:bg-black/10">−</button>
+        <span id="v2-zoom-label"
+          class="w-11 select-none text-center text-[11px] font-semibold tabular-nums text-white dark:text-gray-900">100%</span>
+        <button id="v2-zoom-in" type="button"
+          class="flex h-8 w-7 items-center justify-center text-lg font-bold text-white hover:bg-white/10 dark:text-gray-900 dark:hover:bg-black/10">+</button>
+        <div class="mx-0.5 h-5 w-px bg-white/20 dark:bg-black/20"></div>
+        <button id="v2-zoom-fit" type="button"
+          class="flex h-8 items-center justify-center px-2 text-[11px] font-semibold text-white hover:bg-white/10 dark:text-gray-900 dark:hover:bg-black/10">Fit</button>
+      </div>
+    </div>
+
+    {/* Viewport */}
+    <div id="v2-viewport" class="relative h-full w-full cursor-grab select-none overflow-hidden">
+      <div id="v2-content" style="transform-origin:0 0;will-change:transform;position:relative;display:block;width:100%"></div>
+    </div>
+
+    {/* Processing overlay */}
+    <div id="v2-overlay"
+      class="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-white/70 opacity-0 backdrop-blur-sm transition-opacity duration-200 dark:bg-gray-900/70">
+      <div class="flex flex-col items-center gap-3">
+        <svg class="h-10 w-10 animate-spin text-primary-600" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+        </svg>
+        <p id="v2-overlay-msg" class="text-sm font-medium text-gray-700 dark:text-gray-300">Processing…</p>
+      </div>
+    </div>
+
+    {/* Pipe review hint banner */}
+    <div id="v2-pipe-hint"
+      class="pointer-events-none absolute bottom-3 left-1/2 z-40 -translate-x-1/2 hidden">
+    </div>
+  </div>
+
+  {/* ── Sidebar ── */}
+  <div id="v2-sidebar"
+    class="w-72 flex-shrink-0 overflow-y-auto border-l border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900">
+    <div id="v2-sidebar-content" class="text-sm text-gray-700 dark:text-gray-300">
+      <p class="text-gray-400 dark:text-gray-500">Load a drawing to begin.</p>
+    </div>
+  </div>
+</section>
+
+{/* ── Floating segment tooltip (fixed, follows cursor during pipe review) ── */}
+<div id="v2-seg-tooltip"
+  class="pointer-events-none fixed z-[9998] hidden min-w-[180px] max-w-[240px] rounded-xl bg-gray-950/95 shadow-2xl ring-1 ring-white/10 backdrop-blur-sm"
+></div>
+
+{/* ── Toast container ── */}
+<div id="v2-toast-root" class="fixed bottom-4 right-4 z-[9999] flex flex-col items-end gap-2 pointer-events-none"></div>
+
+<script>
+  // ═══════════════════════════════════════════════════════════
+  //  TYPES
+  // ═══════════════════════════════════════════════════════════
+
+  type AppStep = "regions" | "pipe-review" | "summary";
+
+  type ExtractedLayer = {
+    name: string;
+    visible: boolean;
+    rawImageData: ImageData;
+    pixelCount: number;
+    threshold?: number;
+  };
+
+  type Region = { x: number; y: number; w: number; h: number };
+
+  type RegionMeta = {
+    /** confirmed for scanning */
+    confirmed: boolean;
+    /** excluded from scanning */
+    excluded: boolean;
+    /** treated as legend area — excluded from scanning, used for symbol extraction */
+    isLegend: boolean;
+  };
+
+  type JunctionPoint = { x: number; y: number; arms: [number, number][] };
+
+  type PipeAnalysis = {
+    tJunctions:   JunctionPoint[];
+    equalTees:    JunctionPoint[];
+    reducingTees: JunctionPoint[];
+    lJunctions:   JunctionPoint[];
+    endpoints:    JunctionPoint[];
+    crossings:    JunctionPoint[];
+    skeletonPixelCount: number;
+    scale: number;
+    wsWidth: number; wsHeight: number;
+    primarySkeleton: Uint8Array;
+    capillaryMask:   Uint8Array;
+    capillaryPixelCount: number;
+    fullPrimaryMask: Uint8Array;
+    workSpaceMask:   Uint8Array;
+  };
+
+  type PipeSegment = {
+    id: number;
+    pixels: number[];
+    minX: number; maxX: number;
+    minY: number; maxY: number;
+  };
+
+  // ═══════════════════════════════════════════════════════════
+  //  GLOBAL STATE
+  // ═══════════════════════════════════════════════════════════
+
+  const DEBUG = true;
+  const log   = (...a: unknown[]) => { if (DEBUG) console.log("[v2]", ...a); };
+  const logW  = (...a: unknown[]) => console.warn("[v2]", ...a);
+
+  // ── Step ──
+  let step: AppStep = "regions";
+  let currentFloorIdx = 0;       // which confirmed region is being pipe-reviewed
+
+  // ── Drawing data ──
+  let drawingFile: File | null = null;
+  let fullRenderData: ImageData | null = null;   // full PDF render
+  let workingImageData: ImageData | null = null; // cropped region for current floor
+  let lastPdfPage: any = null;
+  let lastPdfDoc: any = null;
+  let lastRenderScale = 1;
+  let lastCropOffsetX = 0;
+  let lastCropOffsetY = 0;
+
+  // ── Regions ──
+  let baselineRegions: Region[] = [];
+  let regionMeta: RegionMeta[] = [];
+
+  // ── Active floor processing ──
+  let layers: ExtractedLayer[] = [];
+  let pipeAnalysis: PipeAnalysis | null = null;
+  let pipeLayer: ExtractedLayer | null = null;
+
+  // Pipe review: per-pixel component map
+  let pipeComponentMap: Int32Array | null = null;   // pixelIdx → componentId  (-1 = no pipe)
+  let pipeSegments: PipeSegment[] = [];
+  let hoveredSegId: number | null = null;
+  let isAddMode = false;  // true when cursor is in "add" position (not over pipe)
+
+  // Hover animation RAF handle — cancelled when hover leaves
+  let hoverAnimRAF: number | null = null;
+
+  // H/V line detection sensitivity: 0 (dark only) → 100 (light gray)
+  // Maps to grayThresh = 40 + hvSensitivity * 1.8  (range ~40–220)
+  // Default 0 = dark-only: most precise for fire protection drawings
+  let hvSensitivity = 0;
+  let hvSliderTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Measured mainline (widest pipe) stroke width in full-res pixels.
+  // Set by extractHVLines; used by capillary discovery to cap BFS width.
+  let detectedMainlineWidth = 12;
+
+  // Per-floor knowledge transfer
+  type FloorKnowledge = {
+    grayThresh: number;
+    pipeColor: [number, number, number];
+  };
+  const floorKnowledge: FloorKnowledge[] = [];
+
+  // ── Pan/zoom ──
+  let panX = 0, panY = 0, zoom = 1;
+  let contentNatW = 0, contentNatH = 0;
+  const ZOOM_MIN = 0.05, ZOOM_MAX = 8;
+
+  // ── DOM refs ──
+  const viewportEl   = document.getElementById("v2-viewport") as HTMLDivElement;
+  const contentEl    = document.getElementById("v2-content") as HTMLDivElement;
+  const sidebarEl    = document.getElementById("v2-sidebar-content") as HTMLDivElement;
+  const statusEl     = document.getElementById("v2-status") as HTMLElement;
+  const overlayEl    = document.getElementById("v2-overlay") as HTMLDivElement;
+  const overlayMsgEl = document.getElementById("v2-overlay-msg") as HTMLElement;
+  const zoomLabelEl  = document.getElementById("v2-zoom-label") as HTMLElement;
+  const hintEl       = document.getElementById("v2-pipe-hint") as HTMLDivElement;
+
+  // ═══════════════════════════════════════════════════════════
+  //  PAN / ZOOM ENGINE
+  // ═══════════════════════════════════════════════════════════
+
+  function updateZoomLabel() {
+    if (zoomLabelEl) zoomLabelEl.textContent = `${Math.round(zoom * 100)}%`;
+  }
+
+  function clampPan() {
+    if (!viewportEl || contentNatW <= 0) return;
+    const vw = viewportEl.clientWidth, vh = viewportEl.clientHeight;
+    const cw = vw * zoom;
+    const ch = (contentNatH / contentNatW) * vw * zoom;
+    const EDGE = 80;
+    panX = Math.min(vw - EDGE, Math.max(EDGE - cw, panX));
+    panY = Math.min(vh - EDGE, Math.max(EDGE - ch, panY));
+  }
+
+  function applyTransform() {
+    if (contentEl) contentEl.style.transform = `translate(${panX}px,${panY}px) scale(${zoom})`;
+    updateZoomLabel();
+  }
+
+  function fitAndCenter(imgW: number, imgH: number) {
+    if (!viewportEl || imgW <= 0 || imgH <= 0) return;
+    contentNatW = imgW; contentNatH = imgH;
+    const vw = viewportEl.clientWidth, vh = viewportEl.clientHeight;
+    const dispH = (imgH / imgW) * vw;
+    if (dispH <= vh) {
+      zoom = 1; panX = 0; panY = Math.round((vh - dispH) / 2);
+    } else {
+      zoom = Math.max(ZOOM_MIN, vh / dispH);
+      panX = Math.round((vw - vw * zoom) / 2); panY = 0;
+    }
+    applyTransform();
+  }
+
+  function zoomToward(factor: number, cx: number, cy: number) {
+    const nz = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoom * factor));
+    const r  = nz / zoom;
+    panX = cx - r * (cx - panX);
+    panY = cy - r * (cy - panY);
+    zoom = nz;
+    clampPan();
+    applyTransform();
+  }
+
+  document.getElementById("v2-zoom-fit")?.addEventListener("click", () => {
+    if (contentNatW > 0) fitAndCenter(contentNatW, contentNatH);
+    else { zoom = 1; panX = 0; panY = 0; applyTransform(); }
+  });
+  document.getElementById("v2-zoom-in")?.addEventListener("click", () => {
+    if (!viewportEl) return;
+    zoomToward(1.25, viewportEl.clientWidth / 2, viewportEl.clientHeight / 2);
+  });
+  document.getElementById("v2-zoom-out")?.addEventListener("click", () => {
+    if (!viewportEl) return;
+    zoomToward(1 / 1.25, viewportEl.clientWidth / 2, viewportEl.clientHeight / 2);
+  });
+  viewportEl?.addEventListener("wheel", (e: WheelEvent) => {
+    e.preventDefault();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const SENSITIVITY = 0.005, MAX_DELTA = 200;
+    const delta = Math.max(-MAX_DELTA, Math.min(MAX_DELTA, e.deltaY));
+    const factor = Math.min(2.0, Math.max(0.5, Math.exp(-delta * SENSITIVITY)));
+    zoomToward(factor, e.clientX - rect.left, e.clientY - rect.top);
+  }, { passive: false });
+
+  // Keyboard shortcuts
+  document.addEventListener("keydown", (e: KeyboardEvent) => {
+    const active = document.activeElement;
+    if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return;
+    if (!viewportEl) return;
+    const cx = viewportEl.clientWidth / 2, cy = viewportEl.clientHeight / 2;
+    if (e.key === "+" || e.key === "=") { e.preventDefault(); zoomToward(1.25, cx, cy); }
+    if (e.key === "-" || e.key === "_") { e.preventDefault(); zoomToward(1 / 1.25, cx, cy); }
+    if (e.key === "0") { e.preventDefault(); if (contentNatW > 0) fitAndCenter(contentNatW, contentNatH); }
+    if (e.key === "Escape") cancelPipeReviewHover();
+  });
+
+  // ── Pan via pointer drag ──
+  let isPanning = false;
+  let panStart = { x: 0, y: 0, px: 0, py: 0 };
+  let pointerDownTime = 0;
+  let pointerMoved = false;
+
+  viewportEl?.addEventListener("pointerdown", (e: PointerEvent) => {
+    if (e.button !== 0) return;
+    pointerDownTime = Date.now();
+    pointerMoved = false;
+    isPanning = true;
+    panStart = { x: e.clientX, y: e.clientY, px: panX, py: panY };
+    viewportEl.setPointerCapture(e.pointerId);
+    viewportEl.style.cursor = "grabbing";
+  });
+
+  viewportEl?.addEventListener("pointermove", (e: PointerEvent) => {
+    if (!isPanning) {
+      // Hover hit-test in pipe review mode
+      if (step === "pipe-review") handlePipeReviewHover(e);
+      return;
+    }
+    const dx = e.clientX - panStart.x, dy = e.clientY - panStart.y;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) pointerMoved = true;
+    panX = panStart.px + dx;
+    panY = panStart.py + dy;
+    clampPan();
+    applyTransform();
+  });
+
+  const endPan = (e: PointerEvent) => {
+    if (!isPanning) return;
+    isPanning = false;
+    viewportEl.style.cursor = step === "pipe-review" ? "crosshair" : "grab";
+    const isShortTap = !pointerMoved && (Date.now() - pointerDownTime) < 350;
+    if (isShortTap && step === "pipe-review") {
+      handlePipeReviewClick(e);
+    }
+  };
+  viewportEl?.addEventListener("pointerup",     (e) => endPan(e as PointerEvent));
+  viewportEl?.addEventListener("pointercancel", (e) => endPan(e as PointerEvent));
+
+  // Touch pinch-zoom
+  let lastTouchDist = 0;
+  viewportEl?.addEventListener("touchstart", (e: TouchEvent) => {
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      lastTouchDist = Math.hypot(dx, dy);
+    }
+  }, { passive: true });
+  viewportEl?.addEventListener("touchmove", (e: TouchEvent) => {
+    if (e.touches.length !== 2) return;
+    e.preventDefault();
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    const dist = Math.hypot(dx, dy);
+    if (lastTouchDist > 0) {
+      const factor = Math.min(1.5, Math.max(0.67, dist / lastTouchDist));
+      const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      const rect = viewportEl.getBoundingClientRect();
+      zoomToward(factor, cx - rect.left, cy - rect.top);
+    }
+    lastTouchDist = dist;
+    clampPan();
+    applyTransform();
+  }, { passive: false });
+
+  // ═══════════════════════════════════════════════════════════
+  //  UTILITIES
+  // ═══════════════════════════════════════════════════════════
+
+  function showOverlay(msg = "Processing…") {
+    if (overlayEl) { overlayEl.style.opacity = "1"; overlayEl.style.pointerEvents = "auto"; }
+    if (overlayMsgEl) overlayMsgEl.textContent = msg;
+  }
+  function hideOverlay() {
+    if (overlayEl) { overlayEl.style.opacity = "0"; overlayEl.style.pointerEvents = "none"; }
+  }
+  function setStatus(msg: string) { if (statusEl) statusEl.textContent = msg; }
+
+  function toast(type: "info" | "success" | "error", title: string, msg: string, ms = 4000) {
+    const root = document.getElementById("v2-toast-root");
+    if (!root) return;
+    const colors: Record<string, string> = {
+      info:    "bg-gray-800 text-white dark:bg-gray-100 dark:text-gray-900",
+      success: "bg-emerald-600 text-white",
+      error:   "bg-red-600 text-white",
+    };
+    const el = document.createElement("div");
+    el.className = `pointer-events-auto flex items-start gap-2 rounded-lg px-3 py-2 shadow-lg text-sm max-w-xs ${colors[type]}`;
+    el.innerHTML = `<div><strong>${title}</strong>${msg ? `<br><span class="opacity-80">${msg}</span>` : ""}</div>`;
+    root.appendChild(el);
+    setTimeout(() => el.remove(), ms);
+  }
+
+  function imageDataToUrl(id: ImageData): string {
+    const c = document.createElement("canvas");
+    c.width = id.width; c.height = id.height;
+    c.getContext("2d")!.putImageData(id, 0, 0);
+    return c.toDataURL();
+  }
+
+  function getImageScale(): { px: number; py: number } {
+    const bg = contentEl.querySelector<HTMLImageElement>("#v2-bg-img");
+    if (!bg || !workingImageData) return { px: 1, py: 1 };
+    const rect = bg.getBoundingClientRect();
+    return {
+      px: rect.width  / workingImageData.width,
+      py: rect.height / workingImageData.height,
+    };
+  }
+
+  /** Convert a PointerEvent into working-image pixel coordinates. */
+  function pointerToImage(e: PointerEvent): { x: number; y: number } | null {
+    if (!workingImageData || !viewportEl || !contentEl) return null;
+    const bg = contentEl.querySelector<HTMLImageElement>("#v2-bg-img");
+    if (!bg) return null;
+    const rect = bg.getBoundingClientRect();
+    const rx = (e.clientX - rect.left) / rect.width;
+    const ry = (e.clientY - rect.top)  / rect.height;
+    return {
+      x: Math.round(rx * workingImageData.width),
+      y: Math.round(ry * workingImageData.height),
+    };
+  }
+
+  function updateStepBar() {
+    const stepIndex = step === "regions" ? 0 : step === "pipe-review" ? 1 : 2;
+    document.querySelectorAll<HTMLElement>("[data-step-btn]").forEach(el => {
+      const i = Number(el.dataset.stepBtn);
+      const numEl = el.querySelector<HTMLElement>("[data-step-num]");
+      if (i < stepIndex) {
+        el.className = el.className.replace("text-gray-400 dark:text-gray-500", "text-emerald-600 dark:text-emerald-400");
+        if (numEl) numEl.className = numEl.className.replace("bg-gray-300 text-gray-600 dark:bg-gray-600 dark:text-gray-300", "bg-emerald-500 text-white");
+      } else if (i === stepIndex) {
+        el.className = el.className.replace("text-gray-400 dark:text-gray-500", "text-primary-600 dark:text-primary-400");
+        if (numEl) numEl.className = numEl.className.replace("bg-gray-300 text-gray-600 dark:bg-gray-600 dark:text-gray-300", "bg-primary-500 text-white");
+      }
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  PDF LOADING
+  // ═══════════════════════════════════════════════════════════
+
+  async function loadPdfJs(): Promise<any> {
+    if ((window as any).pdfjsLib) return (window as any).pdfjsLib;
+    return new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+      s.onload = () => {
+        (window as any).pdfjsLib.GlobalWorkerOptions.workerSrc =
+          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+        resolve((window as any).pdfjsLib);
+      };
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+
+  async function renderPdf(src: string | ArrayBuffer): Promise<ImageData> {
+    const pdfjsLib = await loadPdfJs();
+    const loadParams = typeof src === "string"
+      ? { url: src }
+      : { data: new Uint8Array(src as ArrayBuffer) };
+    const pdfDoc = await pdfjsLib.getDocument({ ...loadParams, cMapPacked: true }).promise;
+    lastPdfDoc = pdfDoc;
+    const page = await pdfDoc.getPage(1);
+    lastPdfPage = page;
+
+    const vp0 = page.getViewport({ scale: 1 });
+
+    // Probe downward from the highest target until the canvas allocates successfully.
+    // Browser canvas limits vary (Chrome allows ~268 MP but RAM runs out earlier).
+    // We try in descending order so we always use the highest resolution that works.
+    const TARGET_LONGS = [8000, 6000, 4500, 3000, 2000];
+    let offscreen!: HTMLCanvasElement;
+    let renderScale = 1;
+    let vp = vp0;
+
+    for (const target of TARGET_LONGS) {
+      renderScale = target / Math.max(vp0.width, vp0.height);
+      vp = page.getViewport({ scale: renderScale });
+      const w = Math.round(vp.width), h = Math.round(vp.height);
+      try {
+        const c = document.createElement("canvas");
+        c.width = w; c.height = h;
+        // If the canvas is too large, getContext returns null or throws
+        const testCtx = c.getContext("2d");
+        if (!testCtx) throw new Error("getContext returned null");
+        // Quick probe: try reading a pixel to confirm the canvas is backed by memory
+        testCtx.getImageData(0, 0, 1, 1);
+        offscreen = c;
+        log(`renderPdf: using ${w}×${h} (target ${target}px, scale ${renderScale.toFixed(2)})`);
+        break;
+      } catch {
+        log(`renderPdf: ${w}×${h} too large, trying smaller…`);
+      }
+    }
+
+    if (!offscreen) throw new Error("Could not allocate canvas at any resolution");
+
+    const ctx = offscreen.getContext("2d")!;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, offscreen.width, offscreen.height);
+    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    lastRenderScale = renderScale;
+    log(`renderPdf: rendered ${offscreen.width}×${offscreen.height}`);
+    return ctx.getImageData(0, 0, offscreen.width, offscreen.height);
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  IMAGE UTILITIES
+  // ═══════════════════════════════════════════════════════════
+
+  function clamp(v: number, lo: number, hi: number): number {
+    return v < lo ? lo : v > hi ? hi : v;
+  }
+
+  /**
+   * 8-connected BFS component labeler — same as V1 getComponents.
+   * Returns bounding boxes of connected ink blobs that fall within [minArea, maxArea].
+   */
+  function getComponents(
+    mask: Uint8Array, width: number, height: number,
+    minArea = 18, maxArea = 999999
+  ): { x: number; y: number; w: number; h: number; area: number }[] {
+    const visited = new Uint8Array(width * height);
+    const qx = new Int32Array(width * height);
+    const qy = new Int32Array(width * height);
+    const out: { x: number; y: number; w: number; h: number; area: number }[] = [];
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const start = y * width + x;
+        if (!mask[start] || visited[start]) continue;
+        let head = 0, tail = 0;
+        qx[tail] = x; qy[tail] = y; tail++;
+        visited[start] = 1;
+        let area = 0, minX = x, minY = y, maxX = x, maxY = y;
+        while (head < tail) {
+          const cx = qx[head], cy = qy[head]; head++;
+          area++;
+          if (cx < minX) minX = cx; if (cy < minY) minY = cy;
+          if (cx > maxX) maxX = cx; if (cy > maxY) maxY = cy;
+          for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) {
+            if (ox === 0 && oy === 0) continue;
+            const nx = cx + ox, ny = cy + oy;
+            if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+            const nidx = ny * width + nx;
+            if (!mask[nidx] || visited[nidx]) continue;
+            visited[nidx] = 1; qx[tail] = nx; qy[tail] = ny; tail++;
+          }
+        }
+        if (area >= minArea && area <= maxArea)
+          out.push({ x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1, area });
+      }
+    }
+    return out;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  REGION DETECTION  (ported directly from SimpleScanStripped V1)
+  // ═══════════════════════════════════════════════════════════
+
+  /** Build a binary ink mask from the image — same heuristic as V1. */
+  function imageToRegionSeedMask(imgData: ImageData): Uint8Array {
+    const { width, height, data } = imgData;
+    const mask = new Uint8Array(width * height);
+    for (let p = 0, i = 0; p < mask.length; p++, i += 4) {
+      const r = data[i], g = data[i+1], b = data[i+2], a = data[i+3];
+      const gray   = r * 0.299 + g * 0.587 + b * 0.114;
+      const spread = Math.max(r, g, b) - Math.min(r, g, b);
+      // Keep neutral-ish dark pixels; exclude white and highly saturated colors
+      mask[p] = (gray < 244 && a > 6 && spread < 88) ? 1 : 0;
+    }
+    return mask;
+  }
+
+  /** Score and filter components — exact port of V1's extractBaselineRegions. */
+  function detectRegions(imgData: ImageData): Region[] {
+    const { width, height } = imgData;
+    const canvasArea = Math.max(1, width * height);
+    const mask = imageToRegionSeedMask(imgData);
+    const comps = getComponents(mask, width, height, 18, canvasArea * 0.9);
+    if (comps.length === 0) return [{ x: 0, y: 0, w: width, h: height }];
+
+    const edgeMargin = Math.max(6, Math.round(Math.min(width, height) * 0.02));
+    const scored: Array<{ x:number;y:number;w:number;h:number;area:number;score:number }> = [];
+
+    for (const c of comps) {
+      const bboxArea  = c.w * c.h;
+      const bboxRatio = bboxArea / canvasArea;
+      if (bboxRatio < 0.015 || bboxRatio > 0.72) continue;
+      const aspect = c.w / Math.max(1, c.h);
+      if (aspect < 0.35 || aspect > 3.0) continue;
+      const inkRatio = c.area / Math.max(1, bboxArea);
+      if (inkRatio < 0.0015 || inkRatio > 0.24) continue;
+
+      const nearLeft   = c.x <= edgeMargin;
+      const nearTop    = c.y <= edgeMargin;
+      const nearRight  = c.x + c.w >= width  - edgeMargin;
+      const nearBottom = c.y + c.h >= height - edgeMargin;
+      const edgeTouches = [nearLeft, nearTop, nearRight, nearBottom].filter(Boolean).length;
+
+      const cx = c.x + c.w / 2, cy = c.y + c.h / 2;
+      const centerDist  = Math.hypot(cx - width/2, cy - height/2) / Math.max(1, Math.hypot(width/2, height/2));
+      const centerBonus = 1 - clamp(centerDist, 0, 1);
+      const frameBonus  = clamp(1 - Math.abs(inkRatio - 0.06) / 0.14, 0, 1);
+      const edgePenalty = edgeTouches >= 2 ? 0.22 : 0;
+      const score       = bboxRatio * 1.1 + frameBonus * 0.35 + centerBonus * 0.2 - edgePenalty;
+
+      scored.push({ ...c, score });
+    }
+
+    scored.sort((a, b) => b.score - a.score);
+
+    const selected: Region[] = [];
+    for (const c of scored) {
+      const overlaps = selected.some(k => {
+        const x0 = Math.max(c.x, k.x), y0 = Math.max(c.y, k.y);
+        const x1 = Math.min(c.x+c.w-1, k.x+k.w-1), y1 = Math.min(c.y+c.h-1, k.y+k.h-1);
+        if (x1 < x0 || y1 < y0) return false;
+        return (x1-x0+1)*(y1-y0+1) / Math.max(1, Math.min(c.w*c.h, k.w*k.h)) > 0.58;
+      });
+      if (overlaps) continue;
+      const pad = Math.max(8, Math.round(Math.min(c.w, c.h) * 0.03));
+      selected.push({
+        x: clamp(c.x - pad, 0, width - 1),
+        y: clamp(c.y - pad, 0, height - 1),
+        w: clamp(c.w + pad * 2, 1, width),
+        h: clamp(c.h + pad * 2, 1, height),
+      });
+      if (selected.length >= 4) break;
+    }
+
+    log(`detectRegions: ${scored.length} scored → ${selected.length} selected`);
+    return selected.length > 0 ? selected : [{ x: 0, y: 0, w: width, h: height }];
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  LAYER EXTRACTION
+  // ═══════════════════════════════════════════════════════════
+
+  function extractColored(src: ImageData, satMin = 0.15): ExtractedLayer {
+    const { width, height, data } = src;
+    const layerData = new ImageData(width, height);
+    const ld = layerData.data;
+    let count = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i], g = data[i+1], b = data[i+2], a = data[i+3];
+      if (a < 2 || (r > 240 && g > 240 && b > 240)) continue;
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      const sat = max === 0 ? 0 : (max - min) / max;
+      if (sat >= satMin) {
+        ld[i] = r; ld[i+1] = g; ld[i+2] = b; ld[i+3] = a;
+        count++;
+      }
+    }
+    return { name: "Pipes", visible: true, rawImageData: layerData, pixelCount: count, threshold: satMin };
+  }
+
+  /**
+   * Strict H/V networked line scanner.
+   *
+   * Strategy: color extraction is the primary pass; this supplements it by finding
+   * ALL axis-aligned dark lines — including dashed lines — that color targeting misses.
+   *
+   * CRITICAL FIX for dashed lines: collect raw dark runs per row/column FIRST, merge
+   * consecutive runs whose gap ≤ maxDashGap into a single virtual run, THEN apply
+   * length and cross-width filters to the merged span.  The old approach filtered
+   * individual dash segments before bridging, so a 5px dash was discarded and never
+   * got bridged with its neighbours.
+   */
+  function extractHVLines(
+    src: ImageData,
+    grayThresh = 130,   // gray < this = "ink"  (slider range 40–220)
+  ): ExtractedLayer {
+    const { width, height, data } = src;
+    const dim = Math.min(width, height);
+
+    // Geometry params — scaled to render resolution
+    const maxLineWidth = Math.max(8, Math.min(22, Math.round(dim / 280)));
+    // After merging dashes the combined run must be at least this long
+    const minNetRunLen = Math.max(6, Math.round(dim / 400));
+    // Gaps ≤ this many pixels are treated as dash gaps and bridged
+    const maxDashGap   = Math.max(20, Math.round(dim / 180));
+
+    // ── Pre-compute dark mask (one pass) ────────────────────────────
+    const darkMask = new Uint8Array(width * height);
+    for (let i = 0; i < width * height; i++) {
+      const i4 = i * 4;
+      if (data[i4 + 3] < 10) continue;
+      const gray = data[i4] * 0.299 + data[i4 + 1] * 0.587 + data[i4 + 2] * 0.114;
+      if (gray < grayThresh) darkMask[i] = 1;
+    }
+
+    /** Perpendicular extent at (x,y): capped at maxLineWidth+2 for speed. */
+    const crossW = (x: number, y: number, pdx: number, pdy: number): number => {
+      let lo = 0, hi = 0, d = 1, cap = maxLineWidth + 2;
+      while (d <= cap) {
+        const nx = x - pdx*d, ny = y - pdy*d;
+        if (nx < 0 || nx >= width || ny < 0 || ny >= height || !darkMask[ny*width+nx]) break;
+        lo = d++; }
+      d = 1;
+      while (d <= cap) {
+        const nx = x + pdx*d, ny = y + pdy*d;
+        if (nx < 0 || nx >= width || ny < 0 || ny >= height || !darkMask[ny*width+nx]) break;
+        hi = d++;
+      }
+      return lo + hi + 1;
+    };
+
+    const outMask  = new Uint8Array(width * height);
+    // Per-pixel run cross-width (workspace of this row/col scan).
+    // Used to identify the mainline width and prune wider-than-mainline pixels.
+    const widthMap = new Uint8Array(width * height); // 0 = not set, 1-255 = run cross-width
+
+    let maxAcceptedWidth = 0; // updated as runs are accepted
+
+    // ── Generic scan helper: one row (H) or one column (V) ──────────
+    // Collects raw dark runs, merges close ones (dash bridging), then
+    // validates each merged span by length + cross-width.
+    function scanLine(
+      len: number,
+      isDark:   (i: number) => boolean,
+      getXY:    (i: number) => [number, number],
+      getIdx:   (i: number) => number,          // pixel index into flat arrays
+      perpDx: number, perpDy: number,
+    ): void {
+      const runs: [number, number][] = [];
+      let i = 0;
+      while (i < len) {
+        if (!isDark(i)) { i++; continue; }
+        const s = i;
+        while (i < len && isDark(i)) i++;
+        runs.push([s, i]);
+      }
+      if (runs.length === 0) return;
+
+      const merged: [number, number][] = [[runs[0][0], runs[0][1]]];
+      for (let r = 1; r < runs.length; r++) {
+        const gap = runs[r][0] - merged[merged.length - 1][1];
+        if (gap > 0 && gap <= maxDashGap) {
+          merged[merged.length - 1][1] = runs[r][1];
+        } else {
+          merged.push([runs[r][0], runs[r][1]]);
+        }
+      }
+
+      for (const [start, end] of merged) {
+        const spanLen = end - start;
+        if (spanLen < minNetRunLen) continue;
+        const midI = start + (spanLen >> 1);
+        const [mx, my] = getXY(midI);
+        const cw = crossW(mx, my, perpDx, perpDy);
+        if (cw > maxLineWidth) continue;
+        // Accept — record per-pixel width for later mainline detection
+        if (cw > maxAcceptedWidth) maxAcceptedWidth = cw;
+        const cwClamped = Math.min(cw, 255);
+        for (let k = start; k < end; k++) {
+          const idx = getIdx(k);
+          outMask[idx] = 1;
+          // Keep the LARGER width if this pixel is already set by the other axis
+          if (cwClamped > widthMap[idx]) widthMap[idx] = cwClamped;
+        }
+      }
+    }
+
+    // ── Horizontal scan (row by row) ─────────────────────────────────
+    for (let y = 0; y < height; y++) {
+      const row = y * width;
+      scanLine(
+        width,
+        (x) => darkMask[row + x] === 1,
+        (x) => [x, y] as [number, number],
+        (x) => row + x,
+        0, 1,
+      );
+    }
+
+    // ── Vertical scan (column by column) ─────────────────────────────
+    for (let x = 0; x < width; x++) {
+      scanLine(
+        height,
+        (y) => darkMask[y * width + x] === 1,
+        (y) => [x, y] as [number, number],
+        (y) => y * width + x,
+        1, 0,
+      );
+    }
+
+    // ── Mainline width detection + wider-than-mainline prune ──────────
+    // maxAcceptedWidth is the widest qualifying run = the mainline pipe.
+    // The mainline IS the widest real pipe in the drawing; anything that
+    // survived to this point but is wider than the mainline is noise/artifact.
+    // Prune any pixel whose recorded width exceeds the mainline.
+    detectedMainlineWidth = maxAcceptedWidth || maxLineWidth;
+    let pruned = 0;
+    for (let i = 0; i < width * height; i++) {
+      if (!outMask[i]) continue;
+      if (widthMap[i] > detectedMainlineWidth) { outMask[i] = 0; pruned++; }
+    }
+    if (pruned > 0) log(`extractHVLines: pruned ${pruned}px wider than mainline (${detectedMainlineWidth}px)`);
+
+    // ── Build output layer ────────────────────────────────────────────
+    const layerData = new ImageData(width, height);
+    const ld = layerData.data;
+    let count = 0;
+    for (let i = 0; i < width * height; i++) {
+      if (!outMask[i]) continue;
+      const i4 = i * 4;
+      ld[i4] = 55; ld[i4 + 1] = 55; ld[i4 + 2] = 55; ld[i4 + 3] = 220;
+      count++;
+    }
+    log(`extractHVLines: thresh=${grayThresh} maxW=${maxLineWidth} minRun=${minNetRunLen} dashGap=${maxDashGap} → ${count}px`);
+    return { name: "Pipes-HV", visible: true, rawImageData: layerData, pixelCount: count, threshold: grayThresh };
+  }
+
+  /** OR-merge two layers (color layer wins when both have a pixel). */
+  function mergeLayers(a: ExtractedLayer, b: ExtractedLayer): ExtractedLayer {
+    const { width, height } = a.rawImageData;
+    const merged = new ImageData(width, height);
+    const md = merged.data, ad = a.rawImageData.data, bd = b.rawImageData.data;
+    let count = 0;
+    for (let i = 0; i < width * height; i++) {
+      const i4 = i * 4;
+      const aOn = ad[i4 + 3] > 20, bOn = bd[i4 + 3] > 20;
+      if (aOn) {
+        md[i4] = ad[i4]; md[i4 + 1] = ad[i4 + 1]; md[i4 + 2] = ad[i4 + 2]; md[i4 + 3] = ad[i4 + 3];
+        count++;
+      } else if (bOn) {
+        md[i4] = bd[i4]; md[i4 + 1] = bd[i4 + 1]; md[i4 + 2] = bd[i4 + 2]; md[i4 + 3] = bd[i4 + 3];
+        count++;
+      }
+    }
+    return { name: "Pipes", visible: true, rawImageData: merged, pixelCount: count };
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  PIPE ANALYSIS — MORPHOLOGICAL HELPERS
+  // ═══════════════════════════════════════════════════════════
+
+  function dilateMask(mask: Uint8Array, w: number, h: number, r: number): Uint8Array {
+    const tmp = new Uint8Array(w * h);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      if (mask[y * w + x]) { tmp[y * w + x] = 1; continue; }
+      for (let d = 1; d <= r; d++) {
+        if ((x - d >= 0 && mask[y * w + x - d]) || (x + d < w && mask[y * w + x + d])) { tmp[y * w + x] = 1; break; }
+      }
+    }
+    const out = new Uint8Array(w * h);
+    for (let x = 0; x < w; x++) for (let y = 0; y < h; y++) {
+      if (tmp[y * w + x]) { out[y * w + x] = 1; continue; }
+      for (let d = 1; d <= r; d++) {
+        if ((y - d >= 0 && tmp[(y-d)*w+x]) || (y + d < h && tmp[(y+d)*w+x])) { out[y * w + x] = 1; break; }
+      }
+    }
+    return out;
+  }
+
+  function erodeMask(mask: Uint8Array, w: number, h: number, r: number): Uint8Array {
+    const tmp = new Uint8Array(w * h);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      let ok = 1;
+      for (let d = 1; d <= r && ok; d++) {
+        if (x - d < 0 || !mask[y*w+x-d]) ok = 0;
+        if (x + d >= w || !mask[y*w+x+d]) ok = 0;
+      }
+      if (ok && mask[y*w+x]) tmp[y*w+x] = 1;
+    }
+    const out = new Uint8Array(w * h);
+    for (let x = 0; x < w; x++) for (let y = 0; y < h; y++) {
+      let ok = 1;
+      for (let d = 1; d <= r && ok; d++) {
+        if (y - d < 0 || !tmp[(y-d)*w+x]) ok = 0;
+        if (y + d >= h || !tmp[(y+d)*w+x]) ok = 0;
+      }
+      if (ok && tmp[y*w+x]) out[y*w+x] = 1;
+    }
+    return out;
+  }
+
+  function closeMask(mask: Uint8Array, w: number, h: number, r: number): Uint8Array {
+    return erodeMask(dilateMask(mask, w, h, r), w, h, r);
+  }
+
+  function dilateRawPipeData(data: Uint8ClampedArray, w: number, h: number, r: number): void {
+    const isPipe = new Uint8Array(w * h);
+    for (let i = 0; i < w * h; i++) {
+      const d = i * 4;
+      isPipe[i] = (data[d+3] > 20 && !(data[d] > 245 && data[d+1] > 245 && data[d+2] > 245)) ? 1 : 0;
+    }
+    const xSrc = new Int32Array(w * h).fill(-1);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      if (isPipe[i]) { xSrc[i] = i; continue; }
+      for (let d = 1; d <= r; d++) {
+        if (x - d >= 0 && isPipe[y*w+x-d]) { xSrc[i] = y*w+x-d; break; }
+        if (x + d <  w && isPipe[y*w+x+d]) { xSrc[i] = y*w+x+d; break; }
+      }
+    }
+    for (let x = 0; x < w; x++) for (let y = 0; y < h; y++) {
+      const i = y * w + x;
+      if (isPipe[i]) continue;
+      let src = xSrc[i];
+      if (src === -1) {
+        for (let d = 1; d <= r; d++) {
+          if (y - d >= 0 && xSrc[(y-d)*w+x] !== -1) { src = xSrc[(y-d)*w+x]; break; }
+          if (y + d <  h && xSrc[(y+d)*w+x] !== -1) { src = xSrc[(y+d)*w+x]; break; }
+        }
+      }
+      if (src === -1) continue;
+      const si = src * 4, di = i * 4;
+      data[di] = data[si]; data[di+1] = data[si+1]; data[di+2] = data[si+2];
+      data[di+3] = Math.round(data[si+3] * 0.9);
+    }
+  }
+
+  function cleanIsolatedPipeComponents(
+    fullMask: Uint8Array, imgData: Uint8ClampedArray, w: number, h: number
+  ): number {
+    const minDim = Math.min(w, h);
+    const MIN_PX   = Math.max(40,  Math.round(minDim * 0.3));
+    const MIN_EXT  = Math.max(20,  Math.round(minDim * 0.015));
+    const FRAC_MAX = 0.03;
+    const labels   = new Int32Array(w * h).fill(-1);
+    const compMeta: { count: number; minX: number; maxX: number; minY: number; maxY: number }[] = [];
+
+    for (let si = 0; si < w * h; si++) {
+      if (!fullMask[si] || labels[si] >= 0) continue;
+      const ci = compMeta.length;
+      const meta = { count: 0, minX: w, maxX: 0, minY: h, maxY: 0 };
+      const q: number[] = [si]; labels[si] = ci; let head = 0;
+      while (head < q.length) {
+        const idx = q[head++]; meta.count++;
+        const x = idx % w, y = (idx / w) | 0;
+        if (x < meta.minX) meta.minX = x; if (x > meta.maxX) meta.maxX = x;
+        if (y < meta.minY) meta.minY = y; if (y > meta.maxY) meta.maxY = y;
+        if (x > 0         && fullMask[idx-1]   && labels[idx-1]   < 0) { labels[idx-1]   = ci; q.push(idx-1); }
+        if (x < w - 1     && fullMask[idx+1]   && labels[idx+1]   < 0) { labels[idx+1]   = ci; q.push(idx+1); }
+        if (y > 0         && fullMask[idx-w]   && labels[idx-w]   < 0) { labels[idx-w]   = ci; q.push(idx-w); }
+        if (y < h - 1     && fullMask[idx+w]   && labels[idx+w]   < 0) { labels[idx+w]   = ci; q.push(idx+w); }
+      }
+      compMeta.push(meta);
+    }
+
+    const maxCount  = compMeta.reduce((m, c) => Math.max(m, c.count), 1);
+    const minFrac   = maxCount * FRAC_MAX;
+    const erase     = new Uint8Array(compMeta.length);
+    for (let ci = 0; ci < compMeta.length; ci++) {
+      const c = compMeta[ci];
+      const ext = Math.max(c.maxX - c.minX + 1, c.maxY - c.minY + 1);
+      if (c.count < MIN_PX || ext < MIN_EXT || c.count < minFrac) erase[ci] = 1;
+    }
+    let removed = 0;
+    for (let i = 0; i < w * h; i++) {
+      if (fullMask[i] && erase[labels[i]]) {
+        fullMask[i] = 0;
+        const i4 = i * 4;
+        imgData[i4] = 255; imgData[i4+1] = 255; imgData[i4+2] = 255; imgData[i4+3] = 255;
+        removed++;
+      }
+    }
+    return removed;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  PIPE ANALYSIS — SKELETONIZATION
+  // ═══════════════════════════════════════════════════════════
+
+  function zhangSuenThin(src: Uint8Array, w: number, h: number): Uint8Array {
+    const s = new Uint8Array(src);
+    let changed = true, iter = 0;
+    while (changed && iter < 300) {
+      changed = false; iter++;
+      const rem1: number[] = [];
+      for (let y = 1; y < h - 1; y++) {
+        for (let x = 1; x < w - 1; x++) {
+          const idx = y * w + x; if (!s[idx]) continue;
+          const p2 = s[idx-w], p3 = s[idx-w+1], p4 = s[idx+1], p5 = s[idx+w+1],
+                p6 = s[idx+w], p7 = s[idx+w-1], p8 = s[idx-1], p9 = s[idx-w-1];
+          const N = p2+p3+p4+p5+p6+p7+p8+p9; if (N < 2 || N > 6) continue;
+          let S = 0;
+          if (!p2&&p3)S++; if (!p3&&p4)S++; if (!p4&&p5)S++; if (!p5&&p6)S++;
+          if (!p6&&p7)S++; if (!p7&&p8)S++; if (!p8&&p9)S++; if (!p9&&p2)S++;
+          if (S !== 1) continue;
+          if (p2&&p4&&p6) continue; if (p4&&p6&&p8) continue;
+          rem1.push(idx);
+        }
+      }
+      for (const idx of rem1) { s[idx] = 0; changed = true; }
+      const rem2: number[] = [];
+      for (let y = 1; y < h - 1; y++) {
+        for (let x = 1; x < w - 1; x++) {
+          const idx = y * w + x; if (!s[idx]) continue;
+          const p2 = s[idx-w], p3 = s[idx-w+1], p4 = s[idx+1], p5 = s[idx+w+1],
+                p6 = s[idx+w], p7 = s[idx+w-1], p8 = s[idx-1], p9 = s[idx-w-1];
+          const N = p2+p3+p4+p5+p6+p7+p8+p9; if (N < 2 || N > 6) continue;
+          let S = 0;
+          if (!p2&&p3)S++; if (!p3&&p4)S++; if (!p4&&p5)S++; if (!p5&&p6)S++;
+          if (!p6&&p7)S++; if (!p7&&p8)S++; if (!p8&&p9)S++; if (!p9&&p2)S++;
+          if (S !== 1) continue;
+          if (p2&&p4&&p8) continue; if (p2&&p6&&p8) continue;
+          rem2.push(idx);
+        }
+      }
+      for (const idx of rem2) { s[idx] = 0; changed = true; }
+    }
+    log(`zhangSuenThin: ${iter} iters`);
+    return s;
+  }
+
+  function enforceHVSkeleton(skel: Uint8Array, w: number, h: number): { result: Uint8Array; isH: Uint8Array; isV: Uint8Array } {
+    const isH = new Uint8Array(w * h), isV = new Uint8Array(w * h);
+    const MIN = 2;
+    for (let y = 0; y < h; y++) {
+      let rs = -1;
+      for (let x = 0; x <= w; x++) {
+        const on = x < w && !!skel[y*w+x];
+        if (on && rs < 0) rs = x;
+        if (!on && rs >= 0) { if (x - rs >= MIN) for (let rx = rs; rx < x; rx++) isH[y*w+rx] = 1; rs = -1; }
+      }
+    }
+    for (let x = 0; x < w; x++) {
+      let rs = -1;
+      for (let y = 0; y <= h; y++) {
+        const on = y < h && !!skel[y*w+x];
+        if (on && rs < 0) rs = y;
+        if (!on && rs >= 0) { if (y - rs >= MIN) for (let ry = rs; ry < y; ry++) isV[ry*w+x] = 1; rs = -1; }
+      }
+    }
+    const result = new Uint8Array(w * h);
+    for (let i = 0; i < w * h; i++) if (isH[i] || isV[i]) result[i] = 1;
+    // Preserve corner bridges
+    for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+      const i = y * w + x;
+      if (!skel[i] || result[i]) continue;
+      const adjH = (x > 0 && isH[i-1]) || (x < w-1 && isH[i+1]);
+      const adjV = (y > 0 && isV[i-w]) || (y < h-1 && isV[i+w]);
+      if (adjH && adjV) { result[i] = 1; isH[i] = 1; isV[i] = 1; }
+    }
+    return { result, isH, isV };
+  }
+
+  function removeNonRectangularClosedLoops(skel: Uint8Array, w: number, h: number): void {
+    const visited = new Uint8Array(w * h);
+    for (let start = 0; start < w * h; start++) {
+      if (!skel[start] || visited[start]) continue;
+      const pixels: number[] = [];
+      const q: number[] = [start]; visited[start] = 1;
+      let endpointCount = 0;
+      while (q.length) {
+        const p = q.pop()!; pixels.push(p);
+        const px = p % w, py = (p / w) | 0;
+        let nbrs = 0;
+        for (const [dx, dy] of [[-1,0],[1,0],[0,-1],[0,1]] as const) {
+          const nx = px+dx, ny = py+dy;
+          if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+          const ni = ny*w+nx; if (!skel[ni]) continue;
+          nbrs++;
+          if (!visited[ni]) { visited[ni] = 1; q.push(ni); }
+        }
+        if (nbrs === 1) endpointCount++;
+      }
+      if (endpointCount > 0) continue;
+      const elbows: {x:number;y:number}[] = [];
+      for (const p of pixels) {
+        const px = p%w, py = (p/w)|0;
+        let hN = 0, vN = 0;
+        if (px > 0     && skel[p-1]) hN++; if (px < w-1 && skel[p+1]) hN++;
+        if (py > 0     && skel[p-w]) vN++; if (py < h-1 && skel[p+w]) vN++;
+        if (hN === 1 && vN === 1) elbows.push({x:px,y:py});
+      }
+      let isRect = false;
+      if (elbows.length === 4) {
+        const xs = [...new Set(elbows.map(e=>e.x))], ys = [...new Set(elbows.map(e=>e.y))];
+        if (xs.length === 2 && ys.length === 2) {
+          const xs2 = new Set(xs), ys2 = new Set(ys);
+          isRect = elbows.every(e => xs2.has(e.x) && ys2.has(e.y));
+        }
+      }
+      if (!isRect) for (const p of pixels) skel[p] = 0;
+    }
+  }
+
+  function classifySkeletonJunctions(
+    skel: Uint8Array, isH: Uint8Array, isV: Uint8Array,
+    w: number, h: number, scale: number
+  ): Omit<PipeAnalysis, "scale"> {
+    const hIsEnd = new Uint8Array(w*h), vIsEnd = new Uint8Array(w*h);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const i = y*w+x;
+      if (isH[i]) { const lH = x>0&&isH[i-1], rH = x<w-1&&isH[i+1]; if (!lH||!rH) hIsEnd[i]=1; }
+      if (isV[i]) { const tV = y>0&&isV[i-w], bV = y<h-1&&isV[i+w]; if (!tV||!bV) vIsEnd[i]=1; }
+    }
+    const rawT: JunctionPoint[] = [], rawL: JunctionPoint[] = [],
+          rawEnd: JunctionPoint[] = [], rawX: JunctionPoint[] = [];
+    let skelCount = 0;
+    for (let y = 1; y < h-1; y++) {
+      for (let x = 1; x < w-1; x++) {
+        const idx = y*w+x; if (!skel[idx]) continue; skelCount++;
+        const inH=!!isH[idx], inV=!!isV[idx], eH=!!hIsEnd[idx], eV=!!vIsEnd[idx];
+        const ox = x*scale, oy = y*scale;
+        const hDir: [number,number] = (x>0&&isH[idx-1]) ? [-1,0] : [1,0];
+        const vDir: [number,number] = (y>0&&isV[idx-w]) ? [0,-1] : [0,1];
+        if (inH && inV) {
+          if (eH&&eV) rawL.push({x:ox,y:oy,arms:[hDir,vDir]});
+          else if (eH) rawT.push({x:ox,y:oy,arms:[hDir,[0,-1],[0,1]]});
+          else if (eV) rawT.push({x:ox,y:oy,arms:[vDir,[-1,0],[1,0]]});
+          else rawX.push({x:ox,y:oy,arms:[[-1,0],[1,0],[0,-1],[0,1]]});
+        } else if (inH&&eH) rawEnd.push({x:ox,y:oy,arms:[hDir]});
+        else if (inV&&eV) rawEnd.push({x:ox,y:oy,arms:[vDir]});
+      }
+    }
+    const MERGE_R = 20 * scale;
+    const mergedIdx = new Set<number>();
+    for (let i = 0; i < rawEnd.length; i++) {
+      if (mergedIdx.has(i)) continue;
+      const a = rawEnd[i]; const [ax,ay] = a.arms[0];
+      for (let j = i+1; j < rawEnd.length; j++) {
+        if (mergedIdx.has(j)) continue;
+        const b = rawEnd[j]; const [bx,by] = b.arms[0];
+        if (ax*bx+ay*by !== 0) continue;
+        const ddx=a.x-b.x, ddy=a.y-b.y;
+        if (ddx*ddx+ddy*ddy > MERGE_R*MERGE_R) continue;
+        rawL.push({x:(a.x+b.x)/2,y:(a.y+b.y)/2,arms:[a.arms[0],b.arms[0]]});
+        mergedIdx.add(i); mergedIdx.add(j); break;
+      }
+    }
+    const filteredEnd = rawEnd.filter((_,i) => !mergedIdx.has(i));
+    rawEnd.length = 0; rawEnd.push(...filteredEnd);
+    const CR = Math.max(6, 4*scale);
+    const cluster = (pts: JunctionPoint[]) => {
+      const used = new Uint8Array(pts.length), out: JunctionPoint[] = [];
+      for (let i = 0; i < pts.length; i++) {
+        if (used[i]) continue; used[i]=1;
+        let sx=pts[i].x, sy=pts[i].y, cnt=1;
+        for (let j=i+1;j<pts.length;j++) {
+          if (used[j]) continue;
+          if (Math.abs(pts[j].x-pts[i].x)<=CR && Math.abs(pts[j].y-pts[i].y)<=CR) {
+            used[j]=1; sx+=pts[j].x; sy+=pts[j].y; cnt++;
+          }
+        }
+        out.push({x:Math.round(sx/cnt),y:Math.round(sy/cnt),arms:pts[i].arms});
+      }
+      return out;
+    };
+    return {
+      tJunctions: cluster(rawT), lJunctions: cluster(rawL),
+      endpoints: cluster(rawEnd), crossings: cluster(rawX),
+      skeletonPixelCount: skelCount,
+      equalTees:[], reducingTees:[],
+      wsWidth:0, wsHeight:0,
+      primarySkeleton: new Uint8Array(0), capillaryMask: new Uint8Array(0),
+      capillaryPixelCount:0, fullPrimaryMask: new Uint8Array(0), workSpaceMask: new Uint8Array(0),
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  PIPE ANALYSIS — BRANCH LINES
+  // ═══════════════════════════════════════════════════════════
+
+  /**
+   * Discovers capillary (branch) lines by doing a precise ink-drop BFS
+   * from the mainline skeleton into adjacent dark pixels.
+   *
+   * Key constraints for "precise":
+   *  - Only follows pixels darker than grayThresh in the source image
+   *  - Width-capped: at each BFS step the cross-section perpendicular to
+   *    direction of travel must be ≤ maxWSWidth (mainline width in workspace px)
+   *  - H/V only (4-connected)
+   */
+  function extractCapillaryLines(
+    primaryMaskFull: Uint8Array, primaryWorkMask: Uint8Array,
+    fullW: number, fullH: number, w: number, h: number, scale: number,
+    grayThresh = 120,
+    maxWSWidth = 20,  // max cross-section in workspace pixels (derived from mainline)
+  ): Uint8Array {
+    if (!workingImageData) return new Uint8Array(w * h);
+    const fData = workingImageData.data;
+
+    // Dark workspace mask: cell is dark if ANY source pixel in it (not in mainline) is dark
+    const darkWS = new Uint8Array(w * h);
+    for (let dy = 0; dy < h; dy++) for (let dx = 0; dx < w; dx++) {
+      let found = false;
+      for (let sy = dy*scale; sy < Math.min((dy+1)*scale,fullH) && !found; sy++) {
+        for (let sx = dx*scale; sx < Math.min((dx+1)*scale,fullW) && !found; sx++) {
+          const fi = sy*fullW+sx;
+          if (primaryMaskFull[fi]) continue;
+          const i4 = fi*4;
+          const r=fData[i4],g=fData[i4+1],b=fData[i4+2],a=fData[i4+3];
+          if (a<20||(r>235&&g>235&&b>235)) continue;
+          const gray = r*0.299+g*0.587+b*0.114;
+          if (gray < grayThresh) found = true;
+        }
+      }
+      darkWS[dy*w+dx] = found ? 1 : 0;
+    }
+
+    /** Perpendicular extent at workspace pixel (wx,wy) capped at maxWSWidth. */
+    const wsPerp = (wx: number, wy: number, pdx: number, pdy: number): number => {
+      let lo = 0, hi = 0, d = 1;
+      while (d <= maxWSWidth) {
+        const nx = wx-pdx*d, ny = wy-pdy*d;
+        if (nx<0||nx>=w||ny<0||ny>=h||!darkWS[ny*w+nx]) break;
+        lo=d++;
+      }
+      d = 1;
+      while (d <= maxWSWidth) {
+        const nx = wx+pdx*d, ny = wy+pdy*d;
+        if (nx<0||nx>=w||ny<0||ny>=h||!darkWS[ny*w+nx]) break;
+        hi=d++;
+      }
+      return lo+hi+1;
+    };
+
+    // Width-capped BFS seeded from pixels adjacent to the mainline
+    const dilPrimary = dilateMask(primaryWorkMask, w, h, 1);
+    const capMask = new Uint8Array(w * h);
+    const visited = new Uint8Array(w * h);
+    for (let i = 0; i < w*h; i++) if (primaryWorkMask[i]) visited[i] = 1;
+
+    const queue: number[] = []; let qHead = 0;
+    for (let i = 0; i < w*h; i++) {
+      if (darkWS[i] && dilPrimary[i] && !visited[i]) {
+        capMask[i]=1; visited[i]=1; queue.push(i);
+      }
+    }
+
+    // 4-connected BFS with cross-width gate
+    const DIRS: [number,number,number,number][] = [
+      [-1,0, 0,1], [1,0, 0,1],   // horizontal move → perpendicular = vertical
+      [0,-1, 1,0], [0,1, 1,0],   // vertical move   → perpendicular = horizontal
+    ];
+    while (qHead < queue.length) {
+      const idx = queue[qHead++];
+      const cx = idx%w, cy = (idx/w)|0;
+      for (const [ddx, ddy, pdx, pdy] of DIRS) {
+        const nx=cx+ddx, ny=cy+ddy;
+        if (nx<0||nx>=w||ny<0||ny>=h) continue;
+        const ni = ny*w+nx;
+        if (visited[ni]||!darkWS[ni]) continue;
+        // Cross-width check — reject if wider than mainline
+        if (wsPerp(nx, ny, pdx, pdy) > maxWSWidth) continue;
+        visited[ni]=1; capMask[ni]=1; queue.push(ni);
+      }
+    }
+
+    // Keep only H/V runs of at least 2 workspace cells (filters isolated dots)
+    const keep = new Uint8Array(w * h);
+    for (let y = 0; y < h; y++) {
+      let rs = -1;
+      for (let x = 0; x <= w; x++) {
+        if (x<w&&capMask[y*w+x]) { if(rs<0)rs=x; }
+        else if (rs>=0) { if(x-rs>=2) for(let sx=rs;sx<x;sx++) keep[y*w+sx]=1; rs=-1; }
+      }
+    }
+    for (let x = 0; x < w; x++) {
+      let rs = -1;
+      for (let y = 0; y <= h; y++) {
+        if (y<h&&capMask[y*w+x]) { if(rs<0)rs=y; }
+        else if (rs>=0) { if(y-rs>=2) for(let sy=rs;sy<y;sy++) keep[sy*w+x]=1; rs=-1; }
+      }
+    }
+    return keep;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  PIPE ANALYSIS — MAIN
+  // ═══════════════════════════════════════════════════════════
+
+  function analyzePipes(pipeLayerArg: ExtractedLayer): PipeAnalysis | null {
+    const { width, height, data } = pipeLayerArg.rawImageData;
+    log(`analyzePipes: ${width}×${height}, ${pipeLayerArg.pixelCount}px`);
+
+    const fullMask = new Uint8Array(width * height);
+    for (let i = 0; i < width * height; i++) {
+      const d = i*4, a=data[d+3], r=data[d], g=data[d+1], b=data[d+2];
+      fullMask[i] = (a>20 && !(r>245&&g>245&&b>245)) ? 1 : 0;
+    }
+
+    cleanIsolatedPipeComponents(fullMask, data, width, height);
+
+    const CLOSE_R = Math.min(8, Math.max(2, Math.round(Math.min(width,height)*0.0015)));
+    const closedMask = closeMask(fullMask, width, height, CLOSE_R);
+    for (let i = 0; i < width*height; i++) {
+      if (closedMask[i] && !fullMask[i]) {
+        fullMask[i]=1; const d4=i*4; data[d4]=60;data[d4+1]=60;data[d4+2]=60;data[d4+3]=220;
+      }
+    }
+
+    let workMask = fullMask, w = width, h = height, scale = 1;
+    const MAX_DIM = 2000;
+    if (width > MAX_DIM || height > MAX_DIM) {
+      scale = Math.ceil(Math.max(width, height) / MAX_DIM);
+      w = Math.ceil(width/scale); h = Math.ceil(height/scale);
+      workMask = new Uint8Array(w*h);
+      for (let dy=0;dy<h;dy++) for (let dx=0;dx<w;dx++) {
+        let found=0;
+        for (let sy=dy*scale;sy<Math.min((dy+1)*scale,height)&&!found;sy++)
+          for (let sx=dx*scale;sx<Math.min((dx+1)*scale,width)&&!found;sx++)
+            found |= fullMask[sy*width+sx];
+        workMask[dy*w+dx] = found as 0|1;
+      }
+    }
+
+    const rawSkel = zhangSuenThin(workMask, w, h);
+    const {result:skeleton, isH, isV} = enforceHVSkeleton(rawSkel, w, h);
+    removeNonRectangularClosedLoops(skeleton, w, h);
+    const junctResult = classifySkeletonJunctions(skeleton, isH, isV, w, h, scale);
+
+    const analysis: PipeAnalysis = {
+      ...junctResult, scale,
+      wsWidth: w, wsHeight: h,
+      primarySkeleton: skeleton,
+      capillaryMask: new Uint8Array(w*h),
+      capillaryPixelCount: 0,
+      fullPrimaryMask: fullMask,
+      workSpaceMask: workMask,
+    };
+
+    // Clean display pixels that are not part of H/V skeleton
+    for (let fy=0;fy<height;fy++) for (let fx=0;fx<width;fx++) {
+      const fi = fy*width+fx; if (!fullMask[fi]) continue;
+      const wi = Math.floor(fy/scale)*w + Math.floor(fx/scale);
+      if (!skeleton[wi]) { fullMask[fi]=0; const d4=fi*4; data[d4]=0;data[d4+1]=0;data[d4+2]=0;data[d4+3]=0; }
+    }
+
+    analysis.fullPrimaryMask = fullMask;
+    analysis.workSpaceMask   = workMask;
+
+    // ── Capillary discovery: ink-drop BFS from mainline into branch lines ──
+    // Use the measured mainline width (in workspace pixels) as the BFS width cap.
+    // grayThresh is the current slider setting; capillaries may be slightly
+    // lighter than the mainline so we loosen it by 30 gray levels.
+    const hvGT       = Math.round(40 + hvSensitivity * 1.8);
+    const capGT      = Math.min(hvGT + 30, 160);                    // capillary gray threshold
+    const mainlineWS = Math.max(1, Math.ceil(detectedMainlineWidth / scale)); // workspace units
+
+    const capMask = extractCapillaryLines(
+      fullMask, workMask, width, height, w, h, scale, capGT, mainlineWS
+    );
+    analysis.capillaryMask = capMask;
+    analysis.capillaryPixelCount = capMask.reduce((s,v)=>s+v,0);
+
+    // Paint discovered capillary pixels back into the full-res display layer.
+    // They were erased by the skeleton-cleanup step above; without this step
+    // they would never appear in the rendered pipe overlay.
+    if (workingImageData && analysis.capillaryPixelCount > 0) {
+      const srcData = workingImageData.data;
+      let capPainted = 0;
+      for (let fy = 0; fy < height; fy++) for (let fx = 0; fx < width; fx++) {
+        const fi  = fy * width + fx;
+        if (fullMask[fi]) continue;                                    // already mainline — skip
+        const wi = Math.floor(fy / scale) * w + Math.floor(fx / scale);
+        if (!capMask[wi]) continue;
+        // Verify actual ink in source image at this pixel
+        const si4 = fi * 4;
+        if (srcData[si4 + 3] < 20) continue;
+        const gr = srcData[si4]*0.299 + srcData[si4+1]*0.587 + srcData[si4+2]*0.114;
+        if (gr >= capGT) continue;
+        fullMask[fi] = 1;
+        data[si4] = 55; data[si4 + 1] = 55; data[si4 + 2] = 55; data[si4 + 3] = 220;
+        capPainted++;
+      }
+      log(`analyzePipes: painted ${capPainted} capillary px back into display`);
+    }
+
+    // Classify tees
+    const CHECK_R = 3;
+    analysis.equalTees = []; analysis.reducingTees = [];
+    for (const t of analysis.tJunctions) {
+      const wtx = Math.floor(t.x/scale), wty = Math.floor(t.y/scale);
+      let nearCap = false;
+      for (let dy=-CHECK_R;dy<=CHECK_R&&!nearCap;dy++)
+        for (let dx=-CHECK_R;dx<=CHECK_R&&!nearCap;dx++) {
+          const nx=wtx+dx, ny=wty+dy;
+          if (nx>=0&&nx<w&&ny>=0&&ny<h&&capMask[ny*w+nx]) nearCap=true;
+        }
+      if (nearCap) analysis.reducingTees.push(t); else analysis.equalTees.push(t);
+    }
+
+    // Repaint to uniform color
+    const pRs: number[]=[], pGs: number[]=[], pBs: number[]=[];
+    for (let i=0;i<width*height;i++) {
+      if (!fullMask[i]) continue;
+      const d4=i*4; const r=data[d4],g=data[d4+1],b=data[d4+2];
+      const gray=r*0.299+g*0.587+b*0.114;
+      if (gray<40||gray>220) continue;
+      pRs.push(r); pGs.push(g); pBs.push(b);
+    }
+    if (pRs.length > 0) {
+      pRs.sort((a,b)=>a-b); pGs.sort((a,b)=>a-b); pBs.sort((a,b)=>a-b);
+      const mid = Math.floor(pRs.length/2);
+      const pR=pRs[mid], pG=pGs[mid], pB=pBs[mid];
+      for (let i=0;i<width*height;i++) {
+        if (!fullMask[i]) continue;
+        const d4=i*4; data[d4]=pR;data[d4+1]=pG;data[d4+2]=pB;data[d4+3]=255;
+      }
+    }
+
+    dilateRawPipeData(data, width, height, 3);
+    log(`analyzePipes: T=${analysis.tJunctions.length} skel=${analysis.skeletonPixelCount} cap=${analysis.capillaryPixelCount}`);
+    return analysis;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  CONNECTED NETWORK ENFORCEMENT
+  // ═══════════════════════════════════════════════════════════
+
+  /**
+   * Keeps only the single largest connected component of pipe pixels.
+   * Every floor plan has exactly ONE main skeletal network — isolated blobs
+   * (false positives, orphaned stubs) are erased from the pipe layer.
+   *
+   * Uses 8-connected BFS so diagonal touches are treated as connected,
+   * which is more forgiving at junctions where the skeleton thins to a corner.
+   *
+   * Returns the number of pixels erased.
+   */
+  function enforceConnectedNetwork(): number {
+    if (!pipeLayer || !workingImageData) return 0;
+    const { width, height } = workingImageData;
+    const data = pipeLayer.rawImageData.data;
+
+    // Build pipe mask
+    const pipeMask = new Uint8Array(width * height);
+    for (let i = 0; i < width * height; i++) {
+      if (data[i * 4 + 3] > 50) pipeMask[i] = 1;
+    }
+
+    // 8-connected BFS — label every component
+    const labels    = new Int32Array(width * height).fill(-1);
+    const compSizes: number[] = [];
+
+    for (let i = 0; i < width * height; i++) {
+      if (!pipeMask[i] || labels[i] >= 0) continue;
+      const id = compSizes.length;
+      const q: number[] = [i];
+      labels[i] = id;
+      let head = 0, size = 0;
+      while (head < q.length) {
+        const idx = q[head++];
+        size++;
+        const px = idx % width, py = (idx / width) | 0;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+          if (dx === 0 && dy === 0) continue;
+          const nx = px + dx, ny = py + dy;
+          if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+          const ni = ny * width + nx;
+          if (!pipeMask[ni] || labels[ni] >= 0) continue;
+          labels[ni] = id; q.push(ni);
+        }
+      }
+      compSizes.push(size);
+    }
+
+    if (compSizes.length <= 1) {
+      log(`enforceConnectedNetwork: single component (${compSizes[0] ?? 0}px) — nothing to prune`);
+      return 0;
+    }
+
+    // Keep only the largest component
+    let maxId = 0;
+    for (let i = 1; i < compSizes.length; i++) {
+      if (compSizes[i] > compSizes[maxId]) maxId = i;
+    }
+
+    let erased = 0;
+    for (let i = 0; i < width * height; i++) {
+      if (labels[i] >= 0 && labels[i] !== maxId) {
+        const i4 = i * 4;
+        data[i4] = 0; data[i4 + 1] = 0; data[i4 + 2] = 0; data[i4 + 3] = 0;
+        erased++;
+      }
+    }
+
+    const kept = compSizes[maxId];
+    const removed = compSizes.length - 1;
+    log(`enforceConnectedNetwork: kept component ${maxId} (${kept}px), pruned ${removed} orphan(s) (${erased}px erased)`);
+    return erased;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  PIPE SEGMENT MAP (for hover/click interaction)
+  // ═══════════════════════════════════════════════════════════
+
+  function buildPipeSegmentMap(): void {
+    if (!pipeLayer || !workingImageData) { pipeComponentMap = null; pipeSegments = []; return; }
+    const {width, height} = workingImageData;
+    const data = pipeLayer.rawImageData.data;
+
+    // Binary pipe mask: 1 = regular pipe, 2 = separator at junctions
+    const pipeMask = new Uint8Array(width * height);
+    for (let i = 0; i < width * height; i++) {
+      if (data[i*4+3] > 50) pipeMask[i] = 1;
+    }
+
+    // Mark junction area pixels as separators so segments split there
+    if (pipeAnalysis) {
+      const s = pipeAnalysis.scale;
+      const junctions = [...pipeAnalysis.tJunctions, ...pipeAnalysis.crossings];
+      const SEP_R = Math.max(3, Math.round(s * 1.5));
+      for (const j of junctions) {
+        const jx = Math.round(j.x), jy = Math.round(j.y);
+        for (let dy = -SEP_R; dy <= SEP_R; dy++) for (let dx = -SEP_R; dx <= SEP_R; dx++) {
+          const nx = jx+dx, ny = jy+dy;
+          if (nx>=0&&nx<width&&ny>=0&&ny<height&&pipeMask[ny*width+nx]===1)
+            pipeMask[ny*width+nx] = 2;
+        }
+      }
+    }
+
+    // BFS connected components on non-separator pipe pixels
+    pipeComponentMap = new Int32Array(width * height).fill(-1);
+    pipeSegments = [];
+
+    for (let i = 0; i < width * height; i++) {
+      if (pipeMask[i] !== 1 || pipeComponentMap[i] >= 0) continue;
+      const id = pipeSegments.length;
+      const pixels: number[] = [];
+      const q = [i]; pipeComponentMap[i] = id; let head = 0;
+      let minX=width, maxX=0, minY=height, maxY=0;
+      while (head < q.length) {
+        const idx = q[head++];
+        pixels.push(idx);
+        const px=idx%width, py=(idx/width)|0;
+        if (px<minX)minX=px; if (px>maxX)maxX=px;
+        if (py<minY)minY=py; if (py>maxY)maxY=py;
+        for (const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]] as const) {
+          const nx=px+dx, ny=py+dy;
+          if (nx<0||nx>=width||ny<0||ny>=height) continue;
+          const ni=ny*width+nx;
+          if (pipeMask[ni]!==1||pipeComponentMap[ni]>=0) continue;
+          pipeComponentMap[ni]=id; q.push(ni);
+        }
+      }
+      pipeSegments.push({id,pixels,minX,maxX,minY,maxY});
+    }
+
+    // Assign separator pixels to their nearest real segment (for hit-testing at junctions)
+    for (let i = 0; i < width * height; i++) {
+      if (pipeMask[i] !== 2 || pipeComponentMap[i] >= 0) continue;
+      const px=i%width, py=(i/width)|0;
+      outer: for (let r=1;r<=6;r++) {
+        for (const [dx,dy] of [[-r,0],[r,0],[0,-r],[0,r],[-r,-r],[-r,r],[r,-r],[r,r]] as const) {
+          const nx=px+dx, ny=py+dy;
+          if (nx<0||nx>=width||ny<0||ny>=height) continue;
+          const ni=ny*width+nx;
+          if (pipeComponentMap[ni]>=0) { pipeComponentMap[i]=pipeComponentMap[ni]; break outer; }
+        }
+      }
+    }
+
+    log(`buildPipeSegmentMap: ${pipeSegments.length} segments`);
+  }
+
+  function getPipeSegmentAt(imgX: number, imgY: number, radius = 12): number | null {
+    if (!pipeComponentMap || !workingImageData) return null;
+    const {width,height} = workingImageData;
+    let best=-1, bestDist=Infinity;
+    for (let dy=-radius;dy<=radius;dy++) for (let dx=-radius;dx<=radius;dx++) {
+      const d=dx*dx+dy*dy; if (d>radius*radius) continue;
+      const nx=imgX+dx, ny=imgY+dy;
+      if (nx<0||nx>=width||ny<0||ny>=height) continue;
+      const id=pipeComponentMap[ny*width+nx];
+      if (id>=0 && d<bestDist) { best=id; bestDist=d; }
+    }
+    return best>=0 ? best : null;
+  }
+
+  function deletePipeSegment(id: number): void {
+    if (!pipeLayer || !workingImageData || !pipeComponentMap) return;
+    const {width} = workingImageData;
+    const data = pipeLayer.rawImageData.data;
+    const seg = pipeSegments.find(s=>s.id===id);
+    if (!seg) return;
+    for (const idx of seg.pixels) {
+      const i4=idx*4; data[i4]=0;data[i4+1]=0;data[i4+2]=0;data[i4+3]=0;
+      pipeComponentMap[idx]=-1;
+    }
+    // Also clear separator pixels that were assigned to this segment
+    for (let i=0;i<width*pipeLayer.rawImageData.height;i++) {
+      if (pipeComponentMap[i]===id) {
+        pipeComponentMap[i]=-1;
+        const i4=i*4; data[i4]=0;data[i4+1]=0;data[i4+2]=0;data[i4+3]=0;
+      }
+    }
+    pipeSegments = pipeSegments.filter(s=>s.id!==id);
+
+    // Re-enforce single network: deleting a bridge could orphan downstream branches
+    const pruned = enforceConnectedNetwork();
+    if (pruned > 0) {
+      log(`deletePipeSegment: deletion orphaned ${pruned}px — pruned from network`);
+    }
+    buildPipeSegmentMap();
+    pipeLayer.pixelCount = pipeSegments.reduce((s,seg)=>s+seg.pixels.length,0);
+    log(`deletePipeSegment: removed segment ${id}, ${pipeSegments.length} remain`);
+  }
+
+  /**
+   * Trace a missed pipe segment from a clicked point.
+   *
+   * Rules (matching fire-protection pipe reality):
+   *  1. H/V only — BFS uses 4-connected cardinal neighbors, never diagonal.
+   *  2. Consistent width — at each candidate pixel we measure the cross-section
+   *     (perpendicular to our direction of travel). If it exceeds the seed stroke
+   *     width × MAX_WIDTH_MULT the pixel is skipped. This terminates the trace when
+   *     it enters a junction block, symbol, text, or any wider element.
+   *  3. Seed gate — if the clicked location is already wide (not a thin line), reject
+   *     immediately so the user knows to click on the line itself.
+   *  4. Connectivity required — the captured pixels must touch the existing pipe network.
+   */
+  function addPipeAtPoint(imgX: number, imgY: number): boolean {
+    if (!workingImageData || !pipeLayer || !pipeComponentMap) return false;
+    const { width, height, data } = workingImageData;
+
+    // ── helpers ────────────────────────────────────────────────────────
+    const grayAt = (x: number, y: number): number => {
+      const i4 = (y * width + x) * 4;
+      return data[i4] * 0.299 + data[i4 + 1] * 0.587 + data[i4 + 2] * 0.114;
+    };
+
+    /** Scan in one direction until gray exceeds threshold; return pixel count reached. */
+    const scanExtent = (x: number, y: number, dx: number, dy: number, thresh: number, maxD: number): number => {
+      for (let d = 1; d <= maxD; d++) {
+        const nx = x + dx * d, ny = y + dy * d;
+        if (nx < 0 || nx >= width || ny < 0 || ny >= height) return d - 1;
+        if (grayAt(nx, ny) > thresh) return d - 1;
+      }
+      return maxD;
+    };
+
+    // ── 1. Find darkest seed pixel near click ─────────────────────────
+    const SEARCH_R = 20;
+    let seedX = imgX, seedY = imgY, bestGray = 999;
+    for (let dy = -SEARCH_R; dy <= SEARCH_R; dy++) for (let dx = -SEARCH_R; dx <= SEARCH_R; dx++) {
+      const nx = imgX + dx, ny = imgY + dy;
+      if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+      const g = grayAt(nx, ny);
+      if (g < bestGray) { bestGray = g; seedX = nx; seedY = ny; }
+    }
+    if (bestGray > 245) { toast("info", "No ink found", "Try clicking directly on a visible pipe line."); return false; }
+
+    const BFS_THRESH = Math.max(200, bestGray + 35);
+
+    // ── 2. Measure seed stroke width ──────────────────────────────────
+    // Probe all four cardinal directions and pick the thinnest cross-section.
+    // A 2px pipe has cross-width 2; a 50px filled region has cross-width 50.
+    const MAX_PROBE = 20; // never scan more than 20px in any direction
+    const vUp   = scanExtent(seedX, seedY, 0, -1, BFS_THRESH, MAX_PROBE);
+    const vDown = scanExtent(seedX, seedY, 0,  1, BFS_THRESH, MAX_PROBE);
+    const hLeft = scanExtent(seedX, seedY, -1, 0, BFS_THRESH, MAX_PROBE);
+    const hRight= scanExtent(seedX, seedY,  1, 0, BFS_THRESH, MAX_PROBE);
+
+    // Cross-widths: for a pixel on a horizontal run, its V cross-width matters.
+    // We take the min of {V-cross, H-cross} to get the narrowest dimension.
+    const vCross = vUp + vDown + 1;   // vertical extent (= H-run stroke width)
+    const hCross = hLeft + hRight + 1; // horizontal extent (= V-run stroke width)
+    const seedStroke = Math.min(vCross, hCross);
+
+    if (seedStroke > 14) {
+      toast("info", "Too wide", `Detected a ${seedStroke}px-wide region — click on the thin pipe line itself.`);
+      return false;
+    }
+
+    // Allow up to 2.5× the seed stroke width before terminating, but never below 5px
+    const MAX_CROSS = Math.max(Math.round(seedStroke * 2.5), 5);
+    log(`addPipeAtPoint: seed gray=${bestGray.toFixed(0)}, stroke=${seedStroke}px, maxCross=${MAX_CROSS}px`);
+
+    // ── 3. H/V BFS with width check ───────────────────────────────────
+    const inFill = new Uint8Array(width * height);
+    const q: number[] = [seedY * width + seedX];
+    inFill[seedY * width + seedX] = 1;
+    let head = 0;
+    const MAX_PX = 100_000;
+
+    // Only cardinal directions — no diagonals
+    const DIRS: [number, number, number, number][] = [
+      // [ddx, ddy, perpDx, perpDy]  perpendicular to travel direction
+      [-1, 0,  0,  1],  // left   → cross = up/down
+      [ 1, 0,  0,  1],  // right  → cross = up/down
+      [ 0,-1,  1,  0],  // up     → cross = left/right
+      [ 0, 1,  1,  0],  // down   → cross = left/right
+    ];
+
+    while (head < q.length && q.length < MAX_PX) {
+      const idx = q[head++];
+      const px = idx % width, py = (idx / width) | 0;
+
+      for (const [ddx, ddy, pdx, pdy] of DIRS) {
+        const nx = px + ddx, ny = py + ddy;
+        if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+        const ni = ny * width + nx;
+        if (inFill[ni]) continue;
+        if (grayAt(nx, ny) > BFS_THRESH) continue;
+
+        // Measure cross-section perpendicular to travel at the candidate pixel.
+        // If it's suddenly wider than the seed stroke allows, stop here.
+        const crossW = scanExtent(nx, ny,  pdx,  pdy, BFS_THRESH, MAX_CROSS)
+                     + scanExtent(nx, ny, -pdx, -pdy, BFS_THRESH, MAX_CROSS)
+                     + 1;
+        if (crossW > MAX_CROSS) continue;
+
+        inFill[ni] = 1;
+        q.push(ni);
+      }
+    }
+
+    const captured = q.length;
+    if (captured < 3) { toast("info", "Nothing captured", "Clicked area may be blank."); return false; }
+
+    // ── 4. Connectivity to existing network ────────────────────────────
+    let touchesPipe = false;
+    for (let i = 0; i < width * height && !touchesPipe; i++) {
+      if (!inFill[i]) continue;
+      const px = i % width, py = (i / width) | 0;
+      for (const [dx, dy] of [[-1,0],[1,0],[0,-1],[0,1],[-2,0],[2,0],[0,-2],[0,2]] as const) {
+        const nx = px + dx, ny = py + dy;
+        if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+        if (pipeComponentMap[ny * width + nx] >= 0) { touchesPipe = true; break; }
+      }
+    }
+    if (!touchesPipe) { toast("info", "Not connected", "New segment must touch the existing pipe network."); return false; }
+
+    // ── 5. Paint into pipe layer ────────────────────────────────────────
+    const pipeData = pipeLayer.rawImageData.data;
+    let pR = 59, pG = 130, pB = 246; // fallback blue
+    if (pipeSegments.length > 0 && pipeSegments[0].pixels.length > 0) {
+      const si = pipeSegments[0].pixels[Math.floor(pipeSegments[0].pixels.length / 2)] * 4;
+      pR = pipeData[si]; pG = pipeData[si + 1]; pB = pipeData[si + 2];
+    }
+    for (let i = 0; i < width * height; i++) {
+      if (!inFill[i]) continue;
+      const i4 = i * 4;
+      pipeData[i4] = pR; pipeData[i4 + 1] = pG; pipeData[i4 + 2] = pB; pipeData[i4 + 3] = 220;
+    }
+
+    enforceConnectedNetwork();
+    buildPipeSegmentMap();
+    log(`addPipeAtPoint: painted ${captured}px`);
+    return true;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  CANVAS RENDERING
+  // ═══════════════════════════════════════════════════════════
+
+  /** Render the current working image + pipe layer into #v2-content */
+  function renderCanvas(
+    bgData?: ImageData | null,
+    overlayData?: ImageData | null,
+    overlayAlpha = 0.85
+  ) {
+    if (!contentEl) return;
+
+    // Remove previous content but keep canvases if they exist
+    contentEl.innerHTML = "";
+
+    const imgData = bgData ?? workingImageData;
+    if (!imgData) return;
+
+    // Background image — pointer-events:none so all drags pass through to viewportEl
+    const bgUrl = imageDataToUrl(imgData);
+    const bgImg = document.createElement("img");
+    bgImg.id = "v2-bg-img";
+    bgImg.src = bgUrl;
+    bgImg.draggable = false;
+    bgImg.style.cssText = "display:block;width:100%;height:auto;pointer-events:none;user-select:none;-webkit-user-drag:none;";
+    contentEl.appendChild(bgImg);
+
+    // Pipe layer overlay
+    if (overlayData) {
+      const overlay = document.createElement("canvas");
+      overlay.id = "v2-pipe-overlay";
+      overlay.width = overlayData.width;
+      overlay.height = overlayData.height;
+      overlay.style.cssText = `position:absolute;inset:0;width:100%;height:auto;pointer-events:none;opacity:${overlayAlpha};`;
+      overlay.getContext("2d")!.putImageData(overlayData, 0, 0);
+      contentEl.appendChild(overlay);
+    }
+
+    // Hover highlight canvas (transparent until hover)
+    const hoverCanvas = document.createElement("canvas");
+    hoverCanvas.id = "v2-hover-canvas";
+    hoverCanvas.width  = imgData.width;
+    hoverCanvas.height = imgData.height;
+    // mix-blend-mode:screen means the amber highlight brightens what's beneath it
+    // (pipe colors + background drawing) without ever covering them.
+    hoverCanvas.style.cssText = "position:absolute;inset:0;width:100%;height:auto;pointer-events:none;mix-blend-mode:screen;";
+    contentEl.appendChild(hoverCanvas);
+
+    fitAndCenter(imgData.width, imgData.height);
+  }
+
+  function renderHoverHighlight(segId: number | null): void {
+    // Cancel any running animation
+    if (hoverAnimRAF !== null) { cancelAnimationFrame(hoverAnimRAF); hoverAnimRAF = null; }
+
+    const hoverCanvas = document.getElementById("v2-hover-canvas") as HTMLCanvasElement | null;
+    if (!hoverCanvas) return;
+    const ctx = hoverCanvas.getContext("2d")!;
+    ctx.clearRect(0, 0, hoverCanvas.width, hoverCanvas.height);
+    if (segId === null || !workingImageData) return;
+
+    const seg = pipeSegments.find(s => s.id === segId);
+    if (!seg || !pipeLayer) return;
+
+    const { width } = workingImageData;
+    const { minX, minY, maxX, maxY, pixels } = seg;
+    const bw = maxX - minX + 1;
+    const bh = maxY - minY + 1;
+    const spanDir = bw >= bh ? "h" : "v"; // dominant axis for scan sweep direction
+
+    // ── Build offscreen canvas: amber segment pixels at full alpha ────
+    // The hover canvas uses mix-blend-mode:screen (CSS), so amber pixels
+    // BRIGHTEN the drawing beneath rather than covering it.
+    // Full alpha here = maximum brightening contribution; globalAlpha
+    // in the RAF loop controls the pulse intensity.
+    const off = document.createElement("canvas");
+    off.width = bw; off.height = bh;
+    const offCtx = off.getContext("2d")!;
+    const offImg = offCtx.createImageData(bw, bh);
+    const od = offImg.data;
+    for (const idx of pixels) {
+      const ax = idx % width, ay = (idx / width) | 0;
+      const rx = ax - minX, ry = ay - minY;
+      const i4 = (ry * bw + rx) * 4;
+      od[i4] = 251; od[i4 + 1] = 191; od[i4 + 2] = 36; od[i4 + 3] = 255; // amber-400
+    }
+    offCtx.putImageData(offImg, 0, 0);
+
+    // ── RAF loop: pulse + scanning highlight ────────────────────────
+    function frame(t: number) {
+      ctx.clearRect(minX, minY, bw, bh);
+
+      // Pulsing amber glow — via screen blend this brightens the pipe without hiding it.
+      // Keep alpha moderate (0.25–0.60) so the screen result doesn't blow out to white.
+      const pulse = 0.25 + 0.35 * Math.sin(t * 0.006);
+      ctx.globalAlpha = pulse;
+      ctx.drawImage(off, minX, minY);
+      ctx.globalAlpha = 1;
+
+      // Sweep highlight: bright white shimmer travelling along the dominant axis.
+      // source-atop confines it to existing amber pixels in THIS canvas.
+      const phase = (t * 0.00085) % 1;
+      const hw = Math.max(18, (spanDir === "h" ? bw : bh) * 0.04);
+      let grad: CanvasGradient;
+      if (spanDir === "h") {
+        const sx = minX + phase * bw;
+        grad = ctx.createLinearGradient(sx - hw, 0, sx + hw, 0);
+      } else {
+        const sy = minY + phase * bh;
+        grad = ctx.createLinearGradient(0, sy - hw, 0, sy + hw);
+      }
+      grad.addColorStop(0,   "rgba(255,255,255,0)");
+      grad.addColorStop(0.5, "rgba(255,255,255,0.75)");
+      grad.addColorStop(1,   "rgba(255,255,255,0)");
+
+      ctx.save();
+      ctx.globalCompositeOperation = "source-atop";
+      ctx.fillStyle = grad;
+      ctx.fillRect(minX, minY, bw, bh);
+      ctx.restore();
+
+      hoverAnimRAF = requestAnimationFrame(frame);
+    }
+
+    hoverAnimRAF = requestAnimationFrame(frame);
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  PIPE REVIEW INTERACTION
+  // ═══════════════════════════════════════════════════════════
+
+  function handlePipeReviewHover(e: PointerEvent): void {
+    const coords = pointerToImage(e);
+    if (!coords) { clearHoverState(); return; }
+    const { x, y } = coords;
+    const segId = getPipeSegmentAt(x, y);
+
+    if (segId !== hoveredSegId) {
+      hoveredSegId = segId;
+      renderHoverHighlight(hoveredSegId);
+      isAddMode = hoveredSegId === null;
+      viewportEl.style.cursor = hoveredSegId !== null ? "pointer" : "crosshair";
+      updatePipeHint(hoveredSegId);
+    }
+
+    // Tooltip follows cursor in real time regardless of whether segment changed
+    if (segId !== null) {
+      const seg = pipeSegments.find(s => s.id === segId);
+      if (seg) showSegmentTooltip(seg, e.clientX, e.clientY);
+    } else {
+      hideSegmentTooltip();
+    }
+  }
+
+  function clearHoverState(): void {
+    if (hoverAnimRAF !== null) { cancelAnimationFrame(hoverAnimRAF); hoverAnimRAF = null; }
+    hideSegmentTooltip();
+    if (hoveredSegId !== null || isAddMode) {
+      hoveredSegId = null; isAddMode = false;
+      renderHoverHighlight(null);
+      viewportEl.style.cursor = "crosshair";
+      updatePipeHint(null);
+    }
+  }
+
+  function cancelPipeReviewHover(): void {
+    clearHoverState();
+  }
+
+  function updatePipeHint(segId: number | null): void {
+    if (!hintEl) return;
+    if (step !== "pipe-review") { hintEl.classList.add("hidden"); return; }
+    if (segId !== null) {
+      hintEl.innerHTML = `<span class="rounded-lg bg-red-500/90 px-3 py-1.5 text-xs font-medium text-white shadow-lg">Click to remove this segment</span>`;
+    } else {
+      hintEl.innerHTML = `<span class="rounded-lg bg-emerald-600/90 px-3 py-1.5 text-xs font-medium text-white shadow-lg">Click near a pipe to add a connected segment</span>`;
+    }
+    hintEl.classList.remove("hidden");
+  }
+
+  // ─── Floating segment identity tooltip ──────────────────────────────────────
+
+  function showSegmentTooltip(seg: PipeSegment, cx: number, cy: number): void {
+    const el = document.getElementById("v2-seg-tooltip");
+    if (!el) return;
+
+    const spanX = seg.maxX - seg.minX + 1;
+    const spanY = seg.maxY - seg.minY + 1;
+    const px    = seg.pixels.length;
+
+    // ── Orientation ──────────────────────────────────────────────────
+    let orient = "Node / Junction";
+    let orientGlyph = "⊕";
+    let glyphColor = "color:#a78bfa"; // purple
+    if (spanX > spanY * 1.8) {
+      orient = "Horizontal"; orientGlyph = "━"; glyphColor = "color:#60a5fa";
+    } else if (spanY > spanX * 1.8) {
+      orient = "Vertical"; orientGlyph = "┃"; glyphColor = "color:#34d399";
+    }
+
+    // ── Size tier (relative to all segments) ─────────────────────────
+    const sizes = pipeSegments.map(s => s.pixels.length).sort((a, b) => a - b);
+    const p33   = sizes[Math.floor(sizes.length * 0.33)] ?? 0;
+    const p67   = sizes[Math.floor(sizes.length * 0.67)] ?? 0;
+    let sizeLabel = "Branch";
+    let sizeCss   = "background:rgba(251,191,36,.18);color:#fbbf24";
+    if (px <= p33) { sizeLabel = "Stub / Lateral";  sizeCss = "background:rgba(156,163,175,.15);color:#9ca3af"; }
+    else if (px >= p67) { sizeLabel = "Main run";   sizeCss = "background:rgba(96,165,250,.18);color:#60a5fa"; }
+
+    // ── Junction type from skeleton analysis ─────────────────────────
+    const SLACK = 6;
+    let junctionTag = "";
+    if (pipeAnalysis) {
+      const inBox = (j: {x:number;y:number}) =>
+        j.x >= seg.minX - SLACK && j.x <= seg.maxX + SLACK &&
+        j.y >= seg.minY - SLACK && j.y <= seg.maxY + SLACK;
+      if      (pipeAnalysis.crossings.some(inBox))    junctionTag = "Cross";
+      else if (pipeAnalysis.tJunctions.some(inBox))   junctionTag = "Tee";
+      else if (pipeAnalysis.lJunctions.some(inBox))   junctionTag = "Elbow";
+      else if (pipeAnalysis.endpoints.some(inBox))    junctionTag = "End";
+    }
+
+    el.innerHTML = `
+      <div style="padding:10px 12px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="font-family:monospace;font-size:18px;line-height:1;${glyphColor}">${orientGlyph}</span>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:#f9fafb;line-height:1.2">${orient}</div>
+            <div style="font-size:9px;color:#6b7280;margin-top:1px">Seg #${seg.id + 1}</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">
+          <span style="border-radius:4px;padding:2px 7px;font-size:10px;font-weight:600;${sizeCss}">${sizeLabel}</span>
+          ${junctionTag ? `<span style="border-radius:4px;padding:2px 7px;font-size:10px;font-weight:600;background:rgba(167,139,250,.18);color:#a78bfa">${junctionTag}</span>` : ""}
+        </div>
+        <div style="font-size:10px;color:#6b7280;border-top:1px solid rgba(255,255,255,.06);padding-top:6px;line-height:1.6">
+          ${spanX > 1 ? `<span>${spanX}px wide</span> ` : ""}${spanY > 1 ? `<span>× ${spanY}px tall</span>` : ""}<br>
+          <span>${px.toLocaleString()} ink pixels</span>
+        </div>
+        <div style="font-size:9px;color:#f87171;margin-top:5px;opacity:.8">Click to remove</div>
+      </div>`;
+
+    el.classList.remove("hidden");
+
+    // Position near cursor — flip when near viewport edges
+    const W  = el.offsetWidth  || 210;
+    const H  = el.offsetHeight || 130;
+    const VW = window.innerWidth, VH = window.innerHeight;
+    const OFF = 18;
+    let tx = cx + OFF, ty = cy + OFF;
+    if (tx + W > VW - 8) tx = cx - W - OFF;
+    if (ty + H > VH - 8) ty = cy - H - OFF;
+    el.style.left = `${tx}px`;
+    el.style.top  = `${ty}px`;
+  }
+
+  function hideSegmentTooltip(): void {
+    document.getElementById("v2-seg-tooltip")?.classList.add("hidden");
+  }
+
+  function handlePipeReviewClick(e: PointerEvent): void {
+    const coords = pointerToImage(e);
+    if (!coords) return;
+    const {x,y} = coords;
+    const segId = getPipeSegmentAt(x, y);
+
+    if (segId !== null) {
+      // Delete — enforceConnectedNetwork runs inside deletePipeSegment
+      const prevCount = pipeSegments.length;
+      deletePipeSegment(segId);
+      hoveredSegId = null;
+      rerenderPipeOverlay();
+      renderHoverHighlight(null);
+      updatePipeHint(null);
+      updateSidebarStats();
+      const pruned = prevCount - pipeSegments.length - 1;
+      const extra  = pruned > 0 ? ` (+${pruned} orphaned segment${pruned !== 1 ? "s" : ""} pruned)` : "";
+      toast("info", "Segment removed", `Network re-enforced${extra}.`);
+    } else {
+      // Add
+      showOverlay("Tracing ink…");
+      setTimeout(() => {
+        const added = addPipeAtPoint(x, y);
+        hideOverlay();
+        if (added) {
+          rerenderPipeOverlay();
+          updateSidebarStats();
+          toast("success","Segment added","");
+        }
+      }, 10);
+    }
+  }
+
+  function rerenderPipeOverlay(): void {
+    const overlayEl2 = document.getElementById("v2-pipe-overlay") as HTMLCanvasElement | null;
+    if (!overlayEl2 || !pipeLayer) return;
+    overlayEl2.getContext("2d")!.putImageData(pipeLayer.rawImageData, 0, 0);
+  }
+
+  function updateSidebarStats(): void {
+    const el = document.getElementById("v2-pipe-stats");
+    if (!el) return;
+    const totalPx = pipeSegments.reduce((s,seg)=>s+seg.pixels.length,0);
+    el.textContent = `${pipeSegments.length} segment${pipeSegments.length!==1?"s":""}  ·  ${totalPx.toLocaleString()} px`;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  STEP RENDERING
+  // ═══════════════════════════════════════════════════════════
+
+  function renderSidebar(html: string): void {
+    if (sidebarEl) sidebarEl.innerHTML = html;
+  }
+
+  // ── Step: Regions ──────────────────────────────────────────
+
+  function renderRegionsStep(): void {
+    if (!fullRenderData) return;
+    step = "regions";
+    updateStepBar();
+    viewportEl.style.cursor = "grab";
+
+    renderCanvas(fullRenderData);
+    renderRegionBoxes();
+
+    const confirmedCount = regionMeta.filter(m => m.confirmed).length;
+    const legendCount    = regionMeta.filter(m => m.isLegend).length;
+    const total = baselineRegions.length;
+
+    renderSidebar(`
+      <div class="flex flex-col gap-4">
+        <div>
+          <h3 class="mb-1 text-base font-semibold text-gray-900 dark:text-white">Step 1 — Regions</h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+            ${total} area${total!==1?"s":""} detected. Confirm the floor plan sections you want to analyze.
+            Mark any legend area to skip it.
+          </p>
+        </div>
+
+        <div class="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          ${baselineRegions.map((r, i) => {
+            const m = regionMeta[i];
+            const isLeg  = m.isLegend;
+            const isCon  = m.confirmed;
+            const isExc  = m.excluded;
+            const label  = isLeg ? "Legend" : isCon ? "Floor plan" : isExc ? "Excluded" : "Unset";
+            const dotColor = isLeg ? "bg-violet-500" : isCon ? "bg-emerald-500" : isExc ? "bg-gray-400" : "bg-amber-400";
+            return `
+              <div class="flex items-center gap-2 px-3 py-2 border-b last:border-0 border-gray-100 dark:border-gray-700/50">
+                <span class="flex-1 text-xs font-medium text-gray-700 dark:text-gray-300">
+                  Area ${i+1}
+                  <span class="ml-1 text-[10px] text-gray-400">${r.w}×${r.h}</span>
+                </span>
+                <span class="flex items-center gap-1 text-[10px] text-gray-500 dark:text-gray-400">
+                  <span class="inline-block h-2 w-2 rounded-full ${dotColor}"></span>
+                  ${label}
+                </span>
+                <div class="flex gap-1">
+                  ${!isExc && !isLeg ? `
+                    <button data-region-confirm="${i}"
+                      class="rounded px-1.5 py-0.5 text-[10px] font-medium ${isCon ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" : "bg-gray-100 text-gray-600 hover:bg-emerald-100 hover:text-emerald-700 dark:bg-gray-700 dark:text-gray-300"}"
+                      >${isCon ? "✓ Floor" : "Floor"}</button>
+                    <button data-region-legend="${i}"
+                      class="rounded px-1.5 py-0.5 text-[10px] font-medium bg-gray-100 text-gray-600 hover:bg-violet-100 hover:text-violet-700 dark:bg-gray-700 dark:text-gray-300"
+                      >Legend</button>
+                  ` : ""}
+                  ${(isLeg || isExc) ? `
+                    <button data-region-reset="${i}"
+                      class="rounded px-1.5 py-0.5 text-[10px] font-medium bg-gray-100 text-gray-600 hover:bg-amber-100 hover:text-amber-700 dark:bg-gray-700 dark:text-gray-300"
+                      >Reset</button>
+                  ` : ""}
+                  ${!isCon && !isLeg ? `
+                    <button data-region-exclude="${i}"
+                      class="rounded px-1.5 py-0.5 text-[10px] font-medium bg-gray-100 text-gray-400 hover:bg-red-100 hover:text-red-600 dark:bg-gray-700 dark:text-gray-400"
+                      >✕</button>
+                  ` : ""}
+                </div>
+              </div>`;
+          }).join("")}
+        </div>
+
+        <div>
+          <p class="mb-2 text-xs text-gray-400 dark:text-gray-500">
+            ${confirmedCount} floor plan${confirmedCount!==1?"s":""} confirmed${legendCount>0?`, ${legendCount} legend area`:""}
+          </p>
+          <button id="v2-regions-next"
+            class="w-full rounded-lg bg-primary-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-40 hover:bg-primary-700 transition-colors"
+            ${confirmedCount===0?"disabled":""}>
+            Analyze Pipes →
+          </button>
+        </div>
+      </div>
+    `);
+
+    wireRegionButtons();
+  }
+
+  function wireRegionButtons(): void {
+    sidebarEl?.querySelectorAll<HTMLElement>("[data-region-confirm]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const i = Number(btn.dataset.regionConfirm);
+        regionMeta[i].confirmed = !regionMeta[i].confirmed;
+        if (regionMeta[i].confirmed) { regionMeta[i].excluded=false; regionMeta[i].isLegend=false; }
+        renderRegionBoxes(); renderRegionsStep();
+      });
+    });
+    sidebarEl?.querySelectorAll<HTMLElement>("[data-region-legend]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const i = Number(btn.dataset.regionLegend);
+        regionMeta[i].isLegend = true; regionMeta[i].confirmed=false; regionMeta[i].excluded=false;
+        renderRegionBoxes(); renderRegionsStep();
+      });
+    });
+    sidebarEl?.querySelectorAll<HTMLElement>("[data-region-exclude]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const i = Number(btn.dataset.regionExclude);
+        regionMeta[i].excluded=true; regionMeta[i].confirmed=false; regionMeta[i].isLegend=false;
+        renderRegionBoxes(); renderRegionsStep();
+      });
+    });
+    sidebarEl?.querySelectorAll<HTMLElement>("[data-region-reset]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const i = Number(btn.dataset.regionReset);
+        regionMeta[i] = { confirmed:false, excluded:false, isLegend:false };
+        renderRegionBoxes(); renderRegionsStep();
+      });
+    });
+    document.getElementById("v2-regions-next")?.addEventListener("click", startPipeReview);
+  }
+
+  function renderRegionBoxes(): void {
+    document.querySelectorAll(".v2-region-box").forEach(el => el.remove());
+    if (!fullRenderData || !contentEl) return;
+
+    const iw = fullRenderData.width;
+    const ih = fullRenderData.height;
+
+    baselineRegions.forEach((r, i) => {
+      const m = regionMeta[i];
+      // Percentage positioning — always correct regardless of CSS scale / zoom transform timing.
+      // `contentEl` is inline-block sized to the background image, so percentages map
+      // directly to image-pixel fractions on both axes.
+      const pctL = (r.x / iw * 100).toFixed(4);
+      const pctT = (r.y / ih * 100).toFixed(4);
+      const pctW = (r.w / iw * 100).toFixed(4);
+      const pctH = (r.h / ih * 100).toFixed(4);
+
+      const borderColor = m.isLegend ? "#8b5cf6" : m.confirmed ? "#10b981" : m.excluded ? "#9ca3af" : "#f59e0b";
+      const bgColor     = m.isLegend ? "rgba(139,92,246,0.08)" : m.confirmed ? "rgba(16,185,129,0.06)" : m.excluded ? "rgba(156,163,175,0.06)" : "rgba(245,158,11,0.06)";
+
+      const el = document.createElement("div");
+      el.className = "v2-region-box pointer-events-none";
+      el.style.cssText = `
+        position:absolute;
+        left:${pctL}%; top:${pctT}%;
+        width:${pctW}%; height:${pctH}%;
+        border:2px solid ${borderColor};
+        background:${bgColor};
+        border-radius:4px;
+        box-sizing:border-box;
+      `;
+
+      const labelBg = m.isLegend ? "#8b5cf6" : m.confirmed ? "#10b981" : "#f59e0b";
+      const label = document.createElement("div");
+      label.style.cssText = `
+        position:absolute; top:4px; left:4px;
+        font-size:10px; font-weight:700; padding:1px 5px;
+        border-radius:3px; line-height:1.4;
+        background:${labelBg}; color:white;
+      `;
+      label.textContent = m.isLegend ? "LEGEND" : m.confirmed ? `FLOOR ${i+1}` : `AREA ${i+1}`;
+      el.appendChild(label);
+      contentEl.appendChild(el);
+    });
+  }
+
+  // ── Step: Pipe Review ──────────────────────────────────────
+
+  async function startPipeReview(): Promise<void> {
+    const confirmedFloors = baselineRegions
+      .map((r, i) => ({ r, i, m: regionMeta[i] }))
+      .filter(f => f.m.confirmed);
+
+    if (confirmedFloors.length === 0) { toast("error","No floors confirmed",""); return; }
+
+    currentFloorIdx = 0;
+    await analyzePipeForFloor(confirmedFloors[0].i);
+  }
+
+  async function analyzePipeForFloor(regionIdx: number): Promise<void> {
+    const region = baselineRegions[regionIdx];
+    if (!region || !fullRenderData) return;
+
+    showOverlay("Extracting pipe layer…");
+
+    await new Promise<void>(resolve => setTimeout(async () => {
+      try {
+        // Crop region
+        const canvas = document.createElement("canvas");
+        canvas.width = region.w; canvas.height = region.h;
+        const ctx = canvas.getContext("2d")!;
+        const tmpC = document.createElement("canvas");
+        tmpC.width = fullRenderData!.width; tmpC.height = fullRenderData!.height;
+        tmpC.getContext("2d")!.putImageData(fullRenderData!, 0, 0);
+        ctx.drawImage(tmpC, region.x, region.y, region.w, region.h, 0, 0, region.w, region.h);
+        workingImageData = ctx.getImageData(0, 0, region.w, region.h);
+        lastCropOffsetX = region.x; lastCropOffsetY = region.y;
+
+        // Apply knowledge from previous floor if available
+        const prevKnowledge = floorKnowledge[currentFloorIdx - 1];
+        const satMin = prevKnowledge ? Math.max(0.10, prevKnowledge.grayThresh / 255) : 0.15;
+        const hvGrayThresh = Math.round(40 + hvSensitivity * 1.8);
+
+        setStatus("Extracting pipe layer (color + H/V lines)…");
+        const colorLayer = extractColored(workingImageData, satMin);
+        const hvLayer    = extractHVLines(workingImageData, hvGrayThresh);
+        pipeLayer = mergeLayers(colorLayer, hvLayer);
+
+        log(`analyzePipeForFloor: color=${colorLayer.pixelCount}px  hv=${hvLayer.pixelCount}px  merged=${pipeLayer.pixelCount}px`);
+
+        if (pipeLayer.pixelCount < 50) {
+          toast("error","No lines found","Could not detect pipe lines. Try raising the sensitivity slider.");
+          pipeLayer = null;
+          hideOverlay();
+          resolve();
+          return;
+        }
+
+        setStatus("Analyzing pipe skeleton…");
+        await new Promise(r2 => setTimeout(r2, 0)); // allow UI update
+        pipeAnalysis = analyzePipes(pipeLayer);
+
+        // Record knowledge for next floor
+        if (pipeAnalysis) {
+          const { data } = pipeLayer.rawImageData;
+          const pRs: number[]=[], pGs: number[]=[], pBs: number[]=[];
+          for (let i=0;i<pipeLayer.rawImageData.width*pipeLayer.rawImageData.height;i++) {
+            if (data[i*4+3]>50) { pRs.push(data[i*4]); pGs.push(data[i*4+1]); pBs.push(data[i*4+2]); }
+          }
+          pRs.sort((a,b)=>a-b); pGs.sort((a,b)=>a-b); pBs.sort((a,b)=>a-b);
+          const mid=Math.floor(pRs.length/2);
+          const pipeColor: [number,number,number] = [pRs[mid]??59, pGs[mid]??130, pBs[mid]??246];
+          floorKnowledge[currentFloorIdx] = { grayThresh: satMin * 255, pipeColor };
+        }
+
+        // Prune to single connected network before entering review
+        const pruned = enforceConnectedNetwork();
+        if (pruned > 0) log(`Initial analysis: pruned ${pruned}px of disconnected pipe`);
+        buildPipeSegmentMap();
+
+        step = "pipe-review";
+        updateStepBar();
+        viewportEl.style.cursor = "crosshair";
+        renderCanvas(workingImageData, pipeLayer?.rawImageData);
+        renderPipeReviewSidebar(regionIdx);
+        updatePipeHint(null);
+        hintEl.classList.remove("hidden");
+
+        setStatus(`Floor ${currentFloorIdx+1} — ${pipeSegments.length} pipe segments found`);
+        toast("success","Pipe analysis complete",`${pipeSegments.length} segments detected`);
+      } catch(err) {
+        logW("analyzePipeForFloor error:", err);
+        toast("error","Analysis error", String(err));
+      } finally {
+        hideOverlay();
+        resolve();
+      }
+    }, 50));
+  }
+
+  /**
+   * Re-run only the layer extraction + analysis using the current workingImageData.
+   * Used by the sensitivity slider — does NOT re-crop the region.
+   */
+  async function reanalyzePipesWithCurrentSettings(regionIdx: number): Promise<void> {
+    if (!workingImageData) return;
+    showOverlay("Re-analyzing…");
+    await new Promise<void>(resolve => setTimeout(async () => {
+      try {
+        const satMin = 0.15;
+        const hvGrayThresh = Math.round(40 + hvSensitivity * 1.8);
+        setStatus("Re-extracting pipe layer…");
+        const colorLayer = extractColored(workingImageData!, satMin);
+        const hvLayer    = extractHVLines(workingImageData!, hvGrayThresh);
+        pipeLayer = mergeLayers(colorLayer, hvLayer);
+        log(`reanalyze: color=${colorLayer.pixelCount}px hv=${hvLayer.pixelCount}px merged=${pipeLayer.pixelCount}px`);
+
+        if (pipeLayer.pixelCount < 50) {
+          toast("info", "Few lines detected", "Try raising the sensitivity slider.");
+          hideOverlay(); resolve(); return;
+        }
+
+        setStatus("Skeletonizing…");
+        await new Promise(r2 => setTimeout(r2, 0));
+        pipeAnalysis = analyzePipes(pipeLayer);
+        enforceConnectedNetwork();
+        buildPipeSegmentMap();
+        renderCanvas(workingImageData!, pipeLayer.rawImageData);
+        renderPipeReviewSidebar(regionIdx);
+        updateSidebarStats();
+        setStatus(`Re-analyzed — ${pipeSegments.length} segments`);
+      } catch (err) {
+        logW("reanalyze error:", err);
+        toast("error", "Re-analysis failed", String(err));
+      } finally {
+        hideOverlay();
+        resolve();
+      }
+    }, 30));
+  }
+
+  function renderPipeReviewSidebar(regionIdx: number): void {
+    const confirmedFloors = baselineRegions.filter((_,i) => regionMeta[i].confirmed);
+    const floorNum = confirmedFloors.indexOf(baselineRegions[regionIdx]) + 1;
+    const totalFloors = confirmedFloors.length;
+    const totalPx = pipeSegments.reduce((s,seg)=>s+seg.pixels.length,0);
+
+    renderSidebar(`
+      <div class="flex flex-col gap-4">
+        <div>
+          <div class="mb-1 flex items-center gap-2">
+            <h3 class="text-base font-semibold text-gray-900 dark:text-white">Step 2 — Pipe Review</h3>
+            ${totalFloors>1 ? `<span class="rounded-full bg-primary-100 px-2 py-0.5 text-[10px] font-bold text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">Floor ${floorNum} of ${totalFloors}</span>` : ""}
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+            Review the auto-detected pipe network. Remove false positives or click to add missed segments.
+          </p>
+        </div>
+
+        <div class="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800/50">
+          <p class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Detected</p>
+          <p id="v2-pipe-stats" class="text-sm font-semibold text-gray-900 dark:text-white">
+            ${pipeSegments.length} segment${pipeSegments.length!==1?"s":""}  ·  ${totalPx.toLocaleString()} px
+          </p>
+          ${pipeAnalysis ? `
+            <div class="mt-2 grid grid-cols-3 gap-1 text-[10px] text-gray-500 dark:text-gray-400">
+              <div class="rounded bg-white dark:bg-gray-700 px-1.5 py-1 text-center">
+                <div class="font-semibold text-gray-700 dark:text-gray-200">${pipeAnalysis.tJunctions.length}</div>
+                <div>tees</div>
+              </div>
+              <div class="rounded bg-white dark:bg-gray-700 px-1.5 py-1 text-center">
+                <div class="font-semibold text-gray-700 dark:text-gray-200">${pipeAnalysis.lJunctions.length}</div>
+                <div>elbows</div>
+              </div>
+              <div class="rounded bg-white dark:bg-gray-700 px-1.5 py-1 text-center">
+                <div class="font-semibold text-gray-700 dark:text-gray-200">${pipeAnalysis.endpoints.length}</div>
+                <div>endpoints</div>
+              </div>
+            </div>
+          ` : ""}
+        </div>
+
+        {/* ── Detection sensitivity slider ── */}
+        <div class="rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800/40 dark:bg-blue-900/10">
+          <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-400">Line Sensitivity</p>
+          <p class="mb-2 text-[10px] text-blue-600/80 dark:text-blue-300/70 leading-relaxed">
+            Controls which ink darkness counts as a pipe line. Raise if faint or dashed lines are missed; lower to cut wall noise.
+          </p>
+          <input id="v2-hv-slider" type="range" min="0" max="100" value="${hvSensitivity}"
+            class="w-full cursor-pointer accent-blue-600"
+          />
+          <div class="mt-1 flex justify-between text-[9px] text-blue-500 dark:text-blue-400">
+            <span>Dark only</span>
+            <span>Light gray</span>
+          </div>
+          <button id="v2-hv-reanalyze"
+            class="mt-2 w-full rounded border border-blue-300 bg-white px-2 py-1 text-[11px] font-medium text-blue-700 hover:bg-blue-50 dark:border-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
+            Re-analyze
+          </button>
+        </div>
+
+        <div class="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800/40 dark:bg-amber-900/10">
+          <p class="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">How to edit</p>
+          <ul class="space-y-1.5 text-xs text-amber-700 dark:text-amber-300">
+            <li class="flex items-start gap-1.5">
+              <span class="mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded bg-amber-400 text-[9px] text-white font-bold">~</span>
+              <span><strong>Hover a pipe</strong> → it animates amber.<br>Click to remove that segment.</span>
+            </li>
+            <li class="flex items-start gap-1.5">
+              <span class="mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded bg-emerald-500 text-[9px] text-white font-bold">+</span>
+              <span><strong>Click blank area</strong> near a pipe to trace and add a missed H/V line (including dashes).</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          ${totalFloors > 1 && floorNum < totalFloors ? `
+            <button id="v2-pipe-next-floor" class="w-full rounded-lg bg-primary-600 px-3 py-2 text-sm font-medium text-white hover:bg-primary-700">
+              Next Floor (${floorNum+1} of ${totalFloors}) →
+            </button>
+          ` : `
+            <button id="v2-pipe-finish" class="w-full rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700">
+              ✓ Finish Review
+            </button>
+          `}
+          <button id="v2-pipe-back" class="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300">
+            ← Back to Regions
+          </button>
+        </div>
+      </div>
+    `);
+
+    // ── Sensitivity slider ──
+    const sliderEl = document.getElementById("v2-hv-slider") as HTMLInputElement | null;
+    sliderEl?.addEventListener("input", () => {
+      hvSensitivity = parseInt(sliderEl.value);
+      if (hvSliderTimer !== null) clearTimeout(hvSliderTimer);
+      hvSliderTimer = setTimeout(() => { reanalyzePipesWithCurrentSettings(regionIdx); }, 700);
+    });
+    document.getElementById("v2-hv-reanalyze")?.addEventListener("click", () => {
+      if (sliderEl) hvSensitivity = parseInt(sliderEl.value);
+      if (hvSliderTimer !== null) { clearTimeout(hvSliderTimer); hvSliderTimer = null; }
+      reanalyzePipesWithCurrentSettings(regionIdx);
+    });
+
+    document.getElementById("v2-pipe-back")?.addEventListener("click", () => {
+      step = "regions";
+      viewportEl.style.cursor = "grab";
+      pipeLayer = null; pipeAnalysis = null;
+      pipeComponentMap = null; pipeSegments = [];
+      hoveredSegId = null;
+      hintEl.classList.add("hidden");
+      renderCanvas(fullRenderData);
+      renderRegionBoxes();
+      renderRegionsStep();
+    });
+
+    document.getElementById("v2-pipe-next-floor")?.addEventListener("click", async () => {
+      currentFloorIdx++;
+      const confirmedIdxs = baselineRegions
+        .map((_,i) => i)
+        .filter(i => regionMeta[i].confirmed);
+      if (currentFloorIdx < confirmedIdxs.length) {
+        await analyzePipeForFloor(confirmedIdxs[currentFloorIdx]);
+      }
+    });
+
+    document.getElementById("v2-pipe-finish")?.addEventListener("click", () => {
+      renderSummaryStep();
+    });
+  }
+
+  // ── Step: Summary ──────────────────────────────────────────
+
+  function renderSummaryStep(): void {
+    step = "summary";
+    updateStepBar();
+    viewportEl.style.cursor = "grab";
+    hintEl.classList.add("hidden");
+
+    const confirmedFloors = baselineRegions.filter((_,i)=>regionMeta[i].confirmed).length;
+
+    renderSidebar(`
+      <div class="flex flex-col gap-4">
+        <div>
+          <h3 class="mb-1 text-base font-semibold text-gray-900 dark:text-white">Summary</h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Review complete.</p>
+        </div>
+
+        <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-800/40 dark:bg-emerald-900/10">
+          <p class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">Results</p>
+          <ul class="space-y-1 text-xs text-emerald-700 dark:text-emerald-300">
+            <li>${confirmedFloors} floor plan${confirmedFloors!==1?"s":""} analyzed</li>
+            <li>${pipeSegments.length} pipe segment${pipeSegments.length!==1?"s":""} in current view</li>
+          </ul>
+        </div>
+
+        <button id="v2-summary-restart"
+          class="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300">
+          ← Start Over
+        </button>
+      </div>
+    `);
+
+    document.getElementById("v2-summary-restart")?.addEventListener("click", () => {
+      step = "regions";
+      renderCanvas(fullRenderData);
+      renderRegionBoxes();
+      renderRegionsStep();
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  DRAWING UPLOAD / LOAD
+  // ═══════════════════════════════════════════════════════════
+
+  async function loadDrawing(src: string | File): Promise<void> {
+    try {
+      showOverlay("Loading drawing…");
+      setStatus("Loading…");
+
+      // Reset state — cancel any in-flight animation/tooltip first
+      if (hoverAnimRAF !== null) { cancelAnimationFrame(hoverAnimRAF); hoverAnimRAF = null; }
+      hideSegmentTooltip();
+      if (hvSliderTimer !== null) { clearTimeout(hvSliderTimer); hvSliderTimer = null; }
+
+      fullRenderData = null; workingImageData = null;
+      baselineRegions = []; regionMeta = [];
+      pipeLayer = null; pipeAnalysis = null;
+      pipeComponentMap = null; pipeSegments = [];
+      hoveredSegId = null; isAddMode = false; floorKnowledge.length = 0;
+      currentFloorIdx = 0;
+      step = "regions";
+      updateStepBar();
+      if (contentEl) contentEl.innerHTML = "";
+      if (hintEl) hintEl.classList.add("hidden");
+
+      let imgData: ImageData;
+
+      if (typeof src === "string" && src.toLowerCase().endsWith(".pdf")) {
+        setStatus("Rendering PDF…");
+        imgData = await renderPdf(src);
+      } else if (src instanceof File && src.type === "application/pdf") {
+        setStatus("Rendering PDF…");
+        imgData = await renderPdf(await src.arrayBuffer());
+      } else {
+        // Image file or URL
+        setStatus("Loading image…");
+        imgData = await loadImageAsImageData(src);
+      }
+
+      fullRenderData = imgData;
+      setStatus("Detecting regions…");
+      await new Promise(r => setTimeout(r, 0));
+
+      baselineRegions = detectRegions(imgData);
+      regionMeta = baselineRegions.map(() => ({ confirmed: false, excluded: false, isLegend: false }));
+
+      // Auto-confirm if single region
+      if (baselineRegions.length === 1) {
+        regionMeta[0].confirmed = true;
+      }
+
+      renderCanvas(imgData);
+      renderRegionBoxes();
+      renderRegionsStep();
+
+      setStatus(`${baselineRegions.length} area${baselineRegions.length!==1?"s":""} detected — confirm regions to continue`);
+      updateStepBar();
+    } catch(err) {
+      logW("loadDrawing error:", err);
+      toast("error","Load failed",String(err));
+    } finally {
+      hideOverlay();
+    }
+  }
+
+  async function loadImageAsImageData(src: string | File): Promise<ImageData> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement("canvas");
+        c.width = img.naturalWidth; c.height = img.naturalHeight;
+        const ctx = c.getContext("2d")!;
+        ctx.drawImage(img, 0, 0);
+        resolve(ctx.getImageData(0, 0, c.width, c.height));
+      };
+      img.onerror = () => reject(new Error("Failed to load image"));
+      if (src instanceof File) {
+        const url = URL.createObjectURL(src);
+        img.onload = () => { URL.revokeObjectURL(url); const c2 = document.createElement("canvas"); c2.width=img.naturalWidth;c2.height=img.naturalHeight; const ctx2=c2.getContext("2d")!;ctx2.drawImage(img,0,0); resolve(ctx2.getImageData(0,0,c2.width,c2.height)); };
+        img.src = url;
+      } else {
+        img.crossOrigin = "anonymous";
+        img.src = src as string;
+      }
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  INIT / EVENT WIRING
+  // ═══════════════════════════════════════════════════════════
+
+  const fileInput  = document.getElementById("v2-file-input") as HTMLInputElement;
+  const testSelect = document.getElementById("v2-test-select") as HTMLSelectElement;
+  const runBtn     = document.getElementById("v2-run-btn") as HTMLButtonElement;
+
+  // Changing the selector always restarts from scratch
+  testSelect?.addEventListener("change", async () => {
+    const val = testSelect.value;
+    if (val) {
+      // Clear any uploaded file so Run button won't re-use it
+      if (fileInput) fileInput.value = "";
+      await loadDrawing(val);
+    }
+  });
+
+  // Picking a file always restarts from scratch
+  fileInput?.addEventListener("change", async () => {
+    const file = fileInput.files?.[0];
+    if (file) await loadDrawing(file);
+  });
+
+  // "Load Drawing" button is a manual fallback (e.g. re-run same file)
+  runBtn?.addEventListener("click", async () => {
+    const file = fileInput?.files?.[0];
+    if (file) { await loadDrawing(file); return; }
+    const val = testSelect?.value;
+    if (val) await loadDrawing(val);
+  });
+
+  // Auto-load the first test drawing on page open
+  const defaultVal = testSelect?.value;
+  if (defaultVal) {
+    setTimeout(() => loadDrawing(defaultVal), 200);
+  }
+</script>

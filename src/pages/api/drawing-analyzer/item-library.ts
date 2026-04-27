@@ -3,15 +3,17 @@ import { promises as fs } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import sharp from "sharp";
-
-type DependencyMeta = { fileName: string; qty: number };
-type ItemMeta = {
-  fileName: string;
-  displayName: string;
-  price: number;
-  priority: number;
-  dependencies: DependencyMeta[];
-};
+import type {
+  ClutterRotationMode,
+  DependencyMeta,
+  ItemMeta,
+} from "../../../lib/item-library-metadata";
+import {
+  fileToDisplayName,
+  ITEM_LIBRARY_METADATA_MD,
+  metadataToMarkdown,
+  readItemLibraryMetadata,
+} from "../../../lib/item-library-metadata";
 
 const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp", ".gif"]);
 const ITEM_LIBRARY_DIR = path.join(process.cwd(), "public", "drawing-analyzer-lab", "item-library");
@@ -27,13 +29,8 @@ const ITEM_LIBRARY_SVG_DIR = path.join(
   "drawing-analyzer-lab",
   "item-library-svg"
 );
-const ITEM_LIBRARY_METADATA_MD = path.join(
-  process.cwd(),
-  "markdowns",
-  "drawing-analyzer-lab-item-library.md"
-);
 const NORMALIZED_CANVAS_SIZE = 512;
-const NORMALIZATION_VERSION = 2;
+const NORMALIZATION_VERSION = 3;
 const SVG_TRACE_VERSION = 2;
 
 const require = createRequire(import.meta.url);
@@ -45,75 +42,6 @@ const potrace = require("potrace") as {
   ) => void;
 };
 
-function fileToDisplayName(fileName: string): string {
-  return fileName.replace(/\.[^/.]+$/, "");
-}
-
-function parseMetadataMarkdown(markdown: string): { items: ItemMeta[] } {
-  const match = markdown.match(/```json\s*([\s\S]*?)\s*```/i);
-  if (!match) return { items: [] };
-  try {
-    const parsed = JSON.parse(match[1]);
-    const items = Array.isArray(parsed?.items) ? parsed.items : [];
-    return {
-      items: items
-        .map((item: unknown, idx: number) => {
-          const fileName = String((item as Record<string, unknown>)?.fileName || "").trim();
-          if (!fileName) return null;
-          const displayName = String(
-            (item as Record<string, unknown>)?.displayName || fileToDisplayName(fileName)
-          ).trim();
-          const priceRaw = Number((item as Record<string, unknown>)?.price ?? 0);
-          const priorityRaw = Number((item as Record<string, unknown>)?.priority ?? idx + 1);
-          const depsRaw = (item as Record<string, unknown>)?.dependencies;
-          const dependencies = Array.isArray(depsRaw)
-            ? depsRaw
-                .map((dep: unknown) => {
-                  const depFile = String((dep as Record<string, unknown>)?.fileName || "").trim();
-                  const qtyRaw = Number((dep as Record<string, unknown>)?.qty ?? 1);
-                  if (!depFile) return null;
-                  return {
-                    fileName: depFile,
-                    qty: Number.isFinite(qtyRaw) ? Math.max(1, Math.round(qtyRaw)) : 1,
-                  };
-                })
-                .filter(Boolean)
-            : [];
-          return {
-            fileName,
-            displayName: displayName || fileToDisplayName(fileName),
-            price: Number.isFinite(priceRaw) ? Math.max(0, priceRaw) : 0,
-            priority: Number.isFinite(priorityRaw) ? Math.max(1, Math.round(priorityRaw)) : idx + 1,
-            dependencies,
-          };
-        })
-        .filter(Boolean) as ItemMeta[],
-    };
-  } catch {
-    return { items: [] };
-  }
-}
-
-function metadataToMarkdown(items: ItemMeta[]): string {
-  return `# Drawing Analyzer Lab Item Library Metadata
-
-Managed by \`/api/drawing-analyzer/item-library\`.
-Update images manually in \`public/drawing-analyzer-lab/item-library\`.
-
-\`\`\`json
-${JSON.stringify(
-  {
-    version: 1,
-    updatedAt: new Date().toISOString(),
-    items,
-  },
-  null,
-  2
-)}
-\`\`\`
-`;
-}
-
 async function listLibraryFiles(): Promise<string[]> {
   const entries = await fs.readdir(ITEM_LIBRARY_DIR, { withFileTypes: true });
   return entries
@@ -121,15 +49,6 @@ async function listLibraryFiles(): Promise<string[]> {
     .map((entry) => entry.name)
     .filter((fileName) => IMAGE_EXTENSIONS.has(path.extname(fileName).toLowerCase()))
     .sort((a, b) => a.localeCompare(b));
-}
-
-async function readMetadataItems(): Promise<ItemMeta[]> {
-  try {
-    const raw = await fs.readFile(ITEM_LIBRARY_METADATA_MD, "utf8");
-    return parseMetadataMarkdown(raw).items;
-  } catch {
-    return [];
-  }
 }
 
 function buildEffectiveItems(files: string[], metaItems: ItemMeta[]): ItemMeta[] {
@@ -148,12 +67,27 @@ function buildEffectiveItems(files: string[], metaItems: ItemMeta[]): ItemMeta[]
     const dependencies = (meta?.dependencies || []).filter(
       (dep) => fileSet.has(dep.fileName) && dep.fileName !== fileName
     );
+    const suppressInScan = meta?.suppressInScan === true ? true : undefined;
+    const clutterRotation: ClutterRotationMode | undefined =
+      suppressInScan === true
+        ? meta?.clutterRotation === "quarter_turns"
+          ? "quarter_turns"
+          : "fixed"
+        : undefined;
+    const clutterMultiScale =
+      suppressInScan === true && meta?.clutterMultiScale === false ? false : undefined;
+    const clutterStripPlan =
+      suppressInScan === true && meta?.clutterStripPlan === true ? true : undefined;
     return {
       fileName,
       displayName: meta?.displayName || fileToDisplayName(fileName),
       price: meta?.price ?? 0,
       priority: idx + 1,
       dependencies,
+      suppressInScan,
+      clutterRotation,
+      clutterMultiScale,
+      clutterStripPlan,
     };
   });
 }
@@ -225,8 +159,7 @@ async function ensureNormalizedImage(fileName: string): Promise<string> {
       fit: "contain",
       position: "centre",
       background: { r: 0, g: 0, b: 0, alpha: 0 },
-      withoutEnlargement: true,
-      kernel: sharp.kernel.nearest,
+      kernel: sharp.kernel.lanczos3,
     })
     .png({ compressionLevel: 9, palette: false, adaptiveFiltering: true, force: true })
     .toFile(outputPath);
@@ -301,6 +234,7 @@ async function toClientItem(item: ItemMeta) {
   }
   return {
     ...item,
+    suppressInScan: item.suppressInScan === true,
     rawImageUrl,
     normalizedPngUrl,
     svgImageUrl,
@@ -310,7 +244,7 @@ async function toClientItem(item: ItemMeta) {
 
 export const GET: APIRoute = async () => {
   try {
-    const [files, meta] = await Promise.all([listLibraryFiles(), readMetadataItems()]);
+    const [files, meta] = await Promise.all([listLibraryFiles(), readItemLibraryMetadata()]);
     const items = await Promise.all(buildEffectiveItems(files, meta).map(toClientItem));
     return new Response(
       JSON.stringify({
@@ -354,12 +288,29 @@ export const POST: APIRoute = async ({ request }) => {
           })
           .filter(Boolean) as DependencyMeta[];
         const priceRaw = Number(item?.price ?? 0);
+        const suppressInScan = (item as Record<string, unknown>)?.suppressInScan === true;
+        const rotRaw = String(
+          (item as Record<string, unknown>)?.clutterRotation || ""
+        ).toLowerCase();
+        const clutterRotation: ClutterRotationMode | undefined = suppressInScan
+          ? rotRaw === "quarter_turns"
+            ? "quarter_turns"
+            : "fixed"
+          : undefined;
+        const cms = (item as Record<string, unknown>)?.clutterMultiScale;
+        const clutterMultiScale = suppressInScan && cms === false ? false : undefined;
+        const stripRaw = (item as Record<string, unknown>)?.clutterStripPlan;
+        const clutterStripPlan = suppressInScan && stripRaw === true ? true : undefined;
         return {
           fileName,
           displayName: String(item?.displayName || fileToDisplayName(fileName)).trim(),
           price: Number.isFinite(priceRaw) ? Math.max(0, priceRaw) : 0,
           priority: idx + 1,
           dependencies,
+          suppressInScan: suppressInScan ? true : undefined,
+          clutterRotation,
+          clutterMultiScale,
+          clutterStripPlan,
         };
       })
       .filter(Boolean) as ItemMeta[];
@@ -377,6 +328,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const content = metadataToMarkdown(normalized);
+    await fs.mkdir(path.dirname(ITEM_LIBRARY_METADATA_MD), { recursive: true });
     await fs.writeFile(ITEM_LIBRARY_METADATA_MD, content, "utf8");
     const clientItems = await Promise.all(normalized.map(toClientItem));
 
