@@ -2,32 +2,12 @@
 
 Knowledge files for each client — loaded dynamically based on site config.
 
-## Priority System
+## Status
 
-| Priority | Status | Meaning |
-|----------|--------|---------|
-| 0 | archived | On hold / archive — ignore |
-| 1-1000 | active | Higher = more important |
+- `active` — working on this client
+- `archived` — on hold / ignore (set priority to 0 in contact-api if needed)
 
-Common scale:
-- 100 = Low priority
-- 300 = Medium
-- 500 = Normal  
-- 700 = High
-- 900 = Highest
-- 1000 = Critical
-
-When asked "what should I work on?", sort by priority (descending), filter out 0.
-
-## Current Clients
-
-| Priority | Client |
-|----------|--------|
-| 300 | CAPCO Design Group |
-| 800 | MAVSAFE |
-| 750 | Paulino Auto Group |
-| 100 | Rothco Built |
-| 0 | Solid Builders (archived) |
+When asked "what should I work on?", query contact-api sorted by priority.
 
 ## Files
 

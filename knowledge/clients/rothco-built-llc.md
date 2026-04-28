@@ -1,5 +1,4 @@
 ---
-priority: 100
 status: active
 ---
 
