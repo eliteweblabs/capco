@@ -2,10 +2,10 @@
 
 Knowledge files for each client — loaded dynamically based on site config.
 
-## Status
+## Priority
 
-- `active` — working on this client
-- `archived` — on hold / ignore (set priority to 0 in contact-api if needed)
+- Set priority in contact-api (1-1000)
+- Priority 0 = archived (ignore)
 
 When asked "what should I work on?", query contact-api sorted by priority.
 

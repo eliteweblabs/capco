@@ -1,7 +1,3 @@
----
-status: active
----
-
 # Rothco Built — Knowledge
 
 Construction/renovation company.

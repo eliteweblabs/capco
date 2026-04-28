@@ -1,7 +1,4 @@
 ---
-status: archived
----
-
 # Solid Builders — Knowledge
 
 [On hold — priority 0 means archived]

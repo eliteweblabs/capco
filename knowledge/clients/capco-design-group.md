@@ -1,7 +1,3 @@
----
-status: active
----
-
 # CAPCO Design Group — Knowledge
 
 Fire protection engineering firm.
