@@ -2,6 +2,16 @@
 
 Knowledge files for each client — loaded dynamically based on site config.
 
+## Priority System
+
+| Priority | Status | Meaning |
+|----------|--------|---------|
+| 0 | archived | On hold / archive — ignore |
+| 1-1000 | active | Work on these |
+| 1 | highest | Most important |
+
+When asked "what should I work on?", sort by priority (ascending), filter out 0.
+
 ## Files
 
 Client knowledge files named by config key (e.g., `capco-design-group.md`).
