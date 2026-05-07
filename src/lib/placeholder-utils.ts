@@ -1010,7 +1010,7 @@ export async function replacePlaceholders(
       }
 
       // Return button on new line
-      return `<br><br><a href="${fullUrl}" class="relative inline-flex items-center justify-center font-medium rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed px-5 py-2.5 text-sm border-2 border-primary-500 bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-500 dark:hover:bg-primary-600 shadow-lg hover:shadow-xl">${displayText}</a>`;
+      return `<br><br><a href="${fullUrl}" class="relative inline-flex items-center justify-center font-medium rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed px-5 py-2.5 text-sm border-2 border-primary-500 bg-primary-500 text-white hover:bg-primary-500 dark:bg-primary-500 dark:hover:bg-primary-500 shadow-lg hover:shadow-xl">${displayText}</a>`;
     });
     if (result !== beforeReplace) {
       placeholderApplied = true;

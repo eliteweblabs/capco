@@ -1215,7 +1215,7 @@ export function createMultiStepFormHandler(
         // Check if this button is already selected (toggle behavior)
         const isAlreadySelected =
           choiceBtn.classList.contains("!ring-2") &&
-          choiceBtn.classList.contains("!bg-primary-600");
+          choiceBtn.classList.contains("!bg-primary-500");
 
         if (isAlreadySelected) {
           // Deselect: clear the value
@@ -1226,8 +1226,8 @@ export function createMultiStepFormHandler(
           choiceBtn.classList.remove(
             "!ring-2",
             "!ring-primary-600",
-            "!bg-primary-600",
-            "dark:!bg-primary-600",
+            "!bg-primary-500",
+            "dark:!bg-primary-500",
             "!text-white",
             "dark:!text-white"
           );
@@ -1242,8 +1242,8 @@ export function createMultiStepFormHandler(
             btn.classList.remove(
               "!ring-2",
               "!ring-primary-600",
-              "!bg-primary-600",
-              "dark:!bg-primary-600",
+              "!bg-primary-500",
+              "dark:!bg-primary-500",
               "!text-white",
               "dark:!text-white"
             );
@@ -1253,8 +1253,8 @@ export function createMultiStepFormHandler(
           choiceBtn.classList.add(
             "!ring-2",
             "!ring-primary-600",
-            "!bg-primary-600",
-            "dark:!bg-primary-600",
+            "!bg-primary-500",
+            "dark:!bg-primary-500",
             "!text-white",
             "dark:!text-white"
           );

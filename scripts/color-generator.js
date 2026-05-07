@@ -82,19 +82,22 @@ export function generateColorPalette(baseColor) {
 
   const [h, s, l] = hexToHsl(baseColor);
 
-  // Generate Tailwind-style color palette
+  // Tonal palette: same hue + saturation as the CMS base color, only lightness varies.
+  // Previous generator bumped saturation +5..+25 and dropped lightness up to -50, which
+  // turned saturated CMS colors (e.g. orange) into muddy/brown shades at 700+.
+  // 500 is always the exact CMS base; 600/700 are gentle darker tints; 50–300 are pale tints.
   return {
     DEFAULT: baseColor,
-    50: hslToHex(h, Math.max(s - 20, 10), Math.min(l + 45, 95)),
-    100: hslToHex(h, Math.max(s - 15, 15), Math.min(l + 40, 90)),
-    200: hslToHex(h, Math.max(s - 10, 20), Math.min(l + 30, 85)),
-    300: hslToHex(h, Math.max(s - 5, 25), Math.min(l + 20, 75)),
-    400: hslToHex(h, s, Math.min(l + 10, 65)),
-    500: baseColor, // This is the main color
-    600: hslToHex(h, Math.min(s + 5, 90), Math.max(l - 10, 25)),
-    700: hslToHex(h, Math.min(s + 10, 95), Math.max(l - 20, 20)),
-    800: hslToHex(h, Math.min(s + 15, 100), Math.max(l - 30, 15)),
-    900: hslToHex(h, Math.min(s + 20, 100), Math.max(l - 40, 10)),
-    950: hslToHex(h, Math.min(s + 25, 100), Math.max(l - 50, 5)),
+    50: hslToHex(h, Math.max(s - 25, 8), Math.min(l + 42, 96)),
+    100: hslToHex(h, Math.max(s - 18, 12), Math.min(l + 35, 92)),
+    200: hslToHex(h, Math.max(s - 10, 16), Math.min(l + 25, 84)),
+    300: hslToHex(h, Math.max(s - 5, 20), Math.min(l + 15, 75)),
+    400: hslToHex(h, s, Math.min(l + 7, 68)),
+    500: baseColor, // exact CMS color
+    600: hslToHex(h, s, Math.max(l - 6, 28)),
+    700: hslToHex(h, s, Math.max(l - 12, 22)),
+    800: hslToHex(h, s, Math.max(l - 20, 16)),
+    900: hslToHex(h, s, Math.max(l - 28, 12)),
+    950: hslToHex(h, s, Math.max(l - 36, 7)),
   };
 }

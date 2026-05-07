@@ -69,7 +69,7 @@ export function updateNotificationBellCount(count: number): void {
       if (!countBubble) {
         countBubble = document.createElement("span");
         countBubble.className =
-          "count-bubble absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white dark:bg-primary-600 animate-pulse";
+          "count-bubble absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white dark:bg-primary-500 animate-pulse";
         bell.appendChild(countBubble);
       }
 

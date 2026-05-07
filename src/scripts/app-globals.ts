@@ -876,7 +876,7 @@ let isDeleting = false; // Flag to prevent multiple delete operations
   },
   notification: {
     bubbleClasses:
-      "absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white dark:bg-primary-600 animate-pulse",
+      "absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white dark:bg-primary-500 animate-pulse",
     maxCount: 99,
     showZero: false,
   },
