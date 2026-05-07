@@ -411,13 +411,11 @@ export async function getSiteConfig(): Promise<SiteConfig> {
     }
     // Fallback: known site slugs when Railway project name differs from config filename
     // e.g. rothco-firstbranch, rothco-built → config-rothco-built-llc.json
-    // mavsafe (RAILWAY_PROJECT_NAME=MAVSAFE) → config-capco-design-group.json
     const knownFallbacks: Record<string, string> = {
       "rothco-built": "rothco-built-llc",
       "rothco-firstbranch": "rothco-built-llc",
       rothco: "rothco-built-llc",
       luxemeds: "luxe-meds",
-      mavsafe: "capco-design-group",
       capco: "capco-design-group",
     };
     const fallbackSlug =
