@@ -3,19 +3,35 @@
  * Stacks NodesCapco (absolute background) under LayoutProductCapco (foreground).
  * Used when CMS lists <NodesCapco /> then <LayoutProductCapco /> — MarkdownPage merges them here.
  */
+import DotGrid from "../ui/DotGrid.astro";
 import NodesCapco from "../../features/NodesCapco.astro";
 import LayoutProductCapco from "../layouts/LayoutProductCapco.astro";
 ---
 
 <div
   data-capco-hero-stack
-  class="relative isolate w-full overflow-x-auto overflow-y-visible pb-6 md:pb-10"
-  style="min-height: min(82dvh, 980px);"
+  class="relative isolate w-full overflow-x-hidden overflow-y-visible pb-6 md:pb-10"
+  style="min-height: min(100dvh, 980px);"
 >
   <div
-    class="absolute inset-0 z-0 min-h-full overflow-x-auto overflow-y-hidden [&_.node-editor-canvas]:h-full [&_.node-editor-canvas]:max-h-none [&_.node-editor-canvas]:min-h-full"
+    class="absolute inset-0 z-0 min-h-full overflow-x-hidden overflow-y-hidden [&_.node-editor-canvas]:h-full [&_.node-editor-canvas]:max-h-none [&_.node-editor-canvas]:min-h-full"
   >
-    <NodesCapco />
+    {
+      /*
+      Primary-colored dot grid (see DotGrid.astro) + radial mask reads as the old “gradient grid” hero backdrop.
+      Behind NodesCapco; pointer-events-none so nodes/drag stay interactive.
+    */
+    }
+    <DotGrid
+      id="capcoHeroDotGrid"
+      class="pointer-events-none absolute inset-0 z-0 [-webkit-mask-image:radial-gradient(ellipse_85%_75%_at_50%_42%,black_35%,transparent_92%)] [mask-image:radial-gradient(ellipse_85%_75%_at_50%_42%,black_35%,transparent_92%)]"
+      spacing={28}
+      baseOpacity={0.16}
+      dotColor="primary-500"
+    />
+    <div class="relative z-[1] h-full min-h-full">
+      <NodesCapco />
+    </div>
   </div>
   <div
     class="pointer-events-none relative z-10 mx-auto flex min-h-[min(82dvh,980px)] w-full items-center justify-center px-4 py-10 md:py-14"

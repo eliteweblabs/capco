@@ -1,6 +1,7 @@
 ---
 // NodeEditor.astro - A complete node-based editor with demo page
 import { checkAuth } from "@/lib/auth";
+import PixelGrid from "@/components/ui/PixelGrid.astro";
 const { currentUser } = await checkAuth(Astro.cookies);
 ---
 
@@ -12,6 +13,15 @@ const { currentUser } = await checkAuth(Astro.cookies);
 
     overflow: hidden;
     touch-action: none; /* Disable browser touch handling for better control */
+    /* Avoid blue text-selection / drag-highlight over the whole canvas while dragging nodes */
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  .node-editor-canvas ::selection {
+    background: transparent;
   }
 
   .node-editor-canvas:active {
@@ -276,12 +286,17 @@ const { currentUser } = await checkAuth(Astro.cookies);
   }
 </style>
 
+<PixelGrid
+  id="pixel-grid"
+  class="pointer-events-none absolute inset-0 -z-10 h-full w-full overflow-hidden"
+/>
+
 <div
-  class="fixed inset-0 w-full h-full node-editor-canvas overflow-hidden -z-10 pointer-events-none"
+  class="node-editor-canvas pointer-events-none fixed inset-0 -z-10 h-full w-full overflow-hidden"
   id="node-canvas"
 >
   <!-- Connection overlay for drawing arrows -->
-  <svg class="absolute inset-0 w-full h-full pointer-events-none" id="connections-svg"> </svg>
+  <svg class="pointer-events-none absolute inset-0 h-full w-full" id="connections-svg"> </svg>
 </div>
 
 <!-- Pause button for debugging -->
@@ -339,6 +354,8 @@ const { currentUser } = await checkAuth(Astro.cookies);
     isScrolling: boolean;
     scrollSpeed: number;
     scrollInterval: number | null;
+    selectGuardArmed: boolean;
+    onSelectStartBlock: (e: Event) => void;
 
     constructor() {
       this.canvas = document.getElementById("node-canvas");
@@ -369,6 +386,10 @@ const { currentUser } = await checkAuth(Astro.cookies);
       this.isScrolling = false;
       this.scrollSpeed = 2;
       this.scrollInterval = null;
+      this.selectGuardArmed = false;
+      this.onSelectStartBlock = (e: Event) => {
+        e.preventDefault();
+      };
 
       this.init();
       this.setupPauseButton();
@@ -600,7 +621,14 @@ const { currentUser } = await checkAuth(Astro.cookies);
         },
         {
           type: "connection",
-          from: "proposal-request-revision",
+          from: "proposal-ready-for-review",
+          to: "request-revision",
+          fromSide: "right",
+          toSide: "left",
+        },
+        {
+          type: "connection",
+          from: "request-revision",
           to: "approve-revisions",
           fromSide: "right",
           toSide: "left",
@@ -713,11 +741,11 @@ const { currentUser } = await checkAuth(Astro.cookies);
             });
           }, nodeDelay);
         } else {
-          // Connection - add it after the "to" node is created + constant delay
-          const toNodeMultiplier = nodeDelayMap.get(item.to);
-          if (toNodeMultiplier !== undefined) {
-            const toNodeDelay = delay * toNodeMultiplier;
-            const connectionDelay = toNodeDelay + CONNECTION_DELAY;
+          // Connection — schedule after both endpoints exist (uses later appearance time)
+          const fromM = nodeDelayMap.get(item.from);
+          const toM = nodeDelayMap.get(item.to);
+          if (fromM !== undefined && toM !== undefined) {
+            const connectionDelay = delay * Math.max(fromM, toM) + CONNECTION_DELAY;
 
             setTimeout(() => {
               this.addConnection(
@@ -862,6 +890,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
       );
       nodeElement.dataset.nodeId = node.id || "";
       nodeElement.dataset.type = node.type || "";
+      nodeElement.setAttribute("draggable", "false");
       nodeElement.style.left = `${node.x}px`;
       nodeElement.style.top = `${node.y}px`;
 
@@ -903,8 +932,18 @@ const { currentUser } = await checkAuth(Astro.cookies);
         <div class="connection-point output left"></div>
       `;
 
-      // Add drag functionality - Mouse
+      nodeElement.addEventListener("dragstart", (e) => {
+        e.preventDefault();
+      });
+
+      // Add drag functionality - Mouse (don’t start a native text selection / drag ghost)
       nodeElement.addEventListener("mousedown", (e) => {
+        const target = e.target as HTMLElement;
+        if (target.closest("a")) {
+          e.stopPropagation();
+          return;
+        }
+        e.preventDefault();
         e.stopPropagation();
         this.startDrag(node, e);
       });
@@ -924,6 +963,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
       nodeElement.querySelectorAll(".connection-point").forEach((point) => {
         // Mouse events
         point.addEventListener("mousedown", (e) => {
+          e.preventDefault();
           e.stopPropagation();
           const isOutput = point.classList.contains("output");
           const side = point.classList.contains("top")
@@ -959,7 +999,26 @@ const { currentUser } = await checkAuth(Astro.cookies);
       (this.canvas as HTMLElement).appendChild(nodeElement);
     }
 
+    clearTextSelection() {
+      const sel = window.getSelection?.();
+      if (sel && sel.rangeCount > 0) sel.removeAllRanges();
+    }
+
+    armSelectGuard() {
+      if (this.selectGuardArmed) return;
+      this.selectGuardArmed = true;
+      document.addEventListener("selectstart", this.onSelectStartBlock, { capture: true });
+    }
+
+    disarmSelectGuard() {
+      if (!this.selectGuardArmed) return;
+      this.selectGuardArmed = false;
+      document.removeEventListener("selectstart", this.onSelectStartBlock, { capture: true });
+    }
+
     startDrag(node: NodeOptions, e: MouseEvent | TouchEvent) {
+      this.armSelectGuard();
+      this.clearTextSelection();
       this.draggedNode = node;
       const rect = (e.target as HTMLElement).closest(".node-card")?.getBoundingClientRect() || {
         left: 0,
@@ -1037,6 +1096,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
       };
 
       if (this.draggedNode) {
+        this.clearTextSelection();
         const canvasRect = this.canvas?.getBoundingClientRect() || { left: 0, top: 0 };
         const clientX = getClientX(e);
         const clientY = getClientY(e);
@@ -1118,6 +1178,8 @@ const { currentUser } = await checkAuth(Astro.cookies);
 
       if (this.draggedNode) {
         this.draggedNode = null;
+        this.disarmSelectGuard();
+        this.clearTextSelection();
         document.querySelectorAll(".node-card").forEach((card) => {
           card.classList.remove("dragging");
         });
