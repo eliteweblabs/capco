@@ -245,6 +245,10 @@ const expireOptions = [
       <form id="banner-form" class={`${globalFormClasses} p-6`}>
         <input type="hidden" id="banner-id" name="id" />
 
+        <h2 id="form-title" class="mb-6 text-xl font-semibold text-gray-900 dark:text-white">
+          Create New Banner Alert
+        </h2>
+
         <!-- Preview -->
         <div id="banner-preview" class="!mt-0 mb-6">
           <label class={globalFormLabel}>Preview (what users will see)</label>
@@ -622,10 +626,13 @@ const expireOptions = [
         document.getElementById("endDate").value = "";
       }
 
-      // Update UI
-      document.getElementById("form-title").textContent = "Edit Banner Alert";
-      document.getElementById("submit-btn").textContent = "Update Banner";
-      document.getElementById("cancel-btn").classList.remove("hidden");
+      // Update UI (defensive: skip individually if any element is missing instead of crashing edit flow)
+      const formTitleEdit = document.getElementById("form-title");
+      if (formTitleEdit) formTitleEdit.textContent = "Edit Banner Alert";
+      const submitBtnEdit = document.getElementById("submit-btn");
+      if (submitBtnEdit) submitBtnEdit.textContent = "Update Banner";
+      const cancelBtnEdit = document.getElementById("cancel-btn");
+      if (cancelBtnEdit) cancelBtnEdit.classList.remove("hidden");
 
       // Show shortcode
       const shortcodeSection = document.getElementById("shortcode-section");
@@ -648,13 +655,20 @@ const expireOptions = [
 
     function resetForm() {
       editingId = null;
-      document.getElementById("banner-form").reset();
-      document.getElementById("banner-id").value = "";
-      document.getElementById("form-title").textContent = "Create New Banner Alert";
-      document.getElementById("submit-btn").textContent = "Create Banner";
-      document.getElementById("cancel-btn").classList.add("hidden");
-      document.getElementById("shortcode-section").classList.add("hidden");
-      document.getElementById("targetPages").value = "";
+      const form = document.getElementById("banner-form");
+      if (form && typeof form.reset === "function") form.reset();
+      const bannerIdEl = document.getElementById("banner-id");
+      if (bannerIdEl) bannerIdEl.value = "";
+      const formTitleEl = document.getElementById("form-title");
+      if (formTitleEl) formTitleEl.textContent = "Create New Banner Alert";
+      const submitBtnEl = document.getElementById("submit-btn");
+      if (submitBtnEl) submitBtnEl.textContent = "Create Banner";
+      const cancelBtnEl = document.getElementById("cancel-btn");
+      if (cancelBtnEl) cancelBtnEl.classList.add("hidden");
+      const shortcodeEl = document.getElementById("shortcode-section");
+      if (shortcodeEl) shortcodeEl.classList.add("hidden");
+      const targetPagesEl = document.getElementById("targetPages");
+      if (targetPagesEl) targetPagesEl.value = "";
       updatePreview();
     }
 

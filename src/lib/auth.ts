@@ -4,6 +4,10 @@ import { supabase } from "./supabase";
 import { supabaseAdmin } from "./supabase-admin";
 import { isBackendPage } from "../pages/api/utils/backend-page-check";
 
+/** SSR: avoid reading `profiles` with the singleton `supabase` after `setSession` — concurrent
+ * requests share that client and can swap JWTs; next PostgREST call may read another user’s row.
+ * Use `supabaseAdmin` keyed by `session.user.id` when `SUPABASE_SECRET` is set (production). */
+
 export interface ExtendedUser extends User {
   profile?: any;
 }
@@ -157,18 +161,38 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
           }
         }
 
-        // Get user profile and role
+        // Get user profile and role (see SSR note above re: singleton client)
         if (currentUser && currentUser.id) {
-          const { data: profile, error: profileError } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", currentUser.id)
-            .single();
+          let profile: Record<string, unknown> | null = null;
+          let profileError: { code?: string; message?: string } | null = null;
 
-          if (profile && !profileError) {
-            // Enhance currentUser object with profile data
+          if (supabaseAdmin) {
+            const adminRes = await supabaseAdmin
+              .from("profiles")
+              .select("*")
+              .eq("id", currentUser.id)
+              .single();
+            profile = adminRes.data as Record<string, unknown> | null;
+            profileError = adminRes.error;
+          }
+
+          // Only fallback to anon JWT client when service role isn't configured (Local dev sans secret).
+          if (!supabaseAdmin && supabase) {
+            const anonRes = await supabase
+              .from("profiles")
+              .select("*")
+              .eq("id", currentUser.id)
+              .single();
+            profile = anonRes.data as Record<string, unknown> | null;
+            profileError = anonRes.error;
+          }
+
+          const roleStr =
+            typeof profile?.role === "string" ? (profile.role as string) : null;
+
+          if (profile) {
             currentUser.profile = profile;
-            currentRole = profile.role;
+            currentRole = roleStr;
           }
           if (!currentRole) {
             console.warn("🔐 [AUTH] Failed to get currentUser profile:", {
@@ -177,6 +201,7 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
               profileError: profileError,
               errorCode: profileError?.code,
               errorMessage: profileError?.message,
+              usedAdmin: !!supabaseAdmin,
             });
             // If profile doesn't exist, we should create one or handle gracefully
             if (profileError?.code === "PGRST116") {
