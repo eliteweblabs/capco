@@ -7,12 +7,23 @@ const { currentUser } = await checkAuth(Astro.cookies);
 <style>
   /* Demo page styles */
 
+  /* CMS pages don't give this chain a parent height; height:100% collapses to ~0.
+     Absolutely positioned node cards don't expand the box — without min-height nothing shows. */
   .node-editor-canvas {
     position: relative;
     cursor: grab;
-    overflow: hidden;
-    touch-action: none; /* Disable browser touch handling for better control */
+    overflow-x: auto;
+    overflow-y: hidden;
+    /* Allow horizontal scroll / pan; node drag uses listeners with stopPropagation */
+    touch-action: pan-x pan-y;
     width: 100%;
+    min-height: 55dvh;
+    height: auto;
+  }
+
+  /* Filled by CapcoHeroSection absolute layer — inherit stack height, not standalone dvh */
+  :global([data-capco-hero-stack]) .node-editor-canvas {
+    min-height: 100%;
     height: 100%;
   }
 
@@ -63,6 +74,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
     max-width: 300px;
     pointer-events: auto;
     user-select: none;
+    touch-action: none;
   }
 
   :global(.node-card:hover) {
@@ -323,6 +335,9 @@ const { currentUser } = await checkAuth(Astro.cookies);
     status?: string;
     x?: number;
     y?: number;
+    /** Final layout position after right-to-left reveal (linear workflow) */
+    targetX?: number;
+    targetY?: number;
   }
 
   class NodeEditor {
@@ -347,6 +362,11 @@ const { currentUser } = await checkAuth(Astro.cookies);
     isScrolling: boolean;
     scrollSpeed: number;
     scrollInterval: number | null;
+    linearRevealRafId: number | null;
+    /** Pixels/frame for linear reveal (off-screen right → target); separate from infinite scroll */
+    linearRevealSpeed = 3.2;
+    /** Left-to-right n8n-style layout: no infinite pan, no wrap-to-right loop */
+    linearWorkflow = true;
 
     constructor() {
       this.canvas = document.getElementById("node-canvas");
@@ -370,6 +390,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
       this.isScrolling = false;
       this.scrollSpeed = 2;
       this.scrollInterval = null;
+      this.linearRevealRafId = null;
 
       this.init();
       this.setupPauseButton();
@@ -401,6 +422,10 @@ const { currentUser } = await checkAuth(Astro.cookies);
 
     setupPauseButton() {
       const pauseBtn = document.getElementById("pause-scroll-btn");
+      if (this.linearWorkflow && pauseBtn) {
+        pauseBtn.remove();
+        return;
+      }
       if (pauseBtn) {
         // Update button state based on current scroll state
         const updateButtonState = () => {
@@ -443,14 +468,28 @@ const { currentUser } = await checkAuth(Astro.cookies);
     }
 
     addCustomNodes(delay = 1500) {
-      // Start continuous scrolling immediately
-      this.startContinuousScroll();
+      if (!this.linearWorkflow) {
+        this.startContinuousScroll();
+      }
 
-      const screenWidth = window.innerWidth || 0;
-      const screenHeight = window.innerHeight || 0;
-      const CONNECTION_DELAY = 100; // Constant delay after node creation before adding connection
+      const canvasEl = this.canvas as HTMLElement;
+      const ch =
+        canvasEl?.offsetHeight ||
+        Math.max(280, typeof window !== "undefined" ? Math.round(window.innerHeight * 0.48) : 400);
+      const CONNECTION_DELAY = 100;
 
-      // Unified array containing both nodes and connections
+      /** ~n8n spacing: fixed columns, generous horizontal gap */
+      const GAP_X = 400;
+      const START_X = 56;
+      const spineY = Math.max(112, ch * 0.36);
+      const branchLow = 148;
+      const branchUp = -108;
+
+      const pos = (col: number, dy = 0) => ({
+        x: START_X + col * GAP_X,
+        y: spineY + dy,
+      });
+
       const workflowData: Array<
         | {
             type: "node";
@@ -471,7 +510,6 @@ const { currentUser } = await checkAuth(Astro.cookies);
             toSide?: string;
           }
       > = [
-        // Nodes
         {
           type: "node",
           id: "create-account",
@@ -479,8 +517,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
           title: "Create Account",
           subtitle: "<a href='/auth/login?register=true'>Register</a>",
           status: "2 Minutes",
-          x: screenWidth,
-          y: screenHeight * 0.25,
+          ...pos(0),
           delayMultiplier: 1,
         },
         {
@@ -490,8 +527,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
           title: "Login",
           subtitle: "<a href='/auth/login'>Login</a>",
           status: "2 Seconds",
-          x: screenWidth,
-          y: screenHeight * 0.5,
+          ...pos(1),
           delayMultiplier: 2,
         },
         {
@@ -507,8 +543,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
           icon: "upload",
           title: "Upload Files",
           status: "PDF, jpeg, png, autocad, revit, dwg",
-          x: screenWidth,
-          y: screenHeight * 0.15,
+          ...pos(2, branchUp),
           delayMultiplier: 3,
         },
         {
@@ -518,15 +553,13 @@ const { currentUser } = await checkAuth(Astro.cookies);
           fromSide: "right",
           toSide: "left",
         },
-
         {
           type: "node",
           id: "submit-files",
           icon: "file-text",
           title: "Submit Files",
           status: "",
-          x: screenWidth,
-          y: screenHeight * 0.65,
+          ...pos(3),
           delayMultiplier: 4,
         },
         {
@@ -542,8 +575,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
           icon: "file-text",
           title: "Request Review",
           status: "2-4 hours to complete",
-          x: screenWidth,
-          y: screenHeight * 0.5,
+          ...pos(4),
           delayMultiplier: 5,
         },
         {
@@ -559,8 +591,7 @@ const { currentUser } = await checkAuth(Astro.cookies);
           icon: "file-text",
           title: "Generating Proposal",
           status: "24 hours to complete",
-          x: screenWidth,
-          y: screenHeight * 0.5,
+          ...pos(5),
           delayMultiplier: 6,
         },
         {
@@ -570,15 +601,13 @@ const { currentUser } = await checkAuth(Astro.cookies);
           fromSide: "right",
           toSide: "left",
         },
-
         {
           type: "node",
           id: "proposal-ready-for-review",
           icon: "file-text",
           title: "Proposal Ready for Review",
           status: "24 hours to complete",
-          x: screenWidth,
-          y: screenHeight * 0.5,
+          ...pos(5, branchLow),
           delayMultiplier: 7,
         },
         {
@@ -588,21 +617,35 @@ const { currentUser } = await checkAuth(Astro.cookies);
           fromSide: "right",
           toSide: "left",
         },
-
+        {
+          type: "node",
+          id: "approve-proposal",
+          icon: "check-circle",
+          title: "Approve Proposal",
+          status: "24 hours to complete",
+          ...pos(6),
+          delayMultiplier: 10,
+        },
+        {
+          type: "connection",
+          from: "generating-proposal",
+          to: "approve-proposal",
+          fromSide: "right",
+          toSide: "left",
+        },
         {
           type: "node",
           id: "request-revision",
           icon: "edit-3",
           title: "Request Revision",
           status: "2-4 hours to complete",
-          x: screenWidth,
-          y: screenHeight * 0.25,
+          ...pos(6, branchLow),
           delayMultiplier: 8,
         },
         {
           type: "connection",
-          from: "proposal-request-revision",
-          to: "approve-revisions",
+          from: "proposal-ready-for-review",
+          to: "request-revision",
           fromSide: "right",
           toSide: "left",
         },
@@ -612,11 +655,32 @@ const { currentUser } = await checkAuth(Astro.cookies);
           icon: "file-text",
           title: "Approve Revisions",
           status: "24 hours to complete",
-          x: screenWidth,
-          y: screenHeight * 0.25,
+          ...pos(7, branchLow),
           delayMultiplier: 9,
         },
-
+        {
+          type: "connection",
+          from: "request-revision",
+          to: "approve-revisions",
+          fromSide: "right",
+          toSide: "left",
+        },
+        {
+          type: "node",
+          id: "sign-off-proposal",
+          icon: "file-text",
+          title: "Sign Off Proposal",
+          status: "2-4 hours to complete",
+          ...pos(8),
+          delayMultiplier: 11,
+        },
+        {
+          type: "connection",
+          from: "approve-proposal",
+          to: "sign-off-proposal",
+          fromSide: "right",
+          toSide: "left",
+        },
         {
           type: "connection",
           from: "approve-revisions",
@@ -626,41 +690,11 @@ const { currentUser } = await checkAuth(Astro.cookies);
         },
         {
           type: "node",
-          id: "approve-proposal",
-          icon: "check-circle",
-          title: "Approve Proposal",
-          status: "24 hours to complete",
-          x: screenWidth,
-          y: screenHeight * 0.5,
-          delayMultiplier: 10,
-        },
-        {
-          type: "connection",
-          from: "approve-proposal",
-          to: "sign-off-proposal",
-          fromSide: "right",
-          toSide: "left",
-        },
-
-        {
-          type: "node",
-          id: "sign-off-proposal",
-          icon: "file-text",
-          title: "Sign Off Proposal",
-          status: "2-4 hours to complete",
-          x: screenWidth,
-          y: screenHeight * 0.75,
-          delayMultiplier: 11,
-        },
-
-        {
-          type: "node",
           id: "generating-final-documents",
           icon: "file-text",
           title: "Generating Final Documents",
           status: "24 hours to complete",
-          x: screenWidth,
-          y: screenHeight * 0.25,
+          ...pos(9),
           delayMultiplier: 12,
         },
         {
@@ -670,15 +704,13 @@ const { currentUser } = await checkAuth(Astro.cookies);
           fromSide: "right",
           toSide: "left",
         },
-
         {
           type: "node",
           id: "delivering-final-documents",
           icon: "file-text",
           title: "Delivering Final Documents",
           status: "2 minutes to complete",
-          x: screenWidth,
-          y: screenHeight * 0.65,
+          ...pos(10),
           delayMultiplier: 13,
         },
         {
@@ -689,6 +721,16 @@ const { currentUser } = await checkAuth(Astro.cookies);
           toSide: "left",
         },
       ];
+
+      const lastCol = 10;
+      canvasEl.style.minWidth = `${START_X + lastCol * GAP_X + 320}px`;
+
+      /** Start just past the right edge so nodes drift in like the old conveyor (no infinite loop). */
+      const vw =
+        typeof window !== "undefined"
+          ? Math.max(window.innerWidth, canvasEl.clientWidth || 0, 640)
+          : 1200;
+      const REVEAL_OFFSET = Math.round(Math.min(vw * 0.96, 1680));
 
       // Build a map of node delay multipliers for connection scheduling
       const nodeDelayMap = new Map<string, number>();
@@ -709,8 +751,11 @@ const { currentUser } = await checkAuth(Astro.cookies);
               title: item.title,
               subtitle: item.subtitle,
               status: item.status,
-              x: item.x,
+              x: this.linearWorkflow ? item.x + REVEAL_OFFSET : item.x,
               y: item.y,
+              ...(this.linearWorkflow
+                ? { targetX: item.x, targetY: item.y }
+                : {}),
             });
           }, nodeDelay);
         } else {
@@ -746,10 +791,16 @@ const { currentUser } = await checkAuth(Astro.cookies);
         status: options.status || "Active",
         x: options.x,
         y: options.y,
+        targetX: options.targetX,
+        targetY: options.targetY,
       };
 
       this.nodes.set(nodeId, node);
       this.renderNode(node);
+
+      if (this.linearWorkflow && options.targetX !== undefined) {
+        this.kickLinearReveal();
+      }
 
       // Update center and shift existing nodes
       // this.updateCenterAndShiftNodes();
@@ -808,8 +859,81 @@ const { currentUser } = await checkAuth(Astro.cookies);
     /** When node scrolls past this left threshold, wrap to right */
     static WRAP_THRESHOLD = -320;
 
+    /**
+     * One-shot RAF: slide nodes left until targetX (spawn starts off-canvas right).
+     * Unlike startContinuousScroll, no infinite motion and no wrap loop.
+     */
+    kickLinearReveal() {
+      if (!this.linearWorkflow) return;
+      if (this.linearRevealRafId !== null) return;
+
+      const tick = () => {
+        if (!this.linearWorkflow) {
+          this.linearRevealRafId = null;
+          return;
+        }
+        let anyMoving = false;
+        const speed = this.linearRevealSpeed;
+
+        this.nodes.forEach((node, nodeId) => {
+          const tx = node.targetX;
+          const ty = node.targetY;
+          const nx = node.x ?? 0;
+          const ny = node.y ?? 0;
+
+          /* Keep RAF alive while the grabbed card is still east of its slot (otherwise the loop
+             exits, anyMoving is false, and that node never animates again after mouseup). */
+          if (nodeId === this.draggedNode?.id) {
+            if (tx !== undefined && nx > tx + 0.5) {
+              anyMoving = true;
+            }
+            if (ty !== undefined && Math.abs(ny - ty) > 0.5) {
+              anyMoving = true;
+            }
+            return;
+          }
+
+          if (tx === undefined) return;
+
+          if (nx > tx + 0.5) {
+            node.x = Math.max(tx, nx - speed);
+            anyMoving = true;
+          } else {
+            node.x = tx;
+          }
+
+          if (ty !== undefined) {
+            if (Math.abs((node.y ?? 0) - ty) > 0.5) {
+              const y = node.y ?? 0;
+              node.y = y + Math.sign(ty - y) * Math.min(speed, Math.abs(ty - y));
+              anyMoving = true;
+            } else {
+              node.y = ty;
+            }
+          }
+
+          const nodeElement = document.querySelector(`[data-node-id="${nodeId}"]`);
+          if (nodeElement) {
+            (nodeElement as HTMLElement).style.left = `${node.x ?? 0}px`;
+            (nodeElement as HTMLElement).style.top = `${node.y ?? 0}px`;
+          }
+        });
+
+        this.updateConnections();
+
+        if (anyMoving) {
+          this.linearRevealRafId = requestAnimationFrame(tick);
+        } else {
+          this.linearRevealRafId = null;
+        }
+      };
+
+      this.linearRevealRafId = requestAnimationFrame(tick);
+    }
+
     /** Loop: move nodes that scroll off left to the right of the rightmost node */
     loopOffscreenNodes() {
+      if (this.linearWorkflow) return;
       this.nodes.forEach((node, nodeId) => {
         if (nodeId === this.draggedNode?.id) return;
         if ((node.x ?? 0) >= NodeEditor.WRAP_THRESHOLD) return;
@@ -960,26 +1084,30 @@ const { currentUser } = await checkAuth(Astro.cookies);
       (this.canvas as HTMLElement).appendChild(nodeElement);
     }
 
+    /** Pointer position in canvas content coordinates (matches node left/top). */
+    clientToCanvasLocalXY(clientX: number, clientY: number) {
+      const canvas = this.canvas as HTMLElement;
+      const r = canvas.getBoundingClientRect();
+      return {
+        x: clientX - r.left + canvas.scrollLeft,
+        y: clientY - r.top + canvas.scrollTop,
+      };
+    }
+
     startDrag(node: NodeOptions, e: MouseEvent | TouchEvent) {
       this.draggedNode = node;
       this.stopContinuousScroll();
-      const rect = (e.target as HTMLElement).closest(".node-card")?.getBoundingClientRect() || {
-        left: 0,
-        top: 0,
-      };
-      const canvasRect = this.canvas?.getBoundingClientRect() || { left: 0, top: 0 };
 
-      // Handle both MouseEvent and TouchEvent
-      // Check for TouchEvent safely (not available in SSR)
       const isTouchEvent = typeof TouchEvent !== "undefined" && e instanceof TouchEvent;
       const clientX =
         isTouchEvent && "touches" in e ? (e.touches[0]?.clientX ?? 0) : (e as MouseEvent).clientX;
       const clientY =
         isTouchEvent && "touches" in e ? (e.touches[0]?.clientY ?? 0) : (e as MouseEvent).clientY;
 
+      const local = this.clientToCanvasLocalXY(clientX, clientY);
       this.dragOffset = {
-        x: clientX - rect.left,
-        y: clientY - rect.top,
+        x: local.x - (node.x ?? 0),
+        y: local.y - (node.y ?? 0),
       };
 
       (e.target as HTMLElement).closest(".node-card")?.classList.add("dragging");
@@ -1039,14 +1167,17 @@ const { currentUser } = await checkAuth(Astro.cookies);
       };
 
       if (this.draggedNode) {
-        const canvasRect = this.canvas?.getBoundingClientRect() || { left: 0, top: 0 };
         const clientX = getClientX(e);
         const clientY = getClientY(e);
-        const x = clientX - canvasRect.left - this.dragOffset.x;
-        const y = clientY - canvasRect.top - this.dragOffset.y;
+        const local = this.clientToCanvasLocalXY(clientX, clientY);
+        const x = local.x - this.dragOffset.x;
+        const y = local.y - this.dragOffset.y;
 
-        this.draggedNode.x = Math.max(0, Math.min(x, (this.canvas?.offsetWidth ?? 0) - 200));
-        this.draggedNode.y = Math.max(0, Math.min(y, (this.canvas?.offsetHeight ?? 0) - 100));
+        const canvasEl = this.canvas as HTMLElement;
+        const maxX = Math.max(canvasEl.scrollWidth, canvasEl.offsetWidth) - 200;
+        const maxY = Math.max(canvasEl.scrollHeight, canvasEl.offsetHeight) - 100;
+        this.draggedNode.x = Math.max(0, Math.min(x, maxX));
+        this.draggedNode.y = Math.max(0, Math.min(y, maxY));
 
         const nodeElement: HTMLElement | null = document.querySelector(
           `[data-node-id="${this.draggedNode.id}"]`
@@ -1061,11 +1192,11 @@ const { currentUser } = await checkAuth(Astro.cookies);
 
       // Handle connection preview when connecting
       if (this.connecting && this.connectionStart) {
-        const canvasRect = this.canvas?.getBoundingClientRect() || { left: 0, top: 0 };
         const clientX = getClientX(e);
         const clientY = getClientY(e);
-        const mouseX = clientX - canvasRect.left;
-        const mouseY = clientY - canvasRect.top;
+        const locPrev = this.clientToCanvasLocalXY(clientX, clientY);
+        const mouseX = locPrev.x;
+        const mouseY = locPrev.y;
 
         // Find the node under the mouse
         const elementUnderMouse: HTMLElement | null = document.elementFromPoint(
@@ -1123,15 +1254,20 @@ const { currentUser } = await checkAuth(Astro.cookies);
         document.querySelectorAll(".node-card").forEach((card) => {
           card.classList.remove("dragging");
         });
-        this.startContinuousScroll();
+        if (!this.linearWorkflow) {
+          this.startContinuousScroll();
+        } else {
+          /* Restart if the RAF exited while this node was skipped during drag */
+          this.kickLinearReveal();
+        }
       }
 
       if (this.connecting && this.connectionStart) {
-        const canvasRect = this.canvas?.getBoundingClientRect() || { left: 0, top: 0 };
         const clientX = getClientX(e);
         const clientY = getClientY(e);
-        const mouseX = clientX - canvasRect.left;
-        const mouseY = clientY - canvasRect.top;
+        const locUp = this.clientToCanvasLocalXY(clientX, clientY);
+        const mouseX = locUp.x;
+        const mouseY = locUp.y;
 
         // Find the node under the mouse
         const elementUnderMouse: HTMLElement | null = document.elementFromPoint(
@@ -1362,6 +1498,10 @@ const { currentUser } = await checkAuth(Astro.cookies);
     }
 
     clearAll() {
+      if (this.linearRevealRafId !== null) {
+        cancelAnimationFrame(this.linearRevealRafId);
+        this.linearRevealRafId = null;
+      }
       this.nodes.clear();
       this.connections = [];
       (this.canvas as HTMLElement).innerHTML = "";
@@ -1409,8 +1549,9 @@ const { currentUser } = await checkAuth(Astro.cookies);
 
     // Start continuous smooth scrolling
     startContinuousScroll() {
+      if (this.linearWorkflow) return;
       this.isScrolling = true;
-      this.scrollSpeed = 0.7; // pixels per frame - slow autoreplay
+      this.scrollSpeed = 2.5; // px per animation frame (~snappy; was 0.7 for very slow drift)
       this.scrollInterval = null;
 
       const scroll = () => {

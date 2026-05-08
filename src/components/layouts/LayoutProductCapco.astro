@@ -1,18 +1,31 @@
 ---
 import Button from "../common/Button.astro";
 import Tooltip from "../ui/Tooltip.astro";
+
+/** When true, rendered inside CapcoHeroSection — no full-viewport min-height; parent stack sets height. */
+interface Props {
+  heroStack?: boolean;
+}
+
+const { heroStack = false } = Astro.props;
 ---
 
 <div
-  class="mx-auto flex h-full w-full max-w-screen-xl items-center justify-between"
+  class:list={[
+    "mx-auto flex w-full max-w-screen-xl items-center justify-between",
+    !heroStack && "h-full",
+  ]}
   style="overscroll-behavior-y: contain;"
-  data-dynamic-height="minHeight"
+  data-dynamic-height={heroStack ? undefined : "minHeight"}
 >
   <div class="flex flex-col items-center justify-center px-4">
     <div class="bg-radial-gradient relative z-1 mb-0 inline-block text-left">
       <a
         href="project/dashboard"
-        class="mb-6 inline-flex items-center justify-between rounded-full px-1 py-1 pr-4 text-sm text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700"
+        class:list={[
+          "mb-6 inline-flex items-center justify-between rounded-full px-1 py-1 pr-4 text-sm text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700",
+          heroStack && "pointer-events-auto",
+        ]}
         role="alert"
       >
         <span
@@ -41,7 +54,11 @@ import Tooltip from "../ui/Tooltip.astro";
         <span class="hidden select-none md:block" data-aos="fade-up" data-aos-delay="400"
           >Combined 50+ years of experience in permitting & expediting...<br /><br />
         </span>
-        <span class="inline-block" data-aos="fade-up" data-aos-delay="800">
+        <span
+          class:list={["inline-block", heroStack && "pointer-events-auto"]}
+          data-aos="fade-up"
+          data-aos-delay="800"
+        >
           Submittals delivered in 48 hours <span class="hidden md:inline"
             >with guaranteed approval at a fraction of the cost of traditional firms.<Tooltip
               position="right"
@@ -52,7 +69,7 @@ import Tooltip from "../ui/Tooltip.astro";
         </span>
       </p>
 
-      <div class="smoke-button hidden">
+      <div class:list={["smoke-button hidden", heroStack && "pointer-events-auto"]}>
         <span class="smoke-particle"></span>
         <span class="smoke-particle"></span>
         <span class="smoke-particle"></span>
@@ -62,7 +79,7 @@ import Tooltip from "../ui/Tooltip.astro";
           variant="outline"
           size="md"
           onclick="window.location.href='/auth/register'"
-          class="pulse"
+          class={heroStack ? "pulse pointer-events-auto" : "pulse"}
           dataAttributes={{
             "data-aos": "fade-up",
             "data-aos-delay": "1000",

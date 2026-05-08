@@ -18,6 +18,7 @@ import LayoutMinimal from "../layouts/LayoutMinimal.astro";
 import LayoutCentered from "../layouts/LayoutCentered.astro";
 import LayoutFullscreen from "../layouts/LayoutFullscreen.astro";
 import LayoutFullForm from "../layouts/LayoutFullForm.astro";
+import CapcoHeroSection from "./CapcoHeroSection.astro";
 
 interface Props {
   slug: string;
@@ -131,6 +132,60 @@ for (let i = 0; i < parts.length; i++) {
   }
 }
 
+/** HTML between shortcodes that marked emits for blank lines — ignore for Capco hero merge */
+function isTrivialHtml(html: string): boolean {
+  const stripped = html
+    .replace(/<p>\s*<\/p>/gi, "")
+    .replace(/<p>\s*<br\s*\/?>\s*<\/p>/gi, "")
+    .replace(/<br\s*\/?>/gi, "")
+    .trim();
+  if (!stripped) return true;
+  return stripped.replace(/\s+/g, "").length === 0;
+}
+
+type DisplaySegment =
+  | { type: "html"; content: string }
+  | { type: "component"; index: number }
+  | { type: "capcoHero" };
+
+function mergeCapcoHeroSegments(
+  segs: Array<{ type: "html"; content: string } | { type: "component"; index: number }>,
+  componentList: typeof components
+): DisplaySegment[] {
+  const names = componentList.map((c) => c.name);
+  const out: DisplaySegment[] = [];
+  let i = 0;
+  while (i < segs.length) {
+    const seg = segs[i];
+    if (seg.type === "component" && names[seg.index] === "NodesCapco") {
+      let j = i + 1;
+      while (j < segs.length) {
+        const mid = segs[j];
+        if (mid.type === "html" && isTrivialHtml(mid.content)) {
+          j++;
+          continue;
+        }
+        break;
+      }
+      const nextSeg = j < segs.length ? segs[j] : null;
+      if (
+        nextSeg &&
+        nextSeg.type === "component" &&
+        names[nextSeg.index] === "LayoutProductCapco"
+      ) {
+        out.push({ type: "capcoHero" });
+        i = j + 1;
+        continue;
+      }
+    }
+    out.push(seg);
+    i++;
+  }
+  return out;
+}
+
+const displaySegments = mergeCapcoHeroSegments(segments, components);
+
 // Component name aliases (e.g. markdown uses ProjectsList but file is ProjectList.astro)
 const componentAliases: Record<string, string> = {
   ProjectsList: "ProjectList",
@@ -198,9 +253,16 @@ const componentModules = await Promise.all(
 >
   <div class="markdown-page-content w-full min-w-0 self-stretch">
     {
-      segments.map((seg) => {
+      displaySegments.map((seg) => {
         if (seg.type === "html") {
           return <Fragment set:html={seg.content} />;
+        }
+        if (seg.type === "capcoHero") {
+          return (
+            <div data-component-name="CapcoHeroSection">
+              <CapcoHeroSection />
+            </div>
+          );
         }
         const mod = componentModules[seg.index];
         if (!mod) return null;
