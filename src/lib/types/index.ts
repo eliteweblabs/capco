@@ -6,6 +6,8 @@ export interface User {
   companyName?: string;
   firstName?: string;
   lastName?: string;
+  jobTitle?: string | null;
+  hourlyRate?: number | null;
   role: "Admin" | "Staff" | "Client";
   phone?: string;
   createdAt: string;

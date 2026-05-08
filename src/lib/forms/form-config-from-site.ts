@@ -356,6 +356,14 @@ function mapUserElementToField(el: FormElementConfig): FormFieldConfig | null {
       };
     case "textarea":
       return { ...base, type: "textarea" };
+    case "number":
+      return {
+        ...base,
+        type: "number",
+        min: (el as any).min ?? 0,
+        max: (el as any).max,
+        step: (el as any).step ?? "any",
+      };
     default:
       return { ...base, type: "text" };
   }

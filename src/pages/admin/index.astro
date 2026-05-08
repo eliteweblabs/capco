@@ -4,17 +4,17 @@
  * Redirects to the main admin dashboard (Global Activity)
  */
 import { checkAuth } from "../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../lib/user-utils";
 
-const { currentUser, session } = await checkAuth(Astro.cookies);
-const currentRole = currentUser?.profile?.role;
+const { currentUser, session, currentRole } = await checkAuth(Astro.cookies);
 
 // Redirect to login if not authenticated
 if (!currentUser || !session) {
   return Astro.redirect("/auth/login");
 }
 
-// Check if user is admin or superAdmin
-if (currentRole !== "Admin" && currentRole !== "superAdmin") {
+// Use checkAuth-derived role (trimmed/normalized inside auth); aligns with APIs
+if (!isAdminOrSuperAdmin(currentRole)) {
   return Astro.redirect("/dashboard");
 }
 

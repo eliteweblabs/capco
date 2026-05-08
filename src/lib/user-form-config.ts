@@ -73,14 +73,27 @@ export const USER_FORM_ELEMENTS: FormElementConfig[] = [
     columns: 2,
   },
   {
-    id: "title",
-    name: "title",
+    id: "jobTitle",
+    name: "jobTitle",
     type: "field",
     elementType: "text",
     label: "Title",
     placeholder: "e.g. Project Manager, Engineer",
     allow: ["Admin", "Staff", "Client"],
     columns: 1,
+  },
+  {
+    id: "hourly-rate",
+    name: "hourlyRate",
+    type: "field",
+    elementType: "number",
+    label: "Hourly rate ($)",
+    placeholder: "e.g. 45.50",
+    allow: ["Admin", "superAdmin"],
+    columns: 1,
+    min: 0,
+    max: 999999.99,
+    step: 0.01,
   },
   {
     id: "email",
@@ -173,6 +186,8 @@ export async function getFilteredUserFormElements(
     // Role select only shown when admin is editing or creating
     if (element.id === "role-select" && !isAdminEdit && !isCreateMode && !includeAllModes)
       return false;
+    // Payroll: hourly rate only in admin user management, not on self-service profile
+    if (element.id === "hourly-rate" && !isAdminEdit) return false;
     // When includeAllModes, include everything (no createOnly/updateOnly filtering)
     if (includeAllModes) return true;
     // createOnly: show only when isCreateMode

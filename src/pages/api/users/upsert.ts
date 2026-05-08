@@ -67,6 +67,8 @@ interface UserData {
   email: string;
   role: "Admin" | "Staff" | "Client";
   phone?: string;
+  /** Admin payroll field — persisted when caller has permission (same as profiles.hourlyRate) */
+  hourlyRate?: number | string | null;
   smsAlerts?: boolean;
   mobileCarrier?: string;
   password?: string;
@@ -212,7 +214,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     // Prepare user data
-    const userPayload = {
+    const userPayload: Record<string, unknown> = {
       firstName: userData.firstName.trim(),
       lastName: userData.lastName.trim(),
       companyName: userData.companyName?.trim() || "",
@@ -221,6 +223,28 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       phone: userData.phone?.trim() || null,
       updatedAt: new Date().toISOString(),
     };
+
+    const canManagePayroll =
+      currentUser?.profile?.role === "Admin" || currentUser?.profile?.role === "superAdmin";
+
+    if (canManagePayroll && userData.hourlyRate !== undefined) {
+      const raw = userData.hourlyRate;
+      if (raw === null || raw === "") {
+        userPayload.hourlyRate = null;
+      } else {
+        const n = typeof raw === "number" ? raw : parseFloat(String(raw).trim().replace(/,/g, ""));
+        if (!Number.isFinite(n) || n < 0 || n > 999999.99) {
+          return new Response(
+            JSON.stringify({
+              error: "Invalid hourlyRate",
+              details: "Must be a number between 0 and 999999.99",
+            }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+        userPayload.hourlyRate = Math.round(n * 100) / 100;
+      }
+    }
 
     let result;
     let isUpdate = false;

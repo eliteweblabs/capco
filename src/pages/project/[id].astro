@@ -28,7 +28,6 @@ if (!id || id === "dashboard") {
 // console.log("🏗️ [PROJECT] Project ID:", id);
 import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
 import HeroProject from "../../components/common/HeroProject.astro";
-import type { NavItem } from "../../components/common/SlidingTabs.astro";
 import TabFiles from "../../components/project/TabFiles.astro";
 import TabDiscussions from "../../components/project/TabDiscussions.astro";
 import TabProjectForm from "../../components/project/TabProjectForm.astro";
@@ -37,31 +36,53 @@ import TabContract from "../../components/project/TabContract.astro";
 import TabDeposit from "../../components/project/TabDeposit.astro";
 import TabFinalInvoice from "../../components/project/TabFinalInvoice.astro";
 import TabActivityLog from "../../components/project/TabActivityLog.astro";
+import TabTeamHours from "../../components/project/TabTeamHours.astro";
 import TabGeneratePdf from "../../components/project/TabGeneratePdf.astro";
 import TabMarketing from "../../components/project/TabMarketing.astro";
+import { isAdminOrStaffOrSuperAdmin } from "../../lib/user-utils";
+import type { NavItem } from "../../components/common/SlidingTabs.astro";
+
 // refresh-manager loaded in App.astro for Staff/Admin
 
-const validTabs = [
+/** URL ?status= slugs aligned with switchTab('...') */
+const PROJECT_TAB_SLUGS = new Set([
   "project-form",
   "discussion",
-  "Files",
+  "files",
   "proposal",
   "contract",
   "deposit",
   "activity-log",
+  "team-hours",
   "generate-pdf",
   "marketing",
   "deliverables",
   "final-invoice",
-];
+]);
 
-const statusParam = Astro.url.searchParams.get("status");
-const defaultTab = validTabs.includes(statusParam || "")
-  ? statusParam || "project-form"
-  : "project-form";
-const activeTabIndex = validTabs.indexOf(defaultTab);
+const statusSlugRaw = (Astro.url.searchParams.get("status") || "").toLowerCase();
+const activeSlug = PROJECT_TAB_SLUGS.has(statusSlugRaw) ? statusSlugRaw : "project-form";
 
-const projectTabNavItems = [
+function filterTabsForHero(role: string | undefined, items: NavItem[]): NavItem[] {
+  return items.filter((item) => {
+    if (
+      item.clientHide &&
+      (role === "Client" || role === "superAdmin")
+    ) {
+      return false;
+    }
+    return true;
+  });
+}
+
+function navSlug(item: NavItem): string | null {
+  const m = item.onclick?.match(/switchTab\('([^']+)'\)/);
+  return m?.[1] ?? null;
+}
+
+const showLaborTab = isAdminOrStaffOrSuperAdmin(currentUser?.profile?.role);
+
+const projectTabNavItems: NavItem[] = [
   {
     id: "status-project-form",
     showLabel: true,
@@ -120,6 +141,18 @@ const projectTabNavItems = [
     onclick: "window.switchTab('activity-log')",
     clientHide: true,
   },
+  ...(showLaborTab
+    ? [
+        {
+          id: "status-team-hours",
+          showLabel: true,
+          label: "Team hours",
+          icon: "clock",
+          variant: "tab" as const,
+          onclick: "window.switchTab('team-hours')",
+        },
+      ]
+    : []),
   {
     id: "status-generate-pdf",
     showLabel: true,
@@ -139,6 +172,12 @@ const projectTabNavItems = [
     clientHide: true,
   },
 ];
+
+const filteredHeroTabs = filterTabsForHero(currentUser?.profile?.role, projectTabNavItems);
+const activeTabIndex = Math.max(
+  0,
+  filteredHeroTabs.findIndex((item) => navSlug(item) === activeSlug)
+);
 
 // Track which tab should load content server-side
 
@@ -314,7 +353,7 @@ if (currentStatusInt && statusData[currentStatusInt]) {
     {primaryTextClasses}
     {globalInputClasses}
     {globalCompanyName}
-    tabNavItems={projectTabNavItems as NavItem[]}
+    tabNavItems={filteredHeroTabs as NavItem[]}
     activeTabIndex={activeTabIndex}
   />
 
@@ -403,6 +442,14 @@ if (currentStatusInt && statusData[currentStatusInt]) {
     {currentUser}
     {project}
     {statusData}
+  />
+
+  <TabTeamHours
+    {project}
+    {currentUser}
+    {secondaryTextClasses}
+    {primaryTextClasses}
+    {globalInputClasses}
   />
 
   <TabGeneratePdf
@@ -514,7 +561,9 @@ if (currentStatusInt && statusData[currentStatusInt]) {
       "deposit",
       "final-invoice",
       "activity-log",
+      "team-hours",
       "generate-pdf",
+      "marketing",
       "deliverables",
     ];
 
@@ -557,8 +606,11 @@ if (currentStatusInt && statusData[currentStatusInt]) {
       selectedContent.classList.remove("hidden");
 
       // Try to call the initialization function if it exists (e.g., initializeDiscussion)
-      const initFunc =
+      let initFunc =
         window[`initialize${baseTabName.charAt(0).toUpperCase() + baseTabName.slice(1)}`];
+      if (baseTabName === "team-hours") {
+        initFunc = (window as any).initializeTeamHours;
+      }
       if (typeof initFunc === "function") {
         console.log(`🔄 [SWITCH-TAB] Found initialization function for ${baseTabName}`);
         try {

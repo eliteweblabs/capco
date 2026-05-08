@@ -2,6 +2,7 @@ import type { User } from "@supabase/supabase-js";
 import { clearAuthCookies, setAuthCookies } from "./auth-cookies";
 import { supabase } from "./supabase";
 import { supabaseAdmin } from "./supabase-admin";
+import { normalizeUserRole } from "./user-utils";
 import { isBackendPage } from "../pages/api/utils/backend-page-check";
 
 /** SSR: avoid reading `profiles` with the singleton `supabase` after `setSession` — concurrent
@@ -70,7 +71,7 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
           .eq("id", customUserId.value)
           .single();
         if (profileData?.role) {
-          role = profileData.role;
+          role = normalizeUserRole(profileData.role as string) ?? "Client";
           profile = profileData;
         }
       } catch {
@@ -188,11 +189,16 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
           }
 
           const roleStr =
-            typeof profile?.role === "string" ? (profile.role as string) : null;
+            typeof profile?.role === "string"
+              ? normalizeUserRole(profile.role as string)
+              : profile?.role != null
+                ? normalizeUserRole(String(profile.role))
+                : null;
 
           if (profile) {
             currentUser.profile = profile;
-            currentRole = roleStr;
+            // Blank/null role in DB would otherwise leave gate checks null → no admin/UI access
+            currentRole = roleStr ?? "Client";
           }
           if (!currentRole) {
             console.warn("🔐 [AUTH] Failed to get currentUser profile:", {
@@ -289,6 +295,27 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
     supabase,
     currentRole,
   };
+
+  // Set MAVSAFE_AUTH_DEBUG=1 on the server (Railway/host env) for per-request dumps in logs.
+  if (
+    typeof process !== "undefined" &&
+    process.env.MAVSAFE_AUTH_DEBUG === "1" &&
+    typeof window === "undefined"
+  ) {
+    const at = cookies.get?.("sb-access-token");
+    const rt = cookies.get?.("sb-refresh-token");
+    console.warn("[MAVSAFE_AUTH_DEBUG]", {
+      isAuth,
+      hasSupabaseAdmin: !!supabaseAdmin,
+      uid: currentUser?.id ?? null,
+      email: currentUser?.email ?? null,
+      currentRole,
+      rawProfileRole: (currentUser?.profile as { role?: unknown } | undefined)?.role ?? null,
+      hasAccessCookie: !!(at && "value" in at && at.value),
+      hasRefreshCookie: !!(rt && "value" in rt && rt.value),
+      profileFetchPath: supabaseAdmin ? "supabaseAdmin" : "anon_singleton_after_setSession",
+    });
+  }
 
   return result;
 }

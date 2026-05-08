@@ -1,7 +1,7 @@
 /**
  * Time Entry update API
- * PATCH body: { notes?: string, startedAt?: string, endedAt?: string }
- * User can update own; Admin can update any.
+ * PATCH body: { notes?, startedAt?, endedAt?, hourlyRateSnapshot? }
+ * User can update own times/notes; Admin can update any. hourlyRateSnapshot: Admin-only correction.
  */
 import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
@@ -35,7 +35,7 @@ export const PATCH: APIRoute = async ({ params, request, cookies }): Promise<Res
     }
 
     const body = await request.json().catch(() => ({}));
-    const { notes, startedAt, endedAt } = body;
+    const { notes, startedAt, endedAt, hourlyRateSnapshot } = body;
 
     const role = (currentUser as any)?.profile?.role;
     const isAdmin = isAdminOrSuperAdmin(role);
@@ -71,6 +71,33 @@ export const PATCH: APIRoute = async ({ params, request, cookies }): Promise<Res
     if (endedAt !== undefined) {
       const d = new Date(endedAt);
       if (!Number.isNaN(d.getTime())) updatePayload.endedAt = d.toISOString();
+    }
+
+    if (hourlyRateSnapshot !== undefined) {
+      if (!isAdmin) {
+        return new Response(
+          JSON.stringify({ error: "Only admins may change hourlyRateSnapshot on a time entry" }),
+          { status: 403, headers: { "Content-Type": "application/json" } }
+        );
+      }
+      if (hourlyRateSnapshot === null || hourlyRateSnapshot === "") {
+        updatePayload.hourlyRateSnapshot = null;
+      } else {
+        const raw =
+          typeof hourlyRateSnapshot === "number"
+            ? hourlyRateSnapshot
+            : parseFloat(String(hourlyRateSnapshot).trim().replace(/,/g, ""));
+        if (!Number.isFinite(raw) || raw < 0 || raw > 999999.99) {
+          return new Response(
+            JSON.stringify({
+              error: "Invalid hourlyRateSnapshot",
+              details: "Must be between 0 and 999999.99",
+            }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+        updatePayload.hourlyRateSnapshot = Math.round(raw * 100) / 100;
+      }
     }
 
     const { data: updated, error: updateError } = await supabaseAdmin
