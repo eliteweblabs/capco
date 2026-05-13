@@ -603,7 +603,7 @@ export class RefreshManager {
           }
         } else if (contextType === "cmsPage") {
           const row = document.querySelector(
-            `tr.cms-template-trigger[data-page-id="${contextId}"]`
+            `tr.cms-template-trigger[data-editor-slot="${contextId}"]`
           );
           if (row) {
             const detail = row.nextElementSibling;
