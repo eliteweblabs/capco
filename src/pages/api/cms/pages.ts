@@ -18,8 +18,36 @@ export const GET: APIRoute = async ({ request, url }) => {
       });
     }
 
+    const idParam = url.searchParams.get("id");
     const slug = url.searchParams.get("slug");
     const clientId = process.env.RAILWAY_PROJECT_NAME || null;
+
+    if (idParam) {
+      const idNum = parseInt(idParam, 10);
+      if (!Number.isFinite(idNum)) {
+        return new Response(JSON.stringify({ error: "Invalid id" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      let query = supabaseAdmin.from("cmsPages").select("*").eq("id", idNum);
+
+      if (clientId) {
+        query = query.or(`clientId.is.null,clientId.eq.${quoteClientIdForPostgrest(clientId)}`);
+      }
+
+      const { data, error } = await query.maybeSingle();
+
+      if (error) {
+        throw error;
+      }
+
+      return new Response(JSON.stringify({ page: data }), {
+        status: data ? 200 : 404,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
     if (slug) {
       // Get specific page

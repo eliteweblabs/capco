@@ -3,16 +3,16 @@
  *
  * Usage:
  * 1. Add data-refresh="column_name" to any DOM element that should be updated
- * 2. Add data-project-id="123" or data-user-id="456" to specify the context
+ * 2. Add data-project-id="123", data-user-id="456", or data-cms-page-id="789" for context
  * 3. Call RefreshManager.updateField('column_name', newValue) after database updates
  * 4. Or use RefreshManager.startAutoRefresh() to automatically check for changes every 15 seconds
  *
  * Auto-refresh functionality:
  * - Cycles through all elements with data-refresh attributes every 15 seconds
- * - Groups elements by project/user context for efficient API calls
+ * - Groups elements by project/user/CMS page context for efficient API calls
  * - Fetches current data from database and compares with DOM values
  * - Only updates elements that have changed values
- * - Supports both project and user contexts
+ * - Supports project, user, and CMS template page (/admin/cms) contexts
  */
 
 export class RefreshManager {
@@ -55,20 +55,26 @@ export class RefreshManager {
    * Update a specific field across all elements with matching data-refresh attribute
    * @param projectId - When provided, only update elements for that project
    * @param userId - When provided, only update elements for that user (e.g. admin users table)
+   * @param cmsPageId - When provided, only update elements for that CMS template page row (/admin/cms)
    */
   public updateField(
     fieldName: string,
     newValue: any,
     projectId?: string | number,
-    userId?: string
+    userId?: string,
+    cmsPageId?: string
   ): void {
     let elements: NodeListOf<Element>;
 
-    if (projectId) {
+    if (cmsPageId != null && cmsPageId !== "") {
+      elements = document.querySelectorAll(
+        `[data-refresh="${fieldName}"][data-cms-page-id="${cmsPageId}"]`
+      );
+    } else if (projectId != null && projectId !== "") {
       elements = document.querySelectorAll(
         `[data-refresh="${fieldName}"][data-project-id="${projectId}"]`
       );
-    } else if (userId) {
+    } else if (userId != null && userId !== "") {
       elements = document.querySelectorAll(
         `[data-refresh="${fieldName}"][data-user-id="${userId}"]`
       );
@@ -116,14 +122,16 @@ export class RefreshManager {
    * @param updates - Field names and values to update
    * @param projectId - Optional. When provided, only updates elements for that project
    * @param userId - Optional. When provided, only updates elements for that user
+   * @param cmsPageId - Optional. CMS template page id (/admin/cms table cells)
    */
   public updateFields(
     updates: Record<string, any>,
     projectId?: string | number,
-    userId?: string
+    userId?: string,
+    cmsPageId?: string
   ): void {
     Object.entries(updates).forEach(([fieldName, value]) => {
-      this.updateField(fieldName, value, projectId, userId);
+      this.updateField(fieldName, value, projectId, userId, cmsPageId);
     });
   }
 
@@ -525,11 +533,16 @@ export class RefreshManager {
 
       const projectId = element.getAttribute("data-project-id");
       const userId = element.getAttribute("data-user-id");
+      const cmsPageId = element.getAttribute("data-cms-page-id");
 
       // Skip elements without context; global refresh is not implemented
-      if (!projectId && !userId) return;
+      if (!projectId && !userId && !cmsPageId) return;
 
-      const contextKey = projectId ? `project:${projectId}` : `user:${userId}`;
+      const contextKey = projectId
+        ? `project:${projectId}`
+        : userId
+          ? `user:${userId}`
+          : `cmsPage:${cmsPageId}`;
 
       // Initialize context group if not exists
       if (!grouped.has(contextKey)) {
@@ -584,6 +597,17 @@ export class RefreshManager {
               detail?.classList.contains("accordion-detail") ||
               detail?.hasAttribute("data-slot")
             ) {
+              detail.remove();
+            }
+            row.remove();
+          }
+        } else if (contextType === "cmsPage") {
+          const row = document.querySelector(
+            `tr.cms-template-trigger[data-page-id="${contextId}"]`
+          );
+          if (row) {
+            const detail = row.nextElementSibling;
+            if (detail?.classList.contains("cms-template-detail")) {
               detail.remove();
             }
             row.remove();
@@ -673,7 +697,8 @@ export class RefreshManager {
             fieldName,
             currentValue,
             contextType === "project" ? contextId : undefined,
-            contextType === "user" ? contextId : undefined
+            contextType === "user" ? contextId : undefined,
+            contextType === "cmsPage" ? contextId : undefined
           );
         }
       }
@@ -706,6 +731,8 @@ export class RefreshManager {
         apiUrl = `/api/projects/get?id=${contextId}`;
       } else if (contextType === "user") {
         apiUrl = `/api/users/get?id=${contextId}`;
+      } else if (contextType === "cmsPage") {
+        apiUrl = `/api/cms/pages?id=${encodeURIComponent(contextId)}`;
       } else {
         // For global context, we might need a different approach
         // console.log(`🔄 [REFRESH-MANAGER] Global context refresh not implemented yet`);
@@ -727,7 +754,16 @@ export class RefreshManager {
 
       // The API might return { data: {...} } or { projects: [...] } or just the project directly
       let projectData = data;
-      if (data.data) {
+      if (contextType === "cmsPage" && data.page) {
+        const page = data.page as Record<string, unknown>;
+        projectData = {
+          ...page,
+          id: page.id,
+          slug: page.slug ?? "",
+          title: page.title ?? "",
+          template: page.template || "default",
+        };
+      } else if (data.data) {
         projectData = data.data;
         // console.log(`🔄 [REFRESH-MANAGER] Using data.data`);
       } else if (data.projects && data.projects[0]) {
