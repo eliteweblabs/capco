@@ -32,6 +32,7 @@ Privacy, Terms, and Cookies pages are **hardcoded** and **auto-generated on buil
 
 - `npm run build:legal-pages` – Runs before Astro build (and in `dev`).
 - Generated files: `src/pages/privacy.astro`, `src/pages/terms.astro`.
+- **Git:** those two paths are in `.gitignore` so each installation keeps its own generated legal pages out of the repo (run `npm run build:legal-pages` after clone).
 
 ### CMS Override
 

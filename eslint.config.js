@@ -6,7 +6,14 @@ import astro from "eslint-plugin-astro";
 
 export default [
   {
-    ignores: ["dist/", "node_modules/", ".astro/", "**/*.min.js"],
+    ignores: [
+      "dist/",
+      "node_modules/",
+      ".astro/",
+      "**/*.min.js",
+      "src/pages/privacy.astro",
+      "src/pages/terms.astro",
+    ],
   },
   {
     files: ["astro.config.mjs", "*.config.js", "*.config.cjs", "eslint.config.js"],
