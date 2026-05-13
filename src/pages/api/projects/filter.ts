@@ -39,10 +39,7 @@ export const POST: APIRoute = async ({ request }) => {
           let statusName = "";
 
           // Use clientStatusName for clients, adminStatusName for admins
-          if (
-            (currentRole === "Client" || currentRole === "superAdmin") &&
-            statusInfo.clientStatusName
-          ) {
+          if (currentRole === "Client" && statusInfo.clientStatusName) {
             statusName = statusInfo.clientStatusName;
           } else {
             statusName = statusInfo.adminStatusName || statusInfo.statusName || "";
@@ -69,7 +66,7 @@ export const POST: APIRoute = async ({ request }) => {
       }
 
       let foundStatus = null;
-      if (currentRole === "Client" || currentRole === "superAdmin") {
+      if (currentRole === "Client") {
         // For clients, find by slug
         foundStatus = projectStatuses.find((status: any) => {
           if (status.clientStatusName) {
@@ -96,7 +93,7 @@ export const POST: APIRoute = async ({ request }) => {
         return projectItems?.length || 0;
       }
 
-      if (currentRole === "Client" || currentRole === "superAdmin") {
+      if (currentRole === "Client") {
         // For clients, find the clientStatusName that matches this slug
         const statusInfo = projectStatuses.find((s: any) => {
           if (s.clientStatusName) {
@@ -125,7 +122,7 @@ export const POST: APIRoute = async ({ request }) => {
       filterLogic: {
         statusFilter,
         currentRole,
-        isClient: currentRole === "Client" || currentRole === "superAdmin",
+        isClient: currentRole === "Client",
       },
     };
 

@@ -1,0 +1,165 @@
+---
+/**
+ * MavSafe dev-only diagnostics: explains why admin UI/API might treat you as non-admin.
+ * Open /debug/auth-access while logged in. Check server logs when MAVSAFE_AUTH_DEBUG=1.
+ */
+import { checkAuth } from "../../lib/auth";
+import { supabaseAdmin } from "../../lib/supabase-admin";
+import { supabase } from "../../lib/supabase";
+import { isAdminOrSuperAdmin } from "../../lib/user-utils";
+
+const auth = await checkAuth(Astro.cookies);
+
+function pickEnvPresence() {
+  return {
+    PUBLIC_SUPABASE_URL: !!(
+      import.meta.env.PUBLIC_SUPABASE_URL ||
+      (typeof process !== "undefined" && process.env.PUBLIC_SUPABASE_URL)
+    ),
+    PUBLIC_SUPABASE_PUBLISHABLE: !!(
+      import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE ||
+      (typeof process !== "undefined" && process.env.PUBLIC_SUPABASE_PUBLISHABLE)
+    ),
+    SUPABASE_SECRET: !!(
+      import.meta.env.SUPABASE_SECRET ||
+      (typeof process !== "undefined" && process.env.SUPABASE_SECRET)
+    ),
+    SUPABASE_SERVICE_ROLE_KEY: !!(
+      import.meta.env.SUPABASE_SERVICE_ROLE_KEY ||
+      (typeof process !== "undefined" && process.env.SUPABASE_SERVICE_ROLE_KEY)
+    ),
+    MAVSAFE_AUTH_DEBUG: !!(
+      typeof process !== "undefined" && process.env.MAVSAFE_AUTH_DEBUG === "1"
+    ),
+  };
+}
+
+/** Names of Set-Cookie headers present (no values). */
+const cookieHeader = Astro.request.headers.get("cookie") ?? "";
+const cookieNames = cookieHeader
+  ? Array.from(
+      new Set(
+        cookieHeader
+          .split(";")
+          .map((p) => p.trim().split("=")[0]?.trim())
+          .filter((n): n is string => Boolean(n?.length)),
+      ),
+    )
+  : [];
+
+let adminRow: Record<string, unknown> | null = null;
+let adminErr: unknown = null;
+let anonRow: Record<string, unknown> | null = null;
+let anonErr: unknown = null;
+
+const uid = auth.currentUser?.id;
+if (uid && supabaseAdmin) {
+  const r = await supabaseAdmin.from("profiles").select("id, role, email").eq("id", uid).maybeSingle();
+  adminRow = (r.data as Record<string, unknown> | null) ?? null;
+  adminErr = r.error ?? null;
+}
+
+const sbAccess = Astro.cookies.get("sb-access-token")?.value;
+const sbRefresh = Astro.cookies.get("sb-refresh-token")?.value;
+if (uid && supabase && sbAccess && sbRefresh) {
+  try {
+    await supabase.auth.setSession({
+      access_token: sbAccess,
+      refresh_token: sbRefresh,
+    });
+    const ar = await supabase.from("profiles").select("id, role").eq("id", uid).maybeSingle();
+    anonRow = (ar.data as Record<string, unknown> | null) ?? null;
+    anonErr = ar.error ?? null;
+  } catch (e) {
+    anonErr = String(e);
+  }
+}
+
+const profileRoleRaw = auth.currentUser?.profile?.role;
+const gate = {
+  checkAuth_currentRole: auth.currentRole,
+  profile_role_after_checkAuth: profileRoleRaw,
+  isAdminOrSuperAdmin_gate: isAdminOrSuperAdmin(auth.currentRole ?? (typeof profileRoleRaw === "string" ? profileRoleRaw : null)),
+};
+const diagnosticPayload = {
+  isAuth: auth.isAuth,
+  envPresence: pickEnvPresence(),
+  supabaseAdminConfigured: !!supabaseAdmin,
+  cookieNames,
+  gate,
+  profilesRow_viaServiceRole: { data: adminRow, error: adminErr },
+  profilesRow_viaAnonJwtAfterSetSession: { data: anonRow, error: anonErr },
+};
+
+const diagnosticText = JSON.stringify(diagnosticPayload, (_, v) => (v === undefined ? null : v), 2);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>MavSafe — Auth / admin diagnostics</title>
+    <style>
+      body {
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          sans-serif;
+        margin: 0;
+        padding: 1.25rem;
+        background: #0f172a;
+        color: #e2e8f0;
+        line-height: 1.5;
+      }
+      pre {
+        background: #020617;
+        border: 1px solid #334155;
+        border-radius: 8px;
+        padding: 1rem;
+        overflow: auto;
+        font-size: 13px;
+      }
+      a {
+        color: #38bdf8;
+      }
+      .warn {
+        color: #fcd34d;
+      }
+      .ok {
+        color: #86efac;
+      }
+      h1 {
+        font-size: 1.25rem;
+      }
+      ul {
+        margin: 0.5rem 0 1rem;
+        padding-left: 1.25rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Auth / admin access diagnostics</h1>
+    <p class="warn">
+      Dev helper page. Shows your session-derived role only (no secrets). Use host logs when <code
+        >MAVSAFE_AUTH_DEBUG=1</code
+      >.
+    </p>
+    <ul>
+      <li>
+        If <span class="ok">supabaseAdminConfigured</span> is <strong>false</strong>, set either <code>SUPABASE_SECRET</code>
+        or <code>SUPABASE_SERVICE_ROLE_KEY</code> on the server (Railway often only has the latter).
+      </li>
+      <li>
+        If roles differ between <strong>service-role refetch</strong> and <strong>checkAuth</strong>, profile fetch failed
+        or JWT singleton races — fix admin client/env first.
+      </li>
+      <li>
+        <code>/admin/index</code> allows only <strong>Admin</strong> and <strong>superAdmin</strong> (Staff is redirected).
+      </li>
+    </ul>
+    <pre><code>{diagnosticText}</code></pre>
+    <p><a href="/admin">Try /admin</a> · <a href="/dashboard">Dashboard</a></p>
+  </body>
+</html>

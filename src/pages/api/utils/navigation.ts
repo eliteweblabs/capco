@@ -85,9 +85,18 @@ export const navigation = async (
             buttonStyle && String(buttonStyle).trim()
               ? (buttonStyle as NavItem["buttonStyle"])
               : undefined;
+          const slug = String(page.slug || "").replace(/^\/+/, "");
+          let href = slug ? `/${slug}` : "/";
+          // CMS row titled "Dashboard" often used slug project/dashboard; ops home is /dashboard.
+          const titleLower = String(page.title || "")
+            .trim()
+            .toLowerCase();
+          if (href === "/project/dashboard" && titleLower === "dashboard") {
+            href = "/dashboard";
+          }
           return {
             label: page.title || page.slug,
-            href: `/${page.slug}`,
+            href,
             roles:
               page.navRoles && Array.isArray(page.navRoles) && page.navRoles.length > 0
                 ? (page.navRoles as UserRole[])

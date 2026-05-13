@@ -2,6 +2,7 @@
 // Dynamic 3D Mapbox Component that reads from CMS and geocodes addresses
 // Supports shortcode: <DynamicProjectsMap /> or <DynamicProjectsMap height="600px" maxWidth="2xl" />
 // When used as shortcode with no projects prop, MarkdownPage injects featured projects (single query).
+import { randomUUID } from "node:crypto";
 import {
   paddingClasses,
   getContainerWrapperClasses,
@@ -30,6 +31,8 @@ const {
   className = "",
   id,
 } = Astro.props;
+/** Unique per instance — duplicate id broke Mapbox when multiple maps or layouts re-ran. */
+const mapContainerId = (id?.trim() || `dynamic-projects-map-${randomUUID()}`) as string;
 const containerClasses = getContainerWrapperClasses(maxWidth);
 
 // Normalize projects: support CMS shape (p.data), API shape (p.title/p.address), or JSON string from shortcode
@@ -62,10 +65,14 @@ const projectsData = JSON.stringify(projects);
 <link href="https://api.mapbox.com/mapbox-gl-js/v3.18.1/mapbox-gl.css" rel="stylesheet" />
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.18.1/mapbox-gl.js"></script>
 
-<section id={id} class:list={["dynamic-projects-map-wrapper", paddingClasses[padding], className]}>
+<section
+  class:list={["dynamic-projects-map-wrapper", paddingClasses[padding], className]}
+  {...(id?.trim() ? { id: id.trim() } : {})}
+>
   <div class:list={containerClasses}>
     <div
-      id="dynamic-projects-map"
+      id={mapContainerId}
+      class="dynamic-projects-map-canvas"
       data-height={height}
       data-projects={projectsData}
       data-mapbox-token={mapboxToken}
@@ -76,28 +83,26 @@ const projectsData = JSON.stringify(projects);
 
 <style>
   /* Prevent map pan/zoom from scrolling the page */
-  #dynamic-projects-map {
+  .dynamic-projects-map-canvas {
     width: 100%;
+    min-height: 120px;
     height: var(--map-height, 500px);
     border-radius: 0.5rem;
     overflow: hidden;
     overscroll-behavior: contain;
     touch-action: none; /* Map handles all touch; prevents page scroll during pan */
   }
-  :global(#dynamic-projects-map .mapboxgl-map),
-  :global(#dynamic-projects-map .mapboxgl-canvas-container),
-  :global(#dynamic-projects-map .mapboxgl-canvas) {
+  :global(.dynamic-projects-map-canvas .mapboxgl-map),
+  :global(.dynamic-projects-map-canvas .mapboxgl-canvas-container),
+  :global(.dynamic-projects-map-canvas .mapboxgl-canvas) {
     overscroll-behavior: contain;
   }
 </style>
 
-<script>
+<script define:vars={{ mapContainerId }}>
   // Geocoding function using Mapbox Geocoding API
-  async function geocodeAddress(
-    address: string,
-    accessToken: string
-  ): Promise<[number, number] | null> {
-    if (!address?.trim()) return null;
+  async function geocodeAddress(address, accessToken) {
+    if (!address || !String(address).trim()) return null;
     try {
       const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${accessToken}&limit=1&country=US`;
       const response = await fetch(url);
@@ -114,15 +119,55 @@ const projectsData = JSON.stringify(projects);
     }
   }
 
+  function waitForMapContainerSize(el, cb, maxAttempts = 120) {
+    let attempts = 0;
+    const tick = () => {
+      attempts += 1;
+      const r = el.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) {
+        cb();
+        return;
+      }
+      if (attempts >= maxAttempts) {
+        console.warn(
+          "🗺️ [DynamicProjectsMap] Map container still has zero size — will init when visible (e.g. after leaving a hidden tab)."
+        );
+        el.removeAttribute("data-dynamic-map-init-pending");
+        const io = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (!entry.isIntersecting) continue;
+              const r2 = el.getBoundingClientRect();
+              if (r2.width > 0 && r2.height > 0) {
+                io.disconnect();
+                initDynamicProjectsMap();
+                break;
+              }
+            }
+          },
+          { root: null, threshold: 0 }
+        );
+        io.observe(el);
+        return;
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
   // Initialize map
   async function initDynamicProjectsMap() {
-    if (typeof (window as any).mapboxgl === "undefined") {
+    const mb = window.mapboxgl;
+    if (typeof mb === "undefined") {
       setTimeout(initDynamicProjectsMap, 100);
       return;
     }
 
-    const mapContainer = document.getElementById("dynamic-projects-map");
+    const mapContainer = document.getElementById(mapContainerId);
     if (!mapContainer) return;
+    if (mapContainer.getAttribute("data-dynamic-map-inited") === "1") return;
+    if (mapContainer.getAttribute("data-dynamic-map-init-pending") === "1") return;
+    mapContainer.setAttribute("data-dynamic-map-init-pending", "1");
 
     const height = mapContainer.getAttribute("data-height") || "500px";
     mapContainer.style.setProperty("--map-height", height);
@@ -136,98 +181,133 @@ const projectsData = JSON.stringify(projects);
       );
     }
 
-    (window as any).mapboxgl.accessToken = mapboxToken;
+    mb.accessToken = mapboxToken;
 
-    // Center on New England (Boston area)
-    // Use streets-v11 (classic style) - avoids "Se[i.type] is not a constructor" from Standard style layer types
-    const map = new (window as any).mapboxgl.Map({
-      container: "dynamic-projects-map",
-      style: "mapbox://styles/mapbox/streets-v11",
-      center: [-71.0589, 42.3601],
-      zoom: 9,
-      pitch: 45,
-      bearing: 0,
-      antialias: true,
-    });
+    waitForMapContainerSize(mapContainer, () => {
+      let map;
+      try {
+        // Center on New England (Boston area)
+        // Use streets-v11 (classic style) - avoids "Se[i.type] is not a constructor" from Standard style layer types
+        // Pass HTMLElement so Mapbox never binds to a wrong element by stale id.
+        map = new mb.Map({
+          container: mapContainer,
+          style: "mapbox://styles/mapbox/streets-v11",
+          center: [-71.0589, 42.3601],
+          zoom: 9,
+          pitch: 45,
+          bearing: 0,
+          antialias: true,
+        });
+      } catch (e) {
+        mapContainer.removeAttribute("data-dynamic-map-init-pending");
+        console.error("🗺️ [DynamicProjectsMap] Map constructor failed:", e);
+        return;
+      }
 
-    // Add navigation controls
-    map.addControl(new (window as any).mapboxgl.NavigationControl(), "top-right");
+      mapContainer.setAttribute("data-dynamic-map-inited", "1");
+      mapContainer.removeAttribute("data-dynamic-map-init-pending");
 
-    // Wait for map to load
-    map.on("load", async () => {
-      const bounds = new (window as any).mapboxgl.LngLatBounds();
-      let markersAdded = 0;
-
-      console.log(`🗺️ [ROTHCO DYNAMIC MAP] Processing ${projectsData.length} projects`);
-
-      // Process each project
-      for (const project of projectsData) {
-        const hasCoords = project.coordinates?.lng != null && project.coordinates?.lat != null;
-        const hasLocation = project.location && String(project.location).trim();
-
-        if (!hasCoords && !hasLocation) {
-          console.warn(
-            `🗺️ [ROTHCO DYNAMIC MAP] Skipping "${project.title}" – no location or coordinates`
-          );
-          continue;
+      const ro = new ResizeObserver(() => {
+        try {
+          map.resize();
+        } catch {
+          /* ignore */
         }
+      });
+      ro.observe(mapContainer);
 
-        let coordinates: [number, number] | null = null;
+      // Add navigation controls
+      map.addControl(new mb.NavigationControl(), "top-right");
 
-        // Use existing coordinates if available
-        if (hasCoords) {
-          coordinates = [project.coordinates.lng, project.coordinates.lat];
-        }
-        // Otherwise, geocode the location
-        else if (hasLocation) {
-          console.log(`🗺️ Geocoding: ${project.location}`);
-          coordinates = await geocodeAddress(project.location, mapboxToken);
-
-          if (coordinates) {
-            console.log(`✓ Found coordinates for ${project.title}:`, coordinates);
-          } else {
-            console.warn(`✗ Could not geocode: ${project.location}`);
+      // Wait for map to load
+      map.on("load", async () => {
+        requestAnimationFrame(() => {
+          try {
+            map.resize();
+          } catch {
+            /* ignore */
           }
-        }
+        });
 
-        // Add marker if we have coordinates
-        if (coordinates) {
-          const marker = new (window as any).mapboxgl.Marker({
-            color: "#D4A574", // Rothco Built primary color
-          })
-            .setLngLat(coordinates)
-            .setPopup(
-              new (window as any).mapboxgl.Popup({ offset: 25 }).setHTML(
-                `<div style="padding: 8px;">
+        const bounds = new mb.LngLatBounds();
+        let markersAdded = 0;
+
+        console.log(`🗺️ [ROTHCO DYNAMIC MAP] Processing ${projectsData.length} projects`);
+
+        // Process each project
+        for (const project of projectsData) {
+          const hasCoords = project.coordinates?.lng != null && project.coordinates?.lat != null;
+          const hasLocation = project.location && String(project.location).trim();
+
+          if (!hasCoords && !hasLocation) {
+            console.warn(
+              `🗺️ [ROTHCO DYNAMIC MAP] Skipping "${project.title}" – no location or coordinates`
+            );
+            continue;
+          }
+
+          let coordinates = null;
+
+          // Use existing coordinates if available
+          if (hasCoords) {
+            coordinates = [project.coordinates.lng, project.coordinates.lat];
+          }
+          // Otherwise, geocode the location
+          else if (hasLocation) {
+            console.log(`🗺️ Geocoding: ${project.location}`);
+            coordinates = await geocodeAddress(project.location, mapboxToken);
+
+            if (coordinates) {
+              console.log(`✓ Found coordinates for ${project.title}:`, coordinates);
+            } else {
+              console.warn(`✗ Could not geocode: ${project.location}`);
+            }
+          }
+
+          // Add marker if we have coordinates
+          if (coordinates) {
+            new mb.Marker({
+              color: "#D4A574", // Rothco Built primary color
+            })
+              .setLngLat(coordinates)
+              .setPopup(
+                new mb.Popup({ offset: 25 }).setHTML(
+                  `<div style="padding: 8px;">
                   <h3 style="font-weight: bold; margin-bottom: 4px; font-size: 16px;">${project.title}</h3>
                   ${project.location ? `<p style="margin: 4px 0; font-size: 13px; color: #666;">${project.location}</p>` : ""}
                   ${project.excerpt ? `<p style="margin: 4px 0; font-size: 14px;">${project.excerpt}</p>` : ""}
                 </div>`
+                )
               )
-            )
-            .addTo(map);
+              .addTo(map);
 
-          bounds.extend(coordinates);
-          markersAdded++;
+            bounds.extend(coordinates);
+            markersAdded++;
+          }
         }
-      }
 
-      // Fit map to show all markers
-      if (markersAdded > 0) {
-        map.fitBounds(bounds, {
-          padding: { top: 50, bottom: 50, left: 50, right: 50 },
-          maxZoom: 12,
-        });
-      }
+        // Fit map to show all markers
+        if (markersAdded > 0) {
+          map.fitBounds(bounds, {
+            padding: { top: 50, bottom: 50, left: 50, right: 50 },
+            maxZoom: 12,
+          });
+        }
 
-      console.log(`🗺️ [ROTHCO DYNAMIC MAP] Loaded ${markersAdded} project locations`);
+        console.log(`🗺️ [ROTHCO DYNAMIC MAP] Loaded ${markersAdded} project locations`);
+      });
     });
+  }
+
+  function runInitDynamicProjectsMap() {
+    initDynamicProjectsMap();
   }
 
   // Initialize when DOM is ready
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initDynamicProjectsMap);
+    document.addEventListener("DOMContentLoaded", runInitDynamicProjectsMap);
   } else {
-    initDynamicProjectsMap();
+    runInitDynamicProjectsMap();
   }
+  document.addEventListener("astro:page-load", runInitDynamicProjectsMap);
 </script>

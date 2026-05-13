@@ -1,0 +1,226 @@
+---
+/**
+ * Project labor: time_entries for this project.
+ * • variant "staff" — Team hours tab (Staff only).
+ * • variant "billing" — Billing & time logs (Admin/superAdmin only).
+ */
+import Alert from "../partials/Alert.astro";
+
+interface Props {
+  project?: any;
+  currentUser?: any;
+  secondaryTextClasses?: string;
+  primaryTextClasses?: string;
+  globalInputClasses?: string;
+  /** staff = field team totals; billing = invoicing/payroll view for admins */
+  variant?: "staff" | "billing";
+}
+
+const {
+  project,
+  currentUser,
+  secondaryTextClasses = "",
+  primaryTextClasses = "",
+  globalInputClasses,
+  variant = "staff",
+} = Astro.props;
+
+import { isAdminOrSuperAdmin } from "../../lib/user-utils";
+
+const role = currentUser?.profile?.role;
+
+if (variant === "staff" && role !== "Staff") {
+  return;
+}
+if (variant === "billing" && !isAdminOrSuperAdmin(role)) {
+  return;
+}
+
+const projectId = project?.id;
+const idPrefix = variant === "billing" ? "project-billing" : "team-hours";
+const contentId = variant === "billing" ? "content-billing" : "content-team-hours";
+const ledgerHref =
+  variant === "billing" && projectId != null
+    ? `/admin/time-entries?projectId=${projectId}`
+    : "/admin/time-entries";
+---
+
+<div
+  id={contentId}
+  class="tab-content color-background relative mb-16 min-h-[calc(100dvh-24rem)] p-4 shadow-lg dark:shadow-gray-900/30"
+  data-tab-team-hours-root
+  data-project-id={projectId != null ? String(projectId) : ""}
+  data-id-prefix={idPrefix}
+  data-variant={variant}
+>
+  <div class="mx-auto max-w-6xl space-y-4">
+    {
+      variant === "billing" ? (
+        <>
+          <h2 class={`text-xl font-semibold ${primaryTextClasses}`}>Billing &amp; time logs</h2>
+          <p class={`text-sm ${secondaryTextClasses}`}>
+            Invoice-ready labor for this project: check-in intervals, frozen rates at check-in, and
+            CSV export. Only Admin and superAdmin see this tab.
+          </p>
+          <p class={`text-sm ${secondaryTextClasses}`}>
+            <a
+              href={ledgerHref}
+              class="font-medium text-primary-600 hover:underline dark:text-primary-400"
+            >
+              Open full ledger in Time Entries
+            </a>
+            {" "}
+            (edit intervals, broader date range).
+          </p>
+          <Alert
+            type="info"
+            title="Source data"
+            description="Intervals from <code>timeEntries</code> where <code>projectId</code> matches this project. Duration appears after check-out; costing uses <code>hourlyRateSnapshot</code> from check-in."
+            class=""
+          />
+        </>
+      ) : (
+        <>
+          <h2 class={`text-xl font-semibold ${primaryTextClasses}`}>Team hours &amp; labor</h2>
+          <p class={`text-sm ${secondaryTextClasses}`}>
+            Totals below come from check-in sessions linked to this project. Checking in while
+            viewing this project records time against it. Export CSV for your records.
+          </p>
+          <Alert
+            type="info"
+            title="Source data"
+            description="Each row is a check-in interval from <code>timeEntries</code> with this <code>projectId</code>. End time is blank until check-out completes."
+            class=""
+          />
+        </>
+      )
+    }
+    <section
+      id={`${idPrefix}-charts-panel`}
+      class="mb-6 rounded-xl border border-gray-200 bg-gray-50/90 p-4 dark:border-gray-700 dark:bg-gray-900/50"
+      aria-label="Hours charts"
+    >
+      <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h3 class={`text-lg font-semibold ${primaryTextClasses}`}>Hours overview</h3>
+        <div class={`flex flex-wrap gap-2 ${secondaryTextClasses}`} role="group" aria-label="Bucket size">
+          <span class="self-center text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400"
+            >By</span
+          >
+          <button
+            type="button"
+            id={`${idPrefix}-gran-day`}
+            class={`${idPrefix}-gran-btn rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700`}
+            data-granularity="day"
+          >
+            Day
+          </button>
+          <button
+            type="button"
+            id={`${idPrefix}-gran-week`}
+            class={`${idPrefix}-gran-btn rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700`}
+            data-granularity="week"
+          >
+            Week
+          </button>
+          <button
+            type="button"
+            id={`${idPrefix}-gran-month`}
+            class={`${idPrefix}-gran-btn rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700`}
+            data-granularity="month"
+          >
+            Month
+          </button>
+        </div>
+      </div>
+      <div id={`${idPrefix}-chart-kpis`} class={`mb-4 flex flex-wrap gap-4 text-sm ${secondaryTextClasses}`}
+      >
+      </div>
+      <p id={`${idPrefix}-charts-empty`} class={`hidden text-sm ${secondaryTextClasses}`}>
+        No completed intervals in this date range — charts need check-out times with duration.
+      </p>
+      <div id={`${idPrefix}-charts-canvases`} class="grid gap-6 lg:grid-cols-2">
+        <div class="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900/70">
+          <p class={`mb-2 text-sm font-medium ${primaryTextClasses}`}>Total hours by period</p>
+          <div class="relative h-64 w-full">
+            <canvas id={`${idPrefix}-chart-total`}></canvas>
+          </div>
+        </div>
+        <div class="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900/70">
+          <p class={`mb-2 text-sm font-medium ${primaryTextClasses}`}>Hours per person (stacked)</p>
+          <div class="relative h-64 w-full overflow-x-auto">
+            <canvas id={`${idPrefix}-chart-by-person`} class="min-w-[280px]"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+    <div class="flex flex-wrap items-center gap-2">
+      <label class={`text-sm ${secondaryTextClasses}`}>
+        From
+        <input
+          type="date"
+          id={`${idPrefix}-from`}
+          class={`${globalInputClasses} mt-1 w-44`}
+          data-scope={`${idPrefix}-filters`}
+        />
+      </label>
+      <label class={`text-sm ${secondaryTextClasses}`}>
+        To
+        <input
+          type="date"
+          id={`${idPrefix}-to`}
+          class={`${globalInputClasses} mt-1 w-44`}
+          data-scope={`${idPrefix}-filters`}
+        />
+      </label>
+      <button
+        type="button"
+        id={`${idPrefix}-refresh`}
+        class="mt-6 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+      >
+        Apply range
+      </button>
+      <button
+        type="button"
+        id={`${idPrefix}-export`}
+        class="mt-6 rounded-lg bg-primary-600 px-3 py-2 text-sm font-medium text-white hover:bg-primary-700"
+      >
+        Export CSV
+      </button>
+    </div>
+    <div id={`${idPrefix}-status`} class={`text-sm ${secondaryTextClasses}`}></div>
+    <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+      <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-700">
+        <thead class="bg-gray-50 dark:bg-gray-800/80">
+          <tr>
+            <th class="px-3 py-2 text-left font-medium text-gray-700 dark:text-gray-200">Person</th>
+            <th class="px-3 py-2 text-left font-medium text-gray-700 dark:text-gray-200">Start</th>
+            <th class="px-3 py-2 text-left font-medium text-gray-700 dark:text-gray-200">End</th>
+            <th class="px-3 py-2 text-right font-medium text-gray-700 dark:text-gray-200">Hours</th>
+            <th class="px-3 py-2 text-right font-medium text-gray-700 dark:text-gray-200">
+              Rate at check-in
+            </th>
+            <th class="px-3 py-2 text-right font-medium text-gray-700 dark:text-gray-200">
+              Labor (USD)
+            </th>
+            <th class="px-3 py-2 text-left font-medium text-gray-700 dark:text-gray-200">Notes</th>
+          </tr>
+        </thead>
+        <tbody
+          id={`${idPrefix}-tbody`}
+          class="divide-y divide-gray-100 bg-white dark:divide-gray-800 dark:bg-gray-900/40"
+        >
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <h3 class={`mb-2 text-lg font-medium ${primaryTextClasses}`}>Summary by person</h3>
+      <div id={`${idPrefix}-summary`} class="space-y-3"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { mountTabTeamHoursRoots } from "../../scripts/tab-team-hours";
+
+  mountTabTeamHoursRoots();
+</script>

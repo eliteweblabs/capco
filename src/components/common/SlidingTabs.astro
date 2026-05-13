@@ -46,13 +46,9 @@ const {
   currentUser,
 } = Astro.props;
 
-// Filter items based on clientHide parameter
+// Filter items based on clientHide parameter (clients only — Staff / Admin / superAdmin see all passed items)
 const filteredItems = items.filter((item) => {
-  // If clientHide is true and current user is a Client, hide this item
-  if (
-    item.clientHide &&
-    (currentUser?.profile?.role === "Client" || currentUser?.profile?.role === "superAdmin")
-  ) {
+  if (item.clientHide && currentUser?.profile?.role === "Client") {
     return false;
   }
   return true;

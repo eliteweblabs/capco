@@ -19,6 +19,7 @@ import {
   getOptionStyle,
   getFontPreloadUrls,
 } from "../../lib/font-config";
+import { createHash } from "node:crypto";
 
 const { currentUser, session } = await checkAuth(Astro.cookies);
 const currentRole = currentUser?.profile?.role;
@@ -109,23 +110,41 @@ const settings = {
   logoClasses: companyData.logoClasses || "",
 };
 
-// Rendered icon files that exist in public/ (so list persists after refresh)
-import fs from "fs";
-import path from "path";
-const publicDir = path.join(process.cwd(), "public");
-const iconFileCandidates: { file: string; path: string; size: string; type: string }[] = [
-  { file: "favicon.svg", path: "/favicon.svg", size: "any", type: "image/svg+xml" },
-  { file: "favicon.png", path: "/favicon.png", size: "512x512", type: "image/png" },
-  {
-    file: "apple-touch-icon.png",
-    path: "/apple-touch-icon.png",
-    size: "180x180",
-    type: "image/png",
-  },
-];
-const renderedIconFiles = iconFileCandidates.filter((c) =>
-  fs.existsSync(path.join(publicDir, c.file))
-);
+
+/** Same icon + primary color ⇒ same thumbnails; busts caches when textarea ≠ old static files */
+const faviconThumbV =
+  settings.icon && settings.icon.includes("<svg")
+    ? createHash("sha256")
+        .update(settings.icon)
+        .update(settings.primaryColor || "")
+        .digest("hex")
+        .slice(0, 12)
+    : "";
+
+/** Previews hit dynamic routes (same source as tabs after AppHead/API fix), not leftover public/*. */
+const renderedIconRows =
+  faviconThumbV ?
+    [
+      {
+        label: "/api/favicon.svg",
+        href: `/api/favicon.svg?v=${faviconThumbV}`,
+        size: "any",
+        type: "image/svg+xml",
+      },
+      {
+        label: "/api/favicon.png?size=512",
+        href: `/api/favicon.png?size=512&v=${faviconThumbV}`,
+        size: "512×512",
+        type: "image/png",
+      },
+      {
+        label: "/api/favicon.png?size=180",
+        href: `/api/favicon.png?size=180&v=${faviconThumbV}`,
+        size: "180×180 · apple-touch",
+        type: "image/png",
+      },
+    ]
+  : [];
 
 /** Fix malformed SVG width attribute (e.g. width="100% version="1.1" from bad edit/replace) */
 function sanitizeSvgForDisplay(svg: string): string {
@@ -1013,8 +1032,10 @@ document.querySelectorAll('.my-element').forEach(el => {
       >
         <h3 class="mb-2 text-sm font-semibold">Rendered Icons</h3>
         <p class="mb-3 text-xs text-gray-600 dark:text-gray-400">
-          On save, the icon above is transformed (primary color + padding) and written as favicon
-          and apple-touch-icon files. Current files (persist after refresh):
+          Thumbnails reflect the <strong>saved</strong>
+          SVG in the Icon field via <code>/api/favicon.svg</code> and <code>/api/favicon.png</code>{" "}
+          (database), not leftover files under <code>public/</code>. On Save, matching files are written
+          to <code>public/favicon.svg</code>, etc., for installs that rely on disk assets.
         </p>
         <div
           id="rendered-icons-container"
@@ -1023,26 +1044,26 @@ document.querySelectorAll('.my-element').forEach(el => {
         >
           <p
             id="rendered-icons-placeholder"
-            class={`text-xs text-gray-500 dark:text-gray-400 ${renderedIconFiles.length > 0 ? "hidden" : ""}`}
+            class={`text-xs text-gray-500 dark:text-gray-400 ${renderedIconRows.length > 0 ? "hidden" : ""}`}
           >
-            Save settings to generate favicon.svg, favicon.png (512×512), and apple-touch-icon.png
-            (180×180).
+            Add valid SVG markup in <strong>Company Icon</strong> above to preview rendered favicons here,
+            then Save to write disk files under <code>public/</code>.
           </p>
           <div
             id="rendered-icons-list"
-            class={`mt-2 space-y-2 ${renderedIconFiles.length === 0 ? "hidden" : ""}`}
+            class={`mt-2 space-y-2 ${renderedIconRows.length === 0 ? "hidden" : ""}`}
           >
             {
-              renderedIconFiles.map((f) => (
+              renderedIconRows.map((f) => (
                 <div class="flex flex-wrap items-center gap-3 rounded border border-gray-200 bg-gray-50 p-2 dark:border-gray-600 dark:bg-gray-800">
                   <img
-                    src={f.path}
+                    src={f.href}
                     alt=""
                     class="h-10 w-10 shrink-0 object-contain"
                     loading="lazy"
                   />
                   <div class="min-w-0 text-xs">
-                    <div class="font-mono text-gray-700 dark:text-gray-300">{f.path}</div>
+                    <div class="font-mono text-gray-700 dark:text-gray-300">{f.label}</div>
                     <div class="text-gray-500 dark:text-gray-400">
                       {f.size} · {f.type}
                     </div>
@@ -1589,9 +1610,27 @@ document.querySelectorAll('.my-element').forEach(el => {
         }
       }
 
-      // Render favicon files and display in Rendered Icons section (icon was possibly saved)
+      // Render favicon disk files — prefer SVG from this save payload (avoid race with DB read)
       try {
-        const renderRes = await fetch("/api/admin/render-icons", { method: "POST" });
+        const iconField = document.getElementById("icon");
+        const primaryField = document.getElementById("primary_color");
+        const iconPayload =
+          typeof settings.icon === "string"
+            ? settings.icon
+            : iconField instanceof HTMLTextAreaElement
+              ? iconField.value
+              : "";
+        const primaryPayload =
+          typeof settings.primaryColor === "string"
+            ? settings.primaryColor
+            : primaryField instanceof HTMLInputElement
+              ? primaryField.value.trim()
+              : "";
+        const renderRes = await fetch("/api/admin/render-icons", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ icon: iconPayload, primaryColor: primaryPayload }),
+        });
         const renderData = await renderRes.json();
         const placeholder = document.getElementById("rendered-icons-placeholder");
         const listEl = document.getElementById("rendered-icons-list");
@@ -1604,10 +1643,13 @@ document.querySelectorAll('.my-element').forEach(el => {
               const row = document.createElement("div");
               row.className =
                 "flex flex-wrap items-center gap-3 rounded border border-gray-200 bg-gray-50 p-2 dark:border-gray-600 dark:bg-gray-800";
-              const preview =
-                f.type === "image/svg+xml"
-                  ? `<img src="${f.url}?t=${Date.now()}" alt="" class="h-10 w-10 shrink-0 object-contain" />`
-                  : `<img src="${f.url}?t=${Date.now()}" alt="" class="h-10 w-10 shrink-0 object-contain" />`;
+              const baseThumb =
+                typeof f.thumbnailUrl === "string" && f.thumbnailUrl
+                  ? f.thumbnailUrl
+                  : String(f.url || "");
+              const sep = baseThumb.includes("?") ? "&" : "?";
+              const thumbSrc = `${baseThumb}${sep}t=${Date.now()}`;
+              const preview = `<img src="${thumbSrc}" alt="" class="h-10 w-10 shrink-0 object-contain" />`;
               row.innerHTML = `
                 <span class="shrink-0">${preview}</span>
                 <div class="min-w-0 text-xs">
@@ -1623,6 +1665,29 @@ document.querySelectorAll('.my-element').forEach(el => {
         }
       } catch (err) {
         console.warn("[settings] Render icons request failed:", err);
+      }
+
+      // Browsers cache tab favicons aggressively; bump URL so the icon updates without a hard refresh
+      try {
+        const tabBust = String(Date.now());
+        document
+          .querySelectorAll(
+            'link[rel="icon"], link[rel="apple-touch-icon"], link[rel="mask-icon"]'
+          )
+          .forEach((link) => {
+            const raw = link.getAttribute("href");
+            if (
+              !raw ||
+              typeof raw !== "string" ||
+              !/\/api\/favicon\.(svg|png)/.test(raw)
+            )
+              return;
+            const u = new URL(raw, window.location.origin);
+            u.searchParams.set("_cb", tabBust);
+            link.setAttribute("href", `${u.pathname}${u.search}`);
+          });
+      } catch (_) {
+        /* ignore */
       }
 
       // Reload page after 2.5 seconds so user can see rendered icons list

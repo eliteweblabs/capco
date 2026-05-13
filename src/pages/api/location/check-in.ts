@@ -99,6 +99,19 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
         .eq("userId", currentUser.id)
         .is("endedAt", null);
 
+      let hourlyRateSnapshot: number | null = null;
+      const { data: rateRow } = await supabaseAdmin
+        .from("profiles")
+        .select("hourlyRate")
+        .eq("id", currentUser.id)
+        .maybeSingle();
+      if (rateRow?.hourlyRate != null && rateRow.hourlyRate !== "") {
+        const n = typeof rateRow.hourlyRate === "number" ? rateRow.hourlyRate : Number(rateRow.hourlyRate);
+        if (Number.isFinite(n) && n >= 0) {
+          hourlyRateSnapshot = Math.round(n * 100) / 100;
+        }
+      }
+
       const { data: newEntry, error: insertEntryError } = await supabaseAdmin
         .from("timeEntries")
         .insert({
@@ -106,6 +119,7 @@ export const POST: APIRoute = async ({ request, cookies }): Promise<Response> =>
           projectId: projectId ?? null,
           startedAt: new Date().toISOString(),
           notes: notes != null && String(notes).trim() !== "" ? String(notes).trim() : null,
+          hourlyRateSnapshot,
           updatedAt: new Date().toISOString(),
         })
         .select("id")

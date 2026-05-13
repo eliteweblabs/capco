@@ -4,6 +4,7 @@
  * GET /api/favicon.svg
  */
 import type { APIRoute } from "astro";
+import { createHash } from "node:crypto";
 import { globalCompanyData } from "./global/global-company-data";
 import { transformSvgForFavicon } from "../../lib/favicon-svg-transform";
 
@@ -17,11 +18,22 @@ export const GET: APIRoute = async ({ request }) => {
       (globalCompanyIcon.includes("<svg") || globalCompanyIcon.includes("<?xml"))
     ) {
       const transformed = transformSvgForFavicon(globalCompanyIcon, primary);
+      const etag = `"${createHash("sha256").update(transformed).digest("hex").slice(0, 32)}"`;
+
+      const inm = request.headers.get("if-none-match");
+      if (inm === etag) {
+        return new Response(null, {
+          status: 304,
+          headers: { ETag: etag, "Cache-Control": "public, max-age=120" },
+        });
+      }
+
       return new Response(transformed, {
         status: 200,
         headers: {
           "Content-Type": "image/svg+xml",
-          "Cache-Control": "public, max-age=3600",
+          "Cache-Control": "public, max-age=120",
+          ETag: etag,
         },
       });
     }

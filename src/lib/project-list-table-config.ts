@@ -39,7 +39,7 @@ export interface ProjectListColumnConfig {
   };
   /** Roles that can see this column (Admin, Staff, Client). Omit = all roles */
   allow?: string[];
-  /** Default width in % for resizable columns (e.g. 15 = 15%) */
+  /** Legacy weight hint; layout is fluid (compact icon cols vs flexible text cols), not %-driven */
   width?: number;
   /** Icon name for header (SimpleIcon) */
   icon?: string;
@@ -56,7 +56,23 @@ export function isColumnAllowed(col: ProjectListColumnConfig, role?: string | nu
   return col.allow.some((r) => r.toLowerCase() === role?.toLowerCase());
 }
 
-/** Fallback when config has no projectListColumns (e.g. missing config file). Widths are percentages. */
+/** Narrow icon/control columns vs flexible text-heavy columns (table-auto layout). */
+export function isCompactProjectListColumn(col: ProjectListColumnConfig): boolean {
+  if (col.width === 0) return true;
+  const compact: ProjectListColumnConfig["type"][] = [
+    "delete",
+    "edit",
+    "featured",
+    "assigned",
+    "progress",
+    "checklist",
+    "elapsed",
+    "timeSince",
+  ];
+  return compact.includes(col.type);
+}
+
+/** Fallback when config has no projectListColumns (e.g. missing config file). `width` is legacy/unused by layout. */
 const DEFAULT_PROJECT_LIST_COLUMNS: ProjectListColumnConfig[] = [
   {
     id: "delete",

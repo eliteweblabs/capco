@@ -1,9 +1,14 @@
 import type { APIRoute } from "astro";
+import {
+  billUnbilledTimeForProject,
+  getBillUnbilledTimeTriggerStatus,
+} from "../../../lib/bill-unbilled-time";
 import { checkAuth } from "../../../lib/auth";
 import { supabase } from "../../../lib/supabase";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
 import { SimpleProjectLogger } from "../../../lib/simple-logging";
 import { getSiteConfig } from "../../../lib/content";
+import { isAdminOrSuperAdmin } from "../../../lib/user-utils";
 
 // Helper function to get status name by status code (uses statuses from site-config)
 async function getStatusName(statusCode: number): Promise<string> {
@@ -78,7 +83,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
     }
 
-    const dbClient = isElevatedRole(currentUser?.profile?.role) && supabaseAdmin ? supabaseAdmin : supabase;
+    const dbClient =
+      isElevatedRole(currentUser?.profile?.role) && supabaseAdmin ? supabaseAdmin : supabase;
 
     const { data: updatedProject, error: updateError } = await dbClient
       .from("projects")
@@ -98,10 +104,34 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           details: updateError.message,
         }),
         {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
+          status: 500,
+          headers: { "Content-Type": "application/json" },
         }
       );
+    }
+
+    let billUnbilledTimeResult: Awaited<ReturnType<typeof billUnbilledTimeForProject>> | null =
+      null;
+    const triggerStatus = await getBillUnbilledTimeTriggerStatus();
+    if (
+      triggerStatus != null &&
+      Number(newStatus) === triggerStatus &&
+      Number(oldStatus) !== Number(newStatus) &&
+      isAdminOrSuperAdmin(currentUser?.profile?.role) &&
+      supabaseAdmin &&
+      currentUser?.id
+    ) {
+      try {
+        const br = await billUnbilledTimeForProject(supabaseAdmin, projectId, currentUser.id);
+        billUnbilledTimeResult = br;
+        if (br.ok) {
+          console.log("[UPDATE-STATUS] Auto-billed unbilled time:", br);
+        } else if (br.code !== "NO_UNBILLED") {
+          console.warn("[UPDATE-STATUS] Auto-bill:", br.message);
+        }
+      } catch (err) {
+        console.error("[UPDATE-STATUS] Auto-bill error:", err);
+      }
     }
 
     // Attach the author profile to the project object
@@ -226,6 +256,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         project: updatedProject,
         statusData: statusData,
         currentUser: currentUser,
+        billUnbilledTime: billUnbilledTimeResult,
       }),
       {
         status: 200,

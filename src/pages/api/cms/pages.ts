@@ -22,6 +22,7 @@ export const GET: APIRoute = async ({ request, url }) => {
     const slug = url.searchParams.get("slug");
     const clientId = process.env.RAILWAY_PROJECT_NAME || null;
 
+    /** Exact row lookup — supports /admin/cms when multiple deployments share one database. */
     if (idParam) {
       const idNum = parseInt(idParam, 10);
       if (!Number.isFinite(idNum)) {
@@ -313,23 +314,36 @@ export const DELETE: APIRoute = async ({ request, url }) => {
       });
     }
 
+    const idParam = url.searchParams.get("id");
     const slug = url.searchParams.get("slug");
-    if (!slug) {
-      return new Response(JSON.stringify({ error: "Slug is required" }), {
+    if (!slug && !idParam) {
+      return new Response(JSON.stringify({ error: "Slug or id is required" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    const clientId = process.env.RAILWAY_PROJECT_NAME || null;
+    if (idParam) {
+      const { error } = await supabaseAdmin.from("cmsPages").delete().eq("id", idParam);
 
-    // Use same OR logic as GET to find pages to delete
-    let deleteQuery = supabaseAdmin.from("cmsPages").delete().eq("slug", slug);
+      if (error) {
+        throw error;
+      }
 
-    if (clientId) {
+      return new Response(JSON.stringify({ message: "Page deleted successfully", success: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const clientIdForDelete = process.env.RAILWAY_PROJECT_NAME || null;
+
+    let deleteQuery = supabaseAdmin.from("cmsPages").delete().eq("slug", slug!);
+
+    if (clientIdForDelete) {
       // Delete BOTH global and client-specific pages with this slug
       deleteQuery = deleteQuery.or(
-        `clientId.is.null,clientId.eq.${quoteClientIdForPostgrest(clientId)}`
+        `clientId.is.null,clientId.eq.${quoteClientIdForPostgrest(clientIdForDelete)}`
       );
     }
     // If no clientId set, delete all pages with this slug (no filter)

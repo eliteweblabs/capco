@@ -5,6 +5,7 @@
  */
 import CriticalColors from "./CriticalColors.astro";
 import DynamicColorsAndFonts from "./DynamicColorsAndFonts.astro";
+import { getSiteIconUrls } from "../../lib/site-icon-urls";
 
 interface Props {
   safeTitle: string;
@@ -50,29 +51,10 @@ const {
   includeDynamicColorsAndFonts = true,
 } = Astro.props;
 
-// Icon: use /api/favicon.svg so we always get transformed icon (primary color + padding for apple-touch)
-let iconSrc: string;
-if (
-  globalCompanyIcon &&
-  typeof globalCompanyIcon === "string" &&
-  !globalCompanyIcon.includes("<svg") &&
-  !globalCompanyIcon.includes("<?xml")
-) {
-  iconSrc = globalCompanyIcon;
-} else {
-  iconSrc = "/api/favicon.svg";
-}
-
-// Prefer static apple-touch-icon.png (180x180) when generated; fallback to favicon PNG
-const appleTouchIconSrc = iconSrc.startsWith("data:")
-  ? "/api/favicon.png"
-  : iconSrc.includes(".png")
-    ? iconSrc
-    : "/apple-touch-icon.png";
-
-const iconType: "image/svg+xml" | "image/png" = iconSrc.includes(".png")
-  ? "image/png"
-  : "image/svg+xml";
+const { iconSrc, appleTouchIconSrc, iconType } = getSiteIconUrls({
+  globalCompanyIcon,
+  primaryColor,
+});
 
 // OG image: project featured image when on project page, else CMS
 const ogImageSrc = project?.featuredImageData?.publicUrl || ogImage || "";

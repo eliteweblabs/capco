@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS "bannerAlerts" (
   id SERIAL PRIMARY KEY,
   title TEXT,
   content TEXT NOT NULL,
-  type TEXT DEFAULT 'info' CHECK (type IN ('info', 'success', 'warning', 'error')),
+  type TEXT DEFAULT 'info' CHECK (type IN ('info', 'success', 'warning', 'error', 'emergency-phone')),
   position TEXT DEFAULT 'top' CHECK (position IN ('top', 'bottom')),
   "expireMs" INTEGER,
   dismissible BOOLEAN DEFAULT true,

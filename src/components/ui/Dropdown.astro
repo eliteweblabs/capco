@@ -19,9 +19,21 @@ interface Props {
   /** Selector for input to focus when dropdown opens. Must run in same click handler for iOS keypad. */
   focusSelector?: string;
   classList?: string[];
+  /**
+   * Open animation: content slides in from this side (set `data-direction` on the trigger too for clarity).
+   * Inner wrapper is animated so Popper’s transform on the outer node is unchanged.
+   */
+  direction?: "top" | "right" | "bottom" | "left";
 }
 
-const { id, title = "", onOpenCallback, focusSelector, classList } = Astro.props;
+const {
+  id,
+  title = "",
+  onOpenCallback,
+  focusSelector,
+  classList,
+  direction = "bottom",
+} = Astro.props;
 ---
 
 {/* Account dropdown: Flowbite data-dropdown-toggle / data-popover-target on AuthIcon trigger */}
@@ -34,17 +46,19 @@ const { id, title = "", onOpenCallback, focusSelector, classList } = Astro.props
   class={`${globalSidebarClasses} ${classList ? classList.join(" ") : ""} overflow-y-scroll no-scrollbar invisible fixed z-[1250] inline-block w-full max-w-md opacity-0 transition-opacity duration-300 ease-out`}
   data-dynamic-height="height"
 >
-  <div class="dropdown-arrow" data-popper-arrow></div>
+  <div class="popover-animated-inner" data-direction={direction}>
+    <div class="dropdown-arrow" data-popper-arrow></div>
 
-  {
-    title && (
-      <div class="py-3">
-        <h3 class={globalTextH3} set:html={title} />
-      </div>
-    )
-  }
+    {
+      title && (
+        <div class="py-3">
+          <h3 class={globalTextH3} set:html={title} />
+        </div>
+      )
+    }
 
-  <slot />
+    <slot />
+  </div>
 </div>
 
 <script is:inline>
@@ -304,5 +318,50 @@ const { id, title = "", onOpenCallback, focusSelector, classList } = Astro.props
 
   :global(.dark) [role="tooltip"] > [data-popper-arrow]:after {
     border-color: var(--color-gray-800) !important;
+  }
+
+  /*
+   * Directional open animation (inner only — Popper positions the outer [data-popover] node).
+   * Flowbite toggles .opacity-0 / .opacity-100 on the outer element.
+   */
+  .popover-animated-inner {
+    transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  [data-popover].opacity-0 .popover-animated-inner[data-direction="bottom"] {
+    transform: translateY(0.5rem);
+  }
+  [data-popover].opacity-100 .popover-animated-inner[data-direction="bottom"] {
+    transform: translateY(0);
+  }
+
+  [data-popover].opacity-0 .popover-animated-inner[data-direction="top"] {
+    transform: translateY(-0.5rem);
+  }
+  [data-popover].opacity-100 .popover-animated-inner[data-direction="top"] {
+    transform: translateY(0);
+  }
+
+  [data-popover].opacity-0 .popover-animated-inner[data-direction="left"] {
+    transform: translateX(0.5rem);
+  }
+  [data-popover].opacity-100 .popover-animated-inner[data-direction="left"] {
+    transform: translateX(0);
+  }
+
+  [data-popover].opacity-0 .popover-animated-inner[data-direction="right"] {
+    transform: translateX(-0.5rem);
+  }
+  [data-popover].opacity-100 .popover-animated-inner[data-direction="right"] {
+    transform: translateX(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .popover-animated-inner {
+      transition: none !important;
+    }
+    [data-popover] .popover-animated-inner {
+      transform: none !important;
+    }
   }
 </style>

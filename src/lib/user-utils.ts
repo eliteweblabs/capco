@@ -107,7 +107,8 @@ export function getUserRole(userInfo: UserInfo): string {
  * @returns boolean - True if user is Admin or superAdmin
  */
 export function isAdmin(userInfo: UserInfo): boolean {
-  return userInfo.role === "Admin" || userInfo.role === "superAdmin";
+  const r = normalizeUserRole(userInfo.role);
+  return r === "Admin" || r === "superAdmin";
 }
 
 /**
@@ -116,21 +117,32 @@ export function isAdmin(userInfo: UserInfo): boolean {
  * @returns boolean - True if user is superAdmin
  */
 export function isSuperAdmin(userInfo: UserInfo): boolean {
-  return userInfo.role === "superAdmin";
+  return normalizeUserRole(userInfo.role) === "superAdmin";
+}
+
+/**
+ * Normalize role string from DB or session (trim whitespace).
+ */
+export function normalizeUserRole(role: string | null | undefined): string | null {
+  if (role == null) return null;
+  const s = String(role).trim();
+  return s.length ? s : null;
 }
 
 /**
  * Check if role has admin-level access (Admin or superAdmin).
  */
 export function isAdminOrSuperAdmin(role: string | null | undefined): boolean {
-  return role === "Admin" || role === "superAdmin";
+  const r = normalizeUserRole(role);
+  return r === "Admin" || r === "superAdmin";
 }
 
 /**
  * Check if role has admin/staff-level access (Admin, superAdmin, or Staff).
  */
 export function isAdminOrStaffOrSuperAdmin(role: string | null | undefined): boolean {
-  return role === "Admin" || role === "superAdmin" || role === "Staff";
+  const r = normalizeUserRole(role);
+  return r === "Admin" || r === "superAdmin" || r === "Staff";
 }
 
 /**

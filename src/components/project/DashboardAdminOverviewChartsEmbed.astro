@@ -1,0 +1,28 @@
+---
+import type { DashboardAdminOverviewChartsPayload } from "../../scripts/dashboard-admin-overview-charts";
+
+interface Props {
+  payload: DashboardAdminOverviewChartsPayload;
+}
+const { payload } = Astro.props;
+
+const dashboardAdminOverviewChartsJson = JSON.stringify(payload).replace(/</g, "\\u003c");
+---
+
+<template id="dashboard-admin-overview-data" set:html={dashboardAdminOverviewChartsJson} />
+
+<script>
+  import { mountDashboardAdminOverviewCharts } from "../../scripts/dashboard-admin-overview-charts";
+
+  function runDashboardOverviewCharts() {
+    mountDashboardAdminOverviewCharts();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", runDashboardOverviewCharts);
+  } else {
+    runDashboardOverviewCharts();
+  }
+
+  document.addEventListener("astro:after-swap", runDashboardOverviewCharts);
+</script>

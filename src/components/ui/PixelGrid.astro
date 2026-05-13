@@ -287,13 +287,32 @@ const {
               const bands = Math.floor(height * 6) / 6;
               lum = 0.15 + bands * 0.8;
             } else if (name === "lavalamp") {
-              const blob1 =
-                Math.sin(i * 0.08 + animationFrame) * Math.cos(j * 0.06 + animationFrame * 0.7);
-              const blob2 =
-                Math.sin((i - 20) * 0.06 + animationFrame * 1.2) *
-                Math.cos((j - 15) * 0.07 + animationFrame * 0.9);
-              const mixed = (blob1 + blob2) * 0.5 + 0.5;
-              lum = 0.1 + mixed * 0.85;
+              /* Slow drift + several soft metablobs (was two sincos waves → read as one dominant lump). */
+              const slow = animationFrame * 0.18;
+              const nx = cols > 1 ? i / (cols - 1) : 0.5;
+              const ny = rows > 1 ? j / (rows - 1) : 0.5;
+              let blobSum = 0;
+              const blobs = [
+                { wa: 0.95, wb: 0.72, ph: 0.0, ox: 2.1, oy: 1.4, baseR: 0.195 },
+                { wa: 0.61, wb: 1.05, ph: 2.35, ox: 4.8, oy: 3.2, baseR: 0.165 },
+                { wa: 0.82, wb: 0.58, ph: 4.7, ox: 1.2, oy: 5.1, baseR: 0.175 },
+                { wa: 0.71, wb: 0.89, ph: 1.15, ox: 5.5, oy: 2.0, baseR: 0.155 },
+                { wa: 1.02, wb: 0.66, ph: 5.9, ox: 3.4, oy: 4.6, baseR: 0.145 },
+                { wa: 0.55, wb: 0.93, ph: 3.5, ox: 6.2, oy: 0.9, baseR: 0.125 },
+              ];
+              for (let bi = 0; bi < blobs.length; bi++) {
+                const bl = blobs[bi];
+                const bx = 0.5 + 0.41 * Math.sin(slow * bl.wa + bl.ph + Math.sin(bl.ox) * 0.5);
+                const by =
+                  0.5 + 0.41 * Math.cos(slow * bl.wb + bl.ph * 1.37 + Math.cos(bl.oy) * 0.45);
+                const d = Math.hypot(nx - bx, ny - by);
+                const breathe = 1 + 0.14 * Math.sin(slow * 0.31 + bi * 1.1);
+                const sigma = bl.baseR * breathe;
+                blobSum += Math.exp(-(d * d) / (sigma * sigma));
+              }
+              const warp = 0.12 * Math.sin(nx * 11 + slow * 0.42) * Math.cos(ny * 9 + slow * 0.33);
+              const shaped = Math.min(1, Math.max(0, Math.tanh(blobSum * 0.62) + warp));
+              lum = 0.1 + shaped * 0.85;
             } else if (name === "equalizer") {
               const band = Math.floor(i / Math.max(1, cols / 12));
               const wave = Math.sin(animationFrame * 4 + band * 0.5) * 0.5 + 0.5;

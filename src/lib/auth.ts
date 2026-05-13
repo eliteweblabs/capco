@@ -2,7 +2,12 @@ import type { User } from "@supabase/supabase-js";
 import { clearAuthCookies, setAuthCookies } from "./auth-cookies";
 import { supabase } from "./supabase";
 import { supabaseAdmin } from "./supabase-admin";
+import { normalizeUserRole } from "./user-utils";
 import { isBackendPage } from "../pages/api/utils/backend-page-check";
+
+/** SSR: avoid reading `profiles` with the singleton `supabase` after `setSession` — concurrent
+ * requests share that client and can swap JWTs; next PostgREST call may read another user’s row.
+ * Use `supabaseAdmin` keyed by `session.user.id` when `SUPABASE_SECRET` is set (production). */
 
 export interface ExtendedUser extends User {
   profile?: any;
@@ -66,7 +71,7 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
           .eq("id", customUserId.value)
           .single();
         if (profileData?.role) {
-          role = profileData.role;
+          role = normalizeUserRole(profileData.role as string) ?? "Client";
           profile = profileData;
         }
       } catch {
@@ -157,18 +162,43 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
           }
         }
 
-        // Get user profile and role
+        // Get user profile and role (see SSR note above re: singleton client)
         if (currentUser && currentUser.id) {
-          const { data: profile, error: profileError } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", currentUser.id)
-            .single();
+          let profile: Record<string, unknown> | null = null;
+          let profileError: { code?: string; message?: string } | null = null;
 
-          if (profile && !profileError) {
-            // Enhance currentUser object with profile data
+          if (supabaseAdmin) {
+            const adminRes = await supabaseAdmin
+              .from("profiles")
+              .select("*")
+              .eq("id", currentUser.id)
+              .single();
+            profile = adminRes.data as Record<string, unknown> | null;
+            profileError = adminRes.error;
+          }
+
+          // Only fallback to anon JWT client when service role isn't configured (Local dev sans secret).
+          if (!supabaseAdmin && supabase) {
+            const anonRes = await supabase
+              .from("profiles")
+              .select("*")
+              .eq("id", currentUser.id)
+              .single();
+            profile = anonRes.data as Record<string, unknown> | null;
+            profileError = anonRes.error;
+          }
+
+          const roleStr =
+            typeof profile?.role === "string"
+              ? normalizeUserRole(profile.role as string)
+              : profile?.role != null
+                ? normalizeUserRole(String(profile.role))
+                : null;
+
+          if (profile) {
             currentUser.profile = profile;
-            currentRole = profile.role;
+            // Blank/null role in DB would otherwise leave gate checks null → no admin/UI access
+            currentRole = roleStr ?? "Client";
           }
           if (!currentRole) {
             console.warn("🔐 [AUTH] Failed to get currentUser profile:", {
@@ -177,6 +207,7 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
               profileError: profileError,
               errorCode: profileError?.code,
               errorMessage: profileError?.message,
+              usedAdmin: !!supabaseAdmin,
             });
             // If profile doesn't exist, we should create one or handle gracefully
             if (profileError?.code === "PGRST116") {
@@ -264,6 +295,27 @@ export async function checkAuth(cookies: any): Promise<AuthResult> {
     supabase,
     currentRole,
   };
+
+  // Set MAVSAFE_AUTH_DEBUG=1 on the server (Railway/host env) for per-request dumps in logs.
+  if (
+    typeof process !== "undefined" &&
+    process.env.MAVSAFE_AUTH_DEBUG === "1" &&
+    typeof window === "undefined"
+  ) {
+    const at = cookies.get?.("sb-access-token");
+    const rt = cookies.get?.("sb-refresh-token");
+    console.warn("[MAVSAFE_AUTH_DEBUG]", {
+      isAuth,
+      hasSupabaseAdmin: !!supabaseAdmin,
+      uid: currentUser?.id ?? null,
+      email: currentUser?.email ?? null,
+      currentRole,
+      rawProfileRole: (currentUser?.profile as { role?: unknown } | undefined)?.role ?? null,
+      hasAccessCookie: !!(at && "value" in at && at.value),
+      hasRefreshCookie: !!(rt && "value" in rt && rt.value),
+      profileFetchPath: supabaseAdmin ? "supabaseAdmin" : "anon_singleton_after_setSession",
+    });
+  }
 
   return result;
 }

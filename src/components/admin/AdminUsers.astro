@@ -39,7 +39,9 @@ try {
   if (supabase) {
     const { data: allProfiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("id, firstName, lastName, companyName, phone, role, email, createdAt, displayOrder")
+      .select(
+        "id, firstName, lastName, companyName, phone, role, email, hourlyRate, createdAt, displayOrder"
+      )
       .order("displayOrder", { ascending: true, nullsFirst: false })
       .order("createdAt", { ascending: false });
 
@@ -63,8 +65,21 @@ const userCounts = {
   Admin: users.filter((u) => u.role === "Admin" || u.role === "superAdmin").length,
   superAdmin: users.filter((u) => u.role === "superAdmin").length,
   Staff: users.filter((u) => u.role === "Staff").length,
-  Client: users.filter((u) => u.role === "Client" || u.role === "superAdmin").length,
+  // Only true Client profiles — superAdmin is already counted under Admin / superAdmins.
+  Client: users.filter((u) => u.role === "Client").length,
   Total: users.length,
+};
+
+const formatHourly = (rate: unknown) => {
+  if (rate === null || rate === undefined || rate === "") return "—";
+  const n = typeof rate === "number" ? rate : Number(rate);
+  if (!Number.isFinite(n)) return "—";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(n);
 };
 
 const tanstackUsers = users.map((u) => {
@@ -74,6 +89,7 @@ const tanstackUsers = users.map((u) => {
     displayName: fn || u.companyName || "Unknown User",
     email: u.email || "—",
     role: u.role || "—",
+    hourlyRate: formatHourly(u.hourlyRate),
   };
 });
 ---
@@ -182,8 +198,14 @@ const tanstackUsers = users.map((u) => {
                 header: "Name",
                 meta: { width: 25 },
               },
-              { id: "email", accessorKey: "email", header: "Email", meta: { width: 45 } },
-              { id: "role", accessorKey: "role", header: "Role", meta: { width: 15 } },
+              { id: "email", accessorKey: "email", header: "Email", meta: { width: 32 } },
+              { id: "role", accessorKey: "role", header: "Role", meta: { width: 12 } },
+              {
+                id: "hourlyRate",
+                accessorKey: "hourlyRate",
+                header: "Hourly",
+                meta: { width: 14 },
+              },
             ]}
             getRowIdKey="id"
             emptyMessage={error ? `Error: ${error}` : "No users found."}
@@ -250,11 +272,23 @@ const tanstackUsers = users.map((u) => {
                 label: "Role",
                 getValue: (u) => u.role || "",
                 cellClass: "whitespace-nowrap",
-                width: 14,
+                width: 12,
                 getCellDataAttrs: (u) => ({
                   refresh: "role",
                   userId: u.id,
                   metaValue: u.role || "",
+                }),
+              },
+              {
+                key: "hourlyRate",
+                label: "Hourly",
+                getValue: (u) => formatHourly(u.hourlyRate),
+                cellClass: "whitespace-nowrap tabular-nums",
+                width: 12,
+                getCellDataAttrs: (u) => ({
+                  refresh: "hourlyRate",
+                  userId: u.id,
+                  metaValue: u.hourlyRate != null && u.hourlyRate !== "" ? String(u.hourlyRate) : "",
                 }),
               },
               {
@@ -728,7 +762,13 @@ const tanstackUsers = users.map((u) => {
     set("companyName", profile.companyName);
     set("firstName", profile.firstName);
     set("lastName", profile.lastName);
-    set("title", profile.title);
+    set("jobTitle", profile.jobTitle ?? profile.title);
+    set(
+      "hourly-rate",
+      profile.hourlyRate !== undefined && profile.hourlyRate !== null
+        ? String(profile.hourlyRate)
+        : ""
+    );
     set("email", profile.email);
     set("phone", profile.phone);
     set("bio", profile.bio);
@@ -784,6 +824,10 @@ const tanstackUsers = users.map((u) => {
           smsAlerts,
           mobileCarrier: smsAlerts ? mobileCarrier : undefined,
         };
+        const hourlyRaw = formData.get("hourlyRate");
+        if (hourlyRaw !== null && String(hourlyRaw).trim() !== "") {
+          userData.hourlyRate = String(hourlyRaw).trim();
+        }
         if (passwordValue) userData.password = passwordValue;
         if (!userData.companyName) {
           userData.companyName = `${userData.firstName} ${userData.lastName}`;
@@ -828,7 +872,12 @@ const tanstackUsers = users.map((u) => {
       const companyName = formData.get("companyName");
       const firstName = formData.get("firstName");
       const lastName = formData.get("lastName");
-      const title = formData.get("title");
+      const jobTitle = formData.get("jobTitle");
+      const hourlyRateRaw = formData.get("hourlyRate");
+      const hourlyRate =
+        hourlyRateRaw !== null && String(hourlyRateRaw).trim() !== ""
+          ? String(hourlyRateRaw).trim()
+          : null;
       const phone = formData.get("phone");
       const bio = formData.get("bio");
       const roleEl = document.getElementById("admin-role-select");
@@ -858,7 +907,8 @@ const tanstackUsers = users.map((u) => {
             companyName,
             firstName,
             lastName,
-            title: title?.toString().trim() || null,
+            jobTitle: jobTitle?.toString().trim() || null,
+            hourlyRate,
             phone,
             bio: bio?.toString().trim() || null,
             role,
@@ -883,6 +933,15 @@ const tanstackUsers = users.map((u) => {
                 email: d.email || "",
                 role: d.role || "",
                 companyName: d.companyName || "",
+                hourlyRate:
+                  d.hourlyRate !== undefined && d.hourlyRate !== null && d.hourlyRate !== ""
+                    ? new Intl.NumberFormat("en-US", {
+                        style: "currency",
+                        currency: "USD",
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      }).format(Number(d.hourlyRate))
+                    : "—",
               },
               undefined,
               targetUserId

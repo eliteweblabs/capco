@@ -67,9 +67,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       companyName,
       firstName,
       lastName,
+      jobTitle,
       title,
       phone,
       bio,
+      hourlyRate,
       smsAlerts,
       mobileCarrier,
       avatarUrl,
@@ -84,10 +86,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       companyName === undefined &&
       firstName === undefined &&
       lastName === undefined &&
+      jobTitle === undefined &&
+      title === undefined &&
       phone === undefined &&
+      bio === undefined &&
       smsAlerts === undefined &&
       mobileCarrier === undefined &&
-      socialNetworks === undefined;
+      socialNetworks === undefined &&
+      role === undefined &&
+      hourlyRate === undefined;
     if (!isAvatarOnlyUpdate && (!firstName?.trim() || !lastName?.trim())) {
       return new Response(
         JSON.stringify({
@@ -139,8 +146,35 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       updatePayload.role = ["Admin", "Staff", "Client"].includes(role) ? role : undefined;
     if (phone !== undefined) updatePayload.phone = phone?.trim() || null;
     if (companyName !== undefined) updatePayload.companyName = companyName?.trim() || "";
-    if (title !== undefined) updatePayload.title = title?.trim() || null;
+    const incomingJobTitle = jobTitle !== undefined ? jobTitle : title;
+    if (incomingJobTitle !== undefined)
+      updatePayload.jobTitle = incomingJobTitle?.trim() || null;
     if (bio !== undefined) updatePayload.bio = bio?.trim() || null;
+
+    // Admin / superAdmin only: hourly pay rate (payroll)
+    const canManagePayroll =
+      currentUser?.profile?.role === "Admin" || currentUser?.profile?.role === "superAdmin";
+    if (hourlyRate !== undefined && canManagePayroll) {
+      if (hourlyRate === null || hourlyRate === "") {
+        updatePayload.hourlyRate = null;
+      } else {
+        const raw =
+          typeof hourlyRate === "number"
+            ? hourlyRate
+            : parseFloat(String(hourlyRate).trim().replace(/,/g, ""));
+        if (!Number.isFinite(raw) || raw < 0 || raw > 999999.99) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: "Invalid hourlyRate",
+              details: "Must be a number between 0 and 999999.99",
+            }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+        }
+        updatePayload.hourlyRate = Math.round(raw * 100) / 100;
+      }
+    }
 
     // Optional avatar URL (set when uploading via media API; null to clear)
     if (avatarUrl !== undefined) {

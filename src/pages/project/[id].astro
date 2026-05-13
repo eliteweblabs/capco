@@ -28,7 +28,6 @@ if (!id || id === "dashboard") {
 // console.log("🏗️ [PROJECT] Project ID:", id);
 import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
 import HeroProject from "../../components/common/HeroProject.astro";
-import type { NavItem } from "../../components/common/SlidingTabs.astro";
 import TabFiles from "../../components/project/TabFiles.astro";
 import TabDiscussions from "../../components/project/TabDiscussions.astro";
 import TabProjectForm from "../../components/project/TabProjectForm.astro";
@@ -37,31 +36,65 @@ import TabContract from "../../components/project/TabContract.astro";
 import TabDeposit from "../../components/project/TabDeposit.astro";
 import TabFinalInvoice from "../../components/project/TabFinalInvoice.astro";
 import TabActivityLog from "../../components/project/TabActivityLog.astro";
+import TabTeamHours from "../../components/project/TabTeamHours.astro";
 import TabGeneratePdf from "../../components/project/TabGeneratePdf.astro";
 import TabMarketing from "../../components/project/TabMarketing.astro";
+import TabDeliverables from "../../components/project/TabDeliverables.astro";
+import { isAdminOrSuperAdmin } from "../../lib/user-utils";
+import type { NavItem } from "../../components/common/SlidingTabs.astro";
+
 // refresh-manager loaded in App.astro for Staff/Admin
 
-const validTabs = [
+/** URL ?status= slugs aligned with switchTab('...') */
+const PROJECT_TAB_SLUGS = new Set([
   "project-form",
   "discussion",
-  "Files",
+  "files",
   "proposal",
   "contract",
   "deposit",
   "activity-log",
+  "team-hours",
+  "billing",
   "generate-pdf",
   "marketing",
   "deliverables",
   "final-invoice",
-];
+]);
 
-const statusParam = Astro.url.searchParams.get("status");
-const defaultTab = validTabs.includes(statusParam || "")
-  ? statusParam || "project-form"
-  : "project-form";
-const activeTabIndex = validTabs.indexOf(defaultTab);
+const laborRole = currentUser?.profile?.role;
 
-const projectTabNavItems = [
+const statusSlugRaw = (Astro.url.searchParams.get("status") || "").toLowerCase();
+
+let activeSlug = PROJECT_TAB_SLUGS.has(statusSlugRaw) ? statusSlugRaw : "project-form";
+if (activeSlug === "billing" && !isAdminOrSuperAdmin(laborRole)) {
+  activeSlug = "project-form";
+}
+if (activeSlug === "team-hours" && laborRole !== "Staff") {
+  activeSlug = "project-form";
+}
+
+function filterTabsForHero(role: string | undefined, items: NavItem[]): NavItem[] {
+  return items.filter((item) => {
+    // clientHide = hide from clients only (Staff / Admin / superAdmin keep full tab strip)
+    if (item.clientHide && role === "Client") {
+      return false;
+    }
+    return true;
+  });
+}
+
+function navSlug(item: NavItem): string | null {
+  const m = item.onclick?.match(/switchTab\('([^']+)'\)/);
+  return m?.[1] ?? null;
+}
+
+/** Field staff: roster hours tab */
+const showTeamHoursTab = laborRole === "Staff";
+/** Invoicing / payroll view on the project — Admin & superAdmin only */
+const showBillingTab = isAdminOrSuperAdmin(laborRole);
+
+const projectTabNavItems: NavItem[] = [
   {
     id: "status-project-form",
     showLabel: true,
@@ -120,6 +153,30 @@ const projectTabNavItems = [
     onclick: "window.switchTab('activity-log')",
     clientHide: true,
   },
+  ...(showTeamHoursTab
+    ? [
+        {
+          id: "status-team-hours",
+          showLabel: true,
+          label: "Team hours",
+          icon: "clock",
+          variant: "tab" as const,
+          onclick: "window.switchTab('team-hours')",
+        },
+      ]
+    : []),
+  ...(showBillingTab
+    ? [
+        {
+          id: "status-billing",
+          showLabel: true,
+          label: "Billing & logs",
+          icon: "receipt",
+          variant: "tab" as const,
+          onclick: "window.switchTab('billing')",
+        },
+      ]
+    : []),
   {
     id: "status-generate-pdf",
     showLabel: true,
@@ -138,7 +195,22 @@ const projectTabNavItems = [
     onclick: "window.switchTab('marketing')",
     clientHide: true,
   },
+  {
+    id: "status-deliverables",
+    showLabel: true,
+    label: "Deliverables",
+    icon: "file-blank",
+    variant: "tab",
+    onclick: "window.switchTab('deliverables')",
+    clientHide: true,
+  },
 ];
+
+const filteredHeroTabs = filterTabsForHero(currentUser?.profile?.role, projectTabNavItems);
+const activeTabIndex = Math.max(
+  0,
+  filteredHeroTabs.findIndex((item) => navSlug(item) === activeSlug)
+);
 
 // Track which tab should load content server-side
 
@@ -279,7 +351,7 @@ if (currentStatusInt && statusData[currentStatusInt]) {
   currentStatusColor = currentStatusObj.current?.statusColor || "gray";
 
   // Handle status param in URL - if it matches currentStatusProjectAction, clear it
-  if (statusParam && currentStatusProjectAction?.includes("status=" + statusParam)) {
+  if (statusSlugRaw && currentStatusProjectAction?.includes("status=" + statusSlugRaw)) {
     currentStatusProjectAction = null;
   }
 }
@@ -314,7 +386,7 @@ if (currentStatusInt && statusData[currentStatusInt]) {
     {primaryTextClasses}
     {globalInputClasses}
     {globalCompanyName}
-    tabNavItems={projectTabNavItems as NavItem[]}
+    tabNavItems={filteredHeroTabs as NavItem[]}
     activeTabIndex={activeTabIndex}
   />
 
@@ -405,6 +477,23 @@ if (currentStatusInt && statusData[currentStatusInt]) {
     {statusData}
   />
 
+  <TabTeamHours
+    variant="staff"
+    {project}
+    {currentUser}
+    {secondaryTextClasses}
+    {primaryTextClasses}
+    {globalInputClasses}
+  />
+  <TabTeamHours
+    variant="billing"
+    {project}
+    {currentUser}
+    {secondaryTextClasses}
+    {primaryTextClasses}
+    {globalInputClasses}
+  />
+
   <TabGeneratePdf
     {secondaryTextClasses}
     {primaryTextClasses}
@@ -422,6 +511,8 @@ if (currentStatusInt && statusData[currentStatusInt]) {
     {primaryTextClasses}
     {globalInputClasses}
   />
+
+  <TabDeliverables {project} {currentUser} {globalInputClasses} />
   <!-- </div> -->
 </LayoutFullWidth>
 
@@ -514,7 +605,10 @@ if (currentStatusInt && statusData[currentStatusInt]) {
       "deposit",
       "final-invoice",
       "activity-log",
+      "team-hours",
+      "billing",
       "generate-pdf",
+      "marketing",
       "deliverables",
     ];
 
@@ -523,6 +617,14 @@ if (currentStatusInt && statusData[currentStatusInt]) {
     if (statusFromUrl && validTabs.includes(statusFromUrl)) {
       initialTab = statusFromUrl;
       console.log("🔔 [PROJECT-PAGE] Setting initial tab:", initialTab);
+    }
+
+    const rl = (_currentRole || "").trim();
+    if (initialTab === "billing" && rl !== "Admin" && rl !== "superAdmin") {
+      initialTab = "project-form";
+    }
+    if (initialTab === "team-hours" && rl !== "Staff") {
+      initialTab = "project-form";
     }
 
     // Switch to the initial tab - wait for switchTab to be defined
@@ -557,8 +659,17 @@ if (currentStatusInt && statusData[currentStatusInt]) {
       selectedContent.classList.remove("hidden");
 
       // Try to call the initialization function if it exists (e.g., initializeDiscussion)
-      const initFunc =
+      let initFunc =
         window[`initialize${baseTabName.charAt(0).toUpperCase() + baseTabName.slice(1)}`];
+      if (baseTabName === "team-hours") {
+        initFunc = (window as any).initializeTeamHours;
+      }
+      if (baseTabName === "billing") {
+        initFunc = (window as any).initializeBilling;
+      }
+      if (baseTabName === "deliverables") {
+        initFunc = (window as any).initializeDeliverables;
+      }
       if (typeof initFunc === "function") {
         console.log(`🔄 [SWITCH-TAB] Found initialization function for ${baseTabName}`);
         try {

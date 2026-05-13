@@ -1,7 +1,7 @@
 ---
 /**
  * Admin Time Metrics
- * Charts: hours per project, hours per user per project, total hours, monthly trend.
+ * Charts: hours per project, hours per user per project, total hours, labor USD (from snapshots), monthly trend.
  * Uses dummy data when DB has little/no data.
  */
 import { checkAuth } from "../../lib/auth";
@@ -32,11 +32,14 @@ const {
 
 let metrics: {
   totalHours: number;
+  /** Sum of hours × hourlyRateSnapshot per entry when snapshot present */
+  totalLaborUsd?: number;
   totalEntries: number;
   hoursPerProject: Array<{
     projectId: number;
     project: string;
     totalHours: number;
+    totalLaborUsd?: number;
     entryCount: number;
   }>;
   hoursPerUserPerProject: Array<{
@@ -45,11 +48,19 @@ let metrics: {
     projectId: number;
     project: string;
     totalHours: number;
+    totalLaborUsd?: number;
   }>;
-  monthlyTrend: Array<{ month: string; label: string; totalHours: number; entryCount: number }>;
+  monthlyTrend: Array<{
+    month: string;
+    label: string;
+    totalHours: number;
+    totalLaborUsd?: number;
+    entryCount: number;
+  }>;
   source: string;
 } = {
   totalHours: 0,
+  totalLaborUsd: 0,
   totalEntries: 0,
   hoursPerProject: [],
   hoursPerUserPerProject: [],
@@ -64,6 +75,9 @@ try {
   });
   if (res.ok) {
     metrics = await res.json();
+    if (typeof metrics.totalLaborUsd !== "number" || Number.isNaN(metrics.totalLaborUsd)) {
+      metrics.totalLaborUsd = 0;
+    }
   }
 } catch (e) {
   console.error("[TIME-METRICS] Fetch error:", e);
@@ -73,12 +87,24 @@ const tanstackHoursData = (metrics.hoursPerUserPerProject || [])
   .filter((r) => r.totalHours > 0)
   .sort((a, b) => b.totalHours - a.totalHours)
   .slice(0, 20)
-  .map((r) => ({
-    id: `${r.userId}-${r.projectId}`,
-    userName: r.userName,
-    project: r.project,
-    hours: `${r.totalHours.toFixed(1)}h`,
-  }));
+  .map((r) => {
+    const labor = r.totalLaborUsd;
+    const laborStr =
+      labor != null && labor > 0
+        ? `$${labor.toFixed(2)}`
+        : labor === 0 && r.totalHours > 0
+          ? "—"
+          : labor != null && labor === 0
+            ? "$0.00"
+            : "—";
+    return {
+      id: `${r.userId}-${r.projectId}`,
+      userName: r.userName,
+      project: r.project,
+      hours: `${r.totalHours.toFixed(1)}h`,
+      laborUsd: laborStr,
+    };
+  });
 ---
 
 <LayoutFullWidth
@@ -89,7 +115,7 @@ const tanstackHoursData = (metrics.hoursPerUserPerProject || [])
   <Hero
     enableAos={false}
     title="Time Metrics"
-    description="Hours per project, hours per user per project, total hours, and monthly trend."
+    description="Hours per project, per user, labor from rate-at-check-in snapshots, total hours, and monthly trend."
     {primaryTextClasses}
     {secondaryTextClasses}
   />
@@ -105,7 +131,7 @@ const tanstackHoursData = (metrics.hoursPerUserPerProject || [])
       }
 
       <!-- Stats row -->
-      <div class="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div class="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-5">
         <div class={dataTableCardClasses}>
           <div class="flex items-center p-6">
             <div
@@ -199,6 +225,41 @@ const tanstackHoursData = (metrics.hoursPerUserPerProject || [])
                   stroke-linecap="round"
                   stroke-linejoin="round"
                   stroke-width="2"
+                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                ></path>
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class={`text-sm font-medium ${dataTableDescriptionClasses}`}>
+                Labor (USD, snapshot)
+              </p>
+              <p class={`text-2xl font-semibold ${primaryTextClasses}`}>
+                ${(metrics.totalLaborUsd ?? 0).toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </p>
+              <p class={`mt-1 text-xs ${dataTableDescriptionClasses}`}>
+                From hourly rate stored at check-in; excludes rows without a snapshot
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class={dataTableCardClasses}>
+          <div class="flex items-center p-6">
+            <div
+              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800"
+            >
+              <svg
+                class="h-5 w-5 text-slate-600 dark:text-slate-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
                   d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
                 ></path>
               </svg>
@@ -259,9 +320,15 @@ const tanstackHoursData = (metrics.hoursPerUserPerProject || [])
             description="Sortable view (TanStack). Legacy table below."
             data={tanstackHoursData}
             columns={[
-              { id: "userName", accessorKey: "userName", header: "User", meta: { width: 30 } },
-              { id: "project", accessorKey: "project", header: "Project", meta: { width: 50 } },
-              { id: "hours", accessorKey: "hours", header: "Hours", meta: { width: 20 } },
+              { id: "userName", accessorKey: "userName", header: "User", meta: { width: 26 } },
+              { id: "project", accessorKey: "project", header: "Project", meta: { width: 40 } },
+              { id: "hours", accessorKey: "hours", header: "Hours", meta: { width: 14 } },
+              {
+                id: "laborUsd",
+                accessorKey: "laborUsd",
+                header: "Labor (USD)",
+                meta: { width: 20 },
+              },
             ]}
             getRowIdKey="id"
             emptyMessage="No data"
@@ -280,6 +347,9 @@ const tanstackHoursData = (metrics.hoursPerUserPerProject || [])
                 <th class="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white"
                   >Hours</th
                 >
+                <th class="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white"
+                  >Labor (USD)</th
+                >
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -296,6 +366,15 @@ const tanstackHoursData = (metrics.hoursPerUserPerProject || [])
                       </td>
                       <td class="px-4 py-2 text-right font-medium text-gray-900 dark:text-white">
                         {r.totalHours.toFixed(1)}h
+                      </td>
+                      <td class="px-4 py-2 text-right tabular-nums text-gray-700 dark:text-gray-300">
+                        {r.totalLaborUsd != null && r.totalLaborUsd > 0
+                          ? `$${r.totalLaborUsd.toFixed(2)}`
+                          : r.totalLaborUsd === 0 && r.totalHours > 0
+                            ? "—"
+                            : r.totalLaborUsd != null && r.totalLaborUsd === 0
+                              ? "$0.00"
+                              : "—"}
                       </td>
                     </tr>
                   ))

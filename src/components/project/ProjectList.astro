@@ -2,7 +2,11 @@
 import SimpleIcon from "../common/SimpleIcon.astro";
 import ProjectItem from "./ProjectItem.astro";
 import Tooltip from "../ui/Tooltip.astro";
-import { getProjectListTableColumns, isColumnAllowed } from "../../lib/project-list-table-config";
+import {
+  getProjectListTableColumns,
+  isColumnAllowed,
+  isCompactProjectListColumn,
+} from "../../lib/project-list-table-config";
 import { globalClasses } from "../../pages/api/global/global-classes";
 
 interface Props {
@@ -17,18 +21,6 @@ const currentRole = currentUser?.profile?.role;
 
 const allColumns = await getProjectListTableColumns();
 const visibleColumns = allColumns.filter((c) => isColumnAllowed(c, currentRole));
-
-// Normalize column widths so they sum to 100% (prevents jammed columns with table-layout: fixed)
-// Columns with width 0 are excluded and get fit-content (shrink to icon/button)
-const totalWeight = visibleColumns.reduce((sum, c) => sum + (c.width ?? 10), 0);
-const widthPcts: number[] =
-  totalWeight > 0 && visibleColumns.length > 0
-    ? visibleColumns.map((c) => ((c.width ?? 10) / totalWeight) * 100)
-    : visibleColumns.map(() => 100 / Math.max(1, visibleColumns.length));
-if (widthPcts.length > 1) {
-  const sumRest = widthPcts.slice(0, -1).reduce((a, b) => a + b, 0);
-  widthPcts[widthPcts.length - 1] = 100 - sumRest;
-}
 
 // console.log("🔍 [DEBUG] ProjectList statusData:", statusData);
 // console.log("🔍 [DEBUG] ProjectList currentUser:", currentUser);
@@ -112,11 +104,6 @@ const processedProjects = projects.map((project: any) => {
   };
 });
 
-// PERFORMANCE: Initial load - only render first 20 projects
-const INITIAL_LOAD_COUNT = 20;
-const initialProjects = processedProjects.slice(0, INITIAL_LOAD_COUNT);
-const hasMoreProjects = processedProjects.length > INITIAL_LOAD_COUNT;
-
 // Create array of 36 datetime options (9 days × 4 times per day)
 const createDueDateOptions = () => {
   const options = [];
@@ -154,13 +141,12 @@ const createDueDateOptions = () => {
 
 const dueDateOptions = createDueDateOptions();
 
-const { dataTableHeaderBarClasses, dataTableClearButtonClasses, dataTableTableWrapperClasses } =
-  globalClasses();
+const { dataTableTableWrapperClasses, dataTableTheadClasses } = globalClasses();
 ---
 
-<!-- Project List: JSON-driven columns (config per client). Reset button above table so thead has one row and column widths align. -->
+<!-- Project list: JSON-driven columns (config per client). Fluid widths: narrow icon/tool columns, flexible text columns; horizontal scroll via wrapper when needed. -->
 <div class="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-900">
-  <div class={dataTableHeaderBarClasses}>
+  <!-- <div class={dataTableHeaderBarClasses}>
     <div class="min-w-0 flex-1"></div>
     <button
       type="button"
@@ -171,27 +157,25 @@ const { dataTableHeaderBarClasses, dataTableClearButtonClasses, dataTableTableWr
     >
       Reset column widths
     </button>
-  </div>
+  </div> -->
   <div class={dataTableTableWrapperClasses}>
-    <table id="project-list" class="w-full min-w-[1400px] text-sm" style="table-layout: fixed">
-      <thead class="text-uppercase color-background text-xs">
+    <table
+      id="project-list"
+      class="w-full table-auto border-collapse text-sm text-gray-900 dark:text-white"
+    >
+      <thead
+        class={`${dataTableTheadClasses} text-xs border-b border-gray-200 dark:border-gray-700`}
+      >
         <tr>
           {
-            visibleColumns.map((col, i) => {
-              const pct = widthPcts[i] ?? 100 / visibleColumns.length;
-              const isFitContent = col.width === 0;
+            visibleColumns.map((col) => {
+              const compact = isCompactProjectListColumn(col);
               return (
                 <th
                   scope="col"
-                  data-col-id={col.id}
-                  data-col-default-width={isFitContent ? 0 : pct}
-                  data-col-fit-content={isFitContent ? "true" : undefined}
-                  style={
-                    isFitContent
-                      ? "width: 3rem; min-width: 3rem"
-                      : `width: ${pct}%; min-width: ${pct}%`
-                  }
-                  class={`color-border-primary snap-start border-r border-gray-200 px-4 py-3 font-semibold dark:border-gray-700 ${col.type === "edit" || col.type === "delete" ? "" : "text-center"}`}
+                  class={`color-background color-border-primary snap-start border-r border-gray-200 py-3 font-semibold dark:border-gray-700 ${
+                    compact ? "w-px max-w-fit whitespace-nowrap px-2" : "min-w-0 px-4"
+                  } ${col.type === "edit" || col.type === "delete" ? "" : "text-center"}`}
                 >
                   {col.tooltip ? (
                     <Tooltip text={col.tooltip} open={false}>
@@ -236,9 +220,7 @@ const { dataTableHeaderBarClasses, dataTableClearButtonClasses, dataTableTableWr
       <tbody id="project-list-tbody">
         {
           projects.length > 0 &&
-            processedProjects.map((project: any, index: number) => {
-              // Hide projects beyond initial load count
-              const isHidden = index >= INITIAL_LOAD_COUNT;
+            processedProjects.map((project: any) => {
               return (
                 <ProjectItem
                   columns={visibleColumns}
@@ -252,173 +234,42 @@ const { dataTableHeaderBarClasses, dataTableClearButtonClasses, dataTableTableWr
                   staffOptions={staffOptions}
                   dueDateOptions={dueDateOptions}
                   globalInputClasses={globalInputClasses}
-                  isHidden={isHidden}
                 />
               );
             })
         }
       </tbody>
 
-      <tfoot>
-        <!-- Start coding here -->
-        <tr>
-          <td colspan="100%">
-            <div class="relative overflow-hidden rounded-b-lg bg-white shadow-md dark:bg-gray-800">
-              <nav
-                class="flex flex-col items-start justify-between space-y-3 p-4 md:flex-row md:items-center md:space-y-0"
-                aria-label="Table navigation"
-              >
-                <span class="text-sm font-normal text-gray-500 dark:text-gray-400"
-                  >Showing <span class="font-semibold text-gray-900 dark:text-white">1-10</span> of <span
-                    class="font-semibold text-gray-900 dark:text-white">1000</span
-                  ></span
-                >
-                <ul class="inline-flex items-stretch -space-x-px">
-                  <li>
-                    <a
-                      href="#"
-                      class="ml-0 flex h-full items-center justify-center rounded-l-lg border border-gray-300 bg-white px-3 py-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
-                    >
-                      <span class="sr-only">Previous</span>
-                      <svg
-                        class="h-5 w-5"
-                        aria-hidden="true"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          fill-rule="evenodd"
-                          d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                          clip-rule="evenodd"></path>
-                      </svg>
-                    </a>
-                  </li>
-                  <li>
-                    <a
-                      href="#"
-                      class="flex items-center justify-center border border-gray-300 bg-white px-3 py-2 text-sm leading-tight text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
-                      >1</a
-                    >
-                  </li>
-                  <li>
-                    <a
-                      href="#"
-                      class="flex items-center justify-center border border-gray-300 bg-white px-3 py-2 text-sm leading-tight text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
-                      >2</a
-                    >
-                  </li>
-                  <li>
-                    <a
-                      href="#"
-                      aria-current="page"
-                      class="z-10 flex items-center justify-center border border-primary-300 bg-primary-50 px-3 py-2 text-sm leading-tight text-primary-600 hover:bg-primary-100 hover:text-primary-700 dark:border-gray-700 dark:bg-gray-700 dark:text-white"
-                      >3</a
-                    >
-                  </li>
-                  <li>
-                    <a
-                      href="#"
-                      class="flex items-center justify-center border border-gray-300 bg-white px-3 py-2 text-sm leading-tight text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
-                      >...</a
-                    >
-                  </li>
-                  <li>
-                    <a
-                      href="#"
-                      class="flex items-center justify-center border border-gray-300 bg-white px-3 py-2 text-sm leading-tight text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
-                      >100</a
-                    >
-                  </li>
-                  <li>
-                    <a
-                      href="#"
-                      class="flex h-full items-center justify-center rounded-r-lg border border-gray-300 bg-white px-3 py-1.5 leading-tight text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
-                    >
-                      <span class="sr-only">Next</span>
-                      <svg
-                        class="h-5 w-5"
-                        aria-hidden="true"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          fill-rule="evenodd"
-                          d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                          clip-rule="evenodd"></path>
-                      </svg>
-                    </a>
-                  </li>
-                </ul>
-              </nav>
-            </div>
-          </td>
-        </tr>
-      </tfoot>
+      {
+        projects.length > 0 && (
+          <tfoot>
+            <tr>
+              <td colspan={Math.max(1, visibleColumns.length)}>
+                <div class="relative overflow-hidden rounded-b-lg bg-white shadow-md dark:bg-gray-800">
+                  <nav
+                    class="flex flex-col items-start justify-between space-y-3 p-4 md:flex-row md:items-center md:space-y-0"
+                    aria-label="Project list pagination"
+                  >
+                    <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
+                      <span id="project-list-pagination-range">Showing —</span>
+                    </span>
+                    <ul
+                      id="project-list-pagination-pages"
+                      class="inline-flex items-stretch -space-x-px"
+                    />
+                  </nav>
+                </div>
+              </td>
+            </tr>
+          </tfoot>
+        )
+      }
     </table>
   </div>
 </div>
 
-{
-  hasMoreProjects && (
-    <div class="mt-4 text-center">
-      <button
-        id="load-more-projects"
-        class="rounded-lg bg-primary-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-600 focus:outline-none focus:ring-4 focus:ring-primary-300 dark:bg-primary-500 dark:hover:bg-primary-600 dark:focus:ring-primary-800"
-        data-total={processedProjects.length}
-        data-initial={INITIAL_LOAD_COUNT}
-      >
-        Load More Projects ({processedProjects.length - INITIAL_LOAD_COUNT} remaining)
-      </button>
-    </div>
-  )
-}
-
 <script>
-  import "../../scripts/project-list-resizable-columns";
-</script>
-<script>
-  document.getElementById("project-list-clear-column-widths")?.addEventListener("click", () => {
-    if (typeof (window as any).clearProjectListColumnWidths === "function") {
-      (window as any).clearProjectListColumnWidths();
-    }
-  });
-</script>
-<script>
-  // Client-side progressive reveal of hidden rows
-  const loadMoreButton = document.getElementById("load-more-projects");
-  const tbody = document.getElementById("project-list-tbody");
+  import { initProjectListPagination } from "../../scripts/project-list-pagination";
 
-  if (loadMoreButton && tbody) {
-    const BATCH_SIZE = 20;
-    let currentShown = parseInt(loadMoreButton.getAttribute("data-initial") || "20");
-    const total = parseInt(loadMoreButton.getAttribute("data-total") || "0");
-
-    loadMoreButton.addEventListener("click", () => {
-      // Show next batch of hidden rows
-      const allRows = tbody.querySelectorAll("tr[data-hidden='true']");
-      const batch = Array.from(allRows).slice(0, BATCH_SIZE);
-
-      batch.forEach((row) => {
-        (row as HTMLElement).removeAttribute("data-hidden");
-        (row as HTMLElement).style.display = "";
-      });
-
-      currentShown += batch.length;
-
-      // Update button or remove if all shown
-      if (currentShown >= total) {
-        loadMoreButton.remove();
-      } else {
-        const remaining = total - currentShown;
-        loadMoreButton.textContent = `Load More Projects (${remaining} remaining)`;
-      }
-
-      // Re-run global functions for newly visible rows
-      if (typeof window !== "undefined" && (window as any).renderFileIcons) {
-        (window as any).renderFileIcons();
-      }
-    });
-  }
+  initProjectListPagination();
 </script>

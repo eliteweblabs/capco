@@ -19,6 +19,10 @@ interface Props {
   hideFooter?: boolean;
   customFooterHtml?: string;
   socialNetworks?: SocialLink[];
+  /** Same URL as `<link rel="icon">` (CMS icon / `/api/favicon.svg`). */
+  footerSiteIconSrc?: string;
+  /** When true, footer logo uses empty `.cms-logo-mask` (custom CSS). Otherwise `<img>` fallback. */
+  footerUseCmsLogoMask?: boolean;
 }
 
 const {
@@ -30,11 +34,17 @@ const {
   primaryTextClasses,
   secondaryTextClasses,
   globalInputClasses,
-  isAuthPage,
   isAuthPageResult,
   isContactPageResult,
   hideFooter,
+  footerSiteIconSrc = "/api/favicon.svg",
+  footerUseCmsLogoMask = false,
 } = Astro.props;
+
+const footerHomeLabel =
+  globalCompanyName && globalCompanyName !== "Company Name Not Set"
+    ? `${globalCompanyName} – home`
+    : "Home";
 
 import Socials from "./Socials.astro";
 import ToggleSidebar from "./ToggleSidebar.astro";
@@ -58,8 +68,29 @@ import ToggleSidebar from "./ToggleSidebar.astro";
     <div class="flex items-center justify-start">
       <ToggleSidebar {currentUser} />
     </div>
-    <div class="flex items-center justify-center p-2" aria-hidden="true">
-      <a href="/" class="overscroll-scale cms-logo-mask h-12 w-12 shrink-0"></a>
+    <div class="flex items-center justify-center p-2">
+      <a
+        href="/"
+        class:list={[
+          "overscroll-scale flex h-12 w-12 shrink-0 items-center justify-center sm:hidden",
+          footerUseCmsLogoMask && "cms-logo-mask",
+        ]}
+        aria-label={footerHomeLabel}
+      >
+        {
+          !footerUseCmsLogoMask && (
+            <img
+              src={footerSiteIconSrc}
+              alt=""
+              class="h-full w-full object-contain"
+              width="48"
+              height="48"
+              loading="lazy"
+              decoding="async"
+            />
+          )
+        }
+      </a>
     </div>
     <div class="flex items-center justify-end p-2"></div>
   </div>

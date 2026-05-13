@@ -7,32 +7,41 @@ interface Props {
 import Breadcrumb from "./Breadcrumb.astro";
 
 const { role, projectLength } = Astro.props;
-const isClient = role === "Client" || role === "superAdmin";
 
-const title = projectLength === 0 ? "Start A New Project" : "Project Dashboard";
-const description = isClient
-  ? projectLength === 0
-    ? "Manage and track your fire protection projects"
-    : "Welcome to the Project Management System. All aspects of your project can be managed here."
-  : projectLength === 0
-    ? "Manage and track all fire protection projects"
-    : "Welcome to the Project Management System. All aspects of your project can be managed here.";
+const isStaff = role === "Staff";
+const isAdminView = role === "Admin" || role === "superAdmin";
+const isClientView = role === "Client";
+
+const title = isStaff
+  ? "Team dashboard"
+  : isAdminView
+    ? "Operations dashboard"
+    : "Your dashboard";
+
+const description = isStaff
+  ? "Staff tools are expanding soon. You can still review and work on assigned projects below."
+  : isAdminView
+    ? "Organization overview: clients, projects, and receivables. Open a project or start a new one from the menu."
+    : isClientView
+      ? "Your projects, invoices, and payments in one place. Start a new submission any time."
+      : "Your workspace for projects and account activity.";
+
 ---
 
 <Breadcrumb
   items={[
     {
       label: "Dashboard",
-      href: "#",
+      href: "/dashboard",
       icon: "home",
     },
     {
       label:
         projectLength === 0
-          ? "New<span class='hidden sm:inline'> Project</span>"
+          ? "0 <span class='hidden sm:inline'>Projects</span>"
           : projectLength === 1
-            ? "1 <span class='hidden sm:inline'>Active </span>Project"
-            : `${projectLength} <span class='hidden sm:inline'>Active </span>Projects`,
+            ? "1 <span class='hidden sm:inline'>Project</span>"
+            : `${projectLength} <span class='hidden sm:inline'>Projects</span>`,
       current: true,
       refreshField: "projectCount",
       metaValue: projectLength,

@@ -1,0 +1,292 @@
+---
+/**
+ * Application shell main content modeled on Flowbite Application UI patterns
+ * (stat cards, breadcrumb, quick actions). See https://flowbite.com/docs/getting-started/introduction/
+ */
+interface Props {
+  currentUser: {
+    id?: string;
+    email?: string | null;
+    profile?: {
+      firstName?: string | null;
+      lastName?: string | null;
+      role?: string | null;
+      companyName?: string | null;
+    } | null;
+  };
+  dashboardSummary: Record<string, unknown> | null;
+  primaryTextClasses: string;
+  secondaryTextClasses: string;
+  mutedTextSmClasses: string;
+  globalTextH3: string;
+  globalCardStyle: string;
+}
+
+const {
+  currentUser,
+  dashboardSummary,
+  primaryTextClasses,
+  secondaryTextClasses,
+  mutedTextSmClasses,
+  globalTextH3,
+  globalCardStyle,
+} = Astro.props;
+
+const role = (dashboardSummary?.role as string) || currentUser?.profile?.role || "Client";
+const first =
+  currentUser?.profile?.firstName?.trim() ||
+  (typeof currentUser?.email === "string" ? currentUser.email.split("@")[0] : "there");
+
+// Flowbite-style cards: light border/shadow stack (matches application-ui marketing blocks)
+const statCardClass =
+  "rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800";
+
+type ClientSummary = {
+  projectCount?: number;
+  outstandingBalanceFormatted?: string;
+  recentPayments?: {
+    amountFormatted: string;
+    paymentDate: string | null;
+    invoiceLabel: string | null;
+  }[];
+  projects?: { id: number; title: string | null; address: string | null }[];
+};
+
+const clientSummary = dashboardSummary?.client as ClientSummary | undefined;
+const recentPaymentsPreview = clientSummary?.recentPayments?.slice(0, 6) ?? [];
+const projectsPreview = clientSummary?.projects?.slice(0, 8) ?? [];
+const showClientTables = projectsPreview.length > 0;
+---
+
+<div class="space-y-6">
+  {/* Breadcrumb */}
+  <nav class="flex" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 text-sm font-medium md:space-x-2">
+      <li class="inline-flex items-center">
+        <span class={`inline-flex items-center ${mutedTextSmClasses}`}> Application </span>
+      </li>
+      <li>
+        <div class="flex items-center">
+          <svg
+            class="mx-1 h-3 w-3 text-gray-400"
+            aria-hidden="true"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 6 10"
+          >
+            <path
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="m1 9 4-4-4-4"></path>
+          </svg>
+          <span class={`${primaryTextClasses} ml-1 text-sm font-medium md:ml-2`}>Dashboard</span>
+        </div>
+      </li>
+    </ol>
+  </nav>
+
+  {/* Page header */}
+  <div class="sm:flex sm:justify-between sm:items-start">
+    <div>
+      <h1 class={`${primaryTextClasses} text-2xl font-bold tracking-tight sm:text-3xl`}>
+        Welcome back{first ? `, ${first}` : ""}
+      </h1>
+      <p class={`${mutedTextSmClasses} mt-1 max-w-2xl text-base`}>
+        {
+          role === "Staff"
+            ? "Staff workspace overview — quick links below."
+            : "High-level metrics and shortcuts. Details live in the project workspace."
+        }
+      </p>
+    </div>
+    <div class="mt-4 flex flex-wrap gap-2 sm:mt-0">
+      <a
+        href="/project/dashboard"
+        class="inline-flex items-center rounded-lg bg-primary-700 px-4 py-2.5 text-center text-sm font-medium text-white hover:bg-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
+      >
+        Project dashboard
+      </a>
+      {
+        role === "Client" || role === "superAdmin" ? (
+          <a
+            href="/project/new"
+            class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-center text-sm font-medium text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:hover:border-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-700"
+          >
+            New project
+          </a>
+        ) : null
+      }
+      {
+        role === "Admin" || role === "superAdmin" || role === "Staff" ? (
+          <a
+            href="/admin/global-activity"
+            class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-center text-sm font-medium text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:hover:border-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-700"
+          >
+            Global activity
+          </a>
+        ) : null
+      }
+    </div>
+  </div>
+
+  {/* Stats — admin */}
+  {
+    dashboardSummary?.admin ? (
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class={statCardClass}>
+          <p class={`${mutedTextSmClasses} text-sm font-normal`}>Clients</p>
+          <p class={`${primaryTextClasses} mt-2 text-2xl font-bold leading-none`}>
+            {(dashboardSummary.admin as { clientCount?: number }).clientCount ?? "—"}
+          </p>
+        </div>
+        <div class={statCardClass}>
+          <p class={`${mutedTextSmClasses} text-sm font-normal`}>Projects</p>
+          <p class={`${primaryTextClasses} mt-2 text-2xl font-bold leading-none`}>
+            {(dashboardSummary.admin as { projectCount?: number }).projectCount ?? "—"}
+          </p>
+        </div>
+        <div class={statCardClass}>
+          <p class={`${mutedTextSmClasses} text-sm font-normal`}>Outstanding balance</p>
+          <p class={`${primaryTextClasses} mt-2 text-2xl font-bold leading-none`}>
+            {(dashboardSummary.admin as { outstandingBalanceFormatted?: string }).outstandingBalanceFormatted ?? "—"}
+          </p>
+        </div>
+        <div class={statCardClass}>
+          <p class={`${mutedTextSmClasses} text-sm font-normal`}>Open invoices</p>
+          <p class={`${primaryTextClasses} mt-2 text-2xl font-bold leading-none`}>
+            {(dashboardSummary.admin as { openInvoiceCount?: number }).openInvoiceCount ?? "—"}
+          </p>
+        </div>
+      </div>
+    ) : null
+  }
+
+  {/* Stats — client */}
+  {
+    dashboardSummary?.client ? (
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class={statCardClass}>
+          <p class={`${mutedTextSmClasses} text-sm font-normal`}>My projects</p>
+          <p class={`${primaryTextClasses} mt-2 text-2xl font-bold leading-none`}>
+            {(dashboardSummary.client as { projectCount?: number }).projectCount ?? "—"}
+          </p>
+        </div>
+        <div class={statCardClass}>
+          <p class={`${mutedTextSmClasses} text-sm font-normal`}>Outstanding balance</p>
+          <p class={`${primaryTextClasses} mt-2 text-2xl font-bold leading-none`}>
+            {(dashboardSummary.client as { outstandingBalanceFormatted?: string }).outstandingBalanceFormatted ?? "—"}
+          </p>
+        </div>
+        <div class={statCardClass}>
+          <p class={`${mutedTextSmClasses} text-sm font-normal`}>Recent payments tracked</p>
+          <p class={`${primaryTextClasses} mt-2 text-2xl font-bold leading-none`}>
+            {(dashboardSummary.client as { recentPayments?: unknown[] }).recentPayments?.length ?? 0}
+          </p>
+        </div>
+      </div>
+    ) : null
+  }
+
+  {/* Staff placeholder */}
+  {
+    dashboardSummary?.staff ? (
+      <div class={`${globalCardStyle} p-6 shadow-sm`}>
+        <h2 class={globalTextH3}>Staff</h2>
+        <p class={`${secondaryTextClasses} mt-2 text-sm`}>
+          {(dashboardSummary.staff as { message?: string }).message ?? "More tools coming soon."}
+        </p>
+      </div>
+    ) : null
+  }
+
+  {/* Two-column: recent projects / payments (client) */}
+  {
+    showClientTables ? (
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div class={`${globalCardStyle} overflow-hidden shadow-sm`}>
+          <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+            <h2 class={globalTextH3}>Recent projects</h2>
+            <p class={mutedTextSmClasses}>Latest activity on your account</p>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-gray-500 dark:text-gray-400">
+              <thead class="bg-gray-50 text-xs uppercase text-gray-700 dark:bg-gray-700 dark:text-gray-400">
+                <tr>
+                  <th class="px-6 py-3" scope="col">
+                    Project
+                  </th>
+                  <th class="px-6 py-3" scope="col">
+                    Address
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {projectsPreview.map((p) => (
+                  <tr class="border-b bg-white dark:border-gray-700 dark:bg-gray-800">
+                    <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                      <a href={`/project/${p.id}`} class="hover:underline">
+                        {p.title || `Project #${p.id}`}
+                      </a>
+                    </td>
+                    <td class="px-6 py-4">{p.address || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class={`${globalCardStyle} overflow-hidden shadow-sm`}>
+          <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+            <h2 class={globalTextH3}>Recent payments</h2>
+            <p class={mutedTextSmClasses}>Stripe and manual entries</p>
+          </div>
+          <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+            {recentPaymentsPreview.length === 0 ? (
+              <li class={`px-6 py-4 ${mutedTextSmClasses}`}>No payments yet.</li>
+            ) : (
+              recentPaymentsPreview.map((pay) => (
+                <li class="flex items-center justify-between px-6 py-3">
+                  <div>
+                    <p class={`${primaryTextClasses} text-sm font-medium`}>{pay.amountFormatted}</p>
+                    <p class={mutedTextSmClasses}>{pay.invoiceLabel || "Invoice"}</p>
+                  </div>
+                  <span class={mutedTextSmClasses}>{pay.paymentDate || "—"}</span>
+                </li>
+              ))
+            )}
+          </ul>
+        </div>
+      </div>
+    ) : null
+  }
+
+  {/* Admin: secondary card — totals */}
+  {
+    dashboardSummary?.admin ? (
+      <div class={`${globalCardStyle} p-6 shadow-sm`}>
+        <h2 class={globalTextH3}>Revenue snapshot</h2>
+        <p class={`${mutedTextSmClasses} mt-1 text-sm`}>
+          Total billed (all invoices):{" "}
+          <span class={`${primaryTextClasses} font-semibold`}>
+            {(dashboardSummary.admin as { totalBilledFormatted?: string }).totalBilledFormatted ?? "—"}
+          </span>
+          {" · "}
+          Invoice rows:{" "}
+          <span class={`${primaryTextClasses} font-semibold`}>
+            {(dashboardSummary.admin as { invoiceCount?: number }).invoiceCount ?? "—"}
+          </span>
+        </p>
+        <div class="mt-4">
+          <a
+            href="/admin/finance"
+            class="text-sm font-medium text-primary-700 hover:underline dark:text-primary-400"
+          >
+            Open finance →
+          </a>
+        </div>
+      </div>
+    ) : null
+  }
+</div>

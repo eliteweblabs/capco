@@ -21,7 +21,7 @@ import DashboardContent from "../../components/project/Dashboard.astro";
 // ⚡ OPTIMIZATION: Run all data fetches in PARALLEL
 console.time("🏗️ [DASHBOARD] Total data fetch");
 
-const [companyData, statusData, projectsData] = await Promise.all([
+const [companyData, statusData, projectsData, dashboardSummary] = await Promise.all([
   // Fetch 1: Company data
   globalCompanyData().catch((err) => {
     console.error("🏗️ [DASHBOARD] ❌ Company data fetch failed:", err);
@@ -63,7 +63,7 @@ const [companyData, statusData, projectsData] = await Promise.all([
 
     try {
       const apiUrl = new URL("/api/projects/get", Astro.url.origin);
-      if (currentRole === "Client" || currentRole === "superAdmin") {
+      if (currentRole === "Client") {
         apiUrl.searchParams.set("authorId", currentUser.id);
       }
       apiUrl.searchParams.set("limit", "50");
@@ -115,6 +115,25 @@ const [companyData, statusData, projectsData] = await Promise.all([
       return [];
     }
   })(),
+
+  // Dashboard metrics (role-aware: client finances, admin totals, staff placeholder)
+  (async () => {
+    try {
+      const summaryUrl = new URL("/api/dashboard/summary", Astro.url.origin).toString();
+      const res = await fetch(summaryUrl, {
+        method: "GET",
+        headers: { Cookie: Astro.request.headers.get("Cookie") || "" },
+      });
+      if (!res.ok) {
+        console.warn("🏗️ [DASHBOARD] Summary API status:", res.status);
+        return null;
+      }
+      return await res.json();
+    } catch (err) {
+      console.error("🏗️ [DASHBOARD] Summary fetch failed:", err);
+      return null;
+    }
+  })(),
 ]);
 
 console.timeEnd("🏗️ [DASHBOARD] Total data fetch");
@@ -155,6 +174,7 @@ import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
     {globalInputClasses}
     {secondaryTextClasses}
     {primaryTextClasses}
+    dashboardSummary={dashboardSummary}
   />
 </LayoutFullWidth>
 

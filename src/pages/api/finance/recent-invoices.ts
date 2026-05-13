@@ -1,18 +1,29 @@
-import { createClient } from "@supabase/supabase-js";
+import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
+import { supabaseAdmin } from "../../../lib/supabase-admin";
+import { isAdminOrSuperAdmin, normalizeUserRole } from "../../../lib/user-utils";
 
-const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
-// Use PUBLIC_SUPABASE_PUBLISHABLE
-const supabaseKey = import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE;
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-export async function GET({ cookies }) {
+export const GET: APIRoute = async ({ cookies }) => {
   try {
-    // Check authentication
     const { currentUser, isAuth } = await checkAuth(cookies);
-    if (!isAuth || !currentUser) {
+    if (!isAuth || !currentUser?.id) {
       return new Response(JSON.stringify({ error: "Authentication required" }), {
         status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const role = normalizeUserRole(currentUser.profile?.role);
+    if (!isAdminOrSuperAdmin(role)) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    if (!supabaseAdmin) {
+      return new Response(JSON.stringify({ error: "Database unavailable" }), {
+        status: 503,
         headers: { "Content-Type": "application/json" },
       });
     }
@@ -24,8 +35,7 @@ export async function GET({ cookies }) {
       currentUser.role
     );
 
-    // Get recent invoices with project information
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("invoices")
       .select(
         `
@@ -49,10 +59,11 @@ export async function GET({ cookies }) {
       });
     }
 
-    console.log("📊 [RECENT-INVOICES] Recent invoices data:", data?.length || 0, "invoices found");
-    console.log("📊 [RECENT-INVOICES] Sample invoice:", data?.[0]);
+    const list = data || [];
+    console.log("📊 [RECENT-INVOICES] Recent invoices data:", list.length, "invoices found");
+    console.log("📊 [RECENT-INVOICES] Sample invoice:", list[0]);
 
-    return new Response(JSON.stringify(data), {
+    return new Response(JSON.stringify(list), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
@@ -63,4 +74,4 @@ export async function GET({ cookies }) {
       headers: { "Content-Type": "application/json" },
     });
   }
-}
+};

@@ -1,0 +1,176 @@
+---
+/**
+ * Unified data table playground — JSON-driven demo with sort, resize, reorder, expand, select, actions.
+ */
+import { checkAuth } from "../../../lib/auth";
+import { isAdminOrSuperAdmin } from "../../../lib/user-utils";
+import LayoutFullWidth from "../../../components/layouts/LayoutFullWidth.astro";
+import { globalClasses } from "../../api/global/global-classes";
+import { UNIFIED_DATA_TABLE_PLAYGROUND_DEFAULT_JSON } from "../../../lib/unified-data-table-playground-defaults";
+
+const { currentUser, session } = await checkAuth(Astro.cookies);
+const currentRole = currentUser?.profile?.role;
+
+if (!currentUser || !session) {
+  return Astro.redirect("/auth/login");
+}
+if (!isAdminOrSuperAdmin(currentRole)) {
+  return Astro.redirect("/dashboard");
+}
+
+const {
+  primaryTextClasses,
+  mutedTextClasses,
+  mutedTextSmClasses,
+  globalCodeInline,
+  globalInputClasses,
+  globalFormLabel,
+} = globalClasses();
+---
+
+<LayoutFullWidth
+  title="Data Table Playground"
+  classList="p-4"
+  description="Unified table demo: edit JSON to change columns, rows, and feature flags live."
+>
+  <div class="px-4 py-8">
+    <h1 class={`mb-2 text-3xl font-bold ${primaryTextClasses}`}>Data table playground</h1>
+    <p class={`mb-6 max-w-3xl ${mutedTextClasses}`}>
+      One surface that combines sortable headers (TanStack Table), resizable columns, drag row
+      reorder, expandable detail rows, a select column, and a demo actions column. Edit the JSON
+      below; the preview updates after a short pause. Reorder events are appended to the log (see
+      <code class={globalCodeInline}>reorderCallbackName</code>).
+    </p>
+
+    <div class="mb-4 grid gap-6 lg:grid-cols-2">
+      <div>
+        <label for="unified-table-json" class={globalFormLabel}>Table config (JSON)</label>
+        <textarea
+          id="unified-table-json"
+          class={`${globalInputClasses} font-mono text-sm leading-snug`}
+          rows="26"
+          spellcheck="false"
+          set:text={UNIFIED_DATA_TABLE_PLAYGROUND_DEFAULT_JSON}
+        />
+      </div>
+      <div class="min-w-0 space-y-4">
+        <div
+          id="unified-json-error"
+          role="alert"
+          class="hidden rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/50 dark:text-red-200"
+        >
+        </div>
+        <div>
+          <h2 class={`mb-2 text-sm font-semibold ${primaryTextClasses}`}>Reorder log</h2>
+          <pre
+            id="unified-reorder-log"
+            class={`max-h-48 overflow-auto rounded-md border border-gray-200 bg-gray-50 p-3 font-mono text-xs dark:border-gray-600 dark:bg-gray-900 ${mutedTextSmClasses}`}>{`(waiting for drag reorder…)`}</pre>
+        </div>
+        <div class={mutedTextSmClasses}>
+          <p class="font-medium text-gray-700 dark:text-gray-300">Feature flags</p>
+          <ul class="mt-1 list-inside list-disc space-y-1">
+            <li>
+              <code class={globalCodeInline}>features.expandable</code> — row click / Enter opens detail
+            </li>
+            <li>
+              <code class={globalCodeInline}>features.showDragHandle</code> — drag handle + reorder (syncs
+              data + optional callback)
+            </li>
+            <li>
+              <code class={globalCodeInline}>features.showSelectColumn</code> — checkboxes + select all
+            </li>
+            <li>
+              <code class={globalCodeInline}>features.showActionsColumn</code> — demo Edit / Del buttons
+            </li>
+            <li>
+              <code class={globalCodeInline}>features.resizable</code> — drag column edges (same as AccordionDataTable)
+            </li>
+            <li>
+              <code class={globalCodeInline}>features.actionsColumnSticky</code> — sticky actions header/cells
+            </li>
+            <li>
+              <code class={globalCodeInline}>columns[].meta</code> — optional
+              <code class={globalCodeInline}>icon</code>,
+              <code class={globalCodeInline}>tooltip</code>,
+              <code class={globalCodeInline}>width</code> (%),
+              <code class={globalCodeInline}>sticky</code> (
+              <code class={globalCodeInline}>"left" | "right"</code>)
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div id="unified-playground-mount" class="min-h-[200px]"></div>
+  </div>
+</LayoutFullWidth>
+
+<script>
+  import { mountUnifiedDataTablePlayground } from "../../../scripts/unified-data-table-playground";
+
+  type OrderEntry = { id: string | null; displayOrder: number };
+
+  function debounce<TArgs extends unknown[]>(
+    fn: (...a: TArgs) => void,
+    ms: number
+  ): (...a: TArgs) => void {
+    let t: ReturnType<typeof setTimeout> | null = null;
+    return (...a: TArgs) => {
+      if (t) clearTimeout(t);
+      t = setTimeout(() => {
+        t = null;
+        fn(...a);
+      }, ms);
+    };
+  }
+
+  function appendReorderLog(order: OrderEntry[]) {
+    const el = document.getElementById("unified-reorder-log");
+    if (!el) return;
+    const line = `${new Date().toISOString().slice(11, 19)}  ${JSON.stringify(order)}\n`;
+    if (el.textContent?.includes("waiting for")) el.textContent = "";
+    el.textContent += line;
+    el.scrollTop = el.scrollHeight;
+  }
+
+  async function playgroundDemoReorder(order: OrderEntry[]) {
+    appendReorderLog(order);
+  }
+
+  Object.assign(window, { playgroundDemoReorder });
+
+  function runPlayground() {
+    const ta = document.getElementById("unified-table-json");
+    const mount = document.getElementById("unified-playground-mount");
+    const errEl = document.getElementById("unified-json-error");
+    if (!(ta instanceof HTMLTextAreaElement) || !mount || !errEl) return;
+    mountUnifiedDataTablePlayground(mount, ta.value, (_config, error) => {
+      if (error) {
+        errEl.textContent = error;
+        errEl.classList.remove("hidden");
+      } else {
+        errEl.textContent = "";
+        errEl.classList.add("hidden");
+      }
+    });
+  }
+
+  const debounced = debounce(runPlayground, 350);
+
+  function bindTextareaOnce() {
+    const ta = document.getElementById("unified-table-json");
+    if (!(ta instanceof HTMLTextAreaElement)) return;
+    if (ta.dataset.playgroundBound === "true") return;
+    ta.dataset.playgroundBound = "true";
+    ta.addEventListener("input", debounced);
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    bindTextareaOnce();
+    runPlayground();
+  });
+  document.addEventListener("astro:page-load", () => {
+    bindTextareaOnce();
+    runPlayground();
+  });
+</script>

@@ -53,8 +53,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
 
     // Apply role-based filtering
     const userRole = currentUser.profile?.role;
-    if (userRole === "Client" || userRole === "superAdmin") {
-      // Clients can only see payments for their own projects
+    if (userRole === "Client") {
       query = query.eq("createdBy", currentUser.id);
     }
     // Admin and Staff can see all payments (no additional filtering)

@@ -368,7 +368,7 @@ export const blockRegistry: Record<string, BlockDefinition> = {
       variant: {
         type: "string",
         default: "info",
-        description: "Type: info, success, warning, danger",
+        description: "Type: info, success, warning, danger, emergency-phone",
       },
       dismissible: { type: "boolean", default: false, description: "Can be dismissed" },
       icon: { type: "string", description: "Icon name" },

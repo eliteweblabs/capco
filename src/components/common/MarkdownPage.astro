@@ -18,7 +18,6 @@ import LayoutMinimal from "../layouts/LayoutMinimal.astro";
 import LayoutCentered from "../layouts/LayoutCentered.astro";
 import LayoutFullscreen from "../layouts/LayoutFullscreen.astro";
 import LayoutFullForm from "../layouts/LayoutFullForm.astro";
-import CapcoHeroSection from "./CapcoHeroSection.astro";
 
 interface Props {
   slug: string;
@@ -186,6 +185,12 @@ function mergeCapcoHeroSegments(
 
 const displaySegments = mergeCapcoHeroSegments(segments, components);
 
+/** Dynamic import avoids pulling NodesCapco (heavy client script) into every [...slug] page when the hero merge is absent. See CapcoHeroSection → NodesCapco. */
+let CapcoHeroSectionCmp: (typeof import("./CapcoHeroSection.astro"))["default"] | null = null;
+if (displaySegments.some((seg) => seg.type === "capcoHero")) {
+  CapcoHeroSectionCmp = (await import("./CapcoHeroSection.astro")).default;
+}
+
 // Component name aliases (e.g. markdown uses ProjectsList but file is ProjectList.astro)
 const componentAliases: Record<string, string> = {
   ProjectsList: "ProjectList",
@@ -258,9 +263,10 @@ const componentModules = await Promise.all(
           return <Fragment set:html={seg.content} />;
         }
         if (seg.type === "capcoHero") {
+          if (!CapcoHeroSectionCmp) return null;
           return (
             <div data-component-name="CapcoHeroSection">
-              <CapcoHeroSection />
+              <CapcoHeroSectionCmp />
             </div>
           );
         }

@@ -1,80 +1,150 @@
 ---
 /**
- * CMS Preloader Component
- * Animated zoom-in preloader using the library/CMS icon
- * Can be used as a page loader or for loading states
+ * Page intro: full-viewport dot grid (body PixelGrid) + centered brand icon, then staged fade —
+ * icon out → header (nav + aside) → footer (+ FABs) → main content.
+ * Dispatches `cms-preloader-hidden` when the sequence finishes (AOS / listeners).
  */
 
 interface Props {
-  id?: string;
-  showByDefault?: boolean; // Whether to show on page load
-  zIndex?: string; // z-index class (e.g., "z-50")
   globalCompanyName: string;
+  /** ms to hold on grid + icon before icon fades */
+  holdMs?: number;
+  /** ms for centered icon opacity transition */
+  iconFadeMs?: number;
+  /** ms between each chrome stage after icon fade begins */
+  stageGapMs?: number;
 }
 
 import SimpleIcon from "../common/SimpleIcon.astro";
-import PixelGrid from "./PixelGrid.astro";
+
 const {
-  id = "cms-preloader",
-  showByDefault = false,
-  zIndex = "z-[50000]",
   globalCompanyName,
+  holdMs = 220,
+  iconFadeMs = 500,
+  stageGapMs = 200,
 } = Astro.props;
+
+const chromeTransitionMs = 500;
 ---
 
-<!-- <PixelGrid id="pixel-grid" /> -->
 <div
-  {id}
-  class={`fixed inset-0 ${zIndex} flex items-center justify-center bg-gray-50 dark:bg-gray-950 transition-opacity duration-500 ${showByDefault ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+  id="site-intro-icon-layer"
+  class="pointer-events-none fixed inset-0 z-[110] flex items-center justify-center bg-transparent opacity-100 transition-opacity duration-500 ease-out motion-reduce:hidden"
   aria-hidden="true"
 >
-  <PixelGrid
-    id="preloader-pixelGrid"
-    class="touch-manipulation-none fixed inset-0 -z-[1000]"
-    cellSize="0.5rem"
-    baseColor="primary-500"
-    initialAnimation="plasma"
-    circularMask={true}
-  />
-  <!-- Icon Mask with Zoom Animation -->
   <div class="relative flex h-32 w-32 items-center justify-center">
-    <!-- Animated Library/CMS Icon -->
-    <!-- get animated icon from simple-icons -->
     <SimpleIcon name={globalCompanyName} size="6xl" />
   </div>
 </div>
-{/* Preloader logic is in App.astro head (inline) so it runs early — see window.cmsPreloader */}
 
-<!-- CMS Preloader: inline in head so it runs early; hides 2s after DOMContentLoaded -->
-<script is:inline>
+<script
+  is:inline
+  define:vars={{ holdMs, iconFadeMs, stageGapMs, chromeTransitionMs }}
+>
   (function () {
-    var DISPLAY_MS = 250;
-    function init() {
-      var preloader = document.getElementById("cms-preloader");
-      if (preloader) {
-        window.cmsPreloader = {
-          show: function () {
-            preloader.classList.remove("opacity-0", "pointer-events-none");
-            preloader.classList.add("opacity-100");
-          },
-          hide: function () {
-            preloader.classList.remove("opacity-100");
-            preloader.classList.add("opacity-0", "pointer-events-none");
-          },
-          toggle: function () {
-            if (preloader.classList.contains("opacity-0")) {
-              window.cmsPreloader.show();
-            } else {
-              window.cmsPreloader.hide();
-            }
-          },
-        };
-        setTimeout(function () {
-          window.cmsPreloader.hide();
-          window.dispatchEvent(new Event("cms-preloader-hidden"));
-        }, DISPLAY_MS);
+    var HOLD = typeof holdMs === "number" ? holdMs : 220;
+    var ICON_MS = typeof iconFadeMs === "number" ? iconFadeMs : 500;
+    var GAP = typeof stageGapMs === "number" ? stageGapMs : 200;
+    var CHROME_MS = typeof chromeTransitionMs === "number" ? chromeTransitionMs : 500;
+
+    var SEL_HEADER = '[data-intro-stage="header"]';
+    var SEL_FOOTER = '[data-intro-stage="footer"]';
+    var SEL_MAIN = '[data-intro-stage="main"]';
+
+    function qsa(sel) {
+      return Array.prototype.slice.call(document.querySelectorAll(sel));
+    }
+
+    function reveal(el) {
+      el.classList.remove("opacity-0", "pointer-events-none");
+      el.classList.add("opacity-100");
+    }
+
+    function conceal(el) {
+      el.classList.add("opacity-0", "pointer-events-none");
+      el.classList.remove("opacity-100");
+    }
+
+    function setIconVisible(show) {
+      var iconEl = document.getElementById("site-intro-icon-layer");
+      if (!iconEl) return;
+      if (show) {
+        iconEl.classList.remove("opacity-0");
+        iconEl.classList.add("opacity-100");
+      } else {
+        iconEl.classList.remove("opacity-100");
+        iconEl.classList.add("opacity-0");
       }
     }
+
+    function showChromeImmediate() {
+      qsa(SEL_HEADER).forEach(reveal);
+      qsa(SEL_FOOTER).forEach(reveal);
+      qsa(SEL_MAIN).forEach(reveal);
+      setIconVisible(false);
+      window.dispatchEvent(new Event("cms-preloader-hidden"));
+    }
+
+    function runSequence() {
+      var iconEl = document.getElementById("site-intro-icon-layer");
+
+      setTimeout(function () {
+        if (iconEl) {
+          iconEl.classList.remove("opacity-100");
+          iconEl.classList.add("opacity-0");
+        }
+      }, HOLD);
+
+      setTimeout(function () {
+        qsa(SEL_HEADER).forEach(reveal);
+      }, HOLD + ICON_MS);
+
+      setTimeout(function () {
+        qsa(SEL_FOOTER).forEach(reveal);
+      }, HOLD + ICON_MS + GAP);
+
+      setTimeout(function () {
+        qsa(SEL_MAIN).forEach(reveal);
+      }, HOLD + ICON_MS + GAP * 2);
+
+      setTimeout(function () {
+        window.dispatchEvent(new Event("cms-preloader-hidden"));
+      }, HOLD + ICON_MS + GAP * 2 + CHROME_MS);
+    }
+
+    function init() {
+      window.cmsPreloader = {
+        show: function () {
+          qsa(SEL_HEADER).forEach(conceal);
+          qsa(SEL_FOOTER).forEach(conceal);
+          qsa(SEL_MAIN).forEach(conceal);
+          setIconVisible(true);
+        },
+        hide: function () {
+          showChromeImmediate();
+        },
+        toggle: function () {
+          var nodes = qsa(SEL_MAIN);
+          var hidden = nodes.length > 0 && nodes[0].classList.contains("opacity-0");
+          if (hidden) {
+            window.cmsPreloader.hide();
+          } else {
+            window.cmsPreloader.show();
+          }
+        },
+      };
+
+      if (
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ) {
+        showChromeImmediate();
+        return;
+      }
+
+      runSequence();
+    }
+
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", init);
     } else {
