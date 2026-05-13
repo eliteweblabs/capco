@@ -1,6 +1,8 @@
 ---
 /**
- * Project labor: aggregates time_entries for this project (check-in/checkout sessions).
+ * Project labor: time_entries for this project.
+ * • variant "staff" — Team hours tab (Staff only).
+ * • variant "billing" — Billing & time logs (Admin/superAdmin only).
  */
 import Alert from "../partials/Alert.astro";
 
@@ -10,6 +12,8 @@ interface Props {
   secondaryTextClasses?: string;
   primaryTextClasses?: string;
   globalInputClasses?: string;
+  /** staff = field team totals; billing = invoicing/payroll view for admins */
+  variant?: "staff" | "billing";
 }
 
 const {
@@ -18,71 +22,172 @@ const {
   secondaryTextClasses = "",
   primaryTextClasses = "",
   globalInputClasses,
+  variant = "staff",
 } = Astro.props;
 
-import { isAdminOrStaffOrSuperAdmin } from "../../lib/user-utils";
+import { isAdminOrSuperAdmin } from "../../lib/user-utils";
 
 const role = currentUser?.profile?.role;
 
-if (!isAdminOrStaffOrSuperAdmin(role)) {
+if (variant === "staff" && role !== "Staff") {
+  return;
+}
+if (variant === "billing" && !isAdminOrSuperAdmin(role)) {
   return;
 }
 
 const projectId = project?.id;
+const idPrefix = variant === "billing" ? "project-billing" : "team-hours";
+const contentId = variant === "billing" ? "content-billing" : "content-team-hours";
+const ledgerHref =
+  variant === "billing" && projectId != null
+    ? `/admin/time-entries?projectId=${projectId}`
+    : "/admin/time-entries";
 ---
 
 <div
-  id="content-team-hours"
+  id={contentId}
   class="tab-content color-background relative mb-16 min-h-[calc(100dvh-24rem)] p-4 shadow-lg dark:shadow-gray-900/30"
+  data-tab-team-hours-root
+  data-project-id={projectId != null ? String(projectId) : ""}
+  data-id-prefix={idPrefix}
+  data-variant={variant}
 >
   <div class="mx-auto max-w-6xl space-y-4">
-    <h2 class={`text-xl font-semibold ${primaryTextClasses}`}>Team hours & labor</h2>
-    <p class={`text-sm ${secondaryTextClasses}`}>
-      Totals below come from Staff and Admin Check In sessions linked to this project (billing timer +
-      GPS check-in flow). Checking in while viewing this project records time against it. Export CSV
-      for payroll spreadsheets.
-    </p>
-    <Alert
-      type="info"
-      title="Source data"
-      description="Each row is a check-in interval from <code>timeEntries</code> with this <code>projectId</code>. End time is blank until check-out completes."
-      class=""
-    />
+    {
+      variant === "billing" ? (
+        <>
+          <h2 class={`text-xl font-semibold ${primaryTextClasses}`}>Billing &amp; time logs</h2>
+          <p class={`text-sm ${secondaryTextClasses}`}>
+            Invoice-ready labor for this project: check-in intervals, frozen rates at check-in, and
+            CSV export. Only Admin and superAdmin see this tab.
+          </p>
+          <p class={`text-sm ${secondaryTextClasses}`}>
+            <a
+              href={ledgerHref}
+              class="font-medium text-primary-600 hover:underline dark:text-primary-400"
+            >
+              Open full ledger in Time Entries
+            </a>
+            {" "}
+            (edit intervals, broader date range).
+          </p>
+          <Alert
+            type="info"
+            title="Source data"
+            description="Intervals from <code>timeEntries</code> where <code>projectId</code> matches this project. Duration appears after check-out; costing uses <code>hourlyRateSnapshot</code> from check-in."
+            class=""
+          />
+        </>
+      ) : (
+        <>
+          <h2 class={`text-xl font-semibold ${primaryTextClasses}`}>Team hours &amp; labor</h2>
+          <p class={`text-sm ${secondaryTextClasses}`}>
+            Totals below come from check-in sessions linked to this project. Checking in while
+            viewing this project records time against it. Export CSV for your records.
+          </p>
+          <Alert
+            type="info"
+            title="Source data"
+            description="Each row is a check-in interval from <code>timeEntries</code> with this <code>projectId</code>. End time is blank until check-out completes."
+            class=""
+          />
+        </>
+      )
+    }
+    <section
+      id={`${idPrefix}-charts-panel`}
+      class="mb-6 rounded-xl border border-gray-200 bg-gray-50/90 p-4 dark:border-gray-700 dark:bg-gray-900/50"
+      aria-label="Hours charts"
+    >
+      <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h3 class={`text-lg font-semibold ${primaryTextClasses}`}>Hours overview</h3>
+        <div class={`flex flex-wrap gap-2 ${secondaryTextClasses}`} role="group" aria-label="Bucket size">
+          <span class="self-center text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400"
+            >By</span
+          >
+          <button
+            type="button"
+            id={`${idPrefix}-gran-day`}
+            class={`${idPrefix}-gran-btn rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700`}
+            data-granularity="day"
+          >
+            Day
+          </button>
+          <button
+            type="button"
+            id={`${idPrefix}-gran-week`}
+            class={`${idPrefix}-gran-btn rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700`}
+            data-granularity="week"
+          >
+            Week
+          </button>
+          <button
+            type="button"
+            id={`${idPrefix}-gran-month`}
+            class={`${idPrefix}-gran-btn rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700`}
+            data-granularity="month"
+          >
+            Month
+          </button>
+        </div>
+      </div>
+      <div id={`${idPrefix}-chart-kpis`} class={`mb-4 flex flex-wrap gap-4 text-sm ${secondaryTextClasses}`}
+      >
+      </div>
+      <p id={`${idPrefix}-charts-empty`} class={`hidden text-sm ${secondaryTextClasses}`}>
+        No completed intervals in this date range — charts need check-out times with duration.
+      </p>
+      <div id={`${idPrefix}-charts-canvases`} class="grid gap-6 lg:grid-cols-2">
+        <div class="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900/70">
+          <p class={`mb-2 text-sm font-medium ${primaryTextClasses}`}>Total hours by period</p>
+          <div class="relative h-64 w-full">
+            <canvas id={`${idPrefix}-chart-total`}></canvas>
+          </div>
+        </div>
+        <div class="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900/70">
+          <p class={`mb-2 text-sm font-medium ${primaryTextClasses}`}>Hours per person (stacked)</p>
+          <div class="relative h-64 w-full overflow-x-auto">
+            <canvas id={`${idPrefix}-chart-by-person`} class="min-w-[280px]"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
     <div class="flex flex-wrap items-center gap-2">
       <label class={`text-sm ${secondaryTextClasses}`}>
         From
         <input
           type="date"
-          id="team-hours-from"
+          id={`${idPrefix}-from`}
           class={`${globalInputClasses} mt-1 w-44`}
-          data-scope="team-hours-filters"
+          data-scope={`${idPrefix}-filters`}
         />
       </label>
       <label class={`text-sm ${secondaryTextClasses}`}>
         To
         <input
           type="date"
-          id="team-hours-to"
+          id={`${idPrefix}-to`}
           class={`${globalInputClasses} mt-1 w-44`}
-          data-scope="team-hours-filters"
+          data-scope={`${idPrefix}-filters`}
         />
       </label>
       <button
         type="button"
-        id="team-hours-refresh"
+        id={`${idPrefix}-refresh`}
         class="mt-6 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
       >
         Apply range
       </button>
       <button
         type="button"
-        id="team-hours-export"
+        id={`${idPrefix}-export`}
         class="mt-6 rounded-lg bg-primary-600 px-3 py-2 text-sm font-medium text-white hover:bg-primary-700"
       >
         Export CSV
       </button>
     </div>
-    <div id="team-hours-status" class={`text-sm ${secondaryTextClasses}`}></div>
+    <div id={`${idPrefix}-status`} class={`text-sm ${secondaryTextClasses}`}></div>
     <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
       <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-700">
         <thead class="bg-gray-50 dark:bg-gray-800/80">
@@ -101,7 +206,7 @@ const projectId = project?.id;
           </tr>
         </thead>
         <tbody
-          id="team-hours-tbody"
+          id={`${idPrefix}-tbody`}
           class="divide-y divide-gray-100 bg-white dark:divide-gray-800 dark:bg-gray-900/40"
         >
         </tbody>
@@ -109,216 +214,13 @@ const projectId = project?.id;
     </div>
     <div>
       <h3 class={`mb-2 text-lg font-medium ${primaryTextClasses}`}>Summary by person</h3>
-      <div id="team-hours-summary" class="space-y-3"></div>
+      <div id={`${idPrefix}-summary`} class="space-y-3"></div>
     </div>
   </div>
 </div>
 
-<script is:inline define:vars={{ projectId }}>
-  (function () {
-    const pid = projectId;
-    let cache = { entries: [], byUser: [] };
+<script>
+  import { mountTabTeamHoursRoots } from "../../scripts/tab-team-hours";
 
-    function csvEscape(v) {
-      const s = String(v ?? "");
-      if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
-      return s;
-    }
-
-    function fmtwhen(iso) {
-      if (!iso) return "—";
-      try {
-        return new Date(iso).toLocaleString();
-      } catch {
-        return iso;
-      }
-    }
-
-    function fmtHours(mins) {
-      if (mins == null) return "—";
-      return (Math.round((mins / 60) * 100) / 100).toFixed(2);
-    }
-
-    function fmtRateUsdPerHr(row) {
-      if (row.hourlyRateSnapshot == null || row.hourlyRateSnapshot === "") return "—";
-      const n =
-        typeof row.hourlyRateSnapshot === "number"
-          ? row.hourlyRateSnapshot
-          : Number(row.hourlyRateSnapshot);
-      if (!Number.isFinite(n) || n < 0) return "—";
-      return "$" + n.toFixed(2) + "/hr";
-    }
-
-    function fmtLaborUsd(row) {
-      if (row.laborUsd == null || row.laborUsd === "") return "—";
-      const n = typeof row.laborUsd === "number" ? row.laborUsd : Number(row.laborUsd);
-      if (!Number.isFinite(n)) return "—";
-      return "$" + n.toFixed(2);
-    }
-
-    function buildQuery() {
-      const q = new URLSearchParams();
-      q.set("projectId", String(pid));
-      q.set("aggregate", "byUser");
-      const fromEl = document.getElementById("team-hours-from");
-      const toEl = document.getElementById("team-hours-to");
-      if (fromEl && fromEl.value) q.set("from", fromEl.value + "T00:00:00.000Z");
-      if (toEl && toEl.value) q.set("to", toEl.value + "T23:59:59.999Z");
-      return q.toString();
-    }
-
-    async function loadData() {
-      const statusEl = document.getElementById("team-hours-status");
-      const tbody = document.getElementById("team-hours-tbody");
-      const summaryEl = document.getElementById("team-hours-summary");
-      if (!pid || !tbody || !summaryEl) return;
-      if (statusEl) statusEl.textContent = "Loading…";
-      tbody.innerHTML = "";
-      summaryEl.innerHTML = "";
-      try {
-        const res = await fetch("/api/time-entries?" + buildQuery(), { credentials: "include" });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.error || "Failed to load labor");
-        cache.entries = data.entries || [];
-        cache.byUser = data.byUser || [];
-        statusEl.textContent =
-          cache.entries.length === 0
-            ? "No check-in intervals for this project in the selected range."
-            : "";
-
-        const frag = document.createDocumentFragment();
-        for (const row of cache.entries) {
-          const tr = document.createElement("tr");
-          const td0 = document.createElement("td");
-          td0.className = "px-3 py-2";
-          td0.textContent = row.author || "—";
-          const td1 = document.createElement("td");
-          td1.className = "px-3 py-2 whitespace-nowrap";
-          td1.textContent = fmtwhen(row.start);
-          const td2 = document.createElement("td");
-          td2.className = "px-3 py-2 whitespace-nowrap";
-          td2.textContent = fmtwhen(row.end);
-          const td3 = document.createElement("td");
-          td3.className = "px-3 py-2 text-right tabular-nums";
-          td3.textContent = fmtHours(row.durationMinutes);
-          const tdRate = document.createElement("td");
-          tdRate.className = "px-3 py-2 text-right tabular-nums text-gray-700 dark:text-gray-300";
-          tdRate.textContent = fmtRateUsdPerHr(row);
-          const tdLabor = document.createElement("td");
-          tdLabor.className = "px-3 py-2 text-right tabular-nums text-gray-700 dark:text-gray-300";
-          tdLabor.textContent = fmtLaborUsd(row);
-          const td4 = document.createElement("td");
-          td4.className = "max-w-xs truncate px-3 py-2 text-gray-600 dark:text-gray-300";
-          td4.textContent = row.notes || "";
-          tr.append(td0, td1, td2, td3, tdRate, tdLabor, td4);
-          frag.appendChild(tr);
-        }
-        tbody.appendChild(frag);
-
-        for (const u of cache.byUser) {
-          const card = document.createElement("div");
-          card.className =
-            "rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm dark:border-gray-700 dark:bg-gray-800/50";
-          const title = document.createElement("div");
-          title.className = "mb-2 font-semibold";
-          title.textContent = u.author || "—";
-
-          const sub = document.createElement("p");
-          sub.className = "mb-2 text-xs text-gray-600 dark:text-gray-400";
-          let laborPart = "";
-          if ((u.totalLaborUsd ?? 0) > 0) {
-            laborPart =
-              " • Labor: $" + Number(u.totalLaborUsd).toFixed(2) + " (rate at check-in)";
-          } else if ((u.totalMinutes ?? 0) > 0) {
-            laborPart =
-              " • Labor: — (missing rate snapshot on intervals; current profile rate is not used)";
-          }
-          sub.textContent =
-            "Total: " + fmtHours(u.totalMinutes) + " h • Date keys UTC from interval start" + laborPart;
-
-          const details = document.createElement("div");
-          details.className = "max-h-40 overflow-y-auto";
-          const dates = Object.keys(u.byDate || {}).sort();
-
-          if (dates.length === 0) {
-            const p = document.createElement("p");
-            p.className = "text-gray-600 dark:text-gray-400";
-            p.textContent = "No completed intervals (checkout sets duration).";
-            details.appendChild(p);
-          } else {
-            for (const d of dates) {
-              const rowEl = document.createElement("div");
-              rowEl.className =
-                "flex justify-between gap-4 border-b border-gray-200 py-1 last:border-0 dark:border-gray-600";
-              const dSpan = document.createElement("span");
-              dSpan.textContent = d;
-              const hSpan = document.createElement("span");
-              hSpan.className = "tabular-nums";
-              const mins = u.byDate[d];
-              const laborLine = u.byDateLaborUsd && u.byDateLaborUsd[d] != null
-                ? " · $" + Number(u.byDateLaborUsd[d]).toFixed(2)
-                : "";
-              hSpan.textContent = fmtHours(mins) + " h" + laborLine;
-              rowEl.append(dSpan, hSpan);
-              details.appendChild(rowEl);
-            }
-          }
-
-          card.append(title, sub, details);
-          summaryEl.appendChild(card);
-        }
-      } catch (e) {
-        if (statusEl)
-          statusEl.textContent =
-            "Error: " + (e && e.message ? e.message : "Unable to load team hours.") + "";
-      }
-    }
-
-    function exportCsv() {
-      const rows = cache.entries || [];
-      const cols = [
-        "author",
-        "userId",
-        "start",
-        "end",
-        "hours",
-        "hourlyRateSnapshotUsdPerHr",
-        "laborUsd",
-        "notes",
-      ];
-      let csv = cols.join(",") + "\n";
-      for (const r of rows) {
-        const snap =
-          r.hourlyRateSnapshot != null && r.hourlyRateSnapshot !== ""
-            ? String(r.hourlyRateSnapshot)
-            : "";
-        const labor =
-          r.laborUsd != null && r.laborUsd !== "" ? String(r.laborUsd) : "";
-        const line = [
-          csvEscape(r.author),
-          csvEscape(r.userId),
-          csvEscape(r.start),
-          csvEscape(r.end),
-          csvEscape(fmtHours(r.durationMinutes)),
-          csvEscape(snap),
-          csvEscape(labor),
-          csvEscape(r.notes || ""),
-        ].join(",");
-        csv += line + "\n";
-      }
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "project-" + pid + "-labor.csv";
-      a.click();
-      URL.revokeObjectURL(a.href);
-    }
-
-    window.initializeTeamHours = async function () {
-      await loadData();
-    };
-
-    document.getElementById("team-hours-refresh")?.addEventListener("click", () => loadData());
-    document.getElementById("team-hours-export")?.addEventListener("click", () => exportCsv());
-  })();
+  mountTabTeamHoursRoots();
 </script>

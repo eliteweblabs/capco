@@ -170,11 +170,14 @@ if (projectStatuses.length > 0) {
           noProjectsMessage.classList.add("hidden");
         }
       }
+
+      window.dispatchEvent(new CustomEvent("project-list:apply-pagination"));
     }
 
     // Update URL for project filtering
     function updateURL(statusFilter: string) {
       const url = new URL(window.location.href);
+      url.searchParams.delete("page");
       if (statusFilter === "all") {
         url.searchParams.delete("status");
       } else {
@@ -188,16 +191,16 @@ if (projectStatuses.length > 0) {
       button.addEventListener("click", function (this: HTMLElement) {
         const filterValue = this.getAttribute("data-project-status-filter");
         if (filterValue) {
-          filterProjects(filterValue);
           updateURL(filterValue);
+          filterProjects(filterValue);
         }
       });
     });
 
     if (allStatusesButton) {
       allStatusesButton.addEventListener("click", function (this: HTMLElement) {
-        filterProjects("all");
         updateURL("all");
+        filterProjects("all");
       });
     }
   });

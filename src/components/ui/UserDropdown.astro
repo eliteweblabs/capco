@@ -13,6 +13,8 @@ interface Props {
   onOpen?: string;
   /** When set (e.g. on project page), Check In is shown in AuthDropdown for Admin/Staff. */
   project?: any;
+  /** Open animation direction for the popover panel (see Dropdown.astro). */
+  direction?: "top" | "right" | "bottom" | "left";
 }
 
 // Redirect to API callback only when code is on a page that shouldn't handle it. Preserve full query.
@@ -30,6 +32,7 @@ const {
   assignedProjectsCount,
   assignedProjectsPreview,
   project,
+  direction = "bottom",
 } = Astro.props;
 import Dropdown from "./Dropdown.astro";
 import LoginForm from "../../features/forms/components/LoginForm.astro";
@@ -48,6 +51,7 @@ const focusSelector = undefined;
 <!-- Login popover: AuthIcon uses data-popover-target when not authenticated -->
 <Dropdown
   id={id}
+  {direction}
   {globalIconButtonClasses}
   title={title}
   onOpenCallback={onOpenCallback}

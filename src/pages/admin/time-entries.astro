@@ -27,12 +27,14 @@ const {
   globalInputClasses,
   primaryTextClasses,
   secondaryTextClasses,
+  mutedTextSmClasses,
   globalCardStyle,
 } = globalClasses();
 
 function defaultFrom(): string {
   const d = new Date();
-  d.setDate(d.getDate() - 30);
+  // Covers high-volume demo seed (~10 months); tighten if needed.
+  d.setDate(d.getDate() - 330);
   return d.toISOString().slice(0, 10);
 }
 function defaultTo(): string {
@@ -89,9 +91,24 @@ const timeEntryCancelBtnHtml = getFormActionButtonHTML("cancel", {
             data-time-entries-filter="to"
           />
         </div>
+        <div>
+          <label
+            for="time-entries-project-filter"
+            class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Project ID</label
+          >
+          <input
+            id="time-entries-project-filter"
+            type="text"
+            inputmode="numeric"
+            class={globalInputClasses}
+            placeholder="All projects"
+            data-time-entries-filter="projectId"
+            maxlength="12"
+          />
+        </div>
         <Button id="time-entries-apply" variant="primary" data-action="apply"> Apply </Button>
       </div>
-
+      <p id="time-entries-project-hint" class={`mb-6 hidden ${mutedTextSmClasses}`}></p>
       <div id="time-entries-table-wrap" class={`overflow-hidden ${globalCardStyle}`}>
         <div id="time-entries-placeholder" class="p-8 text-center text-gray-500 dark:text-gray-400">
           Loading…
@@ -155,7 +172,48 @@ const timeEntryCancelBtnHtml = getFormActionButtonHTML("cancel", {
   const tbodyEl = document.getElementById("time-entries-tbody");
   const fromEl = document.getElementById("time-entries-from");
   const toEl = document.getElementById("time-entries-to");
+  const projectFilterEl = document.getElementById("time-entries-project-filter");
+  const projectHintEl = document.getElementById("time-entries-project-hint");
   const applyBtn = document.getElementById("time-entries-apply");
+
+  /** Prefill Project ID from ?projectId= (e.g. link from Billing & logs tab). */
+  function syncProjectFilterFromUrl() {
+    const paramId = new URLSearchParams(window.location.search).get("projectId");
+    if (paramId && /^\d+$/.test(paramId) && Number(paramId) > 0 && projectFilterEl) {
+      projectFilterEl.value = paramId;
+    }
+  }
+
+  /** Keep bookmarkable URLs in sync when applying filters. */
+  function updateUrlProjectParam() {
+    const raw = (projectFilterEl?.value || "").trim();
+    const url = new URL(window.location.href);
+    if (/^\d+$/.test(raw) && Number(raw) > 0) url.searchParams.set("projectId", raw);
+    else url.searchParams.delete("projectId");
+    window.history.replaceState({}, "", url.toString());
+  }
+
+  function updateProjectHint() {
+    if (!projectHintEl) return;
+    const raw = (projectFilterEl?.value || "").trim();
+    if (/^\d+$/.test(raw) && Number(raw) > 0) {
+      projectHintEl.classList.remove("hidden");
+      projectHintEl.textContent = "";
+      projectHintEl.append(
+        document.createTextNode(`Showing entries linked to project ${raw}. Open project `)
+      );
+      const a = document.createElement("a");
+      a.href = `/project/${encodeURIComponent(raw)}?status=billing`;
+      a.className =
+        "font-medium text-primary-600 underline hover:no-underline dark:text-primary-400";
+      a.textContent = `#${raw} (billing tab)`;
+      projectHintEl.appendChild(a);
+      projectHintEl.appendChild(document.createTextNode("."));
+    } else {
+      projectHintEl.classList.add("hidden");
+      projectHintEl.textContent = "";
+    }
+  }
 
   function formatDateTime(iso) {
     if (!iso) return "—";
@@ -199,21 +257,29 @@ const timeEntryCancelBtnHtml = getFormActionButtonHTML("cancel", {
     const from =
       fromEl?.value || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     const to = toEl?.value || new Date().toISOString().slice(0, 10);
-    const url = `/api/time-entries?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+    const q = new URLSearchParams();
+    q.set("from", from);
+    q.set("to", to);
+    const rawPid = (projectFilterEl?.value || "").trim();
+    if (/^\d+$/.test(rawPid) && Number(rawPid) > 0) q.set("projectId", rawPid);
+    const url = "/api/time-entries?" + q.toString();
     const res = await fetch(url);
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Failed to load");
     return data.entries || [];
   }
 
-  function renderRow(entry, expandedId) {
+  function renderRow(entry) {
     const tr = document.createElement("tr");
     tr.dataset.entryId = String(entry.id);
     tr.className = "border-b border-gray-200 dark:border-gray-700";
-    const isExpanded = expandedId === entry.id;
+    const projectCell =
+      entry.projectId != null && Number(entry.projectId) > 0
+        ? `<a href="/project/${encodeURIComponent(String(entry.projectId))}?status=billing" class="font-medium text-primary-600 hover:underline dark:text-primary-400">${escapeHtml(entry.project)}</a>`
+        : escapeHtml(entry.project || "—");
     tr.innerHTML = `
       <td class="px-4 py-2 text-gray-900 dark:text-white">${escapeHtml(entry.author)}</td>
-      <td class="px-4 py-2 text-gray-700 dark:text-gray-300">${escapeHtml(entry.project)}</td>
+      <td class="px-4 py-2 text-gray-700 dark:text-gray-300">${projectCell}</td>
       <td class="px-4 py-2 text-gray-700 dark:text-gray-300 whitespace-nowrap">${formatDateTime(entry.start)}</td>
       <td class="px-4 py-2 text-gray-700 dark:text-gray-300 whitespace-nowrap">${formatDateTime(entry.end)}</td>
       <td class="px-4 py-2 text-gray-700 dark:text-gray-300">${formatDuration(entry.durationMinutes)}</td>
@@ -323,7 +389,7 @@ const timeEntryCancelBtnHtml = getFormActionButtonHTML("cancel", {
           if (expandedId === entry.id) {
             tbodyEl.appendChild(renderEditRow(entry));
           } else {
-            tbodyEl.appendChild(renderRow(entry, expandedId));
+            tbodyEl.appendChild(renderRow(entry));
           }
         });
       })
@@ -346,6 +412,13 @@ const timeEntryCancelBtnHtml = getFormActionButtonHTML("cancel", {
     loadEntries();
   });
 
-  applyBtn?.addEventListener("click", loadEntries);
+  applyBtn?.addEventListener("click", () => {
+    updateUrlProjectParam();
+    updateProjectHint();
+    loadEntries();
+  });
+
+  syncProjectFilterFromUrl();
+  updateProjectHint();
   loadEntries();
 </script>

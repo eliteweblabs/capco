@@ -328,11 +328,23 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
       const scrollEl = document.getElementById("reveal-scroll");
       if (!scrollEl) return;
 
+      /** Tuning from #reveal-scroll data attrs (set in App.astro). Defaults preserve original behavior. */
+      function getRevealTuning(el) {
+        const maxMult = parseFloat(el.getAttribute("data-reveal-max-multiplier") || "1");
+        const deltaScale = parseFloat(el.getAttribute("data-reveal-delta-scale") || "1");
+        return {
+          maxMult: Number.isFinite(maxMult) && maxMult > 0 ? maxMult : 1,
+          deltaScale: Number.isFinite(deltaScale) && deltaScale > 0 ? deltaScale : 1,
+        };
+      }
+      const revealTuning = getRevealTuning(scrollEl);
+
       const navbarContent = document.getElementById("navbar-content");
       const footer = document.getElementById("reveal-footer");
       // Use offsetHeight directly in px — no rem conversion (offsetHeight is already px,
       // and remPx() != 16 when data-page-size="large" scales html font-size to 112.5%)
-      const maxPx = () => Math.max(navbarContent?.offsetHeight ?? 64, footer?.offsetHeight ?? 64);
+      const maxPx = () =>
+        Math.max(navbarContent?.offsetHeight ?? 64, footer?.offsetHeight ?? 64) * revealTuning.maxMult;
 
       function clampedScrollTop() {
         const maxScroll = Math.max(0, scrollEl.scrollHeight - scrollEl.clientHeight);
@@ -389,8 +401,7 @@ import { MOBILE_MEDIA_QUERY } from "../../../lib/ux-utils";
           translateY = maxPx();
         } else {
           const deltaY = scrollTop - prevScrollTop;
-          translateY += deltaY;
-          // translateY += deltaY;
+          translateY += deltaY * revealTuning.deltaScale;
           translateY = Math.max(0, Math.min(maxPx(), translateY));
         }
         prevScrollTop = scrollTop;

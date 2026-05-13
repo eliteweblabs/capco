@@ -1,5 +1,6 @@
 ---
 import { formatCurrency } from "../../lib/global-display-utils";
+import { isFeatureEnabled } from "../../lib/features";
 import { globalClasses } from "../../pages/api/global/global-classes";
 
 export interface Props {
@@ -22,7 +23,11 @@ const {
   globalCardStyle,
   globalTextH3,
   globalSectionHeaderBar,
+  globalCodeInline,
+  mutedAltTextClasses,
 } = gc;
+
+const invoicingEnabled = await isFeatureEnabled("invoicing");
 
 // Fetch financial data
 let financialData = {
@@ -36,7 +41,7 @@ let financialData = {
   totalSqFt: 0,
   monthlyRevenue: [],
   recentInvoices: [],
-  projectRevenue: [],
+  hoursLoggedPerProject: [],
 };
 
 if (currentUser?.id) {
@@ -54,15 +59,17 @@ if (currentUser?.id) {
       financialData = { ...financialData, ...overviewData };
     }
 
-    // Fetch monthly revenue data
-    const monthlyResponse = await fetch(`${baseUrl}/api/finance/monthly-revenue`, {
-      headers: {
-        Cookie: Astro.request.headers.get("cookie") || "",
-      },
-    });
-    if (monthlyResponse.ok) {
-      const monthlyData = await monthlyResponse.json();
-      financialData.monthlyRevenue = monthlyData;
+    // Fetch monthly revenue (only when invoicing feature is enabled; API skips work otherwise)
+    if (invoicingEnabled) {
+      const monthlyResponse = await fetch(`${baseUrl}/api/finance/monthly-revenue`, {
+        headers: {
+          Cookie: Astro.request.headers.get("cookie") || "",
+        },
+      });
+      if (monthlyResponse.ok) {
+        const monthlyData = await monthlyResponse.json();
+        financialData.monthlyRevenue = monthlyData;
+      }
     }
 
     // Fetch recent invoices
@@ -76,7 +83,7 @@ if (currentUser?.id) {
       financialData.recentInvoices = invoicesData;
     }
 
-    // Fetch project revenue
+    // Hours logged per project (time entries, ~90d — see API defaults)
     const projectResponse = await fetch(`${baseUrl}/api/finance/project-revenue`, {
       headers: {
         Cookie: Astro.request.headers.get("cookie") || "",
@@ -84,7 +91,7 @@ if (currentUser?.id) {
     });
     if (projectResponse.ok) {
       const projectData = await projectResponse.json();
-      financialData.projectRevenue = projectData;
+      financialData.hoursLoggedPerProject = Array.isArray(projectData) ? projectData : [];
     }
   } catch (error) {
     console.error("Error fetching financial data:", error);
@@ -241,7 +248,29 @@ const formatNumber = (num: number) => {
         </div>
       </div>
       <div class="h-64">
-        <canvas id="monthlyRevenueChart"></canvas>
+        {
+          invoicingEnabled && financialData.monthlyRevenue.length > 0 ? (
+            <canvas id="monthlyRevenueChart" />
+          ) : (
+            <p
+              class={`flex h-full items-center justify-center px-6 text-center text-sm ${mutedAltTextClasses}`}
+            >
+              {invoicingEnabled ? (
+                <span class="block max-w-md">
+                  No invoices recorded yet. Monthly revenue will appear after invoices exist in the
+                  system.
+                </span>
+              ) : (
+                <span class="block max-w-md">
+                  Monthly revenue is hidden until invoicing is enabled. Set{" "}
+                  <code class={globalCodeInline}>features.invoicing</code> to{" "}
+                  <code class={globalCodeInline}>true</code> in this site&apos;s config when the
+                  invoicing workflow is ready.
+                </span>
+              )}
+            </p>
+          )
+        }
       </div>
     </div>
 
@@ -256,7 +285,7 @@ const formatNumber = (num: number) => {
     </div>
   </div>
 
-  <!-- Recent Transactions and Project Revenue -->
+  <!-- Recent Invoices and Hours per Project -->
   <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
     <!-- Recent Invoices -->
     <div class={dataTableCardClasses}>
@@ -304,50 +333,61 @@ const formatNumber = (num: number) => {
       </div>
     </div>
 
-    <!-- Project Revenue -->
+    <!-- Hours logged per project -->
     <div class={dataTableCardClasses}>
       <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-        <h3 class={globalTextH3}>Project Revenue</h3>
+        <h3 class={globalTextH3}>Hours logged per project</h3>
+        <p class={`mt-1 text-xs ${mutedAltTextClasses}`}>Last 90 days · from time entries</p>
       </div>
       <div class="divide-y divide-gray-200 dark:divide-gray-700">
         {
-          financialData.projectRevenue.slice(0, 5).map((project: any) => (
-            <div class="flex items-center justify-between px-6 py-4">
-              <div class="flex items-center">
-                <div class="flex-shrink-0">
-                  <div class="flex h-8 w-8 items-center justify-center rounded-md bg-primary-100 dark:bg-primary-900">
-                    <svg
-                      class="h-4 w-4 text-primary-600 dark:text-primary-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                      />
-                    </svg>
+          financialData.hoursLoggedPerProject.length === 0 ? (
+            <p class={`px-6 py-8 text-center text-sm ${mutedAltTextClasses}`}>
+              No completed time entries in the last 90 days with a project assigned.
+            </p>
+          ) : (
+            financialData.hoursLoggedPerProject.slice(0, 5).map((project: any) => (
+              <div class="flex items-center justify-between px-6 py-4">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0">
+                    <div class="flex h-8 w-8 items-center justify-center rounded-md bg-primary-100 dark:bg-primary-900">
+                      <svg
+                        class="h-4 w-4 text-primary-600 dark:text-primary-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="ml-3">
+                    <p class={`text-sm font-medium ${primaryTextClasses}`}>{project.title}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                      {formatNumber(project.sqFt)} sq ft
+                    </p>
                   </div>
                 </div>
-                <div class="ml-3">
-                  <p class={`text-sm font-medium ${primaryTextClasses}`}>{project.title}</p>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
-                    {formatNumber(project.sqFt)} sq ft
+                <div class="text-right">
+                  <p class={`text-sm font-medium ${primaryTextClasses}`}>
+                    {Number(project.totalHours ?? 0).toLocaleString("en-US", {
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 1,
+                    })}
+                    h
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    {project.entryCount ?? 0} {project.entryCount === 1 ? "entry" : "entries"}
                   </p>
                 </div>
               </div>
-              <div class="text-right">
-                <p class={`text-sm font-medium ${primaryTextClasses}`}>
-                  {formatCurrency(project.totalRevenue || 0)}
-                </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                  {project.invoiceCount} invoices
-                </p>
-              </div>
-            </div>
-          ))
+            ))
+          )
         }
       </div>
     </div>
@@ -457,12 +497,17 @@ const formatNumber = (num: number) => {
 
 <!-- Chart.js Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script define:vars={{ financialData }}>
+<script define:vars={{ financialData, invoicingEnabled }}>
   // Wait for DOM to be ready
   document.addEventListener("DOMContentLoaded", function () {
     // Monthly Revenue Chart
     const monthlyRevenueCtx = document.getElementById("monthlyRevenueChart");
-    if (monthlyRevenueCtx && typeof Chart !== "undefined") {
+    if (
+      invoicingEnabled &&
+      financialData.monthlyRevenue.length > 0 &&
+      monthlyRevenueCtx &&
+      typeof Chart !== "undefined"
+    ) {
       const monthlyData = financialData.monthlyRevenue;
       new Chart(monthlyRevenueCtx, {
         type: "line",

@@ -142,6 +142,9 @@ function mergeJsonConfig(
   if (jsonConfig.site) config.site = { ...config.site, ...jsonConfig.site };
   if (jsonConfig.branding) config.branding = { ...config.branding, ...jsonConfig.branding };
   if (Array.isArray(jsonConfig.plugins)) config.plugins = jsonConfig.plugins;
+  if (jsonConfig.billUnbilledTimeOnProjectStatus !== undefined) {
+    config.billUnbilledTimeOnProjectStatus = jsonConfig.billUnbilledTimeOnProjectStatus;
+  }
 }
 
 /**

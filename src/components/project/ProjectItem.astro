@@ -7,7 +7,10 @@ import Tooltip from "../ui/Tooltip.astro";
 import { getFileIconSvg, getFileName } from "../../lib/file-icon";
 import NumberStepper from "../form/NumberStepper.astro";
 import SlideToggle from "../form/SlideToggle.astro";
-import type { ProjectListColumnConfig } from "../../lib/project-list-table-config";
+import {
+  type ProjectListColumnConfig,
+  isCompactProjectListColumn,
+} from "../../lib/project-list-table-config";
 
 interface Props {
   columns: ProjectListColumnConfig[];
@@ -282,6 +285,32 @@ const statusColor = currentStatusColor || "gray";
 // const createdAt = `${days}d ${hours}h ${minutes}m`;
 ---
 
+<style is:global>
+  /* Project dashboard table: soften row removal — blur+fade cells then remove DOM */
+  tr.project-table-row-exiting > :is(td, th) {
+    transition-property: opacity, filter, transform;
+    transition-duration: 420ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  tr.project-table-row-exiting.project-table-row-exiting-active > :is(td, th) {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(2px) scale(0.99);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    tr.project-table-row-exiting > :is(td, th) {
+      transition-duration: 0.15s;
+    }
+
+    tr.project-table-row-exiting.project-table-row-exiting-active > :is(td, th) {
+      filter: none;
+      transform: none;
+    }
+  }
+</style>
+
 <tr
   class="border-b bg-gray-50 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800"
   data-project-status={statusSlugOrId}
@@ -292,12 +321,15 @@ const statusColor = currentStatusColor || "gray";
   {
     columns.length > 0
       ? columns.map((col) => {
-          const baseCellClass = "whitespace-nowrap px-4 py-2";
+          const compact = isCompactProjectListColumn(col);
+          const padX = compact ? "px-2" : "px-4";
+          const tight = compact ? "w-px max-w-fit whitespace-nowrap" : "min-w-0 whitespace-nowrap";
+          const baseCellClass = `${tight} ${padX} py-2`;
           const centerClass = `${baseCellClass} text-center`;
 
           if (col.type === "delete") {
             return (
-              <td class="px-4 py-2">
+              <td class={`${padX} py-2`}>
                 <div class="align-center flex">
                   <DeleteConfirmButton
                     id={`delete-project-${project.id}`}
@@ -328,23 +360,25 @@ const statusColor = currentStatusColor || "gray";
                   class="relative block min-w-0 truncate font-medium"
                 >
                   {project.address || project.title || "No address"}
-                  {currentRole !== "Client" && currentRole !== "superAdmin" && projectAlertIconCount > 0 && (
-                    <span class="font-large absolute right-0 top-0 z-1 mb-4 cursor-pointer">
-                      {Array.from({ length: projectAlertIconCount }, () => (
-                        <svg
-                          class="color-background block h-3 w-3 rounded-full bg-gray-100 text-red-500"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fill-rule="evenodd"
-                            d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                            clip-rule="evenodd"
-                          />
-                        </svg>
-                      ))}
-                    </span>
-                  )}
+                  {currentRole !== "Client" &&
+                    currentRole !== "superAdmin" &&
+                    projectAlertIconCount > 0 && (
+                      <span class="font-large absolute right-0 top-0 z-1 mb-4 cursor-pointer">
+                        {Array.from({ length: projectAlertIconCount }, () => (
+                          <svg
+                            class="color-background block h-3 w-3 rounded-full bg-gray-100 text-red-500"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fill-rule="evenodd"
+                              d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                              clip-rule="evenodd"
+                            />
+                          </svg>
+                        ))}
+                      </span>
+                    )}
                 </a>
               </th>
             );
@@ -412,7 +446,7 @@ const statusColor = currentStatusColor || "gray";
             const showTooltips = displayOpts.tooltips !== false;
             const iconSize = (displayOpts.size ?? "sm") as "sm" | "md" | "lg";
             return (
-              <td class="block min-w-0 whitespace-nowrap px-4 py-2 text-center">
+              <td class={`${baseCellClass} text-center`}>
                 <div class="flex justify-center">
                   <a href={`/project/${project.id}?status=files`} class="text-sm text-gray-600">
                     {hasFiles ? (
@@ -447,7 +481,7 @@ const statusColor = currentStatusColor || "gray";
 
           if (col.type === "assigned") {
             return (
-              <td class="whitespace-nowrap px-4 py-2 font-medium">
+              <td class={`${baseCellClass} font-medium`}>
                 <StaffSelectTooltip
                   id={`assign-staff-slot-machine-${project.id}`}
                   title="Assign Staff Member"
@@ -496,7 +530,7 @@ const statusColor = currentStatusColor || "gray";
 
           if (col.type === "checklist") {
             return (
-              <td class="whitespace-nowrap px-4 py-2 font-medium">
+              <td class={`${baseCellClass} font-medium`}>
                 <div class="flex items-center gap-1">
                   <span
                     data-refresh="punchlistComplete"
@@ -539,7 +573,7 @@ const statusColor = currentStatusColor || "gray";
 
           if (col.type === "timeSince") {
             return (
-              <td class="whitespace-nowrap px-4 py-2">
+              <td class={baseCellClass}>
                 <span
                   data-live-timestamp={project.updatedAt}
                   data-project-id={project.id}
@@ -640,10 +674,43 @@ const statusColor = currentStatusColor || "gray";
               );
             }
 
-            // Remove the project row from the DOM
-            document.querySelectorAll(`[data-project-id='${projectId}']`)?.forEach((element) => {
-              const row = element.closest("tr");
-              if (row) row.remove();
+            const exitDurationMs = 480;
+            document.querySelectorAll(`tr[data-project-id='${projectId}']`).forEach((row) => {
+              if (!(row instanceof HTMLTableRowElement)) return;
+              if (row.classList.contains("project-table-row-exiting")) return;
+
+              row.classList.add("project-table-row-exiting");
+              requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                  row.classList.add("project-table-row-exiting-active");
+                });
+              });
+
+              let settled = false;
+              const teardown = () => {
+                if (settled) return;
+                settled = true;
+                row.removeEventListener("transitionend", onTransitionEnd);
+                window.clearTimeout(fallbackTimer);
+                row.remove();
+              };
+
+              const onTransitionEnd = (ev: Event) => {
+                const transitionEvent = ev as TransitionEvent;
+                if (
+                  transitionEvent.propertyName !== "opacity" &&
+                  transitionEvent.propertyName !== "filter"
+                )
+                  return;
+                const tgt = transitionEvent.target;
+                if (!(tgt instanceof Element)) return;
+                const cellRow = tgt.closest("tr");
+                if (cellRow !== row) return;
+                teardown();
+              };
+
+              row.addEventListener("transitionend", onTransitionEnd);
+              const fallbackTimer = window.setTimeout(teardown, exitDurationMs + 120);
             });
 
             piLog("[ProjectItem] Project deleted successfully");

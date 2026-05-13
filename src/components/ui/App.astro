@@ -80,6 +80,7 @@ const stripHtml = (s: string | undefined | null): string =>
 // Effective template for data-template
 
 import { globalCompanyData } from "../../pages/api/global/global-company-data";
+import { getSiteIconUrls, customCssDefinesFooterLogoMask } from "../../lib/site-icon-urls";
 const {
   globalCompanyName,
   globalCompanySlogan,
@@ -98,6 +99,12 @@ const {
   customJs,
   customFooterHtml,
 } = await globalCompanyData();
+
+const { iconSrc: footerSiteIconSrc } = getSiteIconUrls({
+  globalCompanyIcon,
+  primaryColor: primaryColor ?? "",
+});
+const footerUseCmsLogoMask = customCssDefinesFooterLogoMask(customCss);
 
 const safeTitle = stripHtml(title) || Astro.url.pathname.replace(/\//g, " ").trim() || "Home";
 const safeDescription = stripHtml(description || globalCompanySlogan || "");
@@ -168,8 +175,13 @@ import CMSPreloader from "./CMSPreloader.astro";
 import AppHead from "./AppHead.astro";
 import AgeConsentWall from "../common/AgeConsentWall.astro";
 import { getSiteConfig } from "../../lib/content";
+import DotGrid from "./DotGrid.astro";
 
 const isAdmin = isAdminOrSuperAdmin(currentUser?.profile?.role);
+
+/** Initial load: fade in nav/aside/main/footer over visible scroll-area background (see CMSPreloader.astro). */
+const siteChromeFadeClasses =
+  "opacity-0 transition-opacity duration-500 ease-out pointer-events-none motion-reduce:opacity-100 motion-reduce:pointer-events-auto motion-reduce:transition-none";
 
 /** Site-wide age consent wall: when plugins.ageConsent is true, block site until user confirms 18+ */
 let ageConsentWallEnabled = false;
@@ -307,11 +319,17 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
     ]}
   >
     {
-      /* authCallback: minimal chrome so OAuth callback gets DB theme/styles without nav/footer or heavy pipeline */
+      /* authCallback: no #reveal-scroll — dot grid on body; main layout: grid is #reveal-scroll background */
     }
     {
       layout === "authCallback" ? (
         <>
+          <DotGrid
+            id="site-body-dot-grid"
+            class="pointer-events-none absolute inset-0 -z-10"
+            dotColor="primary-500"
+            baseOpacity={0.9}
+          />
           <div
             class="flex w-full flex-col items-center justify-center gap-6 p-4"
             data-dynamic-height="true"
@@ -326,7 +344,7 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
           {/* SPA disabled: re-apply theme and astro:after-swap/astro:page-load scripts */}
           {/* SPA disabled: debug and runPageInits scripts */}
 
-          <CMSPreloader showByDefault={true} {globalCompanyName} />
+          <CMSPreloader {globalCompanyName} />
 
           {showAgeConsentWall && (
             <AgeConsentWall minAge={18} />
@@ -361,35 +379,47 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
             <Aside {currentUser} {primaryTextClasses} {mobileNavigationHTML} />
 
             {/* <!-- Scrolling pane: flex-1 min-h-0 constrains height so this is the scroll container (not body). translateY on mobile for reveal effect. fullform: overscroll-none to prevent pullable rubber-band. --> */}
+            {/* Mobile: BannerAlertsLoader reads data-reveal-* for translateY — delta-scale <1 softens; max-multiplier >1 increases travel */}
             <div
               id="reveal-scroll"
+              data-reveal-delta-scale="0.92"
+              data-reveal-max-multiplier="1"
               class:list={[
-                "relative z-50 min-h-0 flex-1 touch-pan-y overflow-y-auto bg-gray-100 scrollbar-hide dark:bg-gray-900",
+                "color-background relative z-50 min-h-0 flex-1 touch-pan-y overflow-y-auto scrollbar-hide",
                 layout === "fullform"
                   ? "touch-none overscroll-none overscroll-y-contain"
                   : "overscroll-y-auto md:overscroll-y-contain",
               ]}
             >
-              <div
-                id="main-content"
-                class:list={[
-                  // "color-background",
-                  // "flex-1 min-w-0",
-                  // currentUser ? "transition-duration-[350ms] ease-in-out" : "",
+              <div class="relative min-h-full">
+                <DotGrid
+                  id="site-body-dot-grid"
+                  class="pointer-events-none absolute inset-0 z-0"
+                  dotColor="primary-500"
+                  baseOpacity={0.9}
+                />
+                <div
+                  id="main-content"
+                  class:list={[
+                    // "color-background",
+                    // "flex-1 min-w-0",
+                    // currentUser ? "transition-duration-[350ms] ease-in-out" : "",
 
-                  // (layout === "default"  || layout === "minimal" || !layout) &&
-                  //   "",
-                  mainClasses,
-                  layout === "default" &&
-                    "px-4 pt-4 sm:px-6 sm:pt-6 md:px-8 md:pt-8 lg:px-10 lg:pt-10",
-                ]}
-                style={currentUser ? "transition-duration: 350ms;" : undefined}
-              >
-                <main>
-                  <slot />
-                  {!isAuthPageResult && layout !== "fullform" && <SubFooter {globalCompanyName} />}
-                </main>
+                    // (layout === "default"  || layout === "minimal" || !layout) &&
+                    //   "",
+                    "relative z-10",
+                    mainClasses,
+                    layout === "default" &&
+                      "px-4 pt-4 sm:px-6 sm:pt-6 md:px-8 md:pt-8 lg:px-10 lg:pt-10",
+                  ]}
+                  style={currentUser ? "transition-duration: 350ms;" : undefined}
+                >
+                  <main>
+                    <slot />
+                  </main>
+                </div>
               </div>
+              {!isAuthPageResult && layout !== "fullform" && <SubFooter {globalCompanyName} />}
             </div>
 
             <Footer
@@ -406,9 +436,11 @@ const suppressConsoleNoise = import.meta.env.PUBLIC_SUPPRESS_CONSOLE_NOISE !== "
               {globalInputClasses}
               {customFooterHtml}
               {hideFooter}
+              footerSiteIconSrc={footerSiteIconSrc}
+              footerUseCmsLogoMask={footerUseCmsLogoMask}
             />
 
-            <div id="action-buttons" class="hide-on-form-focus fixed bottom-8 right-4 z-100">
+            <div id="action-buttons" class="fixed bottom-8 right-4 z-100">
               {isAdmin ? (
                 <AdminVoiceAssistantWidget {currentUser} {globalCompanyPhone} />
               ) : (

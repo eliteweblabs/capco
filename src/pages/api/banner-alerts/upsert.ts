@@ -8,7 +8,7 @@ interface BannerAlertRequest {
   id?: number;
   title?: string;
   content?: string;
-  type?: "info" | "success" | "warning" | "error";
+  type?: "info" | "success" | "warning" | "error" | "emergency-phone";
   position?: "top" | "bottom";
   expireMs?: number | null;
   dismissible?: boolean;
@@ -28,7 +28,7 @@ interface BannerAlertRequest {
  * - id?: number (if provided, updates existing banner)
  * - title?: string (optional, for admin reference only)
  * - content?: string (required, the actual banner message displayed to users)
- * - type?: "info" | "success" | "warning" | "error" (default: "info")
+ * - type?: "info" | "success" | "warning" | "error" | "emergency-phone" (default: "info")
  * - position?: "top" | "bottom" (default: "top")
  * - expireMs?: number | null (milliseconds, null = never expires)
  * - dismissible?: boolean (default: true)

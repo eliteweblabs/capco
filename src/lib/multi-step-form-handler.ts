@@ -1872,6 +1872,13 @@ export function initializeMultiStepForm(
     TraceLog.end(trace, { skipped: "already-initialized" });
     return;
   }
+  // StandardForm uses the same config but renders no `.step-content`. If we attach here,
+  // validateStep finds no step, returns false with no UI, and stopImmediatePropagation()
+  // prevents initializeStandardForm's submit handler from running.
+  if (!form.querySelector(".step-content")) {
+    TraceLog.end(trace, { skipped: "flat-form-no-step-content" });
+    return;
+  }
   form.setAttribute("data-multistep-inited", "1");
 
   const { initialData = {}, formConfig } = options;

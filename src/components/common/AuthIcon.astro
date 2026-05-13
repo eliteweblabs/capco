@@ -19,6 +19,8 @@ interface Props {
   id: string;
   /** When set (e.g. on project page), passed to dropdown for conditional Check In. */
   project?: any;
+  /** Popover panel slide-in direction (matches `data-popover-placement` visually). */
+  direction?: "top" | "right" | "bottom" | "left";
 }
 
 const {
@@ -30,6 +32,7 @@ const {
   globalIconButtonClasses,
   id = "account",
   project,
+  direction = "bottom",
 } = Astro.props;
 
 const currentPath = Astro.url.pathname;
@@ -51,7 +54,8 @@ const avatarUrl =
   class={`relative !p-0 rounded-full transition-all duration-200 ${globalIconButtonClasses || ""}`.trim()}
   data-popover-trigger="click"
   data-popover-target={`${id}-dropdown`}
-  data-popover-placement="bottom"
+  data-popover-placement={direction}
+  data-direction={direction}
   data-avatar-url={avatarUrl || ""}
   data-user-id={currentUser?.id ? String(currentUser.id) : undefined}
   data-project-id={currentUser?.projectId ? String(currentUser.projectId) : undefined}
@@ -70,6 +74,7 @@ const avatarUrl =
 
 <UserDropdown
   {id}
+  {direction}
   {globalIconButtonClasses}
   {assignedProjectsCount}
   {assignedProjectsPreview}

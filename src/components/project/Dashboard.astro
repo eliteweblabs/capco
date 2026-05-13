@@ -1,16 +1,50 @@
 ---
 import HeroDashboard from "../common/HeroDashboard.astro";
-import ProjectForm from "./ProjectForm.astro";
+import DashboardAdminOverviewChartsEmbed from "./DashboardAdminOverviewChartsEmbed.astro";
 import ProjectList from "./ProjectList.astro";
 import type { Project } from "../../lib/api/_projects";
+import type { DashboardAdminOverviewChartsPayload } from "../../scripts/dashboard-admin-overview-charts";
+import { globalClasses } from "../../pages/api/global/global-classes";
+
+interface DashboardSummary {
+  role?: string;
+  error?: string;
+  staff?: { placeholder?: boolean; message?: string };
+  admin?: {
+    clientCount: number;
+    projectCount: number;
+    /** Projects per workflow `status` code (full DB counts for charts). */
+    projectStatusCounts?: Record<string, number>;
+    outstandingBalance: number;
+    outstandingBalanceFormatted: string;
+    openInvoiceCount: number;
+    totalBilled: number;
+    totalBilledFormatted: string;
+    invoiceCount: number;
+  };
+  client?: {
+    projectCount: number;
+    outstandingBalance: number;
+    outstandingBalanceFormatted: string;
+    recentPayments: Array<{
+      id: number;
+      amountFormatted: string;
+      paymentDate: string | null;
+      paymentMethod: string | null;
+      invoiceLabel: string | null;
+    }>;
+    projects: Array<{ id: number; title: string | null; address: string | null; status: number }>;
+  };
+}
 
 interface Props {
   projects: Project[];
-  statusData: any[];
+  statusData: Record<string | number, unknown> | unknown[] | undefined;
   currentUser: any;
   globalInputClasses: string;
   secondaryTextClasses: string;
   primaryTextClasses: string;
+  dashboardSummary: DashboardSummary | null;
 }
 
 const {
@@ -18,123 +52,366 @@ const {
   statusData,
   currentUser,
   globalInputClasses,
-  secondaryTextClasses,
+  secondaryTextClasses: _secondaryTextClasses,
   primaryTextClasses,
+  dashboardSummary,
 } = Astro.props;
+
+const role = currentUser?.profile?.role ?? "Client";
+const {
+  globalCardStyle,
+  globalTextH3,
+  mutedTextSmClasses,
+  globalSectionHeaderBar,
+  globalFlexRow,
+  dataTableCardClasses,
+  dataTableTableWrapperClasses,
+  dataTableTableClasses,
+  dataTableTheadClasses,
+  dataTableThClasses,
+} = globalClasses();
+
+const primaryCtaClass =
+  "font-secondary inline-flex items-center justify-center rounded-lg border border-primary-600 bg-primary-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-4 focus:ring-primary-300 dark:focus:ring-primary-800";
+const secondaryCtaClass =
+  "font-secondary inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700";
+
+const isAdminView = role === "Admin" || role === "superAdmin";
+
+/** Strip minimal HTML from status names for chart legends (matches status API trimming). */
+function stripHtml(html: unknown): string {
+  if (typeof html !== "string") return "";
+  return html
+    .replace(/<[^>]*>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function coerceStatuses(raw: typeof statusData): Record<string | number, unknown> {
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    return raw as Record<string | number, unknown>;
+  }
+  return {};
+}
+
+function countsFromProjectsForChart(projList: Project[]): Record<number, number> {
+  const out: Record<number, number> = {};
+  for (const p of projList) {
+    const s = typeof p.status === "number" && Number.isFinite(p.status) ? p.status : 0;
+    out[s] = (out[s] ?? 0) + 1;
+  }
+  return out;
+}
+
+function mergeAdminStatusCounts(
+  apiCounts: Record<string, number> | undefined,
+  fallback: Record<number, number>
+): Record<number, number> {
+  if (apiCounts && typeof apiCounts === "object") {
+    const fromApi: Record<number, number> = {};
+    for (const [k, raw] of Object.entries(apiCounts)) {
+      const v = typeof raw === "number" ? raw : parseInt(String(raw), 10);
+      if (!Number.isFinite(v) || v < 0) continue;
+      const code = parseInt(k, 10);
+      if (!Number.isFinite(code)) continue;
+      fromApi[code] = v;
+    }
+    if (Object.keys(fromApi).length > 0) return fromApi;
+  }
+  return fallback;
+}
+
+const FALLBACK_PIE_COLORS = [
+  "rgb(59, 130, 246)",
+  "rgb(34, 197, 94)",
+  "rgb(251, 191, 36)",
+  "rgb(168, 85, 247)",
+  "rgb(236, 72, 153)",
+  "rgb(14, 165, 233)",
+  "rgb(245, 158, 11)",
+  "rgb(100, 116, 139)",
+];
+
+/** Narrowed slice of projectStatuses API payload for charts. */
+type StatusRowForChart = {
+  current?: { statusName?: string; statusColor?: string };
+};
+
+function statusRowForCharts(
+  sm: Record<string | number, unknown>,
+  code: number
+): StatusRowForChart | undefined {
+  const raw = sm[code] ?? sm[String(code)];
+  if (!raw || typeof raw !== "object") return undefined;
+  return raw as StatusRowForChart;
+}
+
+function buildAdminChartsPayload(
+  adminSummary: NonNullable<DashboardSummary["admin"]>,
+  projList: Project[],
+  statuses: typeof statusData
+): DashboardAdminOverviewChartsPayload | null {
+  const sm = coerceStatuses(statuses);
+  const merged = mergeAdminStatusCounts(
+    adminSummary.projectStatusCounts,
+    countsFromProjectsForChart(projList)
+  );
+  const entries = Object.entries(merged)
+    .map(([codeStr, cnt]) => ({ code: parseInt(codeStr, 10), count: cnt }))
+    .filter((e) => Number.isFinite(e.code) && e.count > 0)
+    .sort((a, b) => b.count - a.count || a.code - b.code);
+
+  let ci = 0;
+  const statusLabels = entries.map((e) => {
+    const row = statusRowForCharts(sm, e.code);
+    const nm = stripHtml(row?.current?.statusName);
+    return nm || `Status ${e.code}`;
+  });
+  const statusCounts = entries.map((e) => e.count);
+  const statusColors = entries.map((e) => {
+    const row = statusRowForCharts(sm, e.code);
+    const c = typeof row?.current?.statusColor === "string" ? row.current.statusColor.trim() : "";
+    if (c.startsWith("#") || c.startsWith("rgb") || c.startsWith("hsl")) return c;
+    return FALLBACK_PIE_COLORS[ci++ % FALLBACK_PIE_COLORS.length];
+  });
+
+  return {
+    statusLabels,
+    statusCounts,
+    statusColors,
+    opsLabels: ["Clients", "Projects", "Open invoices", "Invoice records"],
+    opsCounts: [
+      adminSummary.clientCount,
+      adminSummary.projectCount,
+      adminSummary.openInvoiceCount,
+      adminSummary.invoiceCount,
+    ],
+    outstandingFormatted: adminSummary.outstandingBalanceFormatted,
+    totalBilledFormatted: adminSummary.totalBilledFormatted,
+    hasProjects: entries.length > 0,
+  };
+}
+
+const adminChartsPayload: DashboardAdminOverviewChartsPayload | null =
+  isAdminView && dashboardSummary?.admin
+    ? buildAdminChartsPayload(dashboardSummary.admin, projects, statusData)
+    : null;
 ---
 
-<!-- Dashboard Container -->
-<HeroDashboard role={currentUser?.profile?.role} projectLength={projects.length} />
+<HeroDashboard role={role} projectLength={projects.length} />
 
-<!-- Project List - shown when projectCount > 0 -->
-<div
-  data-condition="projectCount>0:show"
-  class={projects.length === 0 ? "hidden" : "snap-x snap-mandatory overflow-x-auto scrollbar-hide"}
->
-  <ProjectList {projects} {statusData} {currentUser} {globalInputClasses} />
-</div>
-
-<!-- New Project Form - shown when projectCount === 0 -->
-<div data-condition="projectCount===0:show" class={projects.length > 0 ? "hidden" : ""}>
-  <ProjectForm
-    project={null}
-    isNewProject={true}
-    {globalInputClasses}
-    {secondaryTextClasses}
-    {primaryTextClasses}
-  />
-</div>
-<div class="w-full">
-  <!-- Table Footer -->
-  <div class="pointer-events-none relative hidden cursor-not-allowed overflow-hidden">
-    <nav class="flex justify-between p-4 md:items-center" aria-label="Table navigation">
-      <span class="text-sm"
-        >Showing <span class="text-gray-900 dark:text-white">1-15</span> of
-        <span class="text-gray-900 dark:text-white">146</span></span
-      >
-      <ul class="inline-flex">
-        <li>
-          <a
-            href="#"
-            class="h-100 color-background flex items-center justify-center border border-gray-300 bg-gray-100 px-3 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
-          >
-            <span class="sr-only">Previous</span>
-            <svg
-              class="rxe6apEJoEk8r75xaVNG ADSeKHR1DvUUA48Chci_"
-              aria-hidden="true"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                clip-rule="evenodd"></path>
-            </svg>
-          </a>
-        </li>
-        <li>
-          <a
-            href="#"
-            class="color-background flex items-center justify-center border border-gray-300 bg-gray-100 px-3 py-2 text-sm hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
-          >
-            1
-          </a>
-        </li>
-        <li>
-          <a
-            href="#"
-            class="color-background flex items-center justify-center border border-gray-300 bg-gray-100 px-3 py-2 text-sm hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
-          >
-            2
-          </a>
-        </li>
-        <li>
-          <a
-            href="#"
-            aria-current="page"
-            class="QhmQ_v3mmDFIP9VaVOfb XQGFRdlxLbhbEMzeaRuO OHD_pMp_ehzJj42EmDyF OXyBmUnmaFHYN14c7Giu _6MyV8SXoSWq_PQ6KWI6 M7HoUYpjoEdw_y87xeWn YXx9oZ15oLXSCG32YPBT flex items-center justify-center border px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-          >
-            3
-          </a>
-        </li>
-        <li>
-          <a
-            href="#"
-            class="color-background flex items-center justify-center border border-gray-300 bg-gray-100 px-3 py-2 text-sm hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
-          >
-            ...
-          </a>
-        </li>
-        <li>
-          <a
-            href="#"
-            class="color-background flex items-center justify-center border border-gray-300 bg-gray-100 px-3 py-2 text-sm hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
-          >
-            10
-          </a>
-        </li>
-        <li>
-          <a
-            href="#"
-            class="h-100 color-background flex items-center justify-center border border-gray-300 bg-gray-100 px-3 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
-          >
-            <span class="sr-only">Next</span>
-            <svg
-              class="rxe6apEJoEk8r75xaVNG ADSeKHR1DvUUA48Chci_"
-              aria-hidden="true"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                clip-rule="evenodd"></path>
-            </svg>
-          </a>
-        </li>
-      </ul>
-    </nav>
+<div class={`${globalSectionHeaderBar} mb-6 flex-wrap gap-3`}>
+  <div class={`${globalFlexRow} flex-wrap gap-2`}>
+    <a href="/project/new" class={primaryCtaClass}>Start new project</a>
+    {
+      isAdminView && (
+        <a href="/admin/finance" class={secondaryCtaClass}>
+          Finance dashboard
+        </a>
+      )
+    }
   </div>
 </div>
+
+{
+  role === "Staff" && dashboardSummary?.staff?.placeholder && (
+    <div
+      class={`${globalCardStyle} mb-8 border-amber-200 bg-amber-50 p-5 dark:border-amber-900/40 dark:bg-amber-900/20`}
+      role="status"
+    >
+      <h2 class={`${globalTextH3}`}>Staff workspace</h2>
+      <p class={`${mutedTextSmClasses} mt-2`}>
+        {dashboardSummary.staff.message ?? "More staff-specific tools will appear here."}
+      </p>
+    </div>
+  )
+}
+
+{
+  isAdminView && dashboardSummary?.admin && adminChartsPayload && (
+    <section class="mb-10" aria-label="Organization overview">
+      <h2 class={`${globalTextH3} mb-4`}>At a glance</h2>
+      <div class="grid gap-6 lg:grid-cols-2">
+        <div class={`${globalCardStyle} p-5 shadow-sm dark:shadow-gray-800`}>
+          <h3 class={`${globalTextH3} mb-1`}>Projects by status</h3>
+          <p class={`${mutedTextSmClasses} mb-4 text-sm`}>
+            Workflow distribution ({dashboardSummary.admin.projectCount.toLocaleString("en-US")}{" "}
+            projects organization-wide).
+          </p>
+          <div class="relative h-[280px] min-h-[200px] w-full">
+            {adminChartsPayload.hasProjects ? (
+              <canvas
+                id="dashboard-admin-status-chart"
+                class="mx-auto max-h-[280px] max-w-full"
+                aria-label="Pie chart showing how many projects are in each status"
+              />
+            ) : (
+              <p
+                class={`flex h-full items-center justify-center text-center ${mutedTextSmClasses}`}
+              >
+                No projects yet — this chart fills in once projects exist.
+              </p>
+            )}
+          </div>
+        </div>
+        <div class={`${globalCardStyle} p-5 shadow-sm dark:shadow-gray-800`}>
+          <h3 class={`${globalTextH3} mb-1`}>Clients and invoicing snapshot</h3>
+          <p class={`${mutedTextSmClasses} mb-4 text-sm`}>
+            Counts from your database (not limited to the project list below).
+          </p>
+          <div class="relative h-[280px] min-h-[200px] w-full">
+            <canvas
+              id="dashboard-admin-volume-chart"
+              class="mx-auto max-h-[280px] max-w-full"
+              aria-label="Bar chart of client, project, and invoice counts"
+            />
+          </div>
+          <div
+            class={`${mutedTextSmClasses} mt-4 flex flex-col gap-1 border-t border-gray-200 pt-4 text-sm dark:border-gray-700 sm:flex-row sm:flex-wrap sm:gap-x-6`}
+          >
+            <span>
+              <span class="font-medium text-gray-600 dark:text-gray-400">Outstanding balance:</span>
+              {` ${adminChartsPayload.outstandingFormatted}`}
+            </span>
+            <span>
+              <span class="font-medium text-gray-600 dark:text-gray-400">
+                Total billed (all invoices):
+              </span>
+              {` ${adminChartsPayload.totalBilledFormatted}`}
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+{
+  role === "Client" && (
+    <section class="mb-10" aria-label="Your account">
+      {dashboardSummary?.client ? (
+        <>
+          <h2 class={`${globalTextH3} mb-4`}>Your overview</h2>
+          <div class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div class={`${globalCardStyle} p-5 shadow-sm dark:shadow-gray-800`}>
+              <p class={mutedTextSmClasses}>Your projects</p>
+              <p class={`mt-1 text-2xl font-bold ${primaryTextClasses}`}>
+                {dashboardSummary.client.projectCount}
+              </p>
+            </div>
+            <div class={`${globalCardStyle} p-5 shadow-sm dark:shadow-gray-800`}>
+              <p class={mutedTextSmClasses}>Outstanding balance</p>
+              <p class={`mt-1 text-2xl font-bold ${primaryTextClasses}`}>
+                {dashboardSummary.client.outstandingBalanceFormatted}
+              </p>
+              <p class={`${mutedTextSmClasses} mt-1 text-xs`}>
+                Sum of unpaid / partial invoices from open statuses.
+              </p>
+            </div>
+          </div>
+          <div class={`${dataTableCardClasses} ${globalCardStyle} mb-6 overflow-hidden`}>
+            <div class="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
+              <h3 class={globalTextH3}>Recent payments</h3>
+              <p class={`${mutedTextSmClasses} mt-1`}>
+                Latest recorded payment activity linked to your projects.
+              </p>
+            </div>
+            <div class={dataTableTableWrapperClasses}>
+              {dashboardSummary.client.recentPayments.length === 0 ? (
+                <p class={`${mutedTextSmClasses} px-4 py-6 text-center`}>No payments yet.</p>
+              ) : (
+                <table class={dataTableTableClasses}>
+                  <thead class={dataTableTheadClasses}>
+                    <tr>
+                      <th scope="col" class={`${dataTableThClasses} text-left`}>
+                        {" "}
+                        Date{" "}
+                      </th>
+                      <th scope="col" class={`${dataTableThClasses} text-left`}>
+                        {" "}
+                        Invoice{" "}
+                      </th>
+                      <th scope="col" class={`${dataTableThClasses} text-left`}>
+                        {" "}
+                        Method{" "}
+                      </th>
+                      <th scope="col" class={`${dataTableThClasses} text-right`}>
+                        {" "}
+                        Amount{" "}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    {dashboardSummary.client.recentPayments.map((p) => (
+                      <tr>
+                        <td class="px-4 py-3 text-left text-sm text-gray-900 dark:text-white">
+                          {p.paymentDate ?? "—"}
+                        </td>
+                        <td class="px-4 py-3 text-left text-sm text-gray-900 dark:text-white">
+                          {p.invoiceLabel ?? "—"}
+                        </td>
+                        <td class="px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-300">
+                          {p.paymentMethod ?? "—"}
+                        </td>
+                        <td class="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">
+                          {p.amountFormatted}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+          {dashboardSummary.client.projects.length > 0 && (
+            <div class="mb-4">
+              <h3 class={`${globalTextH3} mb-2`}>Project history</h3>
+              <ul class="divide-y divide-gray-200 rounded-lg border border-gray-200 dark:divide-gray-700 dark:border-gray-700">
+                {dashboardSummary.client.projects.map((p) => (
+                  <li>
+                    <a
+                      href={`/project/${p.id}`}
+                      class="flex flex-col gap-0.5 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/60"
+                    >
+                      <span class={`text-sm font-medium ${primaryTextClasses}`}>
+                        {p.title || `Project ${p.id}`}
+                      </span>
+                      {p.address && (
+                        <span class={`text-xs ${mutedTextSmClasses}`}>{p.address}</span>
+                      )}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </>
+      ) : (
+        <p class={mutedTextSmClasses}>
+          Some account details could not be loaded. Your project list below may still be available.
+        </p>
+      )}
+    </section>
+  )
+}
+
+<section class="mb-10" aria-label="Projects">
+  <!-- <h2 class={`${globalTextH3} mb-3`}>
+    {isAdminView || role === "Staff" ? "All projects" : "Your projects"}
+  </h2> -->
+  <div class={projects.length === 0 ? "" : "snap-x snap-mandatory overflow-x-auto scrollbar-hide"}>
+    <ProjectList {projects} {statusData} {currentUser} {globalInputClasses} />
+  </div>
+  {
+    projects.length === 0 && (
+      <p class={`${mutedTextSmClasses} mt-4 text-center`}>
+        No projects yet—use{" "}
+        <a href="/project/new" class="text-primary-600 hover:underline dark:text-primary-400">
+          Start new project
+        </a>{" "}
+        to create one.
+      </p>
+    )
+  }
+</section>
+{adminChartsPayload && <DashboardAdminOverviewChartsEmbed payload={adminChartsPayload} />}

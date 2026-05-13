@@ -16,6 +16,7 @@ import SimpleIcon from "../../components/common/SimpleIcon.astro";
 import AccordionDataTable from "../../components/common/AccordionDataTable.astro";
 import TanStackDataTable from "../../components/common/TanStackDataTable.astro";
 import CmsTemplatePageRowActions from "../../components/admin/CmsTemplatePageRowActions.astro";
+import { supabaseAdmin } from "../../lib/supabase-admin";
 
 const { currentUser, session, supabase } = await checkAuth(Astro.cookies);
 
@@ -36,16 +37,29 @@ const { globalFormClasses, globalInputClasses } = globalClasses();
 const navRolesOptions = ["any", "Admin", "Staff", "Client"];
 const navButtonStyleOptions = ["", "primary", "secondary", "ghost", "outline"];
 
-// Fetch template pages (cmsPages)
+// All template rows (admins see every cmsPage — /api/cms/pages filters out other clientIds).
 let templatePages: any[] = [];
 try {
-  const baseUrl = Astro.url.origin;
-  const res = await fetch(`${baseUrl}/api/cms/pages`);
-  if (res.ok) {
-    const data = await res.json();
-    templatePages = (data.pages || []).sort((a: any, b: any) =>
-      (a.slug || "").localeCompare(b.slug || "")
-    );
+  if (supabaseAdmin) {
+    const ordered = await supabaseAdmin.from("cmsPages").select("*").order("displayOrder", {
+      ascending: true,
+      nullsFirst: false,
+    });
+    let rows = ordered.data ?? [];
+    let loadError = ordered.error;
+    if (loadError?.code === "42703") {
+      const fb = await supabaseAdmin.from("cmsPages").select("*").order("slug");
+      rows = fb.data ?? [];
+      loadError = fb.error;
+    }
+    if (loadError) throw loadError;
+    templatePages = rows.sort((a: any, b: any) => {
+      const slugCmp = String(a.slug || "").localeCompare(String(b.slug || ""));
+      if (slugCmp !== 0) return slugCmp;
+      const tenantCmp = String(a.clientId ?? "").localeCompare(String(b.clientId ?? ""));
+      if (tenantCmp !== 0) return tenantCmp;
+      return String(a.id).localeCompare(String(b.id));
+    });
   }
 } catch (error) {
   console.error("Error fetching template pages:", error);
@@ -105,7 +119,7 @@ try {
     <AccordionDataTable
       id="cms-template-pages"
       data={templatePages}
-      getItemId={(p) => p.slug}
+      getItemId={(p) => String(p.id)}
       getReorderId={(p) => String(p.id)}
       slotIdPrefix="template-editor-slot"
       draggable={true}
@@ -120,10 +134,10 @@ try {
       detailRowIdPrefix="cms-template"
       emptyMessage='No pages yet. Use "Create new page" above to add one.'
       getTriggerDataAttrs={(p) => ({
-        editorSlot: p.slug,
-        pageId: String(p.id),
+        editorSlot: String(p.id),
+        cmsSlug: p.slug ?? "",
       })}
-      getDetailRowDataAttrs={(p) => ({ editorSlot: p.slug })}
+      getDetailRowDataAttrs={(p) => ({ editorSlot: String(p.id) })}
       createRowDataAttrs={{ editorSlot: "template-create" }}
       createButtonId="create-template-page-btn"
       columns={[
@@ -132,7 +146,16 @@ try {
           label: "Slug",
           getValue: (p) => p.slug,
           cellClass: "whitespace-nowrap font-medium",
-          width: 24,
+          width: 18,
+        },
+        {
+          key: "clientId",
+          label: "clientId",
+          getValue: (p) =>
+            p.clientId == null || p.clientId === "" ? "(global)" : String(p.clientId),
+          cellClass:
+            "max-w-[10rem] break-all text-xs text-gray-500 dark:text-gray-400 xl:max-w-xs",
+          width: 22,
         },
         {
           key: "title",
@@ -140,7 +163,7 @@ try {
           getValue: (p) => p.title || "—",
           allowHtml: true,
           cellClass: "text-left whitespace-normal break-words text-gray-500 dark:text-gray-400",
-          width: 56,
+          width: 40,
         },
         {
           key: "template",
@@ -312,12 +335,16 @@ try {
     }
   };
 
-  window.handleTemplatePageDeleted = async function (slug) {
+  window.handleTemplatePageDeleted = async function (pageId) {
     if (window.showSuccess) window.showSuccess("Page Deleted", "Page deleted successfully", 2000);
     const tbody = document.querySelector("#cms-template-pages-tbody");
-    if (tbody) {
-      const triggerRow = tbody.querySelector(`tr.cms-template-trigger[data-editor-slot="${slug}"]`);
-      const detailRow = tbody.querySelector(`tr.cms-template-detail[data-editor-slot="${slug}"]`);
+    if (tbody && pageId) {
+      const triggerRow = tbody.querySelector(
+        `tr.cms-template-trigger[data-editor-slot="${pageId}"]`
+      );
+      const detailRow = tbody.querySelector(
+        `tr.cms-template-detail[data-editor-slot="${pageId}"]`
+      );
       if (triggerRow) triggerRow.remove();
       if (detailRow) detailRow.remove();
     }
@@ -463,10 +490,11 @@ try {
         e.preventDefault();
         e.stopPropagation();
         const slug = btn.getAttribute("data-slug");
-        if (!slug) return;
+        const slotId = btn.closest("tr.cms-template-trigger")?.getAttribute("data-editor-slot");
+        if (!slug || !slotId) return;
         if (titleEl) titleEl.textContent = `Edit Page: ${slug}`;
         closeTemplateEditor();
-        const cached = templateFormCache[slug];
+        const cached = templateFormCache[slotId];
         if (cached) {
           const slugEl = document.getElementById("template-page-slug");
           const titleEl2 = document.getElementById("template-page-title");
@@ -484,14 +512,14 @@ try {
             includeNavEl.checked = !!cached.includeInNavigation;
           setTemplateNavRoles(cached.nav_roles || ["any"]);
           if (navStyleEl && "value" in navStyleEl) navStyleEl.value = cached.nav_button_style || "";
-          openTemplateEditor(slug, true);
+          openTemplateEditor(slotId, true);
           return;
         }
         try {
-          const response = await fetch(`/api/cms/pages?slug=${encodeURIComponent(slug)}`);
+          const response = await fetch(`/api/cms/pages?id=${encodeURIComponent(slotId)}`);
           const data = await response.json();
           if (data.page) applyTemplatePageToForm(data.page);
-          openTemplateEditor(slug, true);
+          openTemplateEditor(slotId, true);
         } catch (err) {
           console.error("Error loading template page:", err);
           if (window.showError) window.showError("Load Failed", "Failed to load page data", 0);
@@ -508,6 +536,7 @@ try {
         )
           return;
         const slotId = triggerRow.getAttribute("data-editor-slot");
+        const cmsSlug = triggerRow.getAttribute("data-cms-slug") || "";
         if (!slotId) return;
         if (openTemplateSlotId === slotId) {
           closeTemplateEditor();
@@ -515,7 +544,7 @@ try {
         }
         if (titleEl)
           titleEl.textContent =
-            slotId === "template-create" ? "Create New Page" : `Edit Page: ${slotId}`;
+            slotId === "template-create" ? "Create New Page" : `Edit Page: ${cmsSlug || slotId}`;
         if (slotId === "template-create") {
           form?.reset();
           openTemplateEditor("template-create");
@@ -543,7 +572,7 @@ try {
           openTemplateEditor(slotId, true);
           return;
         }
-        fetch(`/api/cms/pages?slug=${encodeURIComponent(slotId)}`)
+        fetch(`/api/cms/pages?id=${encodeURIComponent(slotId)}`)
           .then((r) => r.json())
           .then((data) => {
             if (data.page) applyTemplatePageToForm(data.page);

@@ -1,0 +1,271 @@
+---
+import { globalClasses } from "../../pages/api/global/global-classes";
+import { DELIVERABLE_SHORTCODE_ROWS } from "../../lib/project-deliverables-shortcodes";
+import SimpleIcon from "../common/SimpleIcon.astro";
+
+const {
+  globalCardStyle,
+  globalCodeInline,
+  globalFormLabel,
+  globalSectionHeaderBar,
+  globalTextH3,
+  mutedTextSmClasses,
+  primaryTextClasses,
+  secondaryTextClasses,
+} = globalClasses();
+
+interface Props {
+  project?: any;
+  currentUser?: any;
+  globalInputClasses?: string;
+}
+
+const { project, currentUser, globalInputClasses } = Astro.props;
+const currentRole = currentUser?.profile?.role;
+
+if (currentRole === "Client") {
+  return;
+}
+
+const projectId = project?.id ?? 0;
+---
+
+<div
+  id="content-deliverables"
+  class="tab-content color-background relative mb-16 min-h-[calc(100dvh-24rem)] p-4 shadow-lg"
+>
+  <div class="space-y-6">
+    <div class={globalSectionHeaderBar}>
+      <div>
+        <h2 class={`flex items-center gap-2 ${primaryTextClasses} text-2xl font-bold`}>
+          <SimpleIcon name="file-blank" class="h-7 w-7 text-primary-600 dark:text-primary-400" />
+          Deliverables
+        </h2>
+        <p class={`${secondaryTextClasses} mt-2 max-w-3xl text-sm`}>
+          Map AcroForm field names on a PDF template to project data via shortcodes. Upload a PDF
+          with fillable fields to the
+          <span class="font-semibold text-gray-900 dark:text-gray-100">deliverable-templates</span>
+          storage bucket, register the row in
+          <code class={globalCodeInline}>deliverableTemplates</code>, then generate a filled copy
+          for project
+          <span class="font-semibold text-gray-900 dark:text-gray-100">#{projectId}</span>.
+        </p>
+      </div>
+    </div>
+
+    <section class={`${globalCardStyle} p-4`}>
+      <h3 class={`${globalTextH3} mb-3`}>Generate from template</h3>
+      <p class={`${mutedTextSmClasses} mb-4`}>
+        Names of AcroForm text fields must match PDF field hints below (normalized: lowercase,
+        underscores, no curly braces required in the PDF).
+      </p>
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div class="min-w-[14rem] flex-1">
+          <label class={globalFormLabel} for="deliverables-template-select">Template</label>
+          <select id="deliverables-template-select" class={`block w-full ${globalInputClasses}`}>
+            <option value="">Loading templates…</option>
+          </select>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button
+            type="button"
+            id="deliverables-btn-preview"
+            class="inline-flex items-center justify-center rounded-lg bg-gray-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-800 dark:bg-gray-600 dark:hover:bg-gray-500"
+          >
+            <SimpleIcon name="eye" class="mr-2" /> Preview values
+          </button>
+          <button
+            type="button"
+            id="deliverables-btn-download"
+            class="inline-flex items-center justify-center rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-700"
+          >
+            <SimpleIcon name="download" class="mr-2" /> Download filled PDF
+          </button>
+        </div>
+      </div>
+      <div id="deliverables-feedback" class={`${mutedTextSmClasses} mt-3 hidden`}></div>
+      <details class="mt-4 rounded-lg border border-gray-200 p-3 dark:border-gray-600">
+        <summary class={`cursor-pointer text-sm font-medium ${primaryTextClasses}`}>
+          Resolved values (preview)
+        </summary>
+        <pre
+          id="deliverables-preview-output"
+          class={`${mutedTextSmClasses} mt-2 max-h-64 overflow-auto rounded bg-gray-100 p-3 text-xs dark:bg-gray-800`}>
+        </pre>
+      </details>
+    </section>
+
+    <section class={`${globalCardStyle} p-4`}>
+      <h3 class={`${globalTextH3} mb-3`}>Shortcode reference</h3>
+      <p class={`${mutedTextSmClasses} mb-4`}>
+        Use these in documentation; in the PDF designer, set each field&apos;s name to the PDF
+        column (or normalize the shortcode yourself).
+      </p>
+      <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-600">
+        <table class="min-w-full divide-y divide-gray-200 text-left text-sm dark:divide-gray-700">
+          <thead class="bg-gray-50 dark:bg-gray-800">
+            <tr>
+              <th class="px-3 py-2 font-semibold text-gray-900 dark:text-white">Shortcode</th>
+              <th class="px-3 py-2 font-semibold text-gray-900 dark:text-white">PDF field name</th>
+              <th class="px-3 py-2 font-semibold text-gray-900 dark:text-white">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+            {
+              DELIVERABLE_SHORTCODE_ROWS.map((row) => (
+                <tr>
+                  <td class={`px-3 py-2 font-mono text-xs ${primaryTextClasses}`}>
+                    {row.shortcode}
+                  </td>
+                  <td class={`px-3 py-2 font-mono text-xs ${primaryTextClasses}`}>
+                    {row.pdfFieldHint}
+                  </td>
+                  <td class={`px-3 py-2 ${secondaryTextClasses}`}>{row.description}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script define:vars={{ projectId }} is:inline>
+  (async function initDeliverables() {
+    const select = document.getElementById("deliverables-template-select");
+    const btnPreview = document.getElementById("deliverables-btn-preview");
+    const btnDl = document.getElementById("deliverables-btn-download");
+    const fb = document.getElementById("deliverables-feedback");
+    const out = document.getElementById("deliverables-preview-output");
+    if (!select || !(select instanceof HTMLSelectElement)) return;
+
+    function showFb(msg, isErr) {
+      if (!fb) return;
+      if (!msg) {
+        fb.textContent = "";
+        fb.classList.add("hidden");
+        return;
+      }
+      fb.textContent = msg;
+      fb.classList.remove(
+        "hidden",
+        "text-green-700",
+        "dark:text-green-400",
+        "text-red-700",
+        "dark:text-red-400"
+      );
+      fb.classList.add(
+        ...(isErr
+          ? ["text-red-700", "dark:text-red-400"]
+          : ["text-green-700", "dark:text-green-400"])
+      );
+      fb.classList.remove("hidden");
+    }
+
+    async function loadTemplates() {
+      try {
+        select.innerHTML = '<option value="">Loading…</option>';
+        const r = await fetch("/api/projects/deliverables/templates", { credentials: "include" });
+        const j = await r.json();
+        if (!r.ok || !j.success || !Array.isArray(j.data?.templates)) {
+          select.innerHTML = '<option value="">No templates loaded</option>';
+          return;
+        }
+        const tpls = j.data.templates;
+        if (tpls.length === 0) {
+          select.innerHTML = "";
+          const only = document.createElement("option");
+          only.value = "";
+          only.textContent = "No active templates — add deliverableTemplates row + upload PDF";
+          select.appendChild(only);
+          return;
+        }
+        select.innerHTML = "";
+        const empty = document.createElement("option");
+        empty.value = "";
+        empty.textContent = "Select a template…";
+        select.appendChild(empty);
+        for (const t of tpls) {
+          const opt = document.createElement("option");
+          opt.value = String(t.id);
+          opt.textContent = String(t.title ?? "Untitled");
+          select.appendChild(opt);
+        }
+      } catch (e) {
+        console.error(e);
+        select.innerHTML = '<option value="">Error loading templates</option>';
+      }
+    }
+
+    async function previewValues() {
+      if (!projectId || !out) return;
+      showFb("", false);
+      try {
+        const r = await fetch(
+          `/api/projects/deliverables/preview-values?projectId=${encodeURIComponent(projectId)}`,
+          { credentials: "include" }
+        );
+        const j = await r.json();
+        if (!r.ok || !j.success) throw new Error(j.error || `HTTP ${r.status}`);
+        out.textContent = JSON.stringify(j.data.rows, null, 2);
+      } catch (e) {
+        out.textContent =
+          typeof e.message === "string" ? e.message : typeof e === "string" ? e : String(e);
+      }
+    }
+
+    async function downloadFilled() {
+      const tid = select.value;
+      if (!tid) {
+        showFb("Pick a template first.", true);
+        return;
+      }
+      if (!projectId) return;
+      showFb("Generating…", false);
+      try {
+        const r = await fetch("/api/projects/deliverables/generate", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            projectId,
+            templateId: tid,
+            flatten: true,
+          }),
+        });
+        if (!r.ok) {
+          const j = await r.json().catch(() => null);
+          throw new Error(j?.error || `HTTP ${r.status}`);
+        }
+        const blob = await r.blob();
+        const disp = r.headers.get("Content-Disposition");
+        let filename = `deliverable-project-${projectId}.pdf`;
+        const m = /filename\*=(?:UTF-8'')([^;]+)|filename="([^"]+)"/i.exec(disp || "");
+        if (m) filename = decodeURIComponent((m[1] || m[2] || "").replace(/\"/g, "").trim());
+
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        showFb(
+          `Download started (${filename}). Fields filled: ${r.headers.get("X-Deliverable-Fields-Filled") ?? "?"} `,
+          false
+        );
+      } catch (e) {
+        showFb(String(e.message || e), true);
+      }
+    }
+
+    if (btnPreview) btnPreview.addEventListener("click", () => previewValues());
+    if (btnDl) btnDl.addEventListener("click", () => downloadFilled());
+
+    await loadTemplates();
+
+    window.initializeDeliverables = async function initializeDeliverables() {
+      await loadTemplates();
+      await previewValues();
+    };
+  })();
+</script>

@@ -1,18 +1,29 @@
-import { createClient } from "@supabase/supabase-js";
+import type { APIRoute } from "astro";
 import { checkAuth } from "../../../lib/auth";
+import { supabaseAdmin } from "../../../lib/supabase-admin";
+import { isAdminOrSuperAdmin, normalizeUserRole } from "../../../lib/user-utils";
 
-const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
-// Use PUBLIC_SUPABASE_PUBLISHABLE
-const supabaseKey = import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE;
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-export async function GET({ cookies }) {
+export const GET: APIRoute = async ({ cookies }) => {
   try {
-    // Check authentication
     const { currentUser, isAuth } = await checkAuth(cookies);
-    if (!isAuth || !currentUser) {
+    if (!isAuth || !currentUser?.id) {
       return new Response(JSON.stringify({ error: "Authentication required" }), {
         status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const role = normalizeUserRole(currentUser.profile?.role);
+    if (!isAdminOrSuperAdmin(role)) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    if (!supabaseAdmin) {
+      return new Response(JSON.stringify({ error: "Database unavailable" }), {
+        status: 503,
         headers: { "Content-Type": "application/json" },
       });
     }
@@ -24,8 +35,7 @@ export async function GET({ cookies }) {
       currentUser.role
     );
 
-    // Get invoice overview
-    const { data: invoiceData, error: invoiceError } = await supabase
+    const { data: invoiceData, error: invoiceError } = await supabaseAdmin
       .from("invoices")
       .select("status, totalAmount, id, subject, createdAt");
 
@@ -37,24 +47,24 @@ export async function GET({ cookies }) {
       });
     }
 
-    console.log("📊 [FINANCE-OVERVIEW] Invoice data:", invoiceData?.length || 0, "invoices found");
-    console.log("📊 [FINANCE-OVERVIEW] Sample invoice:", invoiceData?.[0]);
+    const invoices = invoiceData || [];
+    console.log("📊 [FINANCE-OVERVIEW] Invoice data:", invoices.length, "invoices found");
+    console.log("📊 [FINANCE-OVERVIEW] Sample invoice:", invoices[0]);
 
-    // Calculate invoice metrics
-    const totalInvoices = invoiceData.length;
-    const totalRevenue = invoiceData.reduce(
-      (sum, invoice) => sum + (parseFloat(invoice.totalAmount) || 0),
+    const totalInvoices = invoices.length;
+    const totalRevenue = invoices.reduce(
+      (sum, invoice) => sum + (parseFloat(String(invoice.totalAmount)) || 0),
       0
     );
-    const paidInvoices = invoiceData.filter((invoice) => invoice.status === "paid").length;
-    const draftInvoices = invoiceData.filter((invoice) => invoice.status === "draft").length;
-    const sentInvoices = invoiceData.filter((invoice) => invoice.status === "sent").length;
-    const overdueInvoices = invoiceData.filter((invoice) => invoice.status === "overdue").length;
+    const paidInvoices = invoices.filter((invoice) => invoice.status === "paid").length;
+    const draftInvoices = invoices.filter((invoice) => invoice.status === "draft").length;
+    const sentInvoices = invoices.filter((invoice) => invoice.status === "sent").length;
+    const overdueInvoices = invoices.filter((invoice) => invoice.status === "overdue").length;
 
-    // Get project overview
-    const { data: projectData, error: projectError } = await supabase
+    const { data: projectRows, error: projectError } = await supabaseAdmin
       .from("projects")
-      .select("status, sqFt");
+      .select("id, status, sqFt")
+      .neq("id", 0);
 
     if (projectError) {
       console.error("Error fetching project data:", projectError);
@@ -64,9 +74,9 @@ export async function GET({ cookies }) {
       });
     }
 
-    // Calculate project metrics
+    const projectData = projectRows || [];
     const totalProjects = projectData.length;
-    const activeProjects = projectData.filter((project) => project.status === 1).length;
+    const activeProjects = projectData.length;
     const totalSqFt = projectData.reduce((sum, project) => sum + (project.sqFt || 0), 0);
 
     return new Response(
@@ -93,4 +103,4 @@ export async function GET({ cookies }) {
       headers: { "Content-Type": "application/json" },
     });
   }
-}
+};

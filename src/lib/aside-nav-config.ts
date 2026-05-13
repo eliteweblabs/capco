@@ -29,6 +29,17 @@ export type AsideNavRenderItem = {
   children?: Array<{ label: string; href: string }>;
 };
 
+/** Top-level "Dashboard" aside item must open /dashboard (ops home), not /project/dashboard. */
+function normalizeAsideLeafHref(item: AsideNavItem): string {
+  const href = item.href ?? "";
+  const label = item.label?.trim().toLowerCase() ?? "";
+  const id = typeof item.id === "string" ? item.id : "";
+  if (href === "/project/dashboard" && (id === "dashboard" || label === "dashboard")) {
+    return "/dashboard";
+  }
+  return href;
+}
+
 function isRoleAllowed(allow: string[] | undefined, userRole?: string): boolean {
   if (!allow || allow.length === 0) return true;
   if (!userRole) return false;
@@ -80,7 +91,7 @@ export async function getAsideNav(userRole?: string): Promise<AsideNavRenderItem
     } else if (item.href) {
       result.push({
         label: item.label,
-        href: item.href,
+        href: normalizeAsideLeafHref(item),
         icon: item.icon,
       });
     }

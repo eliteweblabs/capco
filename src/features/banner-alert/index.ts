@@ -26,7 +26,7 @@ export interface BannerAlert {
   id: number;
   title?: string;
   description: string;
-  type: "info" | "success" | "warning" | "error";
+  type: "info" | "success" | "warning" | "error" | "emergency-phone";
   position: "top" | "bottom";
   expireMs: number | null;
   dismissible: boolean;

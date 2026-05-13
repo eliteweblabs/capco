@@ -41,6 +41,11 @@ function saveWidths(tableId: string, widths: Record<string, number>) {
   }
 }
 
+/** Re-scan DOM and attach column resize handles (call after dynamic table mount). */
+export function initAccordionDataTableResizableColumns(): void {
+  initResizableColumns();
+}
+
 function initResizableColumns() {
   const tables = document.querySelectorAll<HTMLElement>("table[data-accordion-resizable]");
   tables.forEach((table) => {
@@ -200,5 +205,3 @@ document.addEventListener("click", (e) => {
   const tableId = btn.getAttribute("data-table-id");
   if (tableId) clearCachedColumnWidths(tableId);
 });
-
-export {};

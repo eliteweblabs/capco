@@ -1,0 +1,55 @@
+---
+/**
+ * Application home dashboard — Flowbite Application UI–style main content (stats, tables, CTAs)
+ * layered on the existing App shell (navbar + aside). Inspired by Flowbite application UI patterns.
+ * @see https://flowbite.com/application-ui/preview/
+ */
+import { checkAuth } from "../lib/auth";
+import LayoutFullWidth from "../components/layouts/LayoutFullWidth.astro";
+import FlowbiteApplicationDashboard from "../components/dashboard/FlowbiteApplicationDashboard.astro";
+import { globalClasses } from "./api/global/global-classes";
+
+const { currentUser, session } = await checkAuth(Astro.cookies);
+
+if (!session || !currentUser) {
+  return Astro.redirect("/auth/login");
+}
+
+let dashboardSummary: Record<string, unknown> | null = null;
+try {
+  const summaryUrl = new URL("/api/dashboard/summary", Astro.url.origin).toString();
+  const res = await fetch(summaryUrl, {
+    method: "GET",
+    headers: { Cookie: Astro.request.headers.get("Cookie") || "" },
+  });
+  if (res.ok) {
+    dashboardSummary = (await res.json()) as Record<string, unknown>;
+  }
+} catch {
+  /* non-fatal */
+}
+
+const {
+  primaryTextClasses,
+  secondaryTextClasses,
+  mutedTextSmClasses,
+  globalTextH3,
+  globalCardStyle,
+} = globalClasses();
+---
+
+<LayoutFullWidth
+  title="Dashboard"
+  description="Application overview and quick metrics."
+  classList="max-w-[1600px]"
+>
+  <FlowbiteApplicationDashboard
+    currentUser={currentUser}
+    dashboardSummary={dashboardSummary}
+    primaryTextClasses={primaryTextClasses}
+    secondaryTextClasses={secondaryTextClasses}
+    mutedTextSmClasses={mutedTextSmClasses}
+    globalTextH3={globalTextH3}
+    globalCardStyle={globalCardStyle}
+  />
+</LayoutFullWidth>

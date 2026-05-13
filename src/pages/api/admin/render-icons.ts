@@ -13,7 +13,7 @@ import path from "path";
 const SIZE_PNG = 512;
 const APPLE_TOUCH_SIZE = 180;
 
-export const POST: APIRoute = async ({ cookies }) => {
+export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     const { isAuth, currentUser } = await checkAuth(cookies);
     const role = currentUser?.profile?.role;
@@ -31,15 +31,36 @@ export const POST: APIRoute = async ({ cookies }) => {
       });
     }
 
-    const { data: rows } = await supabaseAdmin
-      .from("globalSettings")
-      .select("key, value")
-      .in("key", ["icon", "primaryColor"]);
+    /** Client passes what was just saved so we write files from the textarea, not stale DB reads */
+    let bodyIcon = "";
+    let bodyPrimary = "";
+    try {
+      const body = await request.json();
+      if (body && typeof body === "object") {
+        if (typeof body.icon === "string") bodyIcon = body.icon.trim();
+        if (typeof body.primaryColor === "string") bodyPrimary = body.primaryColor.trim();
+      }
+    } catch {
+      /* no JSON body — fall back to database */
+    }
 
-    const settings: Record<string, string> = {};
-    if (rows) for (const r of rows) settings[r.key] = (r.value as string) || "";
-    const iconSvg = settings.icon || "";
-    const primaryColor = settings.primaryColor || "#825BDD";
+    let iconSvg = "";
+    let primaryColor = "#825BDD";
+
+    if (bodyIcon.includes("<svg") || bodyIcon.includes("<?xml")) {
+      iconSvg = bodyIcon;
+      primaryColor = bodyPrimary || "#825BDD";
+    } else {
+      const { data: rows } = await supabaseAdmin
+        .from("globalSettings")
+        .select("key, value")
+        .in("key", ["icon", "primaryColor"]);
+
+      const dbSettings: Record<string, string> = {};
+      if (rows) for (const r of rows) dbSettings[r.key] = (r.value as string) || "";
+      iconSvg = dbSettings.icon || "";
+      primaryColor = dbSettings.primaryColor || "#825BDD";
+    }
 
     if (!iconSvg || !iconSvg.includes("<svg")) {
       return new Response(
@@ -61,8 +82,23 @@ export const POST: APIRoute = async ({ cookies }) => {
     const transformedSvg = transformSvgForFavicon(iconSvg, primaryColor);
     fs.writeFileSync(faviconSvgPath, transformedSvg, "utf-8");
 
-    const files: { path: string; size: string; type: string; url: string }[] = [
-      { path: "/favicon.svg", size: "any", type: "image/svg+xml", url: "/favicon.svg" },
+    type IconFileMeta = {
+      path: string;
+      size: string;
+      type: string;
+      url: string;
+      /** Same pixels as disk file; always from DB so admin previews match Saved icon */
+      thumbnailUrl: string;
+    };
+
+    const files: IconFileMeta[] = [
+      {
+        path: "/favicon.svg",
+        size: "any",
+        type: "image/svg+xml",
+        url: "/favicon.svg",
+        thumbnailUrl: "/api/favicon.svg",
+      },
     ];
 
     try {
@@ -74,6 +110,7 @@ export const POST: APIRoute = async ({ cookies }) => {
         size: `${SIZE_PNG}x${SIZE_PNG}`,
         type: "image/png",
         url: "/favicon.png",
+        thumbnailUrl: "/api/favicon.png?size=512",
       });
       await sharp(svgBuffer)
         .resize(APPLE_TOUCH_SIZE, APPLE_TOUCH_SIZE)
@@ -84,6 +121,7 @@ export const POST: APIRoute = async ({ cookies }) => {
         size: `${APPLE_TOUCH_SIZE}x${APPLE_TOUCH_SIZE}`,
         type: "image/png",
         url: "/apple-touch-icon.png",
+        thumbnailUrl: "/api/favicon.png?size=180",
       });
     } catch (err: unknown) {
       console.warn("[render-icons] sharp PNG generation failed:", err);
@@ -92,7 +130,13 @@ export const POST: APIRoute = async ({ cookies }) => {
           success: false,
           error: err instanceof Error ? err.message : "Failed to generate PNG",
           files: [
-            { path: "/favicon.svg", size: "any", type: "image/svg+xml", url: "/favicon.svg" },
+            {
+              path: "/favicon.svg",
+              size: "any",
+              type: "image/svg+xml",
+              url: "/favicon.svg",
+              thumbnailUrl: "/api/favicon.svg",
+            },
           ],
         }),
         { status: 500, headers: { "Content-Type": "application/json" } }

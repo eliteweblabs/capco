@@ -1681,6 +1681,13 @@ const iconRightPadding = "pr-14 sm:pr-16 md:pr-18 lg:pr-20";
       if (forms.length === 0) return;
       forms.forEach((formEl) => {
         const form = formEl as HTMLFormElement;
+        // Same guard as init-multistep-form-standalone: StandardForm / flat login must not get this handler.
+        if (
+          form.getAttribute("data-standard-form-inited") === "1" ||
+          form.closest("[data-standard-form]")
+        ) {
+          return;
+        }
         let formId: string;
         let formConfig: any;
         let initialData: Record<string, any> = {};
