@@ -171,6 +171,18 @@ try {
           }),
         },
         {
+          key: "id",
+          label: "ID",
+          getValue: (p) => (p.id != null ? String(p.id) : "—"),
+          cellClass: "whitespace-nowrap tabular-nums text-gray-500 dark:text-gray-400",
+          width: 10,
+          getCellDataAttrs: (p) => ({
+            refresh: "id",
+            cmsPageId: String(p.id),
+            metaValue: p.id != null ? String(p.id) : "",
+          }),
+        },
+        {
           key: "template",
           label: "Template",
           getValue: (p) => p.template || "default",
@@ -352,9 +364,7 @@ try {
       const triggerRow = tbody.querySelector(
         `tr.cms-template-trigger[data-editor-slot="${pageId}"]`
       );
-      const detailRow = tbody.querySelector(
-        `tr.cms-template-detail[data-editor-slot="${pageId}"]`
-      );
+      const detailRow = tbody.querySelector(`tr.cms-template-detail[data-editor-slot="${pageId}"]`);
       if (triggerRow) triggerRow.remove();
       if (detailRow) detailRow.remove();
     }
@@ -667,13 +677,31 @@ try {
   }
 
   function initCmsTablePolling() {
-    if (
-      typeof window !== "undefined" &&
-      window.refreshManager &&
-      document.querySelectorAll("[data-refresh][data-cms-page-id]").length > 0
-    ) {
-      window.refreshManager.startAutoRefreshWithInterval?.(5);
+    let attempts = 0;
+    const maxAttempts = 100;
+
+    function tryStartCmsRefresh() {
+      if (typeof window === "undefined") return;
+      if (!window.location.pathname.startsWith("/admin/cms")) return;
+
+      const cells = document.querySelectorAll("[data-refresh][data-cms-page-id]");
+      if (cells.length === 0) return;
+
+      const rm = window.refreshManager;
+      if (rm && typeof rm.startAutoRefreshWithInterval === "function") {
+        if (!rm.isAutoRefreshActive?.()) {
+          rm.startAutoRefreshWithInterval(5);
+        }
+        return;
+      }
+
+      attempts += 1;
+      if (attempts < maxAttempts) {
+        setTimeout(tryStartCmsRefresh, 50);
+      }
     }
+
+    tryStartCmsRefresh();
   }
 
   function initCMS(retry = false) {

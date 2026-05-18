@@ -5,6 +5,7 @@
 import { isFeatureEnabled } from "../../lib/features";
 import { getAsideNav } from "../../lib/aside-nav-config";
 import SimpleIcon from "../common/SimpleIcon.astro";
+import SearchInput from "../form/SearchInput.astro";
 import Socials from "./Socials.astro";
 import { globalClasses } from "../../pages/api/global/global-classes";
 
@@ -54,7 +55,13 @@ function slugifyId(s: string) {
   >
   </div> -->
   <div
-    class="sticky top-0 min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-3 py-4 scrollbar-hide"
+    class="sticky top-0 z-10 flex-shrink-0 border-b border-gray-200/80 bg-gray-50/90 px-3 pb-3 pt-4 backdrop-blur-sm dark:border-gray-800/80 dark:bg-gray-950/90"
+    data-sidebar-collapse-hide=""
+  >
+    <SearchInput id="sidebar-nav-search" placeholder="Search menu…" wrapperClass="w-full" />
+  </div>
+  <div
+    class="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-3 py-2 scrollbar-hide"
   >
     <!-- <div data-sidebar-collapse-hide=""> -->
     <ul class="mb-2 block space-y-2 text-xs font-medium uppercase tracking-wider" id="sidebar-menu">
@@ -128,6 +135,119 @@ function slugifyId(s: string) {
     </ul>
     <!-- </div> -->
   </div>
+
+  <script>
+    import { BREAKPOINTS } from "../../lib/ux-utils";
+
+    /** Expand/collapse sidebar via the same toggle Flowbite uses (desktop w-16, mobile off-canvas). */
+    function ensureSidebarOpenForNavSearch() {
+      const sidebar = document.getElementById("sidebar");
+      if (!sidebar) return;
+      const toggleBtn = document.querySelector("[data-sidebar-toggle-button]");
+      if (!(toggleBtn instanceof HTMLElement)) return;
+
+      const isMobile = window.innerWidth < BREAKPOINTS.MD;
+      if (isMobile) {
+        if (sidebar.classList.contains("-translate-x-full")) {
+          toggleBtn.click();
+        }
+      } else if (sidebar.classList.contains("w-16")) {
+        toggleBtn.click();
+      }
+    }
+
+    function focusSidebarNavSearchFromShortcut() {
+      const input = document.getElementById("sidebar-nav-search") as HTMLInputElement | null;
+      if (!input) return;
+      ensureSidebarOpenForNavSearch();
+      window.setTimeout(() => {
+        input.focus();
+        input.select();
+      }, 80);
+    }
+
+    /** Filter sidebar nav rows by SearchInput; re-inited on astro:page-load without stacking listeners. */
+    let sidebarNavSearchAbort: AbortController | null = null;
+
+    function initSidebarNavSearchFilter() {
+      sidebarNavSearchAbort?.abort();
+      sidebarNavSearchAbort = new AbortController();
+      const { signal } = sidebarNavSearchAbort;
+
+      const input = document.getElementById("sidebar-nav-search") as HTMLInputElement | null;
+      const menu = document.getElementById("sidebar-menu");
+      if (!input || !menu) return;
+
+      function applyFilter() {
+        const q = input.value.trim().toLowerCase();
+        const items = menu.querySelectorAll(":scope > li");
+
+        if (!q) {
+          items.forEach((li) => {
+            if (li.getAttribute("aria-hidden") === "true") return;
+            li.classList.remove("hidden");
+          });
+          return;
+        }
+
+        items.forEach((li) => {
+          if (li.getAttribute("aria-hidden") === "true") return;
+
+          const text = (li.textContent || "").replace(/\s+/g, " ").trim().toLowerCase();
+          if (text.includes(q)) {
+            li.classList.remove("hidden");
+            const btn = li.querySelector("button[data-collapse-toggle]");
+            const ul = li.querySelector(":scope ul");
+            if (btn && ul) {
+              const labelMatch = (btn.textContent || "").toLowerCase().includes(q);
+              const childMatch = Array.from(ul.querySelectorAll("a")).some((a) =>
+                (a.textContent || "").toLowerCase().includes(q)
+              );
+              if (labelMatch || childMatch) {
+                ul.classList.remove("hidden");
+                btn.setAttribute("aria-expanded", "true");
+              }
+            }
+          } else {
+            li.classList.add("hidden");
+          }
+        });
+      }
+
+      input.addEventListener("input", applyFilter, { signal });
+      applyFilter();
+
+      document.addEventListener(
+        "keydown",
+        (e) => {
+          if (e.defaultPrevented || e.repeat) return;
+          if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== "k") return;
+          const t = e.target;
+          if (t instanceof HTMLElement && t.isContentEditable) return;
+          e.preventDefault();
+          focusSidebarNavSearchFromShortcut();
+        },
+        { signal }
+      );
+    }
+
+    function runSidebarNavSearchInit() {
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initSidebarNavSearchFilter, { once: true });
+      } else {
+        initSidebarNavSearchFilter();
+      }
+    }
+
+    runSidebarNavSearchInit();
+    if (
+      !(window as unknown as { __sidebarNavSearchAstroLoad?: boolean }).__sidebarNavSearchAstroLoad
+    ) {
+      (window as unknown as { __sidebarNavSearchAstroLoad?: boolean }).__sidebarNavSearchAstroLoad =
+        true;
+      document.addEventListener("astro:page-load", initSidebarNavSearchFilter);
+    }
+  </script>
 
   <!-- Fixed footer with social icons -->
   <div class="color-border mt-auto flex-shrink-0 border-t px-3 py-4">

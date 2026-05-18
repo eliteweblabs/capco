@@ -5,9 +5,12 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl =
   import.meta.env.PUBLIC_SUPABASE_URL ||
   (typeof process !== "undefined" ? process.env.PUBLIC_SUPABASE_URL : undefined);
+// Prefer publishable key; fall back to legacy anon JWT so Railway matches build-auth-callback (ES256/JWKS require correct project URL + key pair).
 const supabasePublishableKey =
   import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE ||
-  (typeof process !== "undefined" ? process.env.PUBLIC_SUPABASE_PUBLISHABLE : undefined);
+  (typeof process !== "undefined" ? process.env.PUBLIC_SUPABASE_PUBLISHABLE : undefined) ||
+  import.meta.env.PUBLIC_SUPABASE_ANON_KEY ||
+  (typeof process !== "undefined" ? process.env.PUBLIC_SUPABASE_ANON_KEY : undefined);
 
 // Debug logging (always log in production to help diagnose Railway issues)
 // Use [--- prefix for server-side logs that should be visible in production
@@ -15,9 +18,12 @@ if (typeof window === "undefined") {
   const envCheck = {
     hasPublicUrl: !!import.meta.env.PUBLIC_SUPABASE_URL,
     hasPublicUrlProcess: typeof process !== "undefined" ? !!process.env.PUBLIC_SUPABASE_URL : false,
-    hasPublishableKey: !!import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE,
+    hasPublishableKey:
+      !!import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE || !!import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
     hasPublishableKeyProcess:
-      typeof process !== "undefined" ? !!process.env.PUBLIC_SUPABASE_PUBLISHABLE : false,
+      typeof process !== "undefined"
+        ? !!(process.env.PUBLIC_SUPABASE_PUBLISHABLE || process.env.PUBLIC_SUPABASE_ANON_KEY)
+        : false,
     finalUrl: !!supabaseUrl,
     finalKey: !!supabasePublishableKey,
     urlPreview: supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : "MISSING",

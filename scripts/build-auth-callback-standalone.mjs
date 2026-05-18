@@ -20,6 +20,7 @@ const env = { ...process.env, ...loaded };
 const supabaseUrl = (env.PUBLIC_SUPABASE_URL || "").trim();
 const supabasePublishable =
   (env.PUBLIC_SUPABASE_PUBLISHABLE || env.PUBLIC_SUPABASE_ANON_KEY || "").trim();
+const supabaseAnonOnly = (env.PUBLIC_SUPABASE_ANON_KEY || "").trim();
 
 const requireSupabaseKeys =
   Boolean(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID || process.env.CI);
@@ -56,6 +57,7 @@ await esbuild
       "process.env.NODE_ENV": JSON.stringify("production"),
       "import.meta.env.PUBLIC_SUPABASE_URL": JSON.stringify(supabaseUrl),
       "import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE": JSON.stringify(supabasePublishable),
+      "import.meta.env.PUBLIC_SUPABASE_ANON_KEY": JSON.stringify(supabaseAnonOnly),
     },
   })
   .catch((err) => {

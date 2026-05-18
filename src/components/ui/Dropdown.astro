@@ -24,6 +24,10 @@ interface Props {
    * Inner wrapper is animated so Popper’s transform on the outer node is unchanged.
    */
   direction?: "top" | "right" | "bottom" | "left";
+  /**
+   * Extra classes on the animated inner wrapper (e.g. `flex h-full min-h-0 flex-col` for a full-height body slot).
+   */
+  innerClass?: string;
 }
 
 const {
@@ -33,6 +37,7 @@ const {
   focusSelector,
   classList,
   direction = "bottom",
+  innerClass = "",
 } = Astro.props;
 ---
 
@@ -46,7 +51,7 @@ const {
   class={`${globalSidebarClasses} ${classList ? classList.join(" ") : ""} overflow-y-scroll no-scrollbar invisible fixed z-[1250] inline-block w-full max-w-md opacity-0 transition-opacity duration-300 ease-out`}
   data-dynamic-height="height"
 >
-  <div class="popover-animated-inner" data-direction={direction}>
+  <div class:list={["popover-animated-inner", innerClass]} data-direction={direction}>
     <div class="dropdown-arrow" data-popper-arrow></div>
 
     {

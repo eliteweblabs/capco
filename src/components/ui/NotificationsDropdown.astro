@@ -29,45 +29,61 @@ import Button from "../common/Button.astro";
 ---
 
 <!-- Account dropdown: Flowbite data-popover-target on UserIcon trigger -->
-<Dropdown id={id} {currentUser} {globalIconButtonClasses} title="" onOpenCallback={onOpen}>
+<Dropdown
+  id={id}
+  {currentUser}
+  {globalIconButtonClasses}
+  title=""
+  onOpenCallback={onOpen}
+  innerClass="flex h-full min-h-0 flex-col"
+>
   <!-- Panel body: data-dropdown-id passed so script can find panel/triggers (Navbar uses id="notifications") -->
-  <div class="min-h-0 flex-1 overflow-y-auto" data-dropdown-id={id}>
-    <!-- Header with Mark all read and Archive all -->
-    <div id="notification-actions" class="hidden items-center justify-between gap-2">
+  <div class="flex min-h-0 w-full flex-1 flex-col" data-dropdown-id={id}>
+    {/* Pin action bar: list scrolls in #notification-list so this row always stays visible */}
+    <div
+      id="notification-actions"
+      class="hidden shrink-0 items-center justify-between gap-2 border-b border-gray-200 bg-gray-50/95 px-4 py-2 backdrop-blur-sm dark:border-gray-700 dark:bg-gray-950/95"
+    >
       <Button type="button" id="mark-all-read" variant="secondary" size="sm">
         Mark all read
       </Button>
       <Button type="button" id="archive-all" variant="primary" size="sm"> Archive all </Button>
     </div>
 
-    <!-- Loading State -->
-    <div id="notification-loading" class="p-4 text-center">
-      <LoadingSpinner size="sm" loadingText="Loading notifications..." className="" />
-    </div>
+    <div class="flex min-h-0 flex-1 flex-col">
+      <!-- Loading State -->
+      <div id="notification-loading" class="min-h-0 flex-1 p-4 text-center">
+        <div class="flex min-h-full flex-col items-center justify-center">
+          <LoadingSpinner size="sm" loadingText="Loading notifications..." className="" />
+        </div>
+      </div>
 
-    <!-- Empty State -->
-    <div id="notification-empty" class="hidden p-6 text-center">
-      <svg
-        class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-        ></path>
-      </svg>
-      <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">
-        No recent notifications
-      </h3>
-    </div>
+      <!-- Empty State -->
+      <div id="notification-empty" class="hidden min-h-0 flex-1 overflow-y-auto p-6 text-center">
+        <div class="flex min-h-full flex-col items-center justify-center">
+          <svg
+            class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+            ></path>
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+            No recent notifications
+          </h3>
+        </div>
+      </div>
 
-    <!-- Notifications List -->
-    <div id="notification-list" class="scrollbar-hide">
-      <!-- Notifications will be populated here -->
+      <!-- Notifications List (scroll container — matches scroll listeners / infinite scroll) -->
+      <div id="notification-list" class="min-h-0 flex-1 overflow-y-auto scrollbar-hide">
+        <!-- Notifications will be populated here -->
+      </div>
     </div>
 
     <!-- Footer with auto-loading indicator -->

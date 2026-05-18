@@ -81,7 +81,7 @@ export const buttonVariantClasses: Record<string, string> = {
   primary:
     "[@media(hover:hover)]:hover:scale-101 [@media(hover:hover)]:hover:-translate-y-0.5 transition-all duration-200 rounded-full border-2 border-primary-500 bg-primary-500 text-white [@media(hover:hover)]:hover:bg-primary-600 dark:bg-primary-500 dark:[@media(hover:hover)]:hover:bg-primary-600",
   secondary:
-    "[@media(hover:hover)]:hover:scale-101 [@media(hover:hover)]:hover:-translate-y-0.5 transition-all duration-200 rounded-full border-2 border-secondary-500 bg-secondary-500 text-white ring-2 ring-secondary-600 ring-offset-2 ring-offset-transparent [@media(hover:hover)]:hover:ring-secondary-700 [@media(hover:hover)]:hover:bg-secondary-600 dark:bg-secondary-500 dark:ring-secondary-400 dark:[@media(hover:hover)]:hover:ring-secondary-300 dark:[@media(hover:hover)]:hover:bg-secondary-600",
+    "[@media(hover:hover)]:hover:scale-101 [@media(hover:hover)]:hover:-translate-y-0.5 transition-all duration-200 rounded-full border-2 border-secondary-500 bg-secondary-500 text-white ring-2 ring-inset ring-secondary-600 [@media(hover:hover)]:hover:ring-secondary-700 [@media(hover:hover)]:hover:bg-secondary-600 dark:bg-secondary-500 dark:ring-secondary-400 dark:[@media(hover:hover)]:hover:ring-secondary-300 dark:[@media(hover:hover)]:hover:bg-secondary-600",
   success:
     "rounded-full bg-success-500 text-white [@media(hover:hover)]:hover:bg-success-600 dark:bg-success-500 dark:[@media(hover:hover)]:hover:bg-success-600 animate-pulse-breathe",
   warning:
