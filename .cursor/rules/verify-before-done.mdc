@@ -38,3 +38,15 @@ Say so explicitly: "I’ve made changes X and Y. I can’t run the app from here
 2. **Avoid claim-then-repeat cycles** – User feedback: "I present the problem → you claim it's fixed → I check again, it's not → repeat." Do not declare fixed until the flow is actually verified in a browser.
 3. **Inspect the live HTML** – When the user shares DevTools HTML (e.g. attributes like `data-focus-open-bound`, overlapped elements), analyze event flow and which elements receive/target events. Two elements being targeted or triggered is a common cause of races.
 4. **When you cannot verify** – Be explicit: "I cannot run the browser here. Please test after these changes. If it still fails, share the exact HTML/steps and I’ll dig deeper."
+
+## Post-change site loading check
+
+After **every** code change that could affect the app (components, API, config, scripts):
+
+1. **Run the loading check:** `./scripts/check-site-loading.sh` (or `bash scripts/check-site-loading.sh` from repo root).
+   - Uses default `http://localhost:4321`; pass a base URL as first arg if needed.
+   - Verifies `/`, `/contact`, `/auth/login` return 200.
+
+2. **Report result** in your response: e.g. "Site loading check: passed" or "Site loading check: failed (e.g. /contact 500)."
+
+If the dev server is not running, say so and ask the user to start it before re-running the check.
