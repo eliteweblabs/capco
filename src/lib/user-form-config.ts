@@ -10,7 +10,6 @@ import type { FormElementConfig } from "./project-form-config";
 
 // Re-export for consumers
 export type { FormElementConfig } from "./project-form-config";
-export { isUnifiedElementAllowed } from "./project-form-config";
 
 // Default user form elements - fallback when userForm not in site-config
 export const USER_FORM_ELEMENTS: FormElementConfig[] = [
