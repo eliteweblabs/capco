@@ -52,6 +52,39 @@ const sanitizeFormData = (data: ProjectUpdateFormData) => data;
 const validateProjectUpdate = (data: ProjectUpdateFormData) => [];
 const mapFormDataToProject = (data: ProjectUpdateFormData) => data;
 
+/**
+ * Normalize a value that may arrive as a JSON-stringified array from a
+ * radio toggle-button group (e.g. '["quarterly"]' or '[]'). Returns the
+ * first string element, the raw trimmed string if not JSON, or null.
+ *
+ * The toggle-button system always serializes selected values as a JSON
+ * array, even for `toggleType: "radio"` — but the DB column for
+ * inspectionPeriod is a single `text` with a CHECK constraint, so we must
+ * unwrap before insert/update or the row will be rejected.
+ */
+function normalizeRadioToggleValue(input: unknown): string | null {
+  if (input == null) return null;
+  if (Array.isArray(input)) {
+    const first = input[0];
+    return typeof first === "string" && first.trim() !== "" ? first.trim() : null;
+  }
+  if (typeof input !== "string") return null;
+  const trimmed = input.trim();
+  if (trimmed === "") return null;
+  if (trimmed.startsWith("[")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        const first = parsed[0];
+        return typeof first === "string" && first.trim() !== "" ? first.trim() : null;
+      }
+    } catch {
+      // fall through and return raw trimmed
+    }
+  }
+  return trimmed;
+}
+
 const isElevatedRole = (role?: string | null) => {
   const normalizedRole = role?.toLowerCase().replace(/[^a-z]/g, "") ?? "";
   return ["admin", "staff", "superadmin"].includes(normalizedRole);
@@ -260,10 +293,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       sqFt: body.sqFt && body.sqFt.trim() !== "" ? parseInt(body.sqFt) : null,
       newConstruction: body.newConstruction === "on" || body.newConstruction === true,
       isInspection: body.isInspection === "on" || body.isInspection === true,
-      inspectionPeriod:
-        typeof body.inspectionPeriod === "string" && body.inspectionPeriod.trim() !== ""
-          ? body.inspectionPeriod.trim()
-          : null,
+      inspectionPeriod: normalizeRadioToggleValue(body.inspectionPeriod),
       inspectionStartDate:
         typeof body.inspectionStartDate === "string" && body.inspectionStartDate.trim() !== ""
           ? body.inspectionStartDate.trim()
@@ -478,6 +508,24 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
     const rawUpdate = mapFormDataToProject(sanitizedData);
     // Do not update primary key; id is only used for .eq()
     const { id: _omit, ...updateData } = rawUpdate as ProjectUpdateFormData & { id?: string };
+
+    // Normalize radio toggle-button-group values: ToggleButton emits JSON-
+    // stringified arrays even for `toggleType: "radio"`, but inspectionPeriod
+    // is a single `text` with a CHECK constraint. Unwrap before the update.
+    if ("inspectionPeriod" in updateData) {
+      updateData.inspectionPeriod = normalizeRadioToggleValue(updateData.inspectionPeriod);
+    }
+    // isInspection comes from a checkbox toggle. Normalize 'on'/'true'/boolean.
+    if ("isInspection" in updateData) {
+      const v = updateData.isInspection;
+      updateData.isInspection = v === true || v === "on" || v === "true";
+    }
+    // Empty-string date inputs should be NULL, not '' (invalid for timestamp columns).
+    for (const dateKey of ["inspectionStartDate", "nextInspectionAt"] as const) {
+      if (dateKey in updateData && typeof updateData[dateKey] === "string" && updateData[dateKey].trim() === "") {
+        updateData[dateKey] = null;
+      }
+    }
     if (Object.keys(updateData).length === 0) {
       return createErrorResponse("No fields to update", 400);
     }
