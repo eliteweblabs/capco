@@ -47,6 +47,44 @@ export interface ProjectListColumnConfig {
   tooltip?: string;
   /** For text: wrap in project link */
   linkToProject?: boolean;
+  /** Whether this column is sortable. Defaults true except for action cols (delete/edit). */
+  sortable?: boolean;
+  /** How to compare values when sorting. Auto-inferred from `type` when omitted. */
+  sortType?: "text" | "number" | "date" | "boolean";
+}
+
+/** Column types that should never be sortable (action cols with no comparable value). */
+const NON_SORTABLE_TYPES: ProjectListColumnConfig["type"][] = ["delete", "edit"];
+
+/** Resolve the sort comparator type for a column (explicit override > inferred from type). */
+export function getProjectListColumnSortType(
+  col: ProjectListColumnConfig
+): "text" | "number" | "date" | "boolean" {
+  if (col.sortType) return col.sortType;
+  switch (col.type) {
+    case "status":
+      // Sort by displayed status name (text); progress sorts numerically below.
+      return "text";
+    case "progress":
+    case "files":
+    case "checklist":
+      return "number";
+    case "featured":
+      return "boolean";
+    case "elapsed":
+    case "timeSince":
+    case "dueDate":
+      return "date";
+    default:
+      return "text";
+  }
+}
+
+/** Whether a column should render as a sortable header. Action cols default off. */
+export function isSortableProjectListColumn(col: ProjectListColumnConfig): boolean {
+  if (col.sortable === false) return false;
+  if (col.sortable === true) return true;
+  return !NON_SORTABLE_TYPES.includes(col.type);
 }
 
 /** Check if a column should be visible for the given role */

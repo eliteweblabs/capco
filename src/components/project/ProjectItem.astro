@@ -216,6 +216,29 @@ function getTimeSinceUpdate(updatedAt: string): string {
 
 const timeSinceUpdate = getTimeSinceUpdate(project.updatedAt);
 
+// Sort values (consumed by src/scripts/project-list-sort.ts via data-sort-value).
+// Keep these cheap and pre-computed; the sort script just reads attributes.
+const sortAddress = String(project.address || project.title || "").toLowerCase();
+const sortCompany = String(project?.authorProfile?.companyName || "").toLowerCase();
+// Status column sorts by the visible name (alphabetical) so users see related
+// statuses grouped together; progress column stays numeric (workflow %).
+const sortStatusName = String(currentStatusName || "").toLowerCase();
+const sortStatusInt = Number(project.status ?? 0);
+const sortFeatured = project.featured ? 1 : 0;
+const sortFilesCount = Array.isArray(project.projectFiles) ? project.projectFiles.length : 0;
+const sortAssigned = String(
+  project?.assignedToProfile?.companyName ||
+    `${project?.assignedToProfile?.firstName || ""} ${project?.assignedToProfile?.lastName || ""}`.trim() ||
+    ""
+).toLowerCase();
+const sortChecklist = Number(project.punchlistComplete ?? 0);
+const sortCreatedAt = project.createdAt ? new Date(project.createdAt).getTime() : 0;
+const sortUpdatedAt = project.updatedAt ? new Date(project.updatedAt).getTime() : 0;
+// Empty due dates sink to the bottom on ascending sort.
+const sortDueDate = project.dueDate
+  ? new Date(project.dueDate as any).getTime()
+  : Number.POSITIVE_INFINITY;
+
 if (elapsedTime) {
   // Convert PostgreSQL interval to hours
   // elapsedTime is a string like "2 days 5:30:45" or an object with properties
@@ -354,7 +377,7 @@ const statusColor = currentStatusColor || "gray";
 
           if (col.type === "text" && col.field === "address") {
             return (
-              <th scope="row" class={`${centerClass} font-medium`}>
+              <th scope="row" class={`${centerClass} font-medium`} data-sort-value={sortAddress}>
                 <a
                   href={`/project/${project.id}`}
                   class="relative block min-w-0 truncate font-medium"
@@ -386,13 +409,15 @@ const statusColor = currentStatusColor || "gray";
 
           if (col.type === "company") {
             return (
-              <td class={centerClass}>{project?.authorProfile?.companyName || "Unknown Author"}</td>
+              <td class={centerClass} data-sort-value={sortCompany}>
+                {project?.authorProfile?.companyName || "Unknown Author"}
+              </td>
             );
           }
 
           if (col.type === "status") {
             return (
-              <td class={centerClass}>
+              <td class={centerClass} data-sort-value={sortStatusName}>
                 <Button
                   variant="outline"
                   size="xs"
@@ -416,7 +441,7 @@ const statusColor = currentStatusColor || "gray";
 
           if (col.type === "featured") {
             return (
-              <td class={centerClass}>
+              <td class={centerClass} data-sort-value={sortFeatured}>
                 <div class="flex justify-center">
                   <SlideToggle
                     id={`featured-toggle-${project.id}`}
@@ -446,7 +471,7 @@ const statusColor = currentStatusColor || "gray";
             const showTooltips = displayOpts.tooltips !== false;
             const iconSize = (displayOpts.size ?? "sm") as "sm" | "md" | "lg";
             return (
-              <td class={`${baseCellClass} text-center`}>
+              <td class={`${baseCellClass} text-center`} data-sort-value={sortFilesCount}>
                 <div class="flex justify-center">
                   <a href={`/project/${project.id}?status=files`} class="text-sm text-gray-600">
                     {hasFiles ? (
@@ -481,7 +506,7 @@ const statusColor = currentStatusColor || "gray";
 
           if (col.type === "assigned") {
             return (
-              <td class={`${baseCellClass} font-medium`}>
+              <td class={`${baseCellClass} font-medium`} data-sort-value={sortAssigned}>
                 <StaffSelectTooltip
                   id={`assign-staff-slot-machine-${project.id}`}
                   title="Assign Staff Member"
@@ -517,7 +542,7 @@ const statusColor = currentStatusColor || "gray";
           if (col.type === "progress") {
             const pct = ((project.status / 220) * 100).toFixed(0);
             return (
-              <td class={`${centerClass} font-medium`}>
+              <td class={`${centerClass} font-medium`} data-sort-value={sortStatusInt}>
                 <div class="flex">
                   <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{pct}%</span>
                 </div>
@@ -530,7 +555,7 @@ const statusColor = currentStatusColor || "gray";
 
           if (col.type === "checklist") {
             return (
-              <td class={`${baseCellClass} font-medium`}>
+              <td class={`${baseCellClass} font-medium`} data-sort-value={sortChecklist}>
                 <div class="flex items-center gap-1">
                   <span
                     data-refresh="punchlistComplete"
@@ -556,7 +581,7 @@ const statusColor = currentStatusColor || "gray";
 
           if (col.type === "elapsed") {
             return (
-              <td class={`${centerClass} font-medium`}>
+              <td class={`${centerClass} font-medium`} data-sort-value={sortCreatedAt}>
                 <span
                   data-refresh="createdAt"
                   data-project-id={project.id}
@@ -573,7 +598,7 @@ const statusColor = currentStatusColor || "gray";
 
           if (col.type === "timeSince") {
             return (
-              <td class={baseCellClass}>
+              <td class={baseCellClass} data-sort-value={sortUpdatedAt}>
                 <span
                   data-live-timestamp={project.updatedAt}
                   data-project-id={project.id}
@@ -587,7 +612,7 @@ const statusColor = currentStatusColor || "gray";
 
           if (col.type === "dueDate") {
             return (
-              <td class={centerClass}>
+              <td class={centerClass} data-sort-value={sortDueDate}>
                 <NumberStepper
                   entityId={project.id}
                   value={project?.dueDate ?? ""}
