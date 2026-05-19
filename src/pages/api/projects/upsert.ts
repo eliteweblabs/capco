@@ -18,6 +18,10 @@ interface ProjectData {
   units?: number;
   architect?: string;
   newConstruction?: boolean;
+  isInspection?: boolean;
+  inspectionPeriod?: string | null;
+  inspectionStartDate?: string | null;
+  nextInspectionAt?: string | null;
   building?: string[];
   project?: string[];
   tier?: string[];
@@ -255,6 +259,19 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       architect: body.architect && body.architect.trim() !== "" ? body.architect.trim() : null,
       sqFt: body.sqFt && body.sqFt.trim() !== "" ? parseInt(body.sqFt) : null,
       newConstruction: body.newConstruction === "on" || body.newConstruction === true,
+      isInspection: body.isInspection === "on" || body.isInspection === true,
+      inspectionPeriod:
+        typeof body.inspectionPeriod === "string" && body.inspectionPeriod.trim() !== ""
+          ? body.inspectionPeriod.trim()
+          : null,
+      inspectionStartDate:
+        typeof body.inspectionStartDate === "string" && body.inspectionStartDate.trim() !== ""
+          ? body.inspectionStartDate.trim()
+          : null,
+      nextInspectionAt:
+        typeof body.nextInspectionAt === "string" && body.nextInspectionAt.trim() !== ""
+          ? body.nextInspectionAt.trim()
+          : null,
       units: body.units && body.units.trim() !== "" ? parseInt(body.units) : null,
       building: body.building || [],
       project: body.project || [],

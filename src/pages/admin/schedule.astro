@@ -1,0 +1,298 @@
+---
+/**
+ * Project Schedule Calendar (Admin / Staff only)
+ *
+ * Aggregates two kinds of events:
+ *   - Project due dates (existing `projects.dueDate`)
+ *   - Recurring inspection occurrences (expanded forward from `nextInspectionAt`
+ *     using `inspectionPeriod`)
+ *
+ * Server-rendered (no client calendar lib). View switches between Month and List
+ * via the `view` query param. Month navigation uses `month=YYYY-MM`.
+ */
+import { checkAuth } from "../../lib/auth";
+import { isAdminOrStaffOrSuperAdmin } from "../../lib/user-utils";
+import { supabase } from "../../lib/supabase";
+import { supabaseAdmin } from "../../lib/supabase-admin";
+import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
+import SimpleIcon from "../../components/common/SimpleIcon.astro";
+import { globalClasses } from "../api/global/global-classes";
+import {
+  buildMonthGrid,
+  firstOfMonth,
+  getScheduleEvents,
+  lastOfMonth,
+  monthIsoString,
+  parseMonthParam,
+  PERIOD_LABELS,
+  shiftMonth,
+  type ScheduleEvent,
+  type Period,
+} from "../../lib/project-schedule";
+
+const { currentUser, session } = await checkAuth(Astro.cookies);
+const currentRole = currentUser?.profile?.role;
+
+if (!currentUser || !session) {
+  return Astro.redirect("/auth/login");
+}
+if (!isAdminOrStaffOrSuperAdmin(currentRole)) {
+  return Astro.redirect("/dashboard");
+}
+
+const { primaryTextClasses, secondaryTextClasses, globalCodeInline } = globalClasses();
+
+const url = new URL(Astro.request.url);
+const view = url.searchParams.get("view") === "list" ? "list" : "month";
+const viewMonth = parseMonthParam(url.searchParams.get("month"));
+const range = { start: firstOfMonth(viewMonth), end: lastOfMonth(viewMonth) };
+
+const dbClient = supabaseAdmin ?? supabase;
+let events: ScheduleEvent[] = [];
+let queryError: string | null = null;
+if (dbClient) {
+  const result = await getScheduleEvents(dbClient, range);
+  events = result.events;
+  queryError = result.error;
+} else {
+  queryError = "Database connection not available";
+}
+
+const { cells, monthLabel } = buildMonthGrid(viewMonth);
+
+const prevMonth = monthIsoString(shiftMonth(viewMonth, -1));
+const nextMonth = monthIsoString(shiftMonth(viewMonth, 1));
+const todayMonth = monthIsoString(firstOfMonth(new Date()));
+
+const eventsByDay = new Map<string, ScheduleEvent[]>();
+for (const ev of events) {
+  const key = ev.date.slice(0, 10);
+  const bucket = eventsByDay.get(key);
+  if (bucket) bucket.push(ev);
+  else eventsByDay.set(key, [ev]);
+}
+
+function chipClasses(ev: ScheduleEvent): string {
+  if (ev.type === "due") {
+    return "border-amber-300 bg-amber-100 text-amber-900 dark:border-amber-700 dark:bg-amber-900/40 dark:text-amber-100";
+  }
+  return "border-primary-300 bg-primary-100 text-primary-900 dark:border-primary-700 dark:bg-primary-900/40 dark:text-primary-100";
+}
+
+function eventLabel(ev: ScheduleEvent): string {
+  if (ev.type === "due") return "Due";
+  const period = ev.inspectionPeriod ? PERIOD_LABELS[ev.inspectionPeriod as Period] : "Recurring";
+  return `Inspection · ${period}`;
+}
+
+function shortDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+function fullDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleString("en-US", {
+    weekday: "short",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+function buildNavUrl(opts: { month?: string; view?: "month" | "list" }): string {
+  const next = new URLSearchParams(url.searchParams);
+  if (opts.month) next.set("month", opts.month);
+  if (opts.view) next.set("view", opts.view);
+  const qs = next.toString();
+  return qs ? `${url.pathname}?${qs}` : url.pathname;
+}
+
+const weekDayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const dueCount = events.filter((e) => e.type === "due").length;
+const inspectionCount = events.filter((e) => e.type === "inspection").length;
+---
+
+<LayoutFullWidth
+  title="Project Schedule"
+  classList="p-4"
+  description="Calendar of project due dates and recurring inspections"
+>
+  <div class="px-4 py-8">
+    {/* ===== Header ===== */}
+    <div class="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+      <div>
+        <h1 class={`mb-1 text-3xl font-bold ${primaryTextClasses}`}>Project Schedule</h1>
+        <p class={`${secondaryTextClasses} text-sm text-gray-600 dark:text-gray-400`}>
+          Due dates and recurring inspections across all projects.
+          <span class="ml-2 inline-flex items-center gap-1">
+            <span
+              class="inline-block h-2 w-2 rounded-full bg-amber-500"
+              aria-hidden="true"></span> {dueCount} due
+          </span>
+          <span class="ml-3 inline-flex items-center gap-1">
+            <span
+              class="inline-block h-2 w-2 rounded-full bg-primary-500"
+              aria-hidden="true"></span> {inspectionCount} inspections
+          </span>
+        </p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <a
+          href={buildNavUrl({ month: todayMonth })}
+          class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+        >
+          Today
+        </a>
+        <div
+          class="inline-flex overflow-hidden rounded-lg border border-gray-300 dark:border-gray-600"
+        >
+          <a
+            href={buildNavUrl({ month: prevMonth })}
+            aria-label="Previous month"
+            class="inline-flex items-center bg-white px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+          >
+            <SimpleIcon name="chevron-left" size="sm" />
+          </a>
+          <a
+            href={buildNavUrl({ month: nextMonth })}
+            aria-label="Next month"
+            class="inline-flex items-center border-l border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+          >
+            <SimpleIcon name="chevron-right" size="sm" />
+          </a>
+        </div>
+        <div
+          class="inline-flex overflow-hidden rounded-lg border border-gray-300 dark:border-gray-600"
+        >
+          <a
+            href={buildNavUrl({ view: "month" })}
+            class={`inline-flex items-center px-3 py-1.5 text-sm font-medium ${view === "month" ? "bg-primary-500 text-white" : "bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"}`}
+          >
+            Month
+          </a>
+          <a
+            href={buildNavUrl({ view: "list" })}
+            class={`inline-flex items-center border-l border-gray-300 px-3 py-1.5 text-sm font-medium dark:border-gray-600 ${view === "list" ? "bg-primary-500 text-white" : "bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"}`}
+          >
+            List
+          </a>
+        </div>
+      </div>
+    </div>
+
+    {/* ===== Errors ===== */}
+    {
+      queryError && (
+        <div class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-800 dark:bg-red-900/30 dark:text-red-200">
+          <strong>Could not load schedule:</strong>
+          <code class={globalCodeInline}>{queryError}</code>
+        </div>
+      )
+    }
+
+    {/* ===== Month label ===== */}
+    <h2 class={`mb-3 text-xl font-semibold ${primaryTextClasses}`}>{monthLabel}</h2>
+
+    {
+      view === "month" ? (
+        <div class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
+          <div class="grid grid-cols-7 border-b border-gray-200 bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
+            {weekDayLabels.map((label) => (
+              <div class="px-2 py-2 text-center">{label}</div>
+            ))}
+          </div>
+          <div class="grid grid-cols-7">
+            {cells.map((cell) => {
+              const dayEvents = eventsByDay.get(cell.key) ?? [];
+              const cellBg = cell.inMonth ? "bg-white dark:bg-gray-900" : "bg-gray-50 dark:bg-gray-800/50";
+              const dayNumClass = cell.isToday
+                ? "inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white"
+                : cell.inMonth
+                  ? "text-sm font-medium text-gray-900 dark:text-gray-100"
+                  : "text-sm text-gray-400 dark:text-gray-600";
+              return (
+                <div
+                  class={`min-h-[7rem] border-b border-r border-gray-200 p-2 dark:border-gray-700 ${cellBg}`}
+                >
+                  <div class="mb-1 flex items-center justify-between">
+                    <span class={dayNumClass}>{cell.date.getUTCDate()}</span>
+                    {dayEvents.length > 2 ? (
+                      <span class="text-xs text-gray-500 dark:text-gray-400">
+                        {dayEvents.length}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div class="flex flex-col gap-1">
+                    {dayEvents.slice(0, 3).map((ev) => (
+                      <a
+                        href={`/project/${ev.projectId}`}
+                        title={`${eventLabel(ev)} — ${ev.title}${ev.address ? ` (${ev.address})` : ""}`}
+                        class={`block truncate rounded border px-1.5 py-0.5 text-xs font-medium hover:underline ${chipClasses(ev)}`}
+                      >
+                        {ev.title}
+                      </a>
+                    ))}
+                    {dayEvents.length > 3 ? (
+                      <span class="text-[10px] text-gray-500 dark:text-gray-400">
+                        +{dayEvents.length - 3} more
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <div class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
+          {events.length === 0 ? (
+            <div class="p-8 text-center text-sm text-gray-500 dark:text-gray-400">
+              No scheduled events in {monthLabel}.
+            </div>
+          ) : (
+            <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+              {events.map((ev) => (
+                <li class="flex flex-col gap-1 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 md:flex-row md:items-center md:gap-4">
+                  <div class="w-28 shrink-0 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {shortDate(ev.date)}
+                  </div>
+                  <div class="flex-1">
+                    <a
+                      href={`/project/${ev.projectId}`}
+                      class="text-sm font-semibold text-primary-600 hover:underline dark:text-primary-400"
+                    >
+                      {ev.title}
+                    </a>
+                    {ev.address ? (
+                      <div class="text-xs text-gray-500 dark:text-gray-400">{ev.address}</div>
+                    ) : null}
+                  </div>
+                  <div class="flex items-center gap-2 text-xs">
+                    <span class={`rounded-full border px-2 py-0.5 ${chipClasses(ev)}`}>
+                      {eventLabel(ev)}
+                    </span>
+                    {ev.statusName ? (
+                      <span class="rounded-full border border-gray-300 px-2 py-0.5 text-gray-600 dark:border-gray-600 dark:text-gray-300">
+                        {ev.statusName}
+                      </span>
+                    ) : null}
+                    <span class="hidden text-gray-500 dark:text-gray-400 md:inline">
+                      {fullDate(ev.date)}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )
+    }
+  </div>
+</LayoutFullWidth>

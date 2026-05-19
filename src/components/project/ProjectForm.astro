@@ -1,16 +1,9 @@
 ---
 import { getProjectFormConfig } from "../../lib/forms/form-config-from-site";
-import {
-  getFilteredUnifiedFormElements,
-  isFormElementReadOnly,
-} from "../../lib/project-form-config";
 import { getColumnClasses, globalClasses } from "../../pages/api/global/global-classes";
 import { checkAuth } from "../../lib/auth";
 import FormFieldRenderer from "../../features/forms/components/FormFieldRenderer.astro";
 
-import ToggleButtonGroup from "../form/ToggleButtonGroup.astro";
-import UnitSlider from "../form/UnitSlider.astro";
-import SlotMachineModal from "../form/SlotMachineModal.astro";
 import IsNewOrExistingClient from "./IsNewOrExistingClient.astro";
 import Button from "../common/Button.astro";
 import StickyActions from "./StickyActions.astro";
@@ -45,17 +38,16 @@ const themeInputClasses = globalClassesResult.globalInputClasses;
 // Generate a temporary ID for new projects
 const formId = isNewProject ? `${Date.now()}` : projectId || "";
 
-// Prefer FormConfig from form-config-from-site (same pattern as ProfileTabForm, ContactForm, etc.)
+// Single source of truth for project form fields: site-config JSON's `projectForm`
+// (see public/data/config-*.json). No in-code legacy fallback — a missing
+// `projectForm` is a config bug we want to surface loudly, not silently paper over.
 const projectFormConfig = await getProjectFormConfig(currentRole, isNewProject, projectStatus);
-const useFormConfig = projectFormConfig != null && projectFormConfig.steps?.length > 0;
-
-// Legacy path: when no projectForm in site config, use unified form elements from project-form-config
-const formElements = useFormConfig
-  ? []
-  : await getFilteredUnifiedFormElements(currentRole, isNewProject, projectStatus);
-
-const formFields = useFormConfig ? projectFormConfig!.steps[0].fields ?? [] : [];
-const formButtons = useFormConfig ? projectFormConfig!.steps[0].buttons ?? [] : [];
+const formConfigError =
+  !projectFormConfig || (projectFormConfig.steps?.length ?? 0) === 0
+    ? "Missing `projectForm` in site config. Add the project form schema to public/data/config-<site>.json."
+    : null;
+const formFields = projectFormConfig?.steps?.[0]?.fields ?? [];
+const formButtons = projectFormConfig?.steps?.[0]?.buttons ?? [];
 
 /** Enrich field for FormFieldRenderer: readOnly from readOnlyAtStatus, projectId + value for UnitSlider, options→buttons for button-group */
 function fieldForRenderer(
@@ -101,415 +93,87 @@ function fieldForRenderer(
       data-project-data={JSON.stringify(project || {})}
       autocomplete="off"
     >
-      <!-- Form: FormConfig-driven (form-config-from-site) or legacy unified elements -->
+      {/* Form fields are driven entirely by the site-config JSON `projectForm`. */}
+      {formConfigError && (
+        <div
+          class="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-800 dark:bg-red-900/30 dark:text-red-200"
+          role="alert"
+        >
+          <strong class="block mb-1">Project form not configured</strong>
+          {formConfigError}
+        </div>
+      )}
       <div id="project-form-elements-grid" class="grid grid-cols-6 md:grid-cols-12 gap-4">
-        {useFormConfig ? (
-          <>
-            {formFields.map((field: any) => {
-              const isAddress =
-                field.id === "address-input" || field.component === "GoogleAddressAutocomplete";
-              if (isAddress) {
-                const columnClass = getColumnClasses(field.columns);
-                return (
-                  <div class={`relative ${columnClass}`}>
-                    {isNewProject ? (
-                      <div class="col-span-12 md:col-span-6 ">
-                        {/* <SlotMachineModal
-                          id="address"
-                          icon="map-pin"
-                          title="Select Address"
-                          options={[]}
-                          selectedValue={project?.address || ""}
-                          placeholder="Search for an address..."
-                          showCloseButton={true}
-                          showCancelButton={true}
-                          buttonText="Select Address *"
-                          buttonClass="w-full mb-4"
-                          buttonVariant="primary"
-                          searchText="Search Address"
-                          searchPlaceholder="Type to search addresses..."
-                          fetchApiEndpoint="/api/google/places-autocomplete"
-                          apiParams={{
-                            types: "address",
-                            components: "country:us",
-                            locationBias: "circle:100@42.3601,-71.0589",
-                          }}
-                          valueField="description"
-                          noResultsText="Type to search addresses..."
-                          currentUser={currentUser}
-                          project={project}
-                          globalInputClasses={globalInputClasses ?? themeInputClasses}
-                          currentLocation={true}
-                          dataScrap={field.dataScrap}
-                        /> */}
-                        <InlineAddressSearch
-                          id="address"
-                          fetchApiEndpoint="/api/google/places-autocomplete"
-                          apiParams={{
-                            types: "address",
-                            components: "country:us",
-                            locationBias: "circle:100@42.3601,-71.0589",
-                          }}
-                          valueField="description"
-                          noResultsText="Type to search addresses..."
-                          currentLocation={true}
-                        />
-                      </div>
-                    ) : (
-                      <input
-                        type="text"
-                        id="address"
-                        name="address"
-                        value={project?.address || ""}
-                        readonly={true}
-                        data-scrap="true"
-                      />
-                    )}
-                    {isNewProject && canManageClientSelection && (
-                      <IsNewOrExistingClient
-                        globalInputClasses={globalInputClasses ?? themeInputClasses}
-                        secondaryTextClasses={secondaryTextClasses}
-                        primaryTextClasses={primaryTextClasses}
-                      />
-                    )}
-                  </div>
-                );
-              }
-              const enrichedField = fieldForRenderer(field, projectStatus, formId, project);
-              return (
-                <FormFieldRenderer
-                  field={enrichedField}
-                  context="standard"
-                  inputClasses={globalInputClasses ?? themeInputClasses}
-                  initialData={project}
-                  wrapperClass={`relative ${getColumnClasses(field.columns)}`}
-                  buttonDefaults={projectFormConfig!.buttonDefaults ?? {}}
-                />
-              );
-            })}
-          </>
-        ) : (
-          formElements.map((element) => {
-            const isReadOnly = isFormElementReadOnly(element, projectStatus);
-
-            if (element.id === "address-input") {
-              const columnClass = getColumnClasses(element.columns);
-
-              return (
-                <div class={`relative ${columnClass}`}>
-                  {isNewProject ? (
-                    <div class="col-span-12 md:col-span-6 ">
-                      <SlotMachineModal
-                        id="address"
-                        icon="map-pin"
-                        title="Select Address"
-                        options={[]}
-                        selectedValue={project?.address || ""}
-                        placeholder="Search for an address..."
-                        showCloseButton={true}
-                        showCancelButton={true}
-                        buttonText="Select Address *"
-                        buttonClass="w-full mb-4"
-                        buttonVariant="primary"
-                        searchText="Search Address"
-                        searchPlaceholder="Type to search addresses..."
-                        fetchApiEndpoint="/api/google/places-autocomplete"
-                        apiParams={{
-                          types: "address",
-                          components: "country:us",
-                          locationBias: "circle:100@42.3601,-71.0589",
-                        }}
-                        valueField="description"
-                        noResultsText="Type to search addresses..."
-                        currentUser={currentUser}
-                        project={project}
-                        globalInputClasses={globalInputClasses}
-                        currentLocation={true}
-                        dataScrap={element.dataScrap}
-                      />
-                    </div>
-                  ) : (
-                    <input
-                      type="text"
+        {formFields.map((field: any) => {
+          const isAddress =
+            field.id === "address-input" || field.component === "GoogleAddressAutocomplete";
+          if (isAddress) {
+            const columnClass = getColumnClasses(field.columns);
+            return (
+              <div class={`relative ${columnClass}`}>
+                {isNewProject ? (
+                  <div class="col-span-12 md:col-span-6 ">
+                    <InlineAddressSearch
                       id="address"
-                      name="address"
-                      value={project?.address || ""}
-                      readonly={true}
-                      data-scrap="true"
-                    />
-                  )}
-                  {isNewProject && canManageClientSelection && (
-                    <IsNewOrExistingClient
-                      globalInputClasses={globalInputClasses}
-                      secondaryTextClasses={secondaryTextClasses}
-                      primaryTextClasses={primaryTextClasses}
-                    />
-                  )}
-                </div>
-              );
-            }
-
-            if (element.type === "field") {
-              if (element.elementType === "text" || element.elementType === "number") {
-                const columnClass = getColumnClasses(element.columns);
-
-                return (
-                  <div class={`relative ${columnClass}`}>
-                    <label
-                      for={`${element.id}`}
-                      class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
-                    >
-                      {element.label}
-                      {element.required ? " *" : ""}
-                    </label>
-                    <input
-                      type={element.elementType === "number" ? "number" : "text"}
-                      id={`${element.id}`}
-                      name={element.name}
-                      value={
-                        project?.[element.name] && project[element.name] !== ""
-                          ? project[element.name]
-                          : element.value || ""
-                      }
-                      class={`${globalInputClasses} ${
-                        isReadOnly ? "cursor-not-allowed bg-gray-100 color-background" : ""
-                      }`}
-                      autocomplete={
-                        element.name === "architect"
-                          ? "organization"
-                          : element.name === "title"
-                            ? "off"
-                            : element.name === "description"
-                              ? "off"
-                              : element.name === "nfpaVersion"
-                                ? "off"
-                                : element.name === "hazardousMaterial"
-                                  ? "off"
-                                  : element.name === "hpsCommodities"
-                                    ? "off"
-                                    : element.name === "siteAccess"
-                                      ? "off"
-                                      : element.name === "exteriorBeacon"
-                                        ? "off"
-                                        : element.name === "fireSprinklerInstallation"
-                                          ? "off"
-                                          : element.name === "commencementOfConstruction"
-                                            ? "off"
-                                            : element.name === "suppressionDetectionSystems"
-                                              ? "off"
-                                              : "off"
-                      }
-                      placeholder={element.placeholder || ""}
-                      required={element.required}
-                      min={element.min}
-                      max={element.max}
-                      step={element.step}
-                      readonly={isReadOnly}
-                      data-field={element.dataField}
-                      data-scrap={element.dataScrap ? "true" : undefined}
+                      fetchApiEndpoint="/api/google/places-autocomplete"
+                      apiParams={{
+                        types: "address",
+                        components: "country:us",
+                        locationBias: "circle:100@42.3601,-71.0589",
+                      }}
+                      valueField="description"
+                      noResultsText="Type to search addresses..."
+                      currentLocation={true}
                     />
                   </div>
-                );
-              }
-
-              if (element.elementType === "textarea") {
-                const columnClass = getColumnClasses(element.columns);
-
-                return (
-                  <div class={`relative ${columnClass}`}>
-                    <label
-                      for={`${element.id}`}
-                      class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                    >
-                      {element.label}
-                    </label>
-
-                    <textarea
-                      id={`${element.id}`}
-                      name={element.name}
-                      rows="3"
-                      class={globalInputClasses}
-                      placeholder={element.placeholder || ""}
-                      readonly={isReadOnly}
-                    > {project?.[element.name] && project[element.name] !== "" ? project[element.name] : element.value || ""}</textarea>
-                  </div>
-                );
-              }
-
-              if (element.elementType === "checkbox") {
-                const columnClass = getColumnClasses(element.columns);
-
-                const isChecked =
-                  project?.[element.name] === true ||
-                  project?.[element.name] === "true" ||
-                  project?.[element.name] === 1 ||
-                  project?.[element.name] === "1";
-                return (
-                  <div class={`relative ${columnClass}`}>
-                    <label
-                      class={`inline-flex items-center ${isReadOnly ? "cursor-not-allowed" : "cursor-pointer"}`}
-                    >
-                      <input
-                        type="checkbox"
-                        id={`${element.id}`}
-                        name={element.name}
-                        checked={isChecked}
-                        disabled={isReadOnly}
-                        class="peer sr-only"
-                      />
-                      <div
-                        class={`peer relative h-6 w-11 rounded-full after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-gray-100 after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:border-gray-600 dark:peer-focus:ring-primary-800 rtl:peer-checked:after:-translate-x-full ${
-                          isReadOnly
-                            ? "cursor-not-allowed bg-gray-300 dark:bg-gray-600"
-                            : "bg-gray-200 peer-checked:bg-primary-500 dark:bg-gray-700 dark:peer-checked:bg-primary-500"
-                        }`}
-                      />
-                      <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
-                        {element.label}
-                      </span>
-                    </label>
-                  </div>
-                );
-              }
-
-              if (element.elementType === "component" && element.component === "UnitSlider") {
-                const columnClass = getColumnClasses(element.columns);
-
-                return (
-                  <div class={`relative ${columnClass}`}>
-                    <UnitSlider
-                      projectId={formId}
-                      value={
-                        project?.[element.name] && project[element.name] !== ""
-                          ? project[element.name]
-                          : element.value || 1
-                      }
-                      readOnly={isReadOnly}
-                      name={element.name}
-                      label={element.label}
-                      min={element.min}
-                      max={element.max}
-                      step={element.step}
-                    />
-                  </div>
-                );
-              }
-            }
-
-            // Handle button groups (use ToggleButtonGroup; config uses options or buttons)
-            if (element.type === "button-group") {
-              const columnClass = getColumnClasses(element.columns);
-
-              // Parse selected values from project data
-              let selectedValues: string[] = [];
-              if (project?.[element.name]) {
-                if (Array.isArray(project[element.name])) {
-                  selectedValues = project[element.name];
-                } else if (typeof project[element.name] === "string") {
-                  try {
-                    const parsed = JSON.parse(project[element.name]);
-                    selectedValues = Array.isArray(parsed) ? parsed : [project[element.name]];
-                  } catch {
-                    selectedValues = project[element.name]
-                      .split(",")
-                      .map((s: string) => s.trim())
-                      .filter(Boolean);
-                  }
-                } else {
-                  selectedValues = [String(project[element.name])];
-                }
-              }
-
-              const rawOptions = element.options ?? element.buttons ?? [];
-              const groupButtons = rawOptions.map((opt: any) => {
-                if (typeof opt === "string") return { label: opt, value: opt };
-                const value = opt.dataValue ?? opt.value ?? opt.label;
-                const label = opt.label ?? value;
-                return { label, value, selected: opt.selected };
-              });
-
-              return (
-                <div class={`mt-5 space-y-3 ${columnClass}`}>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {element.label}
-                  </label>
-                  <ToggleButtonGroup
-                    name={element.name}
-                    buttons={groupButtons}
-                    toggleType={element.groupType ?? "radio"}
-                    initialValues={selectedValues}
-                    disabled={isReadOnly}
-                    class={`mb-4 flex flex-wrap gap-2 ${isReadOnly ? "cursor-not-allowed opacity-75" : ""} ${element.cssClass ?? ""}`.trim()}
+                ) : null /* Address is read-only after creation and already
+                    shown in the page hero; omit from the form entirely so
+                    the upsert PUT does not touch the address column. */}
+                {isNewProject && canManageClientSelection && (
+                  <IsNewOrExistingClient
+                    globalInputClasses={globalInputClasses ?? themeInputClasses}
+                    secondaryTextClasses={secondaryTextClasses}
+                    primaryTextClasses={primaryTextClasses}
                   />
-                </div>
-              );
-            }
-
-            // Skip actions in main loop - they're handled separately
-            if (element.type === "action") {
-              return null;
-            }
-
-            return null;
-          })
-        )}
+                )}
+              </div>
+            );
+          }
+          const enrichedField = fieldForRenderer(field, projectStatus, formId, project);
+          return (
+            <FormFieldRenderer
+              field={enrichedField}
+              context="standard"
+              inputClasses={globalInputClasses ?? themeInputClasses}
+              initialData={project}
+              wrapperClass={`relative ${getColumnClasses(field.columns)}`}
+              buttonDefaults={projectFormConfig?.buttonDefaults ?? {}}
+            />
+          );
+        })}
       </div>
 
-      {/* <!-- Form Actions Container: FormConfig buttons or legacy action elements --> */}
-      {useFormConfig ? (
-        formButtons.length > 0 ? (
-          <StickyActions columns={formButtons.length.toString()}>
-            {formButtons.map((btn: any) => (
-              <Button
-                type={btn.type === "submit" ? "submit" : "button"}
-                variant={btn.variant === "info" ? "secondary" : btn.variant || "secondary"}
-                size="lg"
-                icon={btn.icon}
-                iconPosition="left"
-                class={btn.classes || ""}
-                id={btn.id}
-                dataAttributes={{
-                  "data-action": btn.action || "",
-                  "data-tab": btn.tab || "",
-                }}
-              >
-                <span set:html={btn.label ?? ""} />
-              </Button>
-            ))}
-          </StickyActions>
-        ) : null
-      ) : (
-        (() => {
-          const actionElements = formElements.filter((element) => element.type === "action");
-          const buttonCount = actionElements.length;
-          if (buttonCount === 0) return null;
-          return (
-            <StickyActions columns={buttonCount.toString()}>
-              {actionElements.map((element) => {
-                const isReadOnly = isFormElementReadOnly(element, projectStatus);
-                return (
-                  <Button
-                    type={element.elementType === "submit" ? "submit" : "button"}
-                    variant={
-                      element.variant === "info" ? "secondary" : element.variant || "secondary"
-                    }
-                    size="lg"
-                    icon={element.icon}
-                    iconPosition="left"
-                    class={element.cssClass || ""}
-                    id={element.id}
-                    dataAttributes={{
-                      "data-action": element.action || "",
-                      "data-tab": element.tab || "",
-                    }}
-                  >
-                    <span set:html={element.label} />
-                  </Button>
-                );
-              })}
-            </StickyActions>
-          );
-        })()
+      {/* Form action buttons (Save / Delete / etc.) defined in projectForm.steps[0].buttons */}
+      {formButtons.length > 0 && (
+        <StickyActions columns={formButtons.length.toString()}>
+          {formButtons.map((btn: any) => (
+            <Button
+              type={btn.type === "submit" ? "submit" : "button"}
+              variant={btn.variant === "info" ? "secondary" : btn.variant || "secondary"}
+              size="lg"
+              icon={btn.icon}
+              iconPosition="left"
+              class={btn.classes || ""}
+              id={btn.id}
+              dataAttributes={{
+                "data-action": btn.action || "",
+                "data-tab": btn.tab || "",
+              }}
+            >
+              <span set:html={btn.label ?? ""} />
+            </Button>
+          ))}
+        </StickyActions>
       )}
     </form>
   </div>
@@ -583,6 +247,17 @@ function fieldForRenderer(
           }
         }
       }
+
+      // Normalize checkbox toggles: HTML checkboxes are absent from FormData when
+      // unchecked, which would leave the DB column stale (off→on→off would never
+      // persist 'off'). Explicitly read `.checked` for known toggle fields.
+      const checkboxToggleNames = ["isInspection"];
+      checkboxToggleNames.forEach((toggleName) => {
+        const cb = form.querySelector(`input[type="checkbox"][name="${toggleName}"]`);
+        if (cb instanceof HTMLInputElement) {
+          projectData[toggleName] = cb.checked;
+        }
+      });
 
       try {
         const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement | null;
@@ -734,6 +409,11 @@ function fieldForRenderer(
     // Add form submission handler
     form.addEventListener("submit", handleFormSubmit);
 
+    // Initialize conditional field show/hide (e.g. inspection toggle reveals
+    // period + start date + next inspection date). Honors `field.conditional`
+    // wrapper attributes emitted by FormFieldRenderer.
+    setupConditionalFields(form);
+
     // Note: Delete button is handled by the action button system below
     if (!pageIsNewProject) {
       const deleteBtn = document.getElementById("delete-project");
@@ -742,6 +422,57 @@ function fieldForRenderer(
       });
     }
 
+  });
+
+  // Show/hide conditional fields based on a controlling input's current value.
+  // Markup contract (emitted by FormFieldRenderer when `field.conditional` is set):
+  //   <div data-conditional-field="isInspection" data-conditional-value="true" style="display:none;">
+  // For checkbox inputs the effective value is "true"/"false" from `.checked`;
+  // for everything else it's `input.value`. `data-conditional-value` may be a
+  // comma-separated list of allowed values.
+  function setupConditionalFields(form) {
+    if (!(form instanceof HTMLFormElement)) return;
+    if (form.dataset.conditionalFieldsBound === "true") return;
+    form.dataset.conditionalFieldsBound = "true";
+
+    function effectiveValue(input) {
+      if (!input) return "";
+      if (input instanceof HTMLInputElement && input.type === "checkbox") {
+        return input.checked ? "true" : "false";
+      }
+      return "value" in input && typeof input.value === "string" ? input.value : "";
+    }
+
+    function refresh() {
+      const wrappers = form.querySelectorAll("[data-conditional-field]");
+      wrappers.forEach((wrapper) => {
+        if (!(wrapper instanceof HTMLElement)) return;
+        const fieldName = wrapper.getAttribute("data-conditional-field");
+        const requiredRaw = wrapper.getAttribute("data-conditional-value") || "";
+        if (!fieldName || requiredRaw.length === 0) return;
+        const required = requiredRaw
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+        const input = form.querySelector(`[name="${fieldName}"]`);
+        const current = effectiveValue(input);
+        const visible = required.includes(current);
+        wrapper.style.display = visible ? "" : "none";
+      });
+    }
+
+    form.addEventListener("input", refresh);
+    form.addEventListener("change", refresh);
+    refresh();
+  }
+
+  // Re-init on Astro SPA navigation. App currently runs MPA, but the project
+  // rules require SPA-readiness for new scripts (see SPA-BEST-PRACTICES.md).
+  document.addEventListener("astro:page-load", () => {
+    const form = document.querySelector("form[data-project-id]");
+    if (form instanceof HTMLFormElement) {
+      setupConditionalFields(form);
+    }
   });
 
   // Handle different form actions
