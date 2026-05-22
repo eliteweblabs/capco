@@ -278,8 +278,8 @@ CREATE TABLE IF NOT EXISTS project_statuses (
   "buttonLink" text,
   "modalAdmin" text,
   "modalClient" text,
-  "modalAutoRedirectAdmin" text,
-  "modalAutoRedirectClient" text,
+  "autoRedirectUrlAdmin" text,
+  "autoRedirectUrlClient" text,
   "createdAt" timestamp with time zone DEFAULT now(),
   "updatedAt" timestamp with time zone DEFAULT now()
 );

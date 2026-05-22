@@ -1,6 +1,6 @@
 # E-commerce & Social Media Module
 
-Module for luxemeds.com and similar e-commerce sites. No projects dependency.
+Optional module for e-commerce sites deployed from this codebase. No `projects` table dependency — safe to enable on a per-site basis.
 
 ## Overview
 
@@ -16,13 +16,9 @@ supabase db push
 # Or apply: supabase/migrations/20260307000000_ecommerce_and_social.sql
 ```
 
-### 2. Luxemeds config
+### 2. Per-site config
 
-Create `public/data/config-luxemeds.json` (or set `RAILWAY_PROJECT_NAME=Luxemeds` and add config). Add to `.gitignore` exceptions if committing:
-
-```
-!public/data/config-luxemeds.json
-```
+Create `public/data/config-[slug].json` (or set `SITE_CONFIG` / `RAILWAY_PROJECT_NAME` and provide config that way).
 
 ### 3. Social media OAuth (per platform)
 
@@ -36,22 +32,22 @@ Store tokens in env or a secure store. The publish API (`/api/social/publish`) i
 
 ## Routes
 
-| Route | Description |
-|-------|-------------|
-| `/shop` | Product listing |
-| `/shop/cart` | Cart |
-| `/shop/confirmation?order=` | Order confirmed |
-| `/admin/social-posts` | Social media manager (to build) |
+| Route                       | Description                     |
+| --------------------------- | ------------------------------- |
+| `/shop`                     | Product listing                 |
+| `/shop/cart`                | Cart                            |
+| `/shop/confirmation?order=` | Order confirmed                 |
+| `/admin/social-posts`       | Social media manager (to build) |
 
 ## API
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/shop/cart` | GET | Get cart |
-| `/api/shop/cart` | POST | Add/update/remove items |
-| `/api/shop/products` | GET | List products |
-| `/api/shop/order?orderId=` | GET | Get order details |
-| `/api/social/publish` | POST | Publish post to platforms |
+| Endpoint                   | Method | Description               |
+| -------------------------- | ------ | ------------------------- |
+| `/api/shop/cart`           | GET    | Get cart                  |
+| `/api/shop/cart`           | POST   | Add/update/remove items   |
+| `/api/shop/products`       | GET    | List products             |
+| `/api/shop/order?orderId=` | GET    | Get order details         |
+| `/api/social/publish`      | POST   | Publish post to platforms |
 
 ## Database tables
 

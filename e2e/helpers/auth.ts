@@ -45,7 +45,7 @@ export async function loginViaUI(
   await submitBtn.click();
 
   // Wait for redirect away from login
-  const target = opts?.expectedRedirect ?? "/project/dashboard";
+  const target = opts?.expectedRedirect ?? "/dashboard";
   await page.waitForURL(`**${target}*`, { timeout: 15_000 });
 }
 

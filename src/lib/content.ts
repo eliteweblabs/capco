@@ -418,7 +418,6 @@ export async function getSiteConfig(): Promise<SiteConfig> {
       "rothco-built": "rothco-built-llc",
       "rothco-firstbranch": "rothco-built-llc",
       rothco: "rothco-built-llc",
-      luxemeds: "luxe-meds",
       capco: "capco-design-group",
     };
     const fallbackSlug =
@@ -548,7 +547,8 @@ export async function getSiteConfig(): Promise<SiteConfig> {
     const dirs = [dataDir, distDataDir];
     const fallbackCandidates: string[] = [];
     if (railwaySlug) fallbackCandidates.push(`config-${railwaySlug}.json`);
-    if (companySlug && companySlug !== railwaySlug) fallbackCandidates.push(`config-${companySlug}.json`);
+    if (companySlug && companySlug !== railwaySlug)
+      fallbackCandidates.push(`config-${companySlug}.json`);
     fallbackCandidates.push("config.json");
     for (const dir of dirs) {
       for (const name of fallbackCandidates) {
@@ -566,7 +566,10 @@ export async function getSiteConfig(): Promise<SiteConfig> {
           }
         }
       }
-      if (Array.isArray((config.navigation as any)?.aside) && (config.navigation as any).aside.length > 0)
+      if (
+        Array.isArray((config.navigation as any)?.aside) &&
+        (config.navigation as any).aside.length > 0
+      )
         break;
     }
   }

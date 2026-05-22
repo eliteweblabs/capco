@@ -39,8 +39,8 @@ SELECT
       "buttonLink",
       "modalAdmin",
       "modalClient",
-      "modalAutoRedirectAdmin",
-      "modalAutoRedirectClient",
+      "autoRedirectUrlAdmin",
+      "autoRedirectUrlClient",
       "createdAt",
       "updatedAt"
     ),
@@ -70,8 +70,8 @@ SELECT
   '"buttonLink" = EXCLUDED."buttonLink", ' ||
   '"modalAdmin" = EXCLUDED."modalAdmin", ' ||
   '"modalClient" = EXCLUDED."modalClient", ' ||
-  '"modalAutoRedirectAdmin" = EXCLUDED."modalAutoRedirectAdmin", ' ||
-  '"modalAutoRedirectClient" = EXCLUDED."modalAutoRedirectClient", ' ||
+  '"autoRedirectUrlAdmin" = EXCLUDED."autoRedirectUrlAdmin", ' ||
+  '"autoRedirectUrlClient" = EXCLUDED."autoRedirectUrlClient", ' ||
   '"createdAt" = EXCLUDED."createdAt", ' ||
   '"updatedAt" = EXCLUDED."updatedAt";' AS export_sql
 FROM "projectStatuses"

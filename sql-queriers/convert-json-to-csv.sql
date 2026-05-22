@@ -25,10 +25,10 @@ WITH json_data AS (
         "modalClient": null,
         "buttonLink": "/dashboard",
         "clientStatusAction": null,
-        "modalAutoRedirectClient": "",
+        "autoRedirectUrlClient": "",
         "adminEmailContent": "",
         "adminEmailSubject": "",
-        "modalAutoRedirectAdmin": "",
+        "autoRedirectUrlAdmin": "",
         "clientStatusName": "New Project",
         "statusColor": null,
         "adminStatusAction": null,
@@ -72,8 +72,8 @@ SELECT
   COALESCE(row_data->>'buttonLink', '') AS "buttonLink",
   COALESCE(row_data->>'modalAdmin', '') AS "modalAdmin",
   COALESCE(row_data->>'modalClient', '') AS "modalClient",
-  COALESCE(row_data->>'modalAutoRedirectAdmin', '') AS "modalAutoRedirectAdmin",
-  COALESCE(row_data->>'modalAutoRedirectClient', '') AS "modalAutoRedirectClient",
+  COALESCE(row_data->>'autoRedirectUrlAdmin', '') AS "autoRedirectUrlAdmin",
+  COALESCE(row_data->>'autoRedirectUrlClient', '') AS "autoRedirectUrlClient",
   COALESCE(row_data->>'createdAt', '') AS "createdAt",
   COALESCE(row_data->>'updatedAt', '') AS "updatedAt"
 FROM expanded_rows

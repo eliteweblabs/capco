@@ -127,22 +127,22 @@ SET "clientStatusAction" = REGEXP_REPLACE(
 WHERE "clientStatusAction" IS NOT NULL 
     AND ("clientStatusAction" ILIKE '%document%');
 
--- Update modalAutoRedirectClient (order matters: UPPER -> Title -> lower)
+-- Update autoRedirectUrlClient (order matters: UPPER -> Title -> lower)
 UPDATE "projectStatuses"
-SET "modalAutoRedirectClient" = REGEXP_REPLACE(
+SET "autoRedirectUrlClient" = REGEXP_REPLACE(
     REGEXP_REPLACE(
         REGEXP_REPLACE(
             REGEXP_REPLACE(
                 REGEXP_REPLACE(
-                    REGEXP_REPLACE("modalAutoRedirectClient", 
+                    REGEXP_REPLACE("autoRedirectUrlClient", 
                         'DOCUMENTS', 'FILES', 'g'),
                     'DOCUMENT', 'FILE', 'g'),
                 'Documents', 'Files', 'g'),
             'Document', 'File', 'g'),
         'documents', 'files', 'g'),
     'document', 'file', 'g')
-WHERE "modalAutoRedirectClient" IS NOT NULL 
-    AND ("modalAutoRedirectClient" ILIKE '%document%');
+WHERE "autoRedirectUrlClient" IS NOT NULL 
+    AND ("autoRedirectUrlClient" ILIKE '%document%');
 
 -- Update adminEmailContent (order matters: UPPER -> Title -> lower)
 UPDATE "projectStatuses"
@@ -178,22 +178,22 @@ SET "adminEmailSubject" = REGEXP_REPLACE(
 WHERE "adminEmailSubject" IS NOT NULL 
     AND ("adminEmailSubject" ILIKE '%document%');
 
--- Update modalAutoRedirectAdmin (order matters: UPPER -> Title -> lower)
+-- Update autoRedirectUrlAdmin (order matters: UPPER -> Title -> lower)
 UPDATE "projectStatuses"
-SET "modalAutoRedirectAdmin" = REGEXP_REPLACE(
+SET "autoRedirectUrlAdmin" = REGEXP_REPLACE(
     REGEXP_REPLACE(
         REGEXP_REPLACE(
             REGEXP_REPLACE(
                 REGEXP_REPLACE(
-                    REGEXP_REPLACE("modalAutoRedirectAdmin", 
+                    REGEXP_REPLACE("autoRedirectUrlAdmin", 
                         'DOCUMENTS', 'FILES', 'g'),
                     'DOCUMENT', 'FILE', 'g'),
                 'Documents', 'Files', 'g'),
             'Document', 'File', 'g'),
         'documents', 'files', 'g'),
     'document', 'file', 'g')
-WHERE "modalAutoRedirectAdmin" IS NOT NULL 
-    AND ("modalAutoRedirectAdmin" ILIKE '%document%');
+WHERE "autoRedirectUrlAdmin" IS NOT NULL 
+    AND ("autoRedirectUrlAdmin" ILIKE '%document%');
 
 -- Update adminStatusName (order matters: UPPER -> Title -> lower)
 UPDATE "projectStatuses"
@@ -324,10 +324,10 @@ WHERE "clientEmailContent" ILIKE '%file%'
     OR "modalClient" ILIKE '%file%'
     OR "buttonLink" ILIKE '%file%'
     OR "clientStatusAction" ILIKE '%file%'
-    OR "modalAutoRedirectClient" ILIKE '%file%'
+    OR "autoRedirectUrlClient" ILIKE '%file%'
     OR "adminEmailContent" ILIKE '%file%'
     OR "adminEmailSubject" ILIKE '%file%'
-    OR "modalAutoRedirectAdmin" ILIKE '%file%'
+    OR "autoRedirectUrlAdmin" ILIKE '%file%'
     OR "adminStatusName" ILIKE '%file%'
     OR "clientStatusName" ILIKE '%file%'
     OR "adminStatusAction" ILIKE '%file%'
@@ -361,10 +361,10 @@ WHERE "clientEmailContent" ILIKE '%file%'
     OR "modalClient" ILIKE '%file%'
     OR "buttonLink" ILIKE '%file%'
     OR "clientStatusAction" ILIKE '%file%'
-    OR "modalAutoRedirectClient" ILIKE '%file%'
+    OR "autoRedirectUrlClient" ILIKE '%file%'
     OR "adminEmailContent" ILIKE '%file%'
     OR "adminEmailSubject" ILIKE '%file%'
-    OR "modalAutoRedirectAdmin" ILIKE '%file%'
+    OR "autoRedirectUrlAdmin" ILIKE '%file%'
     OR "adminStatusName" ILIKE '%file%'
     OR "clientStatusName" ILIKE '%file%'
     OR "adminStatusAction" ILIKE '%file%'

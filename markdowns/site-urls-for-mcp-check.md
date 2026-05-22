@@ -4,11 +4,10 @@
 
 ## Live Site URLs
 
-| Site | Live URL | Notes |
-|------|----------|-------|
+| Site               | Live URL                       | Notes           |
+| ------------------ | ------------------------------ | --------------- |
 | CAPCO Design Group | <!-- TODO: add correct URL --> | Fire protection |
-| Rothco Built, LLC | <!-- TODO: add correct URL --> | Fire protection |
-| Luxe Meds | https://luxemeds.com | E-commerce |
+| Rothco Built, LLC  | <!-- TODO: add correct URL --> | Fire protection |
 
 ## Incorrect / Do Not Use
 
@@ -18,7 +17,7 @@
 
 ## Usage
 
-- **MCP site checks:** When verifying capco, rothco, luxemeds after deploy, fetch the URLs from this table.
+- **MCP site checks:** When verifying capco and rothco after deploy, fetch the URLs from this table.
 - **Scripts:** `scripts/check-site-loading.sh` can take a base URL; use these for production checks.
 - **Railway:** Each project has its own `RAILWAY_PUBLIC_DOMAIN`; custom domains may differ—update this doc when known.
 

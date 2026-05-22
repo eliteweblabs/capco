@@ -42,8 +42,8 @@ const headers = [
   'buttonLink',
   'modalAdmin',
   'modalClient',
-  'modalAutoRedirectAdmin',
-  'modalAutoRedirectClient',
+  'autoRedirectUrlAdmin',
+  'autoRedirectUrlClient',
   'createdAt',
   'updatedAt'
 ];

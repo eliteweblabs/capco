@@ -4,31 +4,49 @@ Items the team intends to work on. When asked "what's in the todo list" or simil
 
 ---
 
-## Session handoff — recurring inspections + admin schedule (2026-05-18)
+## Session handoff — recurring inspections + admin schedule (2026-05-19)
 
-**Status:** In-progress (MAVSAFE landed; rollout + verification pending)
+**Status:** Feature complete; awaiting deploy + post-deploy Railway check.
 
-**What just shipped (commits `b5c9c3e3` and `b9e382fd` on `main`):**
+**iCal-style anchor model (replaces earlier multi-field thinking):**
 
-- `feat(projects)`: recurring inspections on the project form (toggle + period + first/next inspection dates) and a new Admin/Staff-only calendar at `/admin/schedule`. MAVSAFE only so far.
-  - DB migration: `supabase/migrations/20260518000000_projects_recurring_inspection.sql` (4 columns on `projects`, CHECK constraint, default trigger, partial index).
-  - Form fields added to `public/data/config-mavsafe.json` under `projectForm.steps[0].fields` (uses the `conditional` field-visibility pattern).
-  - `Schedule` entry added to MAVSAFE `asideNav`.
-  - Shared calendar logic: `src/lib/project-schedule.ts` (consumed by both `src/pages/api/projects/schedule.ts` and `src/pages/admin/schedule.astro`).
-- `refactor(forms)`: removed the dead legacy "unified form elements" rendering path from `ProjectForm.astro`. `src/lib/form-config.ts` deleted; `src/lib/project-form-config.ts` slimmed to ~50 lines of types. ProjectForm now renders a visible red alert if a site is missing `projectForm` in its config.
+`inspectionStartDate` is the DTSTART of the series; `inspectionPeriod` is the RRULE interval; `nextInspectionAt` is a cached pointer that mirrors the anchor. Future occurrences are derived on read by `expandInspectionOccurrences()` in `src/lib/project-schedule.ts` — change the anchor and every future chip on the calendar shifts by the same delta.
+
+**What landed this session (uncommitted at time of writing):**
+
+- DB migration `supabase/migrations/20260518000000_projects_recurring_inspection.sql` updated:
+  - `default_next_inspection_at()` now also anchors `inspectionStartDate := now()` on first save when `isInspection=true AND inspectionStartDate IS NULL` (so a recurring project shows up on today's cell with zero admin extra steps).
+  - New `sync_next_inspection_on_anchor_change()` BEFORE UPDATE trigger keeps `nextInspectionAt` synced to the anchor when an admin moves the anchor from the form or the calendar.
+  - Applied via MCP to MAVSAFE, Rothco, and CAPCo Auth Supabases (all three Supabases now have the schema + both triggers).
+- Form field added: `inspectionStartDate` (`First Inspection (Master Date)`, `type: date-input`, `conditional` on `isInspection=true`) in all three configs (`config-mavsafe.json`, `config-capco-design-group.json`, `config-rothco-built-llc.json`).
+- `Schedule` `asideNav` entry added to `config-capco-design-group.json` and `config-rothco-built-llc.json` (MAVSAFE already had it).
+- `/admin/schedule` now supports two new chip interactions on recurring chips:
+  - **Click-to-edit**: pops a floating editor (native `<input type="date">`) over the chip, computes `newAnchor = oldAnchor + (newDate - currentOccurrence)`, `PUT /api/projects/upsert`, reload.
+  - **Drag-to-reschedule**: HTML5 drag-and-drop with cell-level drop targets, same delta math.
+- `ScheduleEvent` gained an `anchorDate` field so the client has what it needs to compute the delta without an extra fetch.
+
+**MCP-verified end-to-end:**
+
+- Project #16 (`Roof & Interior Repairs`, yearly) toggled on via SQL → trigger auto-anchored to today; chip rendered on the right cell.
+- Click-edit moved anchor May 20 → May 25 (both columns updated by the sync trigger, time-of-day preserved).
+- Drag moved May 25 → May 27.
+- Navigated to `?month=2027-05` and confirmed the yearly occurrence appeared on Tue May 25, 2027 (math walks forward correctly).
+- New form field renders on `/project/16` with the live anchor value.
 
 **Pending — pick up here in the next chat:**
 
-1. **MCP browser verification of the create flow.** I never ran it for these changes. Goal: load `/project/new?mcp=1` on the running dev server, fill the form, toggle the recurring inspection on, pick a period + date, submit, and confirm the row hits the DB with the new columns populated. Then load `/project/<id>?mcp=1` and verify the existing-project form renders without the address input and with the recurring fields showing/hiding correctly as the toggle is flipped. See `.cursor/rules/mcp-form-verification.mdc`.
-2. **Roll out to `config-capco-design-group.json` and `config-rothco-built.json`** (and any other site configs) once MAVSAFE is verified. Same `projectForm` field additions + same `asideNav` entry. Migration applies to all sites automatically since they share the schema pattern.
-3. **`newConstruction` checkbox stickiness bug.** Same root cause as the `isInspection` bug I fixed: unchecked HTML checkboxes don't appear in `FormData`, so the backend never receives `false` and the old value sticks. I only patched `isInspection` in `ProjectForm.astro`'s `handleFormSubmit`. The same explicit-normalization fix should be applied to `newConstruction` (and audited for any other boolean toggle in the project form).
-4. **Post-deploy Railway check.** Per `.cursorrules`, ~6 minutes after the next sync to GitHub, MCP Railway to confirm capco / rothco / luxemeds still load. URLs in `markdowns/site-urls-for-mcp-check.md`.
+1. **Commit + push to GitHub.** Uncommitted now: `supabase/migrations/20260518000000_projects_recurring_inspection.sql`, `src/lib/project-schedule.ts`, `src/pages/admin/schedule.astro`, `public/data/config-mavsafe.json`, `public/data/config-capco-design-group.json`, `public/data/config-rothco-built-llc.json`, and this `markdowns/TODO.md`. (Pre-existing uncommitted work in `ProjectItem.astro`, `ProjectList.astro`, `project-list-table-config.ts`, `src/scripts/project-list-sort.ts`, `privacy.astro`, `terms.astro` is NOT mine — leave alone.)
+2. **Post-deploy Railway check.** Per `.cursorrules`, ~6 minutes after the next sync to GitHub, MCP Railway to confirm capco and rothco still load. URLs in `markdowns/site-urls-for-mcp-check.md`.
+3. **Future polish (no rush):**
+   - Inspection chips currently use the primary color which happens to look very similar to the amber "due" chips on MAVSAFE's palette. Consider giving inspections a distinct color or icon prefix on the chip.
+   - "Mark inspection complete" flow that advances `nextInspectionAt` independently of the anchor (iCal-style "this instance done, next one is +period"). Doesn't exist yet; today an inspection just keeps repeating forever.
+   - Multi-day inspection windows, exceptions list (`EXDATE`), inspector assignment.
 
 **Useful context for the next chat:**
 
-- Transcript of this session: `[Recurring inspections + admin schedule](fe66a5a3-2237-48bb-bbc5-dcf4d85509b6)`.
-- Dev server: currently running in terminal 1 (`npm run dev`).
-- Working tree has unrelated uncommitted changes in `ProjectItem.astro`, `ProjectList.astro`, `project-list-table-config.ts`, `src/scripts/project-list-sort.ts`, `privacy.astro`, `terms.astro` — none of those are mine; they were already in the working tree at session start.
+- Transcript of this session: `[Recurring inspections + calendar handoff](d19445a0-2916-429f-918e-ee3a9f9f01af)`.
+- Dev server: running in terminal 1 (`npm run dev`).
+- Admin login for MCP verification: `demo-seed-admin@demo-seed.local` / `McpTest!2026` (password set via Supabase Auth Admin API this session; the `confirmation_token` NULL issue on demo-seed auth users was also fixed in passing).
 
 ---
 
@@ -40,6 +58,7 @@ Items the team intends to work on. When asked "what's in the todo list" or simil
 **Issue:** During scroll on mobile, both `scrollTop` and `translateY` move content together, which feels unnatural (double movement). The release into normal content scroll also feels like you have to force it.
 
 **Attempted fixes (reverted):**
+
 1. Consume scroll during reveal phase: reset `scrollTop` to 0 so only `translateY` drives content until reveal is complete.
 2. Carry-over handoff: when delta would push `translateY` past max, cap it and carry excess into `scrollTop` for smoother transition.
 

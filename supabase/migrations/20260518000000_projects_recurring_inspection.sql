@@ -34,16 +34,24 @@ BEGIN
   END IF;
 END$$;
 
--- Default nextInspectionAt to inspectionStartDate when an admin enables
--- the inspection toggle without providing a separate next-date.
--- The IS NULL guard means manual overrides are preserved on subsequent saves.
+-- iCal-style anchor model: inspectionStartDate is the DTSTART of the series,
+-- inspectionPeriod is the RRULE interval, and nextInspectionAt is a cached
+-- pointer that mirrors the anchor (advanced independently later when a
+-- "completed inspection" workflow is added).
+--
+-- On INSERT or first-time enable: default the anchor to now() so the project
+-- appears on today's calendar cell immediately, with no extra admin step.
+-- nextInspectionAt mirrors the anchor on first save.
 CREATE OR REPLACE FUNCTION public.default_next_inspection_at()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF NEW."isInspection" IS TRUE
-     AND NEW."nextInspectionAt" IS NULL
-     AND NEW."inspectionStartDate" IS NOT NULL THEN
-    NEW."nextInspectionAt" := NEW."inspectionStartDate";
+  IF NEW."isInspection" IS TRUE THEN
+    IF NEW."inspectionStartDate" IS NULL THEN
+      NEW."inspectionStartDate" := now();
+    END IF;
+    IF NEW."nextInspectionAt" IS NULL THEN
+      NEW."nextInspectionAt" := NEW."inspectionStartDate";
+    END IF;
   END IF;
   RETURN NEW;
 END;
@@ -54,6 +62,26 @@ CREATE TRIGGER default_next_inspection_at_trg
   BEFORE INSERT OR UPDATE ON public.projects
   FOR EACH ROW
   EXECUTE FUNCTION public.default_next_inspection_at();
+
+-- On UPDATE: when the admin moves the anchor (from the project form or by
+-- editing/dragging a chip on /admin/schedule), reset the series pointer so
+-- all derived future occurrences shift with the new anchor.
+CREATE OR REPLACE FUNCTION public.sync_next_inspection_on_anchor_change()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW."isInspection" IS TRUE
+     AND NEW."inspectionStartDate" IS DISTINCT FROM OLD."inspectionStartDate" THEN
+    NEW."nextInspectionAt" := NEW."inspectionStartDate";
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS sync_next_inspection_on_anchor_change_trg ON public.projects;
+CREATE TRIGGER sync_next_inspection_on_anchor_change_trg
+  BEFORE UPDATE ON public.projects
+  FOR EACH ROW
+  EXECUTE FUNCTION public.sync_next_inspection_on_anchor_change();
 
 -- Partial index for the upcoming /admin/schedule calendar query
 -- (only indexes rows that actually participate in the recurring schedule).

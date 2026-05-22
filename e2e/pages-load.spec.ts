@@ -12,7 +12,7 @@ const PUBLIC_PAGES = [
 ];
 
 const PROTECTED_PAGES = [
-  { path: "/project/dashboard", name: "Dashboard" },
+  { path: "/dashboard", name: "Dashboard" },
 ];
 
 test.describe("Public pages load", () => {

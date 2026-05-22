@@ -1,4 +1,4 @@
--- E-commerce + Social Media module for luxemeds.com and similar sites
+-- E-commerce + Social Media module (optional, per-site)
 -- Uses Square for payments; no projects table dependency
 
 -- Products (e-commerce catalog)

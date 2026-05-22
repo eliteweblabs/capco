@@ -142,7 +142,7 @@ test.describe("Flow: Unauthenticated user gets bounced", () => {
     page,
   }) => {
     const protectedPaths = [
-      "/project/dashboard",
+      "/dashboard",
       "/project/new",
       "/project/settings",
     ];
@@ -161,7 +161,7 @@ test.describe("Flow: Session persistence", () => {
     await loginViaAPI(page);
 
     // Visit multiple pages — auth should persist via cookies
-    const pages = ["/project/dashboard", "/project/new", "/project/dashboard"];
+    const pages = ["/dashboard", "/project/new", "/dashboard"];
 
     for (const path of pages) {
       await page.goto(path);

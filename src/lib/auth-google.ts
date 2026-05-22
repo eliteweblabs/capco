@@ -5,7 +5,7 @@
  */
 import { getSupabaseClient } from "./supabase-client";
 
-const DEFAULT_REDIRECT = "/project/dashboard";
+const DEFAULT_REDIRECT = "/dashboard";
 
 function getRedirectFromPage(target?: HTMLElement | null): string {
   const btn = target?.closest?.('.provider-btn[data-provider="google"]') as HTMLElement | null;

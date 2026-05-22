@@ -1,0 +1,212 @@
+---
+/**
+ * One day cell for the /admin/schedule month + week grids.
+ *
+ * Renders the project event chips (due / inspection) on top, optionally
+ * separated by a dashed rule from the per-person time chips below.
+ * In Month mode chips are capped at 3 of each kind with "+N more". In Week
+ * mode the cap is higher and "+N more" deep-links to the Day view for that
+ * cell so admins can drill into a busy day.
+ *
+ * Drag/drop + click-to-edit + time popover all hook off `data-*` attributes
+ * here; the page-level script in /admin/schedule.astro handles the events.
+ */
+import {
+  PERIOD_LABELS,
+  type Period,
+  type ScheduleEvent,
+  type TimeBucket,
+} from "../../lib/project-schedule";
+
+interface CellShape {
+  date: Date;
+  key: string;
+  inMonth: boolean;
+  isToday: boolean;
+}
+
+interface Props {
+  cell: CellShape;
+  dayEvents: ScheduleEvent[];
+  dayBuckets: TimeBucket[];
+  mode: "month" | "week";
+}
+
+const { cell, dayEvents, dayBuckets, mode } = Astro.props;
+
+function chipClasses(ev: ScheduleEvent): string {
+  if (ev.type === "due") {
+    return "border-amber-300 bg-amber-100 text-amber-900 dark:border-amber-700 dark:bg-amber-900/40 dark:text-amber-100";
+  }
+  return "border-primary-300 bg-primary-100 text-primary-900 dark:border-primary-700 dark:bg-primary-900/40 dark:text-primary-100";
+}
+
+function eventLabel(ev: ScheduleEvent): string {
+  if (ev.type === "due") return "Due";
+  const period = ev.inspectionPeriod ? PERIOD_LABELS[ev.inspectionPeriod as Period] : "Recurring";
+  return `Inspection · ${period}`;
+}
+
+function timeChipClasses(b: TimeBucket): string {
+  if (b.hasActive) {
+    return "border-red-300 bg-red-50 text-red-900 dark:border-red-700 dark:bg-red-900/30 dark:text-red-100";
+  }
+  if (b.allBilled) {
+    return "border-slate-300 bg-slate-100 text-slate-600 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-300";
+  }
+  return "border-emerald-300 bg-emerald-100 text-emerald-900 dark:border-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-100";
+}
+
+function formatHours(minutes: number): string {
+  if (minutes < 1) return "<1m";
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h${m}m`;
+}
+
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return ((parts[0][0] ?? "") + (parts[parts.length - 1][0] ?? "")).toUpperCase();
+}
+
+function firstName(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  return parts[0] ?? name;
+}
+
+const eventCap = mode === "week" ? 7 : 3;
+const timeCap = mode === "week" ? 7 : 3;
+const minH = mode === "week" ? "min-h-[16rem]" : "min-h-[7rem]";
+
+const totalChipCount = dayEvents.length + dayBuckets.length;
+const cellBg = cell.inMonth ? "bg-white dark:bg-gray-900" : "bg-gray-50 dark:bg-gray-800/50";
+const dayNumClass = cell.isToday
+  ? "inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white"
+  : cell.inMonth
+    ? "text-sm font-medium text-gray-900 dark:text-gray-100"
+    : "text-sm text-gray-400 dark:text-gray-600";
+
+const dayDrillHref = `/admin/schedule?view=day&date=${cell.key}`;
+---
+
+<div
+  data-drop-day={cell.key}
+  class={`schedule-cell ${minH} border-b border-r border-gray-200 p-2 dark:border-gray-700 ${cellBg}`}
+>
+  <div class="mb-1 flex items-center justify-between">
+    <a
+      href={dayDrillHref}
+      class={`${dayNumClass} hover:underline`}
+      title={`Open day view for ${cell.key}`}
+    >
+      {cell.date.getUTCDate()}
+    </a>
+    {
+      totalChipCount > 2 ? (
+        <span class="text-xs text-gray-500 dark:text-gray-400">{totalChipCount}</span>
+      ) : null
+    }
+  </div>
+  <div class="flex flex-col gap-1">
+    {
+      dayEvents.slice(0, eventCap).map((ev) => {
+        const isRecurring = ev.type === "inspection";
+        return (
+          <a
+            href={`/project/${ev.projectId}`}
+            class={`schedule-chip block truncate rounded border px-1.5 py-0.5 text-xs font-medium hover:underline ${chipClasses(ev)} ${isRecurring ? "cursor-grab active:cursor-grabbing" : ""}`}
+            data-recurring={isRecurring ? "true" : undefined}
+            data-project-id={ev.projectId}
+            data-occurrence-iso={ev.date}
+            data-occurrence-index={ev.occurrenceIndex}
+            data-anchor-iso={ev.anchorDate ?? undefined}
+            data-event-title={ev.title}
+            data-period={ev.inspectionPeriod ?? undefined}
+            data-tt-title={eventLabel(ev)}
+            data-tt-subtitle={ev.title}
+            data-tt-meta={ev.address ?? undefined}
+            data-tt-notes={isRecurring ? "Click to reschedule · drag to move" : undefined}
+            draggable={isRecurring}
+          >
+            {ev.title}
+          </a>
+        );
+      })
+    }
+    {
+      dayEvents.length > eventCap ? (
+        <a href={dayDrillHref} class="text-[10px] text-gray-500 hover:underline dark:text-gray-400">
+          +{dayEvents.length - eventCap} more
+        </a>
+      ) : null
+    }
+  </div>
+  {
+    dayBuckets.length > 0 ? (
+      <div
+        class={`flex flex-col gap-0.5 ${dayEvents.length > 0 ? "mt-1.5 border-t border-dashed border-gray-200 pt-1 dark:border-gray-700" : "mt-1"}`}
+      >
+        {dayBuckets.slice(0, timeCap).map((b) => {
+          const stateLabel = b.hasActive ? "Live" : b.allBilled ? "Billed" : "Unbilled";
+          const uniqueProjects = [...new Set(b.entries.map((e) => e.projectTitle))];
+          const subtitle =
+            uniqueProjects.length === 0
+              ? `${formatHours(b.totalMinutes)} logged`
+              : uniqueProjects.length === 1
+                ? `${formatHours(b.totalMinutes)} · ${uniqueProjects[0]}`
+                : `${formatHours(b.totalMinutes)} · ${uniqueProjects.length} projects`;
+          return (
+            <button
+              type="button"
+              class={`schedule-time-chip flex w-full items-center gap-1 truncate rounded border px-1 py-0.5 text-[11px] font-medium hover:opacity-80 ${timeChipClasses(b)}`}
+              data-time-bucket="true"
+              data-user-id={b.userId}
+              data-user-name={b.author}
+              data-day-key={b.dayKey}
+              data-total-minutes={b.totalMinutes}
+              data-has-active={b.hasActive ? "true" : "false"}
+              data-all-billed={b.allBilled ? "true" : "false"}
+              data-entries={JSON.stringify(b.entries)}
+              data-tt-title={b.author}
+              data-tt-subtitle={subtitle}
+              data-tt-state={stateLabel}
+              data-tt-notes={
+                b.entries.length > 1
+                  ? `${b.entries.length} sessions · click for details`
+                  : "Click for details"
+              }
+            >
+              <span
+                aria-hidden="true"
+                class="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-white/60 text-[8px] font-bold dark:bg-white/20"
+              >
+                {initials(b.author)}
+              </span>
+              <span class="truncate">
+                {firstName(b.author)} · {formatHours(b.totalMinutes)}
+              </span>
+              {b.hasActive ? (
+                <span
+                  class="ml-auto inline-block h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-red-500"
+                  aria-hidden="true"
+                />
+              ) : null}
+            </button>
+          );
+        })}
+        {dayBuckets.length > timeCap ? (
+          <a
+            href={dayDrillHref}
+            class="text-[10px] text-gray-500 hover:underline dark:text-gray-400"
+          >
+            +{dayBuckets.length - timeCap} more
+          </a>
+        ) : null}
+      </div>
+    ) : null
+  }
+</div>

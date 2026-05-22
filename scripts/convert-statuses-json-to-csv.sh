@@ -18,7 +18,7 @@ const headers = [
   'clientStatusName', 'clientStatusSlug', 'clientStatusTab', 'clientStatusAction',
   'clientEmailSubject', 'clientEmailContent', 'emailToRoles', 'adminVisible',
   'clientVisible', 'estTime', 'buttonText', 'buttonLink', 'modalAdmin',
-  'modalClient', 'modalAutoRedirectAdmin', 'modalAutoRedirectClient',
+  'modalClient', 'autoRedirectUrlAdmin', 'autoRedirectUrlClient',
   'createdAt', 'updatedAt'
 ];
 

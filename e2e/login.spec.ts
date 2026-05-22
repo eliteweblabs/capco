@@ -43,15 +43,15 @@ test.describe("Login flow", () => {
 
   test("logs in with valid credentials (UI)", async ({ page }) => {
     await loginViaUI(page);
-    await expect(page).toHaveURL(/\/project\/dashboard/);
+    await expect(page).toHaveURL(/\/dashboard/);
   });
 
   test("logs in with valid credentials (API)", async ({ page }) => {
     await loginViaAPI(page);
 
     // After API login, cookies are set — navigate to a protected page
-    await page.goto("/project/dashboard");
-    await expect(page).toHaveURL(/\/project\/dashboard/);
+    await page.goto("/dashboard");
+    await expect(page).toHaveURL(/\/dashboard/);
     await expect(page).not.toHaveURL(/\/auth\/login/);
   });
 
@@ -62,7 +62,7 @@ test.describe("Login flow", () => {
     await page.goto("/auth/login");
 
     // Should redirect to dashboard since already authenticated
-    await page.waitForURL("**/project/dashboard*", { timeout: 10_000 });
-    await expect(page).toHaveURL(/\/project\/dashboard/);
+    await page.waitForURL("**/dashboard*", { timeout: 10_000 });
+    await expect(page).toHaveURL(/\/dashboard/);
   });
 });

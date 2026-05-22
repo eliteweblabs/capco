@@ -17,17 +17,30 @@ import { supabaseAdmin } from "../../lib/supabase-admin";
 import LayoutFullWidth from "../../components/layouts/LayoutFullWidth.astro";
 import SimpleIcon from "../../components/common/SimpleIcon.astro";
 import { globalClasses } from "../api/global/global-classes";
+import ScheduleDayCell from "../../components/admin/ScheduleDayCell.astro";
 import {
   buildMonthGrid,
+  buildWeekCells,
+  dateIsoString,
+  dayLabel as fmtDayLabel,
+  endOfDay,
+  endOfWeek,
   firstOfMonth,
   getScheduleEvents,
+  getTimeBuckets,
   lastOfMonth,
   monthIsoString,
+  parseDateParam,
   parseMonthParam,
   PERIOD_LABELS,
+  shiftDate,
   shiftMonth,
-  type ScheduleEvent,
+  startOfDay,
+  startOfWeek,
   type Period,
+  type ScheduleEvent,
+  type ScheduleRange,
+  type TimeBucket,
 } from "../../lib/project-schedule";
 
 const { currentUser, session } = await checkAuth(Astro.cookies);
@@ -43,9 +56,34 @@ if (!isAdminOrStaffOrSuperAdmin(currentRole)) {
 const { primaryTextClasses, secondaryTextClasses, globalCodeInline } = globalClasses();
 
 const url = new URL(Astro.request.url);
-const view = url.searchParams.get("view") === "list" ? "list" : "month";
+
+const VIEW_VALUES = ["month", "week", "day", "list"] as const;
+type View = (typeof VIEW_VALUES)[number];
+const rawView = url.searchParams.get("view") ?? "month";
+const view: View = (VIEW_VALUES as readonly string[]).includes(rawView)
+  ? (rawView as View)
+  : "month";
+
 const viewMonth = parseMonthParam(url.searchParams.get("month"));
-const range = { start: firstOfMonth(viewMonth), end: lastOfMonth(viewMonth) };
+const viewDate = parseDateParam(url.searchParams.get("date")) ?? new Date();
+
+// Range driven by the active view. Month + List share the calendar-month
+// range; Week + Day narrow to their own window.
+let range: ScheduleRange;
+if (view === "week") {
+  range = { start: startOfWeek(viewDate), end: endOfWeek(viewDate) };
+} else if (view === "day") {
+  range = { start: startOfDay(viewDate), end: endOfDay(viewDate) };
+} else {
+  range = { start: firstOfMonth(viewMonth), end: lastOfMonth(viewMonth) };
+}
+
+const LAYER_VALUES = ["all", "projects", "scheduled", "staff"] as const;
+type Layer = (typeof LAYER_VALUES)[number];
+const rawLayer = url.searchParams.get("layers") ?? "all";
+const activeLayer: Layer = (LAYER_VALUES as readonly string[]).includes(rawLayer)
+  ? (rawLayer as Layer)
+  : "all";
 
 const dbClient = supabaseAdmin ?? supabase;
 let events: ScheduleEvent[] = [];
@@ -58,11 +96,31 @@ if (dbClient) {
   queryError = "Database connection not available";
 }
 
-const { cells, monthLabel } = buildMonthGrid(viewMonth);
+const isAdminRole = currentRole === "Admin" || currentRole === "superAdmin";
 
-const prevMonth = monthIsoString(shiftMonth(viewMonth, -1));
-const nextMonth = monthIsoString(shiftMonth(viewMonth, 1));
-const todayMonth = monthIsoString(firstOfMonth(new Date()));
+// Layer visibility — "Staff" is admin-only; falling back to "all" preserves
+// existing chips for non-admins regardless of the layers param.
+const showDue = activeLayer === "all" || activeLayer === "projects";
+const showInspection = activeLayer === "all" || activeLayer === "scheduled";
+const showStaff = isAdminRole && (activeLayer === "all" || activeLayer === "staff");
+
+let timeBuckets: TimeBucket[] = [];
+let timeError: string | null = null;
+if (showStaff && dbClient) {
+  const result = await getTimeBuckets(dbClient, range);
+  timeBuckets = result.buckets;
+  timeError = result.error;
+}
+
+const { cells: monthCells, monthLabel } = buildMonthGrid(viewMonth);
+const { cells: weekCells, weekLabel } =
+  view === "week" ? buildWeekCells(viewDate) : { cells: [], weekLabel: "" };
+const dayLabelText = fmtDayLabel(viewDate);
+
+let periodLabel: string;
+if (view === "week") periodLabel = weekLabel;
+else if (view === "day") periodLabel = dayLabelText;
+else periodLabel = monthLabel;
 
 const eventsByDay = new Map<string, ScheduleEvent[]>();
 for (const ev of events) {
@@ -71,6 +129,19 @@ for (const ev of events) {
   if (bucket) bucket.push(ev);
   else eventsByDay.set(key, [ev]);
 }
+
+const timeByDay = new Map<string, TimeBucket[]>();
+for (const b of timeBuckets) {
+  const arr = timeByDay.get(b.dayKey);
+  if (arr) arr.push(b);
+  else timeByDay.set(b.dayKey, [b]);
+}
+for (const arr of timeByDay.values()) {
+  arr.sort((a, b) => a.author.localeCompare(b.author));
+}
+
+const totalMinutesAllTime = timeBuckets.reduce((acc, b) => acc + b.totalMinutes, 0);
+const activeUsersCount = timeBuckets.filter((b) => b.hasActive).length;
 
 function chipClasses(ev: ScheduleEvent): string {
   if (ev.type === "due") {
@@ -83,6 +154,25 @@ function eventLabel(ev: ScheduleEvent): string {
   if (ev.type === "due") return "Due";
   const period = ev.inspectionPeriod ? PERIOD_LABELS[ev.inspectionPeriod as Period] : "Recurring";
   return `Inspection · ${period}`;
+}
+
+function formatHours(minutes: number): string {
+  if (minutes < 1) return "<1m";
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h${m}m`;
+}
+
+function timeChipClasses(b: TimeBucket): string {
+  if (b.hasActive) {
+    return "border-red-300 bg-red-50 text-red-900 dark:border-red-700 dark:bg-red-900/30 dark:text-red-100";
+  }
+  if (b.allBilled) {
+    return "border-slate-300 bg-slate-100 text-slate-600 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-300";
+  }
+  return "border-emerald-300 bg-emerald-100 text-emerald-900 dark:border-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-100";
 }
 
 function shortDate(iso: string): string {
@@ -105,17 +195,75 @@ function fullDate(iso: string): string {
   });
 }
 
-function buildNavUrl(opts: { month?: string; view?: "month" | "list" }): string {
+function buildNavUrl(opts: {
+  month?: string | null;
+  view?: View;
+  layers?: Layer;
+  date?: string | null;
+}): string {
   const next = new URLSearchParams(url.searchParams);
-  if (opts.month) next.set("month", opts.month);
+  if (opts.month === null) next.delete("month");
+  else if (opts.month) next.set("month", opts.month);
+  if (opts.date === null) next.delete("date");
+  else if (opts.date) next.set("date", opts.date);
   if (opts.view) next.set("view", opts.view);
+  if (opts.layers !== undefined) {
+    if (opts.layers === "all") next.delete("layers");
+    else next.set("layers", opts.layers);
+  }
   const qs = next.toString();
   return qs ? `${url.pathname}?${qs}` : url.pathname;
+}
+
+function prevUrl(): string {
+  if (view === "week") return buildNavUrl({ date: dateIsoString(shiftDate(viewDate, -7)) });
+  if (view === "day") return buildNavUrl({ date: dateIsoString(shiftDate(viewDate, -1)) });
+  return buildNavUrl({ month: monthIsoString(shiftMonth(viewMonth, -1)) });
+}
+
+function nextUrl(): string {
+  if (view === "week") return buildNavUrl({ date: dateIsoString(shiftDate(viewDate, 7)) });
+  if (view === "day") return buildNavUrl({ date: dateIsoString(shiftDate(viewDate, 1)) });
+  return buildNavUrl({ month: monthIsoString(shiftMonth(viewMonth, 1)) });
+}
+
+function todayUrl(): string {
+  const today = new Date();
+  if (view === "week" || view === "day") return buildNavUrl({ date: dateIsoString(today) });
+  return buildNavUrl({ month: monthIsoString(firstOfMonth(today)) });
+}
+
+function viewSwitchUrl(target: View): string {
+  if (target === "week" || target === "day")
+    return buildNavUrl({ view: target, date: dateIsoString(viewDate) });
+  return buildNavUrl({ view: target, month: monthIsoString(viewMonth) });
 }
 
 const weekDayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const dueCount = events.filter((e) => e.type === "due").length;
 const inspectionCount = events.filter((e) => e.type === "inspection").length;
+
+// Filter the master events array once for the list view + counts (cell-level
+// filtering still happens inline so per-day buckets keep their order).
+const filteredEvents = events.filter(
+  (e) => (e.type === "due" && showDue) || (e.type === "inspection" && showInspection)
+);
+
+const layerPills: { id: Layer; label: string; visible: boolean }[] = [
+  { id: "all", label: "All", visible: true },
+  { id: "projects", label: "Projects", visible: true },
+  { id: "scheduled", label: "Scheduled", visible: true },
+  { id: "staff", label: "Staff", visible: isAdminRole },
+];
+
+function pillClass(active: boolean, first: boolean): string {
+  const base = "inline-flex items-center px-3 py-1.5 text-sm font-medium transition-colors";
+  const border = first ? "" : "border-l border-gray-300 dark:border-gray-600";
+  const state = active
+    ? "bg-primary-500 text-white"
+    : "bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700";
+  return `${base} ${border} ${state}`;
+}
 ---
 
 <LayoutFullWidth
@@ -130,22 +278,42 @@ const inspectionCount = events.filter((e) => e.type === "inspection").length;
         <h1 class={`mb-1 text-3xl font-bold ${primaryTextClasses}`}>Project Schedule</h1>
         <p class={`${secondaryTextClasses} text-sm text-gray-600 dark:text-gray-400`}>
           Due dates and recurring inspections across all projects.
-          <span class="ml-2 inline-flex items-center gap-1">
-            <span
-              class="inline-block h-2 w-2 rounded-full bg-amber-500"
-              aria-hidden="true"></span> {dueCount} due
-          </span>
-          <span class="ml-3 inline-flex items-center gap-1">
-            <span
-              class="inline-block h-2 w-2 rounded-full bg-primary-500"
-              aria-hidden="true"></span> {inspectionCount} inspections
-          </span>
+          {
+            showDue && (
+              <span class="ml-2 inline-flex items-center gap-1">
+                <span class="inline-block h-2 w-2 rounded-full bg-amber-500" aria-hidden="true" />
+                {dueCount} due
+              </span>
+            )
+          }
+          {
+            showInspection && (
+              <span class="ml-3 inline-flex items-center gap-1">
+                <span class="inline-block h-2 w-2 rounded-full bg-primary-500" aria-hidden="true" />
+                {inspectionCount} inspections
+              </span>
+            )
+          }
+          {
+            showStaff && timeBuckets.length > 0 && (
+              <span class="ml-3 inline-flex items-center gap-1">
+                <span class="inline-block h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
+                {formatHours(totalMinutesAllTime)} logged
+                {activeUsersCount > 0 ? (
+                  <span class="ml-1 inline-flex items-center gap-1 text-red-600 dark:text-red-400">
+                    <span class="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" />
+                    {activeUsersCount} live
+                  </span>
+                ) : null}
+              </span>
+            )
+          }
         </p>
       </div>
 
       <div class="flex flex-wrap items-center gap-2">
         <a
-          href={buildNavUrl({ month: todayMonth })}
+          href={todayUrl()}
           class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
         >
           Today
@@ -154,15 +322,15 @@ const inspectionCount = events.filter((e) => e.type === "inspection").length;
           class="inline-flex overflow-hidden rounded-lg border border-gray-300 dark:border-gray-600"
         >
           <a
-            href={buildNavUrl({ month: prevMonth })}
-            aria-label="Previous month"
+            href={prevUrl()}
+            aria-label={`Previous ${view === "week" || view === "day" ? view : "month"}`}
             class="inline-flex items-center bg-white px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
           >
             <SimpleIcon name="chevron-left" size="sm" />
           </a>
           <a
-            href={buildNavUrl({ month: nextMonth })}
-            aria-label="Next month"
+            href={nextUrl()}
+            aria-label={`Next ${view === "week" || view === "day" ? view : "month"}`}
             class="inline-flex items-center border-l border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
           >
             <SimpleIcon name="chevron-right" size="sm" />
@@ -171,19 +339,39 @@ const inspectionCount = events.filter((e) => e.type === "inspection").length;
         <div
           class="inline-flex overflow-hidden rounded-lg border border-gray-300 dark:border-gray-600"
         >
-          <a
-            href={buildNavUrl({ view: "month" })}
-            class={`inline-flex items-center px-3 py-1.5 text-sm font-medium ${view === "month" ? "bg-primary-500 text-white" : "bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"}`}
-          >
-            Month
-          </a>
-          <a
-            href={buildNavUrl({ view: "list" })}
-            class={`inline-flex items-center border-l border-gray-300 px-3 py-1.5 text-sm font-medium dark:border-gray-600 ${view === "list" ? "bg-primary-500 text-white" : "bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"}`}
-          >
-            List
-          </a>
+          {
+            (["month", "week", "day", "list"] as View[]).map((v, i) => (
+              <a
+                href={viewSwitchUrl(v)}
+                aria-current={view === v ? "page" : undefined}
+                class={`inline-flex items-center px-3 py-1.5 text-sm font-medium ${i > 0 ? "border-l border-gray-300 dark:border-gray-600" : ""} ${view === v ? "bg-primary-500 text-white" : "bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"}`}
+              >
+                {v.charAt(0).toUpperCase() + v.slice(1)}
+              </a>
+            ))
+          }
         </div>
+      </div>
+    </div>
+
+    {/* ===== Layer filter pills ===== */}
+    <div class="mb-4 flex flex-wrap items-center gap-2">
+      <div
+        class="inline-flex overflow-hidden rounded-lg border border-gray-300 dark:border-gray-600"
+      >
+        {
+          layerPills
+            .filter((p) => p.visible)
+            .map((pill, i) => (
+              <a
+                href={buildNavUrl({ layers: pill.id })}
+                aria-current={activeLayer === pill.id ? "page" : undefined}
+                class={pillClass(activeLayer === pill.id, i === 0)}
+              >
+                {pill.label}
+              </a>
+            ))
+        }
       </div>
     </div>
 
@@ -196,9 +384,17 @@ const inspectionCount = events.filter((e) => e.type === "inspection").length;
         </div>
       )
     }
+    {
+      timeError && (
+        <div class="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+          <strong>Could not load time entries:</strong>
+          <code class={globalCodeInline}>{timeError}</code>
+        </div>
+      )
+    }
 
-    {/* ===== Month label ===== */}
-    <h2 class={`mb-3 text-xl font-semibold ${primaryTextClasses}`}>{monthLabel}</h2>
+    {/* ===== Period label (month / week-range / day) ===== */}
+    <h2 class={`mb-3 text-xl font-semibold ${primaryTextClasses}`}>{periodLabel}</h2>
 
     {
       view === "month" ? (
@@ -209,90 +405,1309 @@ const inspectionCount = events.filter((e) => e.type === "inspection").length;
             ))}
           </div>
           <div class="grid grid-cols-7">
-            {cells.map((cell) => {
-              const dayEvents = eventsByDay.get(cell.key) ?? [];
-              const cellBg = cell.inMonth ? "bg-white dark:bg-gray-900" : "bg-gray-50 dark:bg-gray-800/50";
-              const dayNumClass = cell.isToday
-                ? "inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white"
-                : cell.inMonth
-                  ? "text-sm font-medium text-gray-900 dark:text-gray-100"
-                  : "text-sm text-gray-400 dark:text-gray-600";
+            {monthCells.map((cell) => {
+              const dayEventsAll = eventsByDay.get(cell.key) ?? [];
+              const dayEvents = dayEventsAll.filter(
+                (e) => (e.type === "due" && showDue) || (e.type === "inspection" && showInspection)
+              );
+              const dayBuckets = showStaff ? (timeByDay.get(cell.key) ?? []) : [];
               return (
-                <div
-                  class={`min-h-[7rem] border-b border-r border-gray-200 p-2 dark:border-gray-700 ${cellBg}`}
-                >
-                  <div class="mb-1 flex items-center justify-between">
-                    <span class={dayNumClass}>{cell.date.getUTCDate()}</span>
-                    {dayEvents.length > 2 ? (
-                      <span class="text-xs text-gray-500 dark:text-gray-400">
-                        {dayEvents.length}
-                      </span>
-                    ) : null}
-                  </div>
-                  <div class="flex flex-col gap-1">
-                    {dayEvents.slice(0, 3).map((ev) => (
-                      <a
-                        href={`/project/${ev.projectId}`}
-                        title={`${eventLabel(ev)} — ${ev.title}${ev.address ? ` (${ev.address})` : ""}`}
-                        class={`block truncate rounded border px-1.5 py-0.5 text-xs font-medium hover:underline ${chipClasses(ev)}`}
-                      >
-                        {ev.title}
-                      </a>
-                    ))}
-                    {dayEvents.length > 3 ? (
-                      <span class="text-[10px] text-gray-500 dark:text-gray-400">
-                        +{dayEvents.length - 3} more
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
+                <ScheduleDayCell
+                  cell={cell}
+                  dayEvents={dayEvents}
+                  dayBuckets={dayBuckets}
+                  mode="month"
+                />
               );
             })}
           </div>
         </div>
+      ) : view === "week" ? (
+        <div class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
+          <div class="grid grid-cols-7 border-b border-gray-200 bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
+            {weekCells.map((cell, i) => (
+              <div class="flex flex-col items-center px-2 py-2 text-center">
+                <span>{weekDayLabels[i]}</span>
+                <span
+                  class={`mt-0.5 text-base font-bold normal-case ${cell.isToday ? "inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary-500 text-white" : "text-gray-700 dark:text-gray-200"}`}
+                >
+                  {cell.date.getUTCDate()}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div class="grid grid-cols-7">
+            {weekCells.map((cell) => {
+              const dayEventsAll = eventsByDay.get(cell.key) ?? [];
+              const dayEvents = dayEventsAll.filter(
+                (e) => (e.type === "due" && showDue) || (e.type === "inspection" && showInspection)
+              );
+              const dayBuckets = showStaff ? (timeByDay.get(cell.key) ?? []) : [];
+              return (
+                <ScheduleDayCell
+                  cell={cell}
+                  dayEvents={dayEvents}
+                  dayBuckets={dayBuckets}
+                  mode="week"
+                />
+              );
+            })}
+          </div>
+        </div>
+      ) : view === "day" ? (
+        (() => {
+          const dayKey = dateIsoString(viewDate);
+          const dayEventsAll = eventsByDay.get(dayKey) ?? [];
+          const dayInspections = showInspection
+            ? dayEventsAll.filter((e) => e.type === "inspection")
+            : [];
+          const dayDues = showDue ? dayEventsAll.filter((e) => e.type === "due") : [];
+          const dayBuckets = showStaff ? (timeByDay.get(dayKey) ?? []) : [];
+          // Flatten buckets into individual sessions for the agenda timeline
+          const sessions = dayBuckets
+            .flatMap((b) =>
+              b.entries.map((e) => ({
+                ...e,
+                author: b.author,
+                userId: b.userId,
+              }))
+            )
+            .sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0));
+          // Group sessions by worker so each timeline row holds one worker's
+          // day. Same-worker sessions never overlap (only one active check-in
+          // at a time), so each row is collision-free. Map<>() generics avoid
+          // inline TS generics in JSX expressions (Astro parser treats `<` as
+          // a tag opener).
+          const byUser = new Map();
+          for (const s of sessions) {
+            const arr = byUser.get(s.userId);
+            if (arr) arr.push(s);
+            else byUser.set(s.userId, [s]);
+          }
+          const workerRows = [...byUser.entries()]
+            .map(([userId, sess]) => ({
+              userId,
+              author: sess[0]?.author ?? "—",
+              totalMinutes: sess.reduce(
+                (acc: number, x: { minutes: number | null }) => acc + (x.minutes ?? 0),
+                0
+              ),
+              sessions: [...sess].sort((a: { start: string }, b: { start: string }) =>
+                a.start < b.start ? -1 : a.start > b.start ? 1 : 0
+              ),
+            }))
+            .sort((a, b) => a.author.localeCompare(b.author));
+          const nothing =
+            dayInspections.length === 0 && dayDues.length === 0 && sessions.length === 0;
+          return (
+            <div class="space-y-4">
+              {nothing ? (
+                <div class="rounded-lg border border-gray-200 bg-white p-8 text-center text-sm text-gray-500 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
+                  Nothing scheduled on {dayLabelText}.
+                </div>
+              ) : null}
+              {dayInspections.length > 0 && (
+                <section class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                  <header class="border-b border-gray-200 bg-gray-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
+                    Recurring Inspections ({dayInspections.length})
+                  </header>
+                  <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+                    {dayInspections.map((ev) => (
+                      <li class="px-4 py-3">
+                        <a
+                          href={`/project/${ev.projectId}`}
+                          data-recurring="true"
+                          data-project-id={ev.projectId}
+                          data-occurrence-iso={ev.date}
+                          data-occurrence-index={ev.occurrenceIndex}
+                          data-anchor-iso={ev.anchorDate ?? undefined}
+                          data-event-title={ev.title}
+                          data-period={ev.inspectionPeriod ?? undefined}
+                          class={`schedule-chip block truncate rounded border px-2 py-1 text-sm font-medium ${chipClasses(ev)}`}
+                          data-tt-title={eventLabel(ev)}
+                          data-tt-subtitle={ev.title}
+                          data-tt-meta={ev.address ?? undefined}
+                          data-tt-notes="Click to reschedule master date"
+                        >
+                          {eventLabel(ev)} — {ev.title}
+                          {ev.address ? (
+                            <span class="ml-1 text-xs opacity-70">({ev.address})</span>
+                          ) : null}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+              {dayDues.length > 0 && (
+                <section class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                  <header class="border-b border-gray-200 bg-gray-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
+                    Project Due ({dayDues.length})
+                  </header>
+                  <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+                    {dayDues.map((ev) => (
+                      <li class="px-4 py-3">
+                        <a
+                          href={`/project/${ev.projectId}`}
+                          class={`block truncate rounded border px-2 py-1 text-sm font-medium hover:underline ${chipClasses(ev)}`}
+                          data-tt-title="Due"
+                          data-tt-subtitle={ev.title}
+                          data-tt-meta={ev.address ?? undefined}
+                          data-tt-notes={ev.statusName ?? undefined}
+                        >
+                          Due — {ev.title}
+                          {ev.address ? (
+                            <span class="ml-1 text-xs opacity-70">({ev.address})</span>
+                          ) : null}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+              {sessions.length > 0 && (
+                <section class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                  <header class="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
+                    <span>
+                      Time Entries · {sessions.length} session
+                      {sessions.length === 1 ? "" : "s"} · {workerRows.length} worker
+                      {workerRows.length === 1 ? "" : "s"}
+                    </span>
+                    <a
+                      href={`/admin/time-entries?from=${dayKey}&to=${dayKey}`}
+                      class="text-[11px] font-medium normal-case text-primary-600 hover:underline dark:text-primary-400"
+                    >
+                      Open in Time Entries →
+                    </a>
+                  </header>
+                  <div id="schedule-day-timeline" class="relative" data-day-key={dayKey}>
+                    {/* Scale row */}
+                    <div
+                      class="grid border-b border-gray-200 dark:border-gray-700"
+                      style="grid-template-columns: 140px 1fr"
+                    >
+                      <div class="border-r border-gray-200 bg-gray-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:border-gray-700 dark:bg-gray-800/50">
+                        Worker
+                      </div>
+                      <div class="relative h-6 px-2 py-1" data-role="scale" />
+                    </div>
+                    {workerRows.map((row) => (
+                      <div class="grid" style="grid-template-columns: 140px 1fr">
+                        <div class="flex flex-col justify-center border-b border-r border-gray-200 bg-gray-50 px-2 py-1 dark:border-gray-700 dark:bg-gray-800/30">
+                          <div class="truncate text-xs font-semibold text-gray-900 dark:text-gray-100">
+                            {row.author}
+                          </div>
+                          <div class="text-[10px] text-gray-500 dark:text-gray-400">
+                            {formatHours(row.totalMinutes)}
+                            {row.sessions.some((s: { end: string | null }) => !s.end) ? (
+                              <span class="ml-1 text-red-600 dark:text-red-400">· live</span>
+                            ) : null}
+                          </div>
+                        </div>
+                        <div
+                          class="relative h-10 border-b border-gray-200 dark:border-gray-700"
+                          data-role="track"
+                        >
+                          {row.sessions.map(
+                            (s: {
+                              start: string;
+                              end: string | null;
+                              billedAt: string | null;
+                              projectId: number | null;
+                              projectTitle: string;
+                              notes: string | null;
+                            }) => {
+                              const isActive = !s.end;
+                              const isBilled = !!s.billedAt;
+                              const colorClass = isActive
+                                ? "bg-red-500 border-red-700 text-white animate-pulse"
+                                : isBilled
+                                  ? "bg-slate-300 border-slate-400 text-slate-800 dark:bg-slate-600 dark:text-slate-100"
+                                  : "bg-emerald-500 border-emerald-700 text-white";
+                              const barClass = `timeline-bar absolute inset-y-1 flex items-center overflow-hidden rounded border px-1.5 text-[10px] font-medium shadow-sm transition-opacity hover:opacity-90 ${colorClass}`;
+                              const ariaLabel = `${row.author} · ${s.projectTitle}${s.notes ? ` — ${s.notes}` : ""}`;
+                              const stateLabel = isActive
+                                ? "Live"
+                                : isBilled
+                                  ? "Billed"
+                                  : "Unbilled";
+                              // data-tt-title + data-tt-meta are refreshed
+                              // client-side in refreshBarTooltipAttrs() so
+                              // live "now" durations stay accurate.
+                              return s.projectId ? (
+                                <a
+                                  href={`/project/${s.projectId}`}
+                                  class={barClass}
+                                  style="left: 0; width: 0"
+                                  data-start={s.start}
+                                  data-end={s.end ?? ""}
+                                  data-project={s.projectTitle}
+                                  data-notes={s.notes ?? ""}
+                                  data-author={row.author}
+                                  data-state-label={stateLabel}
+                                  data-tt-title={`${row.author} — ${s.projectTitle}`}
+                                  data-tt-notes={s.notes ?? undefined}
+                                  data-tt-state={stateLabel}
+                                  aria-label={ariaLabel}
+                                >
+                                  <span class="timeline-bar-text truncate" />
+                                </a>
+                              ) : (
+                                <div
+                                  class={barClass}
+                                  style="left: 0; width: 0"
+                                  data-start={s.start}
+                                  data-end={s.end ?? ""}
+                                  data-project={s.projectTitle}
+                                  data-notes={s.notes ?? ""}
+                                  data-author={row.author}
+                                  data-state-label={stateLabel}
+                                  data-tt-title={`${row.author} — ${s.projectTitle}`}
+                                  data-tt-notes={s.notes ?? undefined}
+                                  data-tt-state={stateLabel}
+                                  aria-label={ariaLabel}
+                                  tabindex="0"
+                                >
+                                  <span class="timeline-bar-text truncate" />
+                                </div>
+                              );
+                            }
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {/* Now line overlay (today only; positioned by script) */}
+                    <div
+                      class="pointer-events-none absolute bottom-0 top-0 hidden"
+                      data-role="now-overlay"
+                      style="left: 140px; right: 0"
+                    >
+                      <div
+                        class="absolute bottom-0 top-0 w-px bg-red-500"
+                        style="left: 0"
+                        data-role="now-line"
+                      >
+                        <div class="absolute -left-1.5 -top-1 h-3 w-3 rounded-full bg-red-500" />
+                        <div class="absolute -left-6 top-3 rounded bg-red-500 px-1 py-0.5 text-[9px] font-semibold text-white">
+                          now
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="border-t border-gray-200 px-4 py-2 text-[10px] text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                    Times shown in your local timezone. Hover a bar for project and notes.
+                  </div>
+                </section>
+              )}
+            </div>
+          );
+        })()
       ) : (
         <div class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
-          {events.length === 0 ? (
-            <div class="p-8 text-center text-sm text-gray-500 dark:text-gray-400">
-              No scheduled events in {monthLabel}.
-            </div>
-          ) : (
-            <ul class="divide-y divide-gray-200 dark:divide-gray-700">
-              {events.map((ev) => (
-                <li class="flex flex-col gap-1 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 md:flex-row md:items-center md:gap-4">
-                  <div class="w-28 shrink-0 text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {shortDate(ev.date)}
-                  </div>
-                  <div class="flex-1">
-                    <a
-                      href={`/project/${ev.projectId}`}
-                      class="text-sm font-semibold text-primary-600 hover:underline dark:text-primary-400"
-                    >
-                      {ev.title}
-                    </a>
-                    {ev.address ? (
-                      <div class="text-xs text-gray-500 dark:text-gray-400">{ev.address}</div>
-                    ) : null}
-                  </div>
-                  <div class="flex items-center gap-2 text-xs">
-                    <span class={`rounded-full border px-2 py-0.5 ${chipClasses(ev)}`}>
-                      {eventLabel(ev)}
-                    </span>
-                    {ev.statusName ? (
-                      <span class="rounded-full border border-gray-300 px-2 py-0.5 text-gray-600 dark:border-gray-600 dark:text-gray-300">
-                        {ev.statusName}
+          {(() => {
+            const showTimeList = showStaff && timeBuckets.length > 0;
+            const sortedBuckets = showTimeList
+              ? [...timeBuckets].sort((a, b) =>
+                  a.dayKey === b.dayKey
+                    ? a.author.localeCompare(b.author)
+                    : a.dayKey.localeCompare(b.dayKey)
+                )
+              : [];
+            if (!showTimeList && filteredEvents.length === 0) {
+              return (
+                <div class="p-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                  {activeLayer === "all"
+                    ? `No scheduled events in ${periodLabel}.`
+                    : `No ${activeLayer} events in ${periodLabel}.`}
+                </div>
+              );
+            }
+            return (
+              <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+                {sortedBuckets.map((b) => (
+                  <li class="flex flex-col gap-1 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 md:flex-row md:items-center md:gap-4">
+                    <div class="w-28 shrink-0 text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {b.dayKey}
+                    </div>
+                    <div class="flex-1">
+                      <a
+                        href={`/admin/time-entries?from=${b.dayKey}&to=${b.dayKey}&userId=${b.userId}`}
+                        class="text-sm font-semibold text-primary-600 hover:underline dark:text-primary-400"
+                      >
+                        {b.author}
+                      </a>
+                      <div class="text-xs text-gray-500 dark:text-gray-400">
+                        {b.entries.length} session{b.entries.length === 1 ? "" : "s"} ·{" "}
+                        {[...new Set(b.entries.map((e) => e.projectTitle))].join(", ")}
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs">
+                      <span class={`rounded-full border px-2 py-0.5 ${timeChipClasses(b)}`}>
+                        {formatHours(b.totalMinutes)}
                       </span>
-                    ) : null}
-                    <span class="hidden text-gray-500 dark:text-gray-400 md:inline">
-                      {fullDate(ev.date)}
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+                      {b.hasActive ? (
+                        <span class="inline-flex items-center gap-1 rounded-full border border-red-300 px-2 py-0.5 text-red-700 dark:border-red-700 dark:text-red-300">
+                          <span class="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" />
+                          live
+                        </span>
+                      ) : null}
+                      {b.allBilled ? (
+                        <span class="rounded-full border border-slate-300 px-2 py-0.5 text-slate-600 dark:border-slate-600 dark:text-slate-300">
+                          billed
+                        </span>
+                      ) : null}
+                    </div>
+                  </li>
+                ))}
+                {filteredEvents.map((ev) => (
+                  <li class="flex flex-col gap-1 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 md:flex-row md:items-center md:gap-4">
+                    <div class="w-28 shrink-0 text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {shortDate(ev.date)}
+                    </div>
+                    <div class="flex-1">
+                      <a
+                        href={`/project/${ev.projectId}`}
+                        class="text-sm font-semibold text-primary-600 hover:underline dark:text-primary-400"
+                      >
+                        {ev.title}
+                      </a>
+                      {ev.address ? (
+                        <div class="text-xs text-gray-500 dark:text-gray-400">{ev.address}</div>
+                      ) : null}
+                    </div>
+                    <div class="flex items-center gap-2 text-xs">
+                      <span class={`rounded-full border px-2 py-0.5 ${chipClasses(ev)}`}>
+                        {eventLabel(ev)}
+                      </span>
+                      {ev.statusName ? (
+                        <span class="rounded-full border border-gray-300 px-2 py-0.5 text-gray-600 dark:border-gray-600 dark:text-gray-300">
+                          {ev.statusName}
+                        </span>
+                      ) : null}
+                      <span class="hidden text-gray-500 dark:text-gray-400 md:inline">
+                        {fullDate(ev.date)}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            );
+          })()}
         </div>
       )
     }
+
+    {
+      /* ===== Shared floating tooltip (used by every chip + timeline bar) =====
+         Visuals mirror ui/Tooltip.astro (Flowbite-styled): dark rounded box,
+         small 45° rotated arrow that points at the trigger. We use unique
+         class names (`schedule-tt-*`) so Flowbite's global `.tooltip-arrow`
+         rules (which set `visibility: hidden` on the element and render a
+         `:before` pseudo) can't override our arrow. The page script reads
+         structured `data-tt-*` attrs from any opted-in element. */
+    }
+    <div
+      id="schedule-floating-tooltip"
+      role="tooltip"
+      data-popper-placement="top"
+      class="schedule-floating-tooltip pointer-events-none fixed left-0 top-0 z-50 inline-block max-w-xs rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white opacity-0 shadow-lg transition-opacity duration-100 dark:bg-gray-100 dark:text-gray-900"
+    >
+      <div data-role="title" class="font-semibold leading-tight"></div>
+      <div data-role="subtitle" class="mt-0.5 hidden text-xs font-normal opacity-90"></div>
+      <div data-role="meta" class="mt-0.5 hidden font-mono text-xs opacity-80"></div>
+      <div data-role="notes" class="mt-1 hidden text-xs italic opacity-70"></div>
+      <div
+        data-role="state"
+        class="mt-1 hidden text-[10px] font-bold uppercase tracking-wider opacity-70"
+      >
+      </div>
+      <span class="schedule-tt-arrow" aria-hidden="true"></span>
+    </div>
+
+    {/* ===== Floating chip editor (click-to-edit master date) ===== */}
+    <div
+      id="schedule-chip-editor"
+      role="dialog"
+      aria-label="Edit master inspection date"
+      class="fixed z-50 hidden w-72 rounded-lg border border-gray-200 bg-white p-3 shadow-xl dark:border-gray-700 dark:bg-gray-900"
+    >
+      <div class="mb-2 flex items-start justify-between gap-2">
+        <div class="min-w-0 flex-1">
+          <div data-role="title" class={`truncate text-sm font-semibold ${primaryTextClasses}`}>
+          </div>
+          <div data-role="subtitle" class="truncate text-xs text-gray-500 dark:text-gray-400"></div>
+        </div>
+        <button
+          type="button"
+          data-action="cancel"
+          aria-label="Close"
+          class="rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+        >
+          <SimpleIcon name="x" size="sm" />
+        </button>
+      </div>
+      <label
+        for="schedule-chip-editor-date"
+        class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300"
+      >
+        New master date
+      </label>
+      <input
+        id="schedule-chip-editor-date"
+        type="date"
+        class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-1.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-primary-500 dark:focus:ring-primary-500"
+      />
+      <p data-role="note" class="mt-1 text-[11px] leading-snug text-gray-500 dark:text-gray-400">
+      </p>
+      <div data-role="error" class="mt-2 hidden text-xs text-red-600 dark:text-red-400"></div>
+      <div class="mt-3 flex items-center gap-2">
+        <button
+          type="button"
+          data-action="save"
+          class="inline-flex items-center rounded-lg bg-primary-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          Save
+        </button>
+        <button
+          type="button"
+          data-action="cancel"
+          class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+        >
+          Cancel
+        </button>
+        <a
+          data-role="open-project"
+          href="#"
+          class="ml-auto text-xs font-medium text-primary-600 hover:underline dark:text-primary-400"
+        >
+          Open →
+        </a>
+      </div>
+    </div>
+
+    {/* ===== Floating time-bucket popover (click a time chip to see breakdown) ===== */}
+    <div
+      id="schedule-time-popover"
+      role="dialog"
+      aria-label="Time entries for this day"
+      class="fixed z-50 hidden w-80 max-w-[calc(100vw-1rem)] rounded-lg border border-gray-200 bg-white p-3 shadow-xl dark:border-gray-700 dark:bg-gray-900"
+    >
+      <div class="mb-2 flex items-start justify-between gap-2">
+        <div class="min-w-0 flex-1">
+          <div data-role="title" class={`truncate text-sm font-semibold ${primaryTextClasses}`}>
+          </div>
+          <div data-role="subtitle" class="truncate text-xs text-gray-500 dark:text-gray-400"></div>
+        </div>
+        <button
+          type="button"
+          data-action="close"
+          aria-label="Close"
+          class="rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+        >
+          <SimpleIcon name="x" size="sm" />
+        </button>
+      </div>
+      <div data-role="entries" class="flex max-h-72 flex-col gap-1.5 overflow-y-auto pr-1"></div>
+      <div
+        class="mt-3 flex items-center justify-between border-t border-gray-200 pt-2 text-xs dark:border-gray-700"
+      >
+        <span data-role="footer-total" class="text-gray-500 dark:text-gray-400"></span>
+        <a
+          data-role="view-all"
+          href="/admin/time-entries"
+          class="font-medium text-primary-600 hover:underline dark:text-primary-400"
+        >
+          Open in Time Entries →
+        </a>
+      </div>
+    </div>
   </div>
 </LayoutFullWidth>
+
+<script is:inline>
+  /**
+   * Calendar chip interactions on /admin/schedule:
+   *   - Click a recurring chip   -> open floating editor, change master date
+   *   - Drag a recurring chip    -> drop on another day to shift the series
+   *
+   * Both flows compute "newAnchor = oldAnchor + (newDate - oldOccurrence)" so
+   * dragging a future occurrence shifts the whole series by the same delta
+   * (iCal-style). The trigger sync_next_inspection_on_anchor_change_trg keeps
+   * nextInspectionAt mirrored to the anchor on update.
+   */
+  (() => {
+    const editor = document.getElementById("schedule-chip-editor");
+    if (!editor) return;
+    const titleEl = editor.querySelector('[data-role="title"]');
+    const subtitleEl = editor.querySelector('[data-role="subtitle"]');
+    const noteEl = editor.querySelector('[data-role="note"]');
+    const errorEl = editor.querySelector('[data-role="error"]');
+    const dateInput = editor.querySelector("#schedule-chip-editor-date");
+    const saveBtn = editor.querySelector('[data-action="save"]');
+    const openLink = editor.querySelector('[data-role="open-project"]');
+
+    /** @type {HTMLElement | null} */
+    let activeChip = null;
+
+    function ymdUtc(iso) {
+      if (!iso) return "";
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return "";
+      return d.toISOString().slice(0, 10);
+    }
+
+    function hideEditor() {
+      editor.classList.add("hidden");
+      errorEl.classList.add("hidden");
+      errorEl.textContent = "";
+      activeChip = null;
+    }
+
+    function positionEditor(chip) {
+      // Editor is position: fixed (viewport-relative). LayoutFullWidth uses an
+      // internal scroll container (#reveal-scroll), so document.scrollY isn't
+      // meaningful — viewport coords from getBoundingClientRect are correct
+      // as-is.
+      const rect = chip.getBoundingClientRect();
+      const editorRect = editor.getBoundingClientRect();
+      const margin = 8;
+      let top = rect.bottom + margin;
+      let left = rect.left;
+      if (top + editorRect.height > window.innerHeight) {
+        top = Math.max(margin, rect.top - editorRect.height - margin);
+      }
+      if (left + editorRect.width > window.innerWidth) {
+        left = Math.max(margin, window.innerWidth - editorRect.width - margin);
+      }
+      editor.style.top = `${top}px`;
+      editor.style.left = `${left}px`;
+    }
+
+    function openEditor(chip) {
+      activeChip = chip;
+      const title = chip.getAttribute("data-event-title") || "Inspection";
+      const period = chip.getAttribute("data-period") || "";
+      const occIso = chip.getAttribute("data-occurrence-iso") || "";
+      const projectId = chip.getAttribute("data-project-id") || "";
+      titleEl.textContent = title;
+      subtitleEl.textContent = period
+        ? `${period.replace(/_/g, "-")} · current: ${ymdUtc(occIso)}`
+        : `Current: ${ymdUtc(occIso)}`;
+      noteEl.textContent = period
+        ? "Changing this date shifts every future occurrence by the same delta."
+        : "";
+      dateInput.value = ymdUtc(occIso);
+      openLink.href = `/project/${projectId}`;
+      editor.classList.remove("hidden");
+      requestAnimationFrame(() => positionEditor(chip));
+      setTimeout(() => dateInput.focus(), 0);
+    }
+
+    function computeNewAnchorIso(chip, newYmd) {
+      const occIso = chip.getAttribute("data-occurrence-iso") || "";
+      const anchorIso = chip.getAttribute("data-anchor-iso") || occIso;
+      const occDate = new Date(occIso);
+      const anchorDate = new Date(anchorIso);
+      if (Number.isNaN(occDate.getTime()) || Number.isNaN(anchorDate.getTime())) return null;
+      const occUtc = Date.UTC(
+        occDate.getUTCFullYear(),
+        occDate.getUTCMonth(),
+        occDate.getUTCDate()
+      );
+      const [y, m, d] = newYmd.split("-").map((v) => parseInt(v, 10));
+      if (!y || !m || !d) return null;
+      const newUtc = Date.UTC(y, m - 1, d);
+      const deltaMs = newUtc - occUtc;
+      if (deltaMs === 0) return null; // no-op
+      const newAnchorMs = anchorDate.getTime() + deltaMs;
+      return new Date(newAnchorMs).toISOString();
+    }
+
+    async function persistAnchor(projectId, anchorIso) {
+      const res = await fetch("/api/projects/upsert", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ id: Number(projectId), inspectionStartDate: anchorIso }),
+      });
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(text || `Request failed (${res.status})`);
+      }
+      const payload = await res.json().catch(() => ({}));
+      if (payload && payload.success === false) {
+        throw new Error(payload.error || "Update failed");
+      }
+    }
+
+    // ----- Click chip → open editor (suppress default link navigation) -----
+    document.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+
+      // Inside-editor clicks handled below; outside-editor clicks dismiss
+      if (editor.contains(target)) {
+        const action = target.closest("[data-action]");
+        if (action) {
+          const kind = action.getAttribute("data-action");
+          if (kind === "cancel") {
+            hideEditor();
+            return;
+          }
+          if (kind === "save" && activeChip) {
+            const newYmd = dateInput.value;
+            if (!newYmd) {
+              errorEl.textContent = "Pick a date.";
+              errorEl.classList.remove("hidden");
+              return;
+            }
+            const projectId = activeChip.getAttribute("data-project-id");
+            const newAnchorIso = computeNewAnchorIso(activeChip, newYmd);
+            if (!newAnchorIso) {
+              errorEl.textContent = "Date is unchanged.";
+              errorEl.classList.remove("hidden");
+              return;
+            }
+            saveBtn.setAttribute("disabled", "true");
+            errorEl.classList.add("hidden");
+            persistAnchor(projectId, newAnchorIso)
+              .then(() => window.location.reload())
+              .catch((err) => {
+                errorEl.textContent = err.message || "Could not update";
+                errorEl.classList.remove("hidden");
+                saveBtn.removeAttribute("disabled");
+              });
+          }
+        }
+        return;
+      }
+
+      const chip = target.closest('[data-recurring="true"]');
+      if (chip) {
+        event.preventDefault();
+        openEditor(chip);
+        return;
+      }
+
+      // Click outside any chip or editor → close
+      if (!editor.classList.contains("hidden")) hideEditor();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !editor.classList.contains("hidden")) {
+        hideEditor();
+      }
+    });
+
+    // ----- Drag chip → drop on cell -----
+    document.addEventListener("dragstart", (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const chip = target.closest('[data-recurring="true"]');
+      if (!chip || !event.dataTransfer) return;
+      hideEditor();
+      const payload = {
+        projectId: chip.getAttribute("data-project-id"),
+        occurrenceIso: chip.getAttribute("data-occurrence-iso"),
+        anchorIso: chip.getAttribute("data-anchor-iso"),
+      };
+      event.dataTransfer.setData("application/x-schedule-chip", JSON.stringify(payload));
+      event.dataTransfer.effectAllowed = "move";
+      chip.classList.add("opacity-50");
+    });
+
+    document.addEventListener("dragend", (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const chip = target.closest('[data-recurring="true"]');
+      if (chip) chip.classList.remove("opacity-50");
+      document
+        .querySelectorAll(".schedule-cell.bg-primary-50, .schedule-cell.dark\\:bg-primary-900\\/30")
+        .forEach((el) => {
+          el.classList.remove("bg-primary-50", "dark:bg-primary-900/30");
+        });
+    });
+
+    document.addEventListener("dragover", (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const cell = target.closest(".schedule-cell[data-drop-day]");
+      if (!cell) return;
+      event.preventDefault();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+      cell.classList.add("bg-primary-50", "dark:bg-primary-900/30");
+    });
+
+    document.addEventListener("dragleave", (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const cell = target.closest(".schedule-cell[data-drop-day]");
+      if (!cell) return;
+      cell.classList.remove("bg-primary-50", "dark:bg-primary-900/30");
+    });
+
+    document.addEventListener("drop", (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const cell = target.closest(".schedule-cell[data-drop-day]");
+      if (!cell || !event.dataTransfer) return;
+      const raw = event.dataTransfer.getData("application/x-schedule-chip");
+      if (!raw) return;
+      event.preventDefault();
+      cell.classList.remove("bg-primary-50", "dark:bg-primary-900/30");
+      let payload;
+      try {
+        payload = JSON.parse(raw);
+      } catch {
+        return;
+      }
+      const newYmd = cell.getAttribute("data-drop-day");
+      if (!newYmd || !payload || !payload.projectId) return;
+      // Build a fake "chip-like" object so computeNewAnchorIso can reuse logic
+      const stub = {
+        getAttribute(name) {
+          if (name === "data-occurrence-iso") return payload.occurrenceIso;
+          if (name === "data-anchor-iso") return payload.anchorIso || payload.occurrenceIso;
+          if (name === "data-project-id") return payload.projectId;
+          return null;
+        },
+      };
+      const newAnchorIso = computeNewAnchorIso(stub, newYmd);
+      if (!newAnchorIso) return; // dropped on same day
+      cell.classList.add("ring-2", "ring-primary-400");
+      persistAnchor(payload.projectId, newAnchorIso)
+        .then(() => window.location.reload())
+        .catch((err) => {
+          cell.classList.remove("ring-2", "ring-primary-400");
+          // Surface error inline by reopening the editor with the message
+          alert(err.message || "Could not move event");
+        });
+    });
+  })();
+
+  /**
+   * Time-bucket popover: click a per-person time chip on /admin/schedule and
+   * see the day's entries grouped by project (read-only). Deep-link to
+   * /admin/time-entries pre-filtered for full edit affordances.
+   */
+  (() => {
+    const popover = document.getElementById("schedule-time-popover");
+    if (!popover) return;
+    const editor = document.getElementById("schedule-chip-editor");
+    const titleEl = popover.querySelector('[data-role="title"]');
+    const subtitleEl = popover.querySelector('[data-role="subtitle"]');
+    const entriesEl = popover.querySelector('[data-role="entries"]');
+    const footerTotalEl = popover.querySelector('[data-role="footer-total"]');
+    const viewAllLink = popover.querySelector('[data-role="view-all"]');
+
+    function escapeHtml(s) {
+      return String(s ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function formatHours(min) {
+      const m = Math.max(0, Math.round(min));
+      if (m < 1) return "<1m";
+      const h = Math.floor(m / 60);
+      const mm = m % 60;
+      if (h === 0) return `${mm}m`;
+      if (mm === 0) return `${h}h`;
+      return `${h}h${mm}m`;
+    }
+
+    function formatTime(iso) {
+      if (!iso) return "—";
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return "—";
+      return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+    }
+
+    function formatLongDate(ymd) {
+      if (!ymd) return "";
+      const [y, m, d] = ymd.split("-").map((n) => parseInt(n, 10));
+      if (!y || !m || !d) return ymd;
+      const dt = new Date(Date.UTC(y, m - 1, d));
+      return dt.toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+        timeZone: "UTC",
+      });
+    }
+
+    function hidePopover() {
+      popover.classList.add("hidden");
+    }
+
+    function hideEditor() {
+      if (editor) editor.classList.add("hidden");
+    }
+
+    function positionPopover(chip) {
+      const rect = chip.getBoundingClientRect();
+      const popRect = popover.getBoundingClientRect();
+      const margin = 8;
+      let top = rect.bottom + margin;
+      let left = rect.left;
+      if (top + popRect.height > window.innerHeight) {
+        top = Math.max(margin, rect.top - popRect.height - margin);
+      }
+      if (left + popRect.width > window.innerWidth) {
+        left = Math.max(margin, window.innerWidth - popRect.width - margin);
+      }
+      popover.style.top = `${top}px`;
+      popover.style.left = `${left}px`;
+    }
+
+    function renderEntries(entries) {
+      if (!Array.isArray(entries) || entries.length === 0) {
+        entriesEl.innerHTML =
+          '<div class="text-xs text-gray-500 dark:text-gray-400">No entries.</div>';
+        return;
+      }
+      const html = entries
+        .map((e) => {
+          const project = escapeHtml(e.projectTitle || "(General)");
+          const start = formatTime(e.start);
+          const end = e.end ? formatTime(e.end) : '<span class="font-semibold">live</span>';
+          const dur = e.minutes != null ? formatHours(e.minutes) : "running";
+          const billedPill = e.billedAt
+            ? '<span class="ml-1 inline-block rounded bg-slate-200 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-slate-700 dark:bg-slate-700 dark:text-slate-200">billed</span>'
+            : "";
+          const activeDot = !e.end
+            ? '<span class="ml-1 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" aria-hidden="true"></span>'
+            : "";
+          const notes = e.notes
+            ? `<div class="mt-0.5 text-[11px] italic text-gray-500 dark:text-gray-400">${escapeHtml(e.notes)}</div>`
+            : "";
+          const projectHref = e.projectId ? `/project/${e.projectId}` : "/admin/time-entries";
+          return `
+            <div class="rounded border border-gray-200 px-2 py-1.5 dark:border-gray-700">
+              <div class="flex items-center justify-between gap-2 text-xs">
+                <a href="${projectHref}" class="truncate font-medium text-primary-600 hover:underline dark:text-primary-400">${project}</a>
+                <span class="shrink-0 text-gray-500 dark:text-gray-400">${dur}${billedPill}${activeDot}</span>
+              </div>
+              <div class="text-[11px] text-gray-500 dark:text-gray-400">${start} – ${end}</div>
+              ${notes}
+            </div>
+          `;
+        })
+        .join("");
+      entriesEl.innerHTML = html;
+    }
+
+    function openPopover(chip) {
+      hideEditor();
+      const name = chip.getAttribute("data-user-name") || "Time";
+      const userId = chip.getAttribute("data-user-id") || "";
+      const dayKey = chip.getAttribute("data-day-key") || "";
+      const totalMin = Number(chip.getAttribute("data-total-minutes") || "0");
+      const allBilled = chip.getAttribute("data-all-billed") === "true";
+      const hasActive = chip.getAttribute("data-has-active") === "true";
+      const raw = chip.getAttribute("data-entries") || "[]";
+      let entries = [];
+      try {
+        entries = JSON.parse(raw);
+      } catch {
+        entries = [];
+      }
+      titleEl.textContent = `${name} · ${formatHours(totalMin)}`;
+      subtitleEl.textContent = `${formatLongDate(dayKey)}${hasActive ? " · live session" : allBilled ? " · all billed" : ""}`;
+      renderEntries(entries);
+      if (footerTotalEl) {
+        footerTotalEl.textContent = `${entries.length} entr${entries.length === 1 ? "y" : "ies"}`;
+      }
+      if (viewAllLink && dayKey) {
+        const params = new URLSearchParams({
+          from: dayKey,
+          to: dayKey,
+        });
+        if (userId) params.set("userId", userId);
+        viewAllLink.setAttribute("href", `/admin/time-entries?${params.toString()}`);
+      }
+      popover.classList.remove("hidden");
+      requestAnimationFrame(() => positionPopover(chip));
+    }
+
+    document.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+
+      if (popover.contains(target)) {
+        const action = target.closest("[data-action]");
+        if (action && action.getAttribute("data-action") === "close") {
+          hidePopover();
+        }
+        return;
+      }
+
+      const chip = target.closest('[data-time-bucket="true"]');
+      if (chip) {
+        event.preventDefault();
+        openPopover(chip);
+        return;
+      }
+
+      if (!popover.classList.contains("hidden")) hidePopover();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !popover.classList.contains("hidden")) {
+        hidePopover();
+      }
+    });
+  })();
+
+  /**
+   * Day-view swimlane timeline. Positions session bars by viewer-local time so
+   * "7:30 AM" reads as 7:30 AM regardless of the server's TZ. The day's
+   * boundaries are LOCAL midnight to LOCAL midnight, derived from the
+   * data-day-key (a UTC ISO date). For a server in EDT viewing a UTC day,
+   * a session that started 6pm local on the prior day would still appear here
+   * because its UTC startedAt falls in the queried UTC range; we clamp such
+   * cases to today's 0–24h window so the bar doesn't smear off-screen.
+   */
+  (() => {
+    const tl = document.getElementById("schedule-day-timeline");
+    if (!tl) return;
+    const scale = tl.querySelector('[data-role="scale"]');
+    const tracks = Array.from(tl.querySelectorAll('[data-role="track"]'));
+    const bars = Array.from(tl.querySelectorAll(".timeline-bar"));
+    const nowOverlay = tl.querySelector('[data-role="now-overlay"]');
+    const nowLine = tl.querySelector('[data-role="now-line"]');
+    const dayKey = tl.getAttribute("data-day-key") || "";
+    if (!scale) return;
+
+    // ---------- Per-bar data-tt-* refresh ----------
+    // The shared #schedule-floating-tooltip handler (see end of this file)
+    // reads data-tt-* attrs to render the popup. For timeline bars we have
+    // to recompute the time line on the fly (live bars + the user's local
+    // timezone), so we refresh the attrs whenever the bar is about to show.
+    function refreshBarTooltipAttrs(bar) {
+      const project = bar.getAttribute("data-project") || "(General)";
+      const author = bar.getAttribute("data-author") || "";
+      const startIso = bar.getAttribute("data-start") || "";
+      const endIso = bar.getAttribute("data-end") || "";
+      const start = startIso ? new Date(startIso) : null;
+      const end = endIso ? new Date(endIso) : new Date();
+      const startTxt = start && !Number.isNaN(start.getTime()) ? fmtTime(start) : "—";
+      const endTxt = endIso ? fmtTime(end) : "now";
+      let duration = "";
+      if (start && !Number.isNaN(start.getTime())) {
+        const mins = Math.round((end.getTime() - start.getTime()) / 60000);
+        if (mins > 0) {
+          const h = Math.floor(mins / 60);
+          const m = mins % 60;
+          duration = ` · ${h === 0 ? `${m}m` : m === 0 ? `${h}h` : `${h}h${m}m`}`;
+        }
+      }
+      bar.setAttribute("data-tt-title", author ? `${author} — ${project}` : project);
+      bar.setAttribute("data-tt-meta", `${startTxt} – ${endTxt}${duration}`);
+    }
+    bars.forEach((bar) => {
+      refreshBarTooltipAttrs(bar);
+      // Keep meta fresh on mouseenter too (covers active bars whose end is "now").
+      bar.addEventListener("mouseenter", () => refreshBarTooltipAttrs(bar));
+      bar.addEventListener("focus", () => refreshBarTooltipAttrs(bar));
+    });
+
+    function localMidnightFromYmd(ymd) {
+      const parts = ymd.split("-").map((n) => parseInt(n, 10));
+      if (parts.length !== 3 || parts.some(Number.isNaN)) return new Date();
+      return new Date(parts[0], parts[1] - 1, parts[2], 0, 0, 0);
+    }
+    const dayStart = localMidnightFromYmd(dayKey);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayStart.getDate() + 1);
+
+    function fmtTime(d) {
+      return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+    }
+
+    function hourLabel(h) {
+      const hh = ((h % 24) + 24) % 24;
+      if (hh === 0) return "12a";
+      if (hh < 12) return `${hh}a`;
+      if (hh === 12) return "12p";
+      return `${hh - 12}p`;
+    }
+
+    function hoursOf(d) {
+      return d.getHours() + d.getMinutes() / 60 + d.getSeconds() / 3600;
+    }
+
+    function compute() {
+      const now = new Date();
+      // Default workday window: 7am – 7pm; widen to fit any session beyond.
+      let minHour = 7;
+      let maxHour = 19;
+
+      const ranges = [];
+      bars.forEach((bar) => {
+        const startIso = bar.getAttribute("data-start") || "";
+        const endIso = bar.getAttribute("data-end") || "";
+        const start = startIso ? new Date(startIso) : null;
+        if (!start || Number.isNaN(start.getTime())) {
+          ranges.push(null);
+          return;
+        }
+        const end = endIso ? new Date(endIso) : now;
+        // Clamp to this local day's window so off-day spillover doesn't break
+        // the timeline.
+        const cs = start < dayStart ? dayStart : start;
+        const ce = end > dayEnd ? dayEnd : end;
+        const sH = hoursOf(cs);
+        // If end clamped to dayEnd, treat as 24 (otherwise getHours()=0).
+        const eH = ce.getTime() >= dayEnd.getTime() ? 24 : hoursOf(ce);
+        if (sH < minHour) minHour = Math.floor(sH);
+        if (eH > maxHour) maxHour = Math.ceil(eH);
+        ranges.push({ sH, eH, start, end, hasEnd: Boolean(endIso) });
+      });
+
+      if (minHour < 0) minHour = 0;
+      if (maxHour > 24) maxHour = 24;
+      if (maxHour - minHour < 6) maxHour = Math.min(24, minHour + 6);
+      const span = Math.max(1, maxHour - minHour);
+
+      // Scale ticks — render every Nth hour so labels never overlap on
+      // narrow viewports. Step is derived from the scale row's actual width
+      // vs. an approximate label width (≈26px for "12a"/"12p" at text-[10px]).
+      // Step is always 1, 2, 3, 4, 6, or 12 so the labels stay anchored to
+      // human-friendly hour marks (e.g. step=3 → 12a, 3a, 6a, 9a, 12p, …).
+      scale.innerHTML = "";
+      const scaleWidth = scale.clientWidth || 600;
+      const approxLabelPx = 30;
+      const capacity = Math.max(1, Math.floor(scaleWidth / approxLabelPx));
+      const rawStep = Math.max(1, Math.ceil(span / capacity));
+      const niceSteps = [1, 2, 3, 4, 6, 12];
+      const step = niceSteps.find((s) => s >= rawStep) ?? 12;
+      // Align the first labeled hour to a multiple of step (so step=3 starts
+      // at the nearest 0/3/6/9/12/15/18/21 boundary, not at an odd minHour).
+      const firstLabeled = Math.ceil(minHour / step) * step;
+      for (let h = firstLabeled; h <= maxHour; h += step) {
+        const left = ((h - minHour) / span) * 100;
+        const tick = document.createElement("div");
+        tick.style.position = "absolute";
+        tick.style.left = `${left}%`;
+        tick.style.top = "2px";
+        tick.style.transform = "translateX(-50%)";
+        tick.className = "text-[10px] text-gray-500 dark:text-gray-400 select-none";
+        tick.textContent = hourLabel(h);
+        scale.appendChild(tick);
+      }
+
+      // Per-track hour gridlines
+      tracks.forEach((track) => {
+        track.querySelectorAll(".tl-gridline").forEach((el) => el.remove());
+        for (let h = minHour; h <= maxHour; h++) {
+          const left = ((h - minHour) / span) * 100;
+          const line = document.createElement("div");
+          line.className =
+            "tl-gridline pointer-events-none absolute inset-y-0 w-px bg-gray-100 dark:bg-gray-800";
+          line.style.left = `${left}%`;
+          track.insertBefore(line, track.firstChild);
+        }
+      });
+
+      // Position each bar + write its label. Minimum 26px so tiny entries
+      // (e.g. a 5-min check-in on a 12-hour scale) stay easy to hover.
+      bars.forEach((bar, i) => {
+        const r = ranges[i];
+        if (!r) return;
+        const leftPct = ((r.sH - minHour) / span) * 100;
+        const widthPct = Math.max(0.5, ((r.eH - r.sH) / span) * 100);
+        bar.style.left = `${leftPct}%`;
+        bar.style.width = `${widthPct}%`;
+        bar.style.minWidth = "26px";
+        const labelEl = bar.querySelector(".timeline-bar-text");
+        const startTxt = fmtTime(r.start);
+        const endTxt = r.hasEnd ? fmtTime(r.end) : "now";
+        if (labelEl) labelEl.textContent = `${startTxt}–${endTxt}`;
+      });
+
+      // "Now" line — only render if dayStart is today's local date
+      const isToday =
+        now.getFullYear() === dayStart.getFullYear() &&
+        now.getMonth() === dayStart.getMonth() &&
+        now.getDate() === dayStart.getDate();
+      if (isToday && nowOverlay && nowLine) {
+        const nowH = hoursOf(now);
+        if (nowH >= minHour && nowH <= maxHour) {
+          nowOverlay.classList.remove("hidden");
+          nowLine.style.left = `${((nowH - minHour) / span) * 100}%`;
+        } else {
+          nowOverlay.classList.add("hidden");
+        }
+      } else if (nowOverlay) {
+        nowOverlay.classList.add("hidden");
+      }
+    }
+
+    compute();
+    // Live bars + "now" line drift; cheap to re-tick once a minute.
+    setInterval(compute, 60_000);
+    // Recompute label density when the scale row's width changes (viewport
+    // resize, sidebar toggle, font load reflow). ResizeObserver fires more
+    // reliably than window.resize across embedded webviews. Debounced so it
+    // doesn't thrash on continuous drag-resize.
+    let resizeTimer = 0;
+    const ro = new ResizeObserver(() => {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(compute, 120);
+    });
+    ro.observe(scale);
+  })();
+
+  // ===========================================================================
+  // Shared floating tooltip — single instance for ALL hoverable chips + bars
+  // on /admin/schedule. Reads structured fields from `data-tt-*` attrs:
+  //   data-tt-title    (required, bold)
+  //   data-tt-subtitle (optional, body weight)
+  //   data-tt-meta     (optional, monospace — for times, addresses, etc.)
+  //   data-tt-notes    (optional, italic hint)
+  //   data-tt-state    (optional, uppercase pill — BILLED / LIVE / etc.)
+  // Markup + arrow visuals match ui/Tooltip.astro so it looks identical to
+  // the rest of the project's tooltips. Floating UI isn't used; positioning
+  // is hand-rolled because (a) we never load it from this page otherwise and
+  // (b) chips can sit inside scrolling cells where Floating UI auto-reflow
+  // is unwanted — we just close the popup on scroll.
+  (() => {
+    const tooltip = document.getElementById("schedule-floating-tooltip");
+    if (!tooltip) return;
+    const ttTitle = tooltip.querySelector('[data-role="title"]');
+    const ttSubtitle = tooltip.querySelector('[data-role="subtitle"]');
+    const ttMeta = tooltip.querySelector('[data-role="meta"]');
+    const ttNotes = tooltip.querySelector('[data-role="notes"]');
+    const ttState = tooltip.querySelector('[data-role="state"]');
+    const ttArrow = tooltip.querySelector(".schedule-tt-arrow");
+    let activeTrigger = null;
+
+    function setRole(el, value) {
+      if (!el) return;
+      if (value) {
+        el.textContent = value;
+        el.classList.remove("hidden");
+      } else {
+        el.textContent = "";
+        el.classList.add("hidden");
+      }
+    }
+
+    function showTooltip(trigger) {
+      const title = trigger.getAttribute("data-tt-title");
+      if (!title) return;
+      activeTrigger = trigger;
+      setRole(ttTitle, title);
+      setRole(ttSubtitle, trigger.getAttribute("data-tt-subtitle"));
+      setRole(ttMeta, trigger.getAttribute("data-tt-meta"));
+      setRole(ttNotes, trigger.getAttribute("data-tt-notes"));
+      setRole(ttState, trigger.getAttribute("data-tt-state"));
+
+      // Reveal so we can measure; reset transform so positioning is consistent.
+      tooltip.classList.add("opacity-100");
+      tooltip.classList.remove("opacity-0");
+      tooltip.style.transform = "";
+      const tRect = trigger.getBoundingClientRect();
+      const tt = tooltip.getBoundingClientRect();
+      const gap = 10; // room for arrow + breathing space
+      let left = tRect.left + tRect.width / 2 - tt.width / 2;
+      let top = tRect.top - tt.height - gap;
+      let placement = "top";
+      if (top < gap) {
+        top = tRect.bottom + gap;
+        placement = "bottom";
+      }
+      // Clamp horizontally to viewport.
+      const minLeft = gap;
+      const maxLeft = window.innerWidth - tt.width - gap;
+      if (left < minLeft) left = minLeft;
+      if (left > maxLeft) left = Math.max(minLeft, maxLeft);
+      tooltip.style.left = `${left}px`;
+      tooltip.style.top = `${top}px`;
+      tooltip.setAttribute("data-popper-placement", placement);
+
+      // Point the arrow at the trigger's horizontal center, clamped so it
+      // never escapes the tooltip's rounded corner (rounded-lg = 8px).
+      if (ttArrow) {
+        const arrowSize = 10;
+        const cornerPad = 12;
+        const triggerCx = tRect.left + tRect.width / 2;
+        let arrowLeft = triggerCx - left - arrowSize / 2;
+        const minArrow = cornerPad;
+        const maxArrow = tt.width - cornerPad - arrowSize;
+        if (arrowLeft < minArrow) arrowLeft = minArrow;
+        if (arrowLeft > maxArrow) arrowLeft = maxArrow;
+        ttArrow.style.left = `${arrowLeft}px`;
+        ttArrow.style.right = "";
+      }
+    }
+
+    function hideTooltip() {
+      activeTrigger = null;
+      tooltip.classList.remove("opacity-100");
+      tooltip.classList.add("opacity-0");
+      // Move off-screen so a stale layout doesn't leak into the next show.
+      tooltip.style.left = "-9999px";
+    }
+
+    function bind(el) {
+      if (el.dataset.ttBound === "1") return;
+      el.dataset.ttBound = "1";
+      el.addEventListener("mouseenter", () => showTooltip(el));
+      el.addEventListener("mouseleave", () => {
+        if (activeTrigger === el) hideTooltip();
+      });
+      el.addEventListener("focusin", () => showTooltip(el));
+      el.addEventListener("focusout", () => {
+        if (activeTrigger === el) hideTooltip();
+      });
+    }
+
+    function bindAll() {
+      document.querySelectorAll("[data-tt-title]").forEach((el) => bind(el));
+    }
+
+    bindAll();
+    // Re-bind after dynamic insertions (e.g. notification badge, modal contents).
+    const observer = new MutationObserver(bindAll);
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    // Anything that changes layout under the trigger invalidates the popup.
+    window.addEventListener("scroll", hideTooltip, { passive: true, capture: true });
+    window.addEventListener("resize", hideTooltip, { passive: true });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") hideTooltip();
+    });
+  })();
+</script>
+
+<style is:global>
+  /* Arrow for the shared schedule tooltip. Marked `is:global` so the rules
+     match the actual rendered DOM (Astro's default scoped styles wouldn't
+     apply because the tooltip's class selectors are unique anyway).
+     Unique class (`schedule-tt-arrow`) avoids collisions with Flowbite's
+     `.tooltip-arrow` (which hides the element + renders visuals via a
+     `:before` pseudo). */
+  .schedule-floating-tooltip > .schedule-tt-arrow {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: #111827; /* gray-900 */
+    transform: rotate(45deg);
+    pointer-events: none;
+  }
+  .dark .schedule-floating-tooltip > .schedule-tt-arrow {
+    background: #f3f4f6; /* gray-100 */
+  }
+  .schedule-floating-tooltip[data-popper-placement^="top"] > .schedule-tt-arrow {
+    bottom: -5px;
+  }
+  .schedule-floating-tooltip[data-popper-placement^="bottom"] > .schedule-tt-arrow {
+    top: -5px;
+  }
+</style>

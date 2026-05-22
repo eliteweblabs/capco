@@ -68,10 +68,7 @@ function getCallbacksSupabaseClient(): SupabaseClient | null {
 
   const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || supabaseUrlFallback || "";
   const supabasePublishableKey =
-    import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE ||
-    supabaseKeyFallback ||
-    import.meta.env.PUBLIC_SUPABASE_ANON_KEY ||
-    "";
+    import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE || supabaseKeyFallback || "";
 
   if (!supabaseUrl || !supabasePublishableKey) {
     console.warn("[AUTH-CALLBACK] Supabase public URL/key missing after bundle");
@@ -108,21 +105,8 @@ const _acd = WD.__AUTH_CALLBACK_DATA;
 const capturedCode = _acd?.capturedCode ?? null;
 const capturedError = _acd?.capturedError ?? null;
 const capturedErrorDescription = _acd?.capturedErrorDescription ?? null;
-const capturedRedirect = _acd?.capturedRedirect ?? "/project/dashboard";
+const capturedRedirect = _acd?.capturedRedirect ?? "/dashboard";
 const slowTimeout = WD.__authCallbackSlowTimeout;
-
-function isJwtSigningKeyErrorMessage(message: string): boolean {
-  const m = message.toLowerCase();
-  return (
-    m.includes("unrecognized jwt kid") ||
-    m.includes("token is unverifiable") ||
-    (m.includes("invalid jwt") && m.includes("signature"))
-  );
-}
-
-function jwtSigningKeyUserHint(original: string): string {
-  return `${original}\n\nIf this started after a deploy or Supabase change: confirm PUBLIC_SUPABASE_URL and your anon/publishable key are from the same Supabase project, run a fresh build so /scripts/auth-callback.js embeds those values, clear site data for this origin, and in Supabase Dashboard check Auth → JWT signing keys (legacy vs asymmetric).`;
-}
 
 function withDeadline<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   let t: ReturnType<typeof setTimeout>;
@@ -163,11 +147,6 @@ export async function runAuthCallbackClient(): Promise<void> {
 
     console.log("[AUTH-CALLBACK] Using pre-initialized Supabase client");
 
-    /** OAuth return always includes ?code= — do not POST a possibly stale stored session first. */
-    const earlySearch = new URLSearchParams(window.location.search);
-    const earlyHash = new URLSearchParams((window.location.hash || "").substring(1));
-    const hasOAuthCode = !!(capturedCode || earlySearch.get("code") || earlyHash.get("code"));
-
     let authStateSubscription: { unsubscribe: () => void } | null = null;
 
     const authStatePromise = new Promise((resolve, reject) => {
@@ -207,54 +186,48 @@ export async function runAuthCallbackClient(): Promise<void> {
 
     await new Promise((resolve) => setTimeout(resolve, 800));
 
-    if (!hasOAuthCode) {
-      console.log("[AUTH-CALLBACK] Manually checking for session...");
-      const { data: initialSession } = await withDeadline(
-        supabase.auth.getSession(),
-        15000,
-        "getSession()"
-      );
-      if (initialSession?.session) {
-        console.log("[AUTH-CALLBACK] ✅ Session already exists from automatic detection!");
-        const ac = new AbortController();
-        const postTimer = setTimeout(() => ac.abort(), 45000);
-        let response: Response;
-        try {
-          response = await fetch("/api/auth/callback", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            signal: ac.signal,
-            body: JSON.stringify({
-              access_token: initialSession.session.access_token,
-              refresh_token: initialSession.session.refresh_token,
-              expires_in: initialSession.session.expires_in,
-              token_type: initialSession.session.token_type || "bearer",
-            }),
-          });
-        } finally {
-          clearTimeout(postTimer);
-        }
-
-        if (response.ok) {
-          clearTimeout(slowTimeout);
-          console.log("[AUTH-CALLBACK] Authentication successful, redirecting...");
-          await new Promise((resolve) => setTimeout(resolve, 300));
-          const redirectUrl = capturedRedirect || "/project/dashboard";
-          try {
-            localStorage.removeItem("post-auth-redirect");
-          } catch {
-            /* ignore */
-          }
-          console.log("[AUTH-CALLBACK] Redirecting to:", redirectUrl);
-          window.location.replace(redirectUrl);
-          return;
-        }
+    console.log("[AUTH-CALLBACK] Manually checking for session...");
+    const { data: initialSession } = await withDeadline(
+      supabase.auth.getSession(),
+      15000,
+      "getSession()"
+    );
+    if (initialSession?.session) {
+      console.log("[AUTH-CALLBACK] ✅ Session already exists from automatic detection!");
+      const ac = new AbortController();
+      const postTimer = setTimeout(() => ac.abort(), 45000);
+      let response: Response;
+      try {
+        response = await fetch("/api/auth/callback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          signal: ac.signal,
+          body: JSON.stringify({
+            access_token: initialSession.session.access_token,
+            refresh_token: initialSession.session.refresh_token,
+            expires_in: initialSession.session.expires_in,
+            token_type: initialSession.session.token_type || "bearer",
+          }),
+        });
+      } finally {
+        clearTimeout(postTimer);
       }
-    } else {
-      console.log(
-        "[AUTH-CALLBACK] OAuth code present — skipping stored-session shortcut; using PKCE exchange"
-      );
+
+      if (response.ok) {
+        clearTimeout(slowTimeout);
+        console.log("[AUTH-CALLBACK] Authentication successful, redirecting...");
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        const redirectUrl = capturedRedirect || "/dashboard";
+        try {
+          localStorage.removeItem("post-auth-redirect");
+        } catch {
+          /* ignore */
+        }
+        console.log("[AUTH-CALLBACK] Redirecting to:", redirectUrl);
+        window.location.replace(redirectUrl);
+        return;
+      }
     }
 
     try {
@@ -345,7 +318,7 @@ export async function runAuthCallbackClient(): Promise<void> {
             new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 8000)),
           ]).catch(() => null);
           if (autoSession) {
-            data = { session: autoSession };
+            data = { session: autoSession as import("@supabase/supabase-js").Session };
             exchangeError = null;
             console.log("[AUTH-CALLBACK] ✅ Session from auth state change");
           }
@@ -383,9 +356,7 @@ export async function runAuthCallbackClient(): Promise<void> {
       }
 
       if (!data?.session && !exchangeError) {
-        console.log(
-          "[AUTH-CALLBACK] Checking getSession() and code verifier for manual exchange..."
-        );
+        console.log("[AUTH-CALLBACK] Checking getSession() and code verifier for manual exchange...");
         const { data: sessionData, error: sessionError } = await withDeadline(
           supabase.auth.getSession(),
           15000,
@@ -499,12 +470,7 @@ export async function runAuthCallbackClient(): Promise<void> {
           return;
         }
 
-        const exchangeDetail = `Session exchange failed: ${exchangeError.message}`;
-        showError(
-          isJwtSigningKeyErrorMessage(exchangeError.message)
-            ? jwtSigningKeyUserHint(exchangeDetail)
-            : exchangeDetail
-        );
+        showError(`Session exchange failed: ${exchangeError.message}`);
         setTimeout(() => {
           window.location.href =
             "/auth/login?error=session_exchange_failed&message=" +
@@ -560,9 +526,7 @@ export async function runAuthCallbackClient(): Promise<void> {
         } catch {
           /* ignore */
         }
-        showError(
-          isJwtSigningKeyErrorMessage(serverMsg) ? jwtSigningKeyUserHint(serverMsg) : serverMsg
-        );
+        showError(serverMsg);
         setTimeout(() => {
           window.location.href =
             "/auth/login?error=cookie_set_failed&message=" + encodeURIComponent(serverMsg);
@@ -574,7 +538,7 @@ export async function runAuthCallbackClient(): Promise<void> {
       clearTimeout(slowTimeout);
       await new Promise((resolve) => setTimeout(resolve, 300));
 
-      const redirectUrl = capturedRedirect || "/project/dashboard";
+      const redirectUrl = capturedRedirect || "/dashboard";
       try {
         localStorage.removeItem("post-auth-redirect");
       } catch {
@@ -584,12 +548,7 @@ export async function runAuthCallbackClient(): Promise<void> {
       window.location.replace(redirectUrl);
     } catch (err) {
       console.error("[AUTH-CALLBACK] Unexpected error:", err);
-      const unexpectedBase = `Unexpected error: ${err instanceof Error ? err.message : "Unknown error"}`;
-      showError(
-        isJwtSigningKeyErrorMessage(err instanceof Error ? err.message : "")
-          ? jwtSigningKeyUserHint(unexpectedBase)
-          : unexpectedBase
-      );
+      showError(`Unexpected error: ${err instanceof Error ? err.message : "Unknown error"}`);
       setTimeout(() => {
         window.location.href = "/auth/login?error=unexpected_error";
       }, 3000);
@@ -627,9 +586,6 @@ export async function runAuthCallbackClient(): Promise<void> {
 void runAuthCallbackClient().catch((err) => {
   console.error("[AUTH-CALLBACK] Unhandled error:", err);
   const errorMessage = err instanceof Error ? err.message : "Sign-in failed. Please try again.";
-  const displayMsg = isJwtSigningKeyErrorMessage(errorMessage)
-    ? jwtSigningKeyUserHint(errorMessage)
-    : errorMessage;
   clearTimeout(WD.__authCallbackSlowTimeout);
   if (WD.__AUTH_CALLBACK_STALE_GUARD) {
     clearTimeout(WD.__AUTH_CALLBACK_STALE_GUARD);
@@ -641,7 +597,7 @@ void runAuthCallbackClient().catch((err) => {
   const errorContainer = document.getElementById("error");
   const errorMsgEl = document.getElementById("error-message");
   if (errorContainer && errorMsgEl) {
-    errorMsgEl.textContent = displayMsg;
+    errorMsgEl.textContent = errorMessage;
     errorContainer.classList.remove("hidden");
   }
   setTimeout(() => {

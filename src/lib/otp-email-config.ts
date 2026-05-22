@@ -188,7 +188,7 @@ export const otpApiConfig: OTPApiConfig = {
       type: "email",
     },
   },
-  redirectUrl: "/project/dashboard",
+  redirectUrl: "/dashboard",
 };
 
 export interface OTPNotificationConfig {

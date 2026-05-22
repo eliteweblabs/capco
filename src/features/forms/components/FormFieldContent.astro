@@ -275,29 +275,39 @@ const isMultistep = context === "multistep";
         data-scrap={field.dataScrap ? "true" : undefined}
       >{typeof value === "string" ? value : ""}</textarea>
     </>
-  ) : field.type === "date" ? (
-    <>
-      {showLabel && field.label && (
-        <label for={id} class={labelClass}>
-          {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
-        </label>
-      )}
-      <input
-        type="date"
-        id={id}
-        name={field.name}
-        required={field.required}
-        value={
-          typeof field.value === "string" ? field.value : typeof value === "string" ? value : ""
-        }
-        autofocus={field.autofocus}
-        class={inputClasses}
-        data-error={field.errorMessage}
-        data-validate={field.validate}
-        data-validate-message={field.validateMessage}
-        data-scrap={field.dataScrap ? "true" : undefined}
-      />
-    </>
+  ) : field.type === "date" || field.type === "date-input" ? (
+    (() => {
+      // <input type="date"> requires `YYYY-MM-DD`. DB timestamps arrive as
+      // ISO strings ("2026-09-15T00:00:00+00:00"), which the browser would
+      // silently render as empty. Truncate to the leading 10 chars when the
+      // input already looks like a valid ISO date, otherwise pass through.
+      const rawValue =
+        typeof field.value === "string" ? field.value : typeof value === "string" ? value : "";
+      const dateValue = /^\d{4}-\d{2}-\d{2}/.test(rawValue) ? rawValue.slice(0, 10) : rawValue;
+      return (
+        <>
+          {showLabel && field.label && (
+            <label for={id} class={labelClass}>
+              {field.label} {field.required ? <span class="text-red-500">*</span> : ""}
+            </label>
+          )}
+          <input
+            type="date"
+            id={id}
+            name={field.name}
+            placeholder={field.placeholder}
+            required={field.required}
+            value={dateValue}
+            autofocus={field.autofocus}
+            class={inputClasses}
+            data-error={field.errorMessage}
+            data-validate={field.validate}
+            data-validate-message={field.validateMessage}
+            data-scrap={field.dataScrap ? "true" : undefined}
+          />
+        </>
+      );
+    })()
   ) : field.type === "time" ? (
     <>
       {showLabel && field.label && (

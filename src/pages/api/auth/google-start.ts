@@ -1,7 +1,7 @@
 /**
  * Server-side Google OAuth start. Redirects to Supabase Google OAuth URL.
  * Use when client-side handleGoogleSignup is not available (e.g. module scripts don't load).
- * GET /api/auth/google-start?redirect=/project/dashboard
+ * GET /api/auth/google-start?redirect=/dashboard
  */
 import type { APIRoute } from "astro";
 import { supabase } from "../../../lib/supabase";
@@ -67,7 +67,7 @@ export const GET: APIRoute = async ({ url, redirect, request }) => {
   if (!supabase) {
     return new Response("Supabase not configured", { status: 500 });
   }
-  const redirectTo = url.searchParams.get("redirect") || "/project/dashboard";
+  const redirectTo = url.searchParams.get("redirect") || "/dashboard";
   const origin = getOrigin(request, url);
   const callbackUrl = `${origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`;
 

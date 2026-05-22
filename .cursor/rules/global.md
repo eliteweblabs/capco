@@ -6,7 +6,7 @@ This app is a general purpose website and admin for fire protection, contractors
 
 - **Purpose**: Clients submit files, Admins review/approve for fire protection systems
 - **Users**: Admins (review/manage) & Clients (submit/download)
-- **Auth**: Password protected, redirects to /project/dashboard
+- **Auth**: Password protected, redirects to /dashboard (the primary app dashboard). `/project/dashboard` still exists for the project-specific workspace view.
 
 ## Tech Stack (IMPORTANT)
 

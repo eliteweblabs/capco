@@ -7,9 +7,9 @@ test.describe("Dashboard (authenticated)", () => {
   });
 
   test("dashboard loads after login", async ({ page }) => {
-    await page.goto("/project/dashboard");
+    await page.goto("/dashboard");
     await page.waitForLoadState("networkidle");
-    await expect(page).toHaveURL(/\/project\/dashboard/);
+    await expect(page).toHaveURL(/\/dashboard/);
 
     const body = await page.textContent("body");
     expect(body?.trim().length).toBeGreaterThan(50);
@@ -19,7 +19,7 @@ test.describe("Dashboard (authenticated)", () => {
     const errors: string[] = [];
     page.on("pageerror", (err) => errors.push(err.message));
 
-    await page.goto("/project/dashboard");
+    await page.goto("/dashboard");
     await page.waitForLoadState("networkidle");
 
     expect(errors).toEqual([]);

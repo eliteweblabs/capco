@@ -251,7 +251,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
             //   message: status.modalAdmin,
             //   title: "Project Updated",
             //   redirect: {
-            //     url: status.modalAutoRedirectAdmin,
+            //     url: status.autoRedirectUrlAdmin,
             //     showCountdown: true,
             //   },
             // },
@@ -278,7 +278,7 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
             //   duration: 3000,
             //   title: "ClientProject Updated",
             //   redirect: {
-            //     url: status.modalAutoRedirectClient,
+            //     url: status.autoRedirectUrlClient,
             //     showCountdown: true,
             //   },
             // },
@@ -307,8 +307,8 @@ export const GET: APIRoute = async ({ request, cookies, url }) => {
               title: "Project Updated",
               redirect: {
                 url: isAdminOrStaff
-                  ? status.modalAutoRedirectAdmin
-                  : status.modalAutoRedirectClient,
+                  ? status.autoRedirectUrlAdmin
+                  : status.autoRedirectUrlClient,
                 showCountdown: true, // Show countdown in message
               },
             },
@@ -505,7 +505,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             //   message: status.modalAdmin,
             //   title: "Project Updated",
             //   redirect: {
-            //     url: status.modalAutoRedirectAdmin,
+            //     url: status.autoRedirectUrlAdmin,
             //     showCountdown: true,
             //   },
             //   showCountdown: true,
@@ -534,7 +534,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             //   message: status.modalClient,
             //   title: "ClientProject Updated",
             //   redirect: {
-            //     url: status.modalAutoRedirectClient,
+            //     url: status.autoRedirectUrlClient,
             //     showCountdown: true,
             //   },
             //   showCountdown: true,
@@ -564,8 +564,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
               title: "Project Updated",
               redirect: {
                 url: isAdminOrStaff
-                  ? status.modalAutoRedirectAdmin
-                  : status.modalAutoRedirectClient,
+                  ? status.autoRedirectUrlAdmin
+                  : status.autoRedirectUrlClient,
                 showCountdown: true, // Show countdown in message
               },
               duration: 3000,
