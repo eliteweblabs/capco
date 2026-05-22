@@ -35,11 +35,33 @@ const mapboxToken =
 >
   <div class="mx-auto max-w-6xl px-4 py-8">
     <div class="mb-6">
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Team Locations</h1>
-      <p class="mt-1 text-gray-600 dark:text-gray-400">
-        Team members (Admin/Staff) who have checked in appear on the map and list. Locations update
-        every minute while they are checked in.
-      </p>
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Team Locations</h1>
+          <p class="mt-1 text-gray-600 dark:text-gray-400">
+            Team members (Admin/Staff) who have checked in appear on the map and list. Locations
+            update every minute while they are checked in.
+          </p>
+        </div>
+        <div class="flex flex-col items-end gap-1">
+          <label
+            for="trail-scope"
+            class="text-xs font-medium text-gray-600 dark:text-gray-400"
+          >
+            Trail scope
+          </label>
+          <select
+            id="trail-scope"
+            class="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+            aria-label="Trail scope"
+          >
+            <option value="session" selected>Current session</option>
+            <option value="today">Today</option>
+            <option value="24h">Last 24 hours</option>
+            <option value="7d">Last 7 days</option>
+          </select>
+        </div>
+      </div>
       <p class="mt-2 text-sm text-gray-500 dark:text-gray-500">
         <span id="last-updated" aria-live="polite">Loading…</span>
       </p>
@@ -118,12 +140,32 @@ const mapboxToken =
     projectId: number | null;
     projectTitle: string | null;
     projectAddress: string | null;
+    timeEntryId: number | null;
     lastPingAt: string;
     address: string | null;
     startedAt: string | null;
     durationMinutes: number | null;
     onSite: boolean;
   };
+
+  type TrailPing = {
+    id: number;
+    lat: number;
+    lng: number;
+    accuracy: number | null;
+    projectId: number | null;
+    timeEntryId: number | null;
+    createdAt: string;
+  };
+
+  // Single trail at a time on the shared map.
+  let activeTrailUserId: string | null = null;
+  const userById = new Map<string, UserLocation>();
+
+  const TRAIL_SOURCE_ID = "user-trail-source";
+  const TRAIL_LINE_LAYER_ID = "user-trail-line";
+  const TRAIL_POINTS_LAYER_ID = "user-trail-points";
+  const EMPTY_TRAIL_GEOJSON = { type: "FeatureCollection", features: [] } as const;
 
   function initMap() {
     const mapboxgl = (window as any).mapboxgl;
@@ -142,6 +184,39 @@ const mapboxToken =
       zoom: 3,
     });
     map.addControl(new mapboxgl.NavigationControl(), "top-right");
+    map.on("load", () => {
+      if (!map.getSource(TRAIL_SOURCE_ID)) {
+        map.addSource(TRAIL_SOURCE_ID, {
+          type: "geojson",
+          data: EMPTY_TRAIL_GEOJSON,
+        });
+        map.addLayer({
+          id: TRAIL_LINE_LAYER_ID,
+          type: "line",
+          source: TRAIL_SOURCE_ID,
+          filter: ["==", ["geometry-type"], "LineString"],
+          layout: { "line-cap": "round", "line-join": "round" },
+          paint: {
+            "line-color": ["coalesce", ["get", "color"], "#2563eb"],
+            "line-width": 3,
+            "line-opacity": 0.85,
+          },
+        });
+        map.addLayer({
+          id: TRAIL_POINTS_LAYER_ID,
+          type: "circle",
+          source: TRAIL_SOURCE_ID,
+          filter: ["==", ["geometry-type"], "Point"],
+          paint: {
+            "circle-radius": 3.5,
+            "circle-color": ["coalesce", ["get", "color"], "#2563eb"],
+            "circle-stroke-width": 1.5,
+            "circle-stroke-color": "#ffffff",
+            "circle-opacity": 0.9,
+          },
+        });
+      }
+    });
   }
 
   function formatDuration(mins: number): string {
@@ -159,6 +234,11 @@ const mapboxToken =
 
   function updateMapMarkers(users: UserLocation[]) {
     const mapboxgl = (window as any).mapboxgl;
+    userById.clear();
+    users.forEach((u) => userById.set(u.userId, u));
+    if (activeTrailUserId && !userById.has(activeTrailUserId)) {
+      clearTrail();
+    }
     if (!map || !mapboxgl || !users.length) {
       markers.forEach((m) => m.remove());
       markers = [];
@@ -227,13 +307,14 @@ const mapboxToken =
       const row = document.createElement("div");
       row.setAttribute("data-team-location-row", u.userId);
       row.setAttribute("data-started-at", u.startedAt || "");
-      const mapsUrl = `https://www.google.com/maps?q=${u.lat},${u.lng}`;
       const durationEl = u.startedAt ? getLiveDuration(u.startedAt) : "—";
       const onSiteBadge = u.onSite
         ? '<span class="ml-2 inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400">On site</span>'
         : "";
       row.className =
         "flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 px-4 py-3 last:border-b-0 dark:border-gray-700";
+      const isActive = activeTrailUserId === u.userId;
+      const btnLabel = isActive ? "Hide trail" : "View on map";
       row.innerHTML = `
         <div class="min-w-0 flex-1">
           <p class="font-medium text-gray-900 dark:text-white">${escapeHtml(u.name)}${onSiteBadge}</p>
@@ -244,14 +325,18 @@ const mapboxToken =
           ${u.address ? `<p class="mt-1 text-xs text-gray-600 dark:text-gray-400 truncate max-w-md" title="${escapeHtml(u.address)}">📍 ${escapeHtml(u.address)}</p>` : ""}
           <p class="mt-0.5 text-xs text-gray-400 dark:text-gray-500">Last ping: ${formatTime(u.lastPingAt)}</p>
         </div>
-        <a
-          href="${escapeHtml(mapsUrl)}"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+        <button
+          type="button"
+          data-trail-toggle="${escapeHtml(u.userId)}"
+          aria-pressed="${isActive ? "true" : "false"}"
+          class="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium shadow-sm transition-colors ${
+            isActive
+              ? "border-primary-500 bg-primary-50 text-primary-700 hover:bg-primary-100 dark:border-primary-400 dark:bg-primary-900/30 dark:text-primary-200"
+              : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+          }"
         >
-          View on Map
-        </a>
+          ${btnLabel}
+        </button>
       `;
       listEl.appendChild(row);
     });
@@ -267,6 +352,197 @@ const mapboxToken =
         });
       }, 1000);
     }
+  }
+
+  function getTrailScope(): "session" | "today" | "24h" | "7d" {
+    const sel = document.getElementById("trail-scope") as HTMLSelectElement | null;
+    const value = sel?.value || "session";
+    if (value === "today" || value === "24h" || value === "7d") return value;
+    return "session";
+  }
+
+  // Build the query string for /api/location/trail based on the selected scope.
+  function buildTrailQuery(user: UserLocation, scope: string): string {
+    const params = new URLSearchParams({ userId: user.userId });
+    if (scope === "session") {
+      if (user.timeEntryId != null) {
+        params.set("timeEntryId", String(user.timeEntryId));
+      } else {
+        params.set("hours", "24");
+      }
+    } else if (scope === "today") {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      params.set("from", start.toISOString());
+    } else if (scope === "24h") {
+      params.set("hours", "24");
+    } else if (scope === "7d") {
+      params.set("hours", String(24 * 7));
+    }
+    return params.toString();
+  }
+
+  function setTrailGeoJSON(features: any[]) {
+    if (!map || !map.getSource(TRAIL_SOURCE_ID)) return;
+    (map.getSource(TRAIL_SOURCE_ID) as any).setData({
+      type: "FeatureCollection",
+      features,
+    });
+  }
+
+  function clearTrail() {
+    activeTrailUserId = null;
+    setTrailGeoJSON([]);
+    if (listEl) {
+      listEl.querySelectorAll("[data-trail-toggle]").forEach((btn) => {
+        const b = btn as HTMLButtonElement;
+        b.setAttribute("aria-pressed", "false");
+        b.textContent = "View on map";
+        b.className =
+          "inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium shadow-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700";
+      });
+    }
+  }
+
+  function markButtonActive(userId: string) {
+    if (!listEl) return;
+    listEl.querySelectorAll("[data-trail-toggle]").forEach((btn) => {
+      const b = btn as HTMLButtonElement;
+      const isThis = b.getAttribute("data-trail-toggle") === userId;
+      b.setAttribute("aria-pressed", isThis ? "true" : "false");
+      b.textContent = isThis ? "Hide trail" : "View on map";
+      b.className = isThis
+        ? "inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium shadow-sm transition-colors border-primary-500 bg-primary-50 text-primary-700 hover:bg-primary-100 dark:border-primary-400 dark:bg-primary-900/30 dark:text-primary-200"
+        : "inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium shadow-sm transition-colors border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700";
+    });
+  }
+
+  // Group pings into per-session line segments so a user doesn't appear to
+  // teleport between separate check-ins. Each session becomes one LineString.
+  function buildTrailFeatures(pings: TrailPing[], color: string): any[] {
+    if (!pings.length) return [];
+    const groups = new Map<string, TrailPing[]>();
+    for (const p of pings) {
+      const key = p.timeEntryId != null ? String(p.timeEntryId) : "_none";
+      const arr = groups.get(key) ?? [];
+      arr.push(p);
+      groups.set(key, arr);
+    }
+    const features: any[] = [];
+    groups.forEach((arr, key) => {
+      const sorted = [...arr].sort(
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      );
+      if (sorted.length >= 2) {
+        features.push({
+          type: "Feature",
+          geometry: {
+            type: "LineString",
+            coordinates: sorted.map((p) => [p.lng, p.lat]),
+          },
+          properties: { color, sessionKey: key },
+        });
+      }
+      sorted.forEach((p) => {
+        features.push({
+          type: "Feature",
+          geometry: { type: "Point", coordinates: [p.lng, p.lat] },
+          properties: {
+            color,
+            sessionKey: key,
+            createdAt: p.createdAt,
+          },
+        });
+      });
+    });
+    return features;
+  }
+
+  function scrollMapIntoView() {
+    if (!mapWrap) return;
+    mapWrap.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function focusUserOnMap(user: UserLocation) {
+    const mapboxgl = (window as any).mapboxgl;
+    if (!map || !mapboxgl) return;
+    map.flyTo({ center: [user.lng, user.lat], zoom: 15, speed: 1.2 });
+    const matching = markers.find((m: any) => {
+      const ll = m.getLngLat?.();
+      return ll && Math.abs(ll.lng - user.lng) < 1e-9 && Math.abs(ll.lat - user.lat) < 1e-9;
+    });
+    if (matching && typeof matching.togglePopup === "function") {
+      const popup = matching.getPopup?.();
+      if (popup && !popup.isOpen()) matching.togglePopup();
+    }
+  }
+
+  async function activateTrail(userId: string) {
+    const user = userById.get(userId);
+    if (!user) return;
+    const scope = getTrailScope();
+    const url = `/api/location/trail?${buildTrailQuery(user, scope)}`;
+    activeTrailUserId = userId;
+    markButtonActive(userId);
+    scrollMapIntoView();
+    focusUserOnMap(user);
+    try {
+      const res = await fetch(url, { credentials: "include" });
+      const data = await res.json();
+      if (!res.ok || !Array.isArray(data.pings)) {
+        setTrailGeoJSON([]);
+        return;
+      }
+      // User may have toggled trail off, or selected another user, while fetching.
+      if (activeTrailUserId !== userId) return;
+      const color = user.onSite ? "#22c55e" : "#2563eb";
+      const features = buildTrailFeatures(data.pings as TrailPing[], color);
+      setTrailGeoJSON(features);
+      if (features.length && map) {
+        const mapboxgl = (window as any).mapboxgl;
+        const bounds = new mapboxgl.LngLatBounds();
+        let pointCount = 0;
+        for (const f of features) {
+          if (f.geometry.type === "Point") {
+            bounds.extend(f.geometry.coordinates);
+            pointCount += 1;
+          }
+        }
+        if (pointCount >= 2) {
+          map.fitBounds(bounds, { padding: 60, maxZoom: 16, duration: 800 });
+        }
+      }
+    } catch {
+      setTrailGeoJSON([]);
+    }
+  }
+
+  function handleTrailToggleClick(event: Event) {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const btn = target.closest("[data-trail-toggle]");
+    if (!(btn instanceof HTMLButtonElement)) return;
+    const userId = btn.getAttribute("data-trail-toggle");
+    if (!userId) return;
+    if (activeTrailUserId === userId) {
+      clearTrail();
+    } else {
+      activateTrail(userId);
+    }
+  }
+
+  if (listEl) {
+    listEl.addEventListener("click", handleTrailToggleClick);
+  }
+
+  const scopeSelect = document.getElementById("trail-scope");
+  if (scopeSelect) {
+    scopeSelect.addEventListener("change", () => {
+      if (activeTrailUserId) {
+        // Re-fetch trail with new scope for the currently selected user.
+        activateTrail(activeTrailUserId);
+      }
+    });
   }
 
   async function fetchLocations() {

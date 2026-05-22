@@ -6,6 +6,7 @@
 import { isAdminOrSuperAdmin } from "../../lib/user-utils";
 import Dropdown from "../ui/Dropdown.astro";
 import SimpleIcon from "./SimpleIcon.astro";
+import DeleteConfirmButton from "../ui/DeleteConfirmButton.astro";
 import { globalClasses } from "../../pages/api/global/global-classes";
 interface Props {
   currentUser?: any;
@@ -57,6 +58,17 @@ const showCheckedIn = isAdminOrSuperAdmin(currentRole);
   </div>
 </Dropdown>
 
+<div id="stop-timer-button-template" hidden style="display: none;" aria-hidden="true">
+  <DeleteConfirmButton
+    id="stop-timer-template"
+    itemType="timer"
+    onDeleteCallback="stopActiveTimer"
+    tooltipText="Stop this active timer"
+    size="sm"
+    variant="icon"
+  />
+</div>
+
 <script>
   (function () {
     const POLL_MS = 30000;
@@ -92,6 +104,30 @@ const showCheckedIn = isAdminOrSuperAdmin(currentRole);
         }
       }
 
+      function escapeHtml(value) {
+        const s = String(value == null ? "" : value);
+        const map = { "&": "&amp;", "\u003C": "&lt;", "\u003E": "&gt;", '"': "&quot;", "'": "&#39;" };
+        return s.replace(/[&\u003C\u003E"']/g, (ch) => map[ch] || ch);
+      }
+
+      function buildStopButtonHTML(entryId, userName) {
+        const template = document.getElementById("stop-timer-button-template");
+        const wrapper = template && template.querySelector(".delete-confirm-wrapper");
+        if (!(wrapper instanceof HTMLElement)) return "";
+        const clone = wrapper.cloneNode(true);
+        if (!(clone instanceof HTMLElement)) return "";
+        const btn = clone.querySelector(".delete-confirm-btn");
+        if (btn instanceof HTMLElement) {
+          const label = `Stop timer for ${userName || "this user"}`;
+          btn.id = `stop-timer-${entryId}`;
+          btn.setAttribute("data-item-id", String(entryId));
+          btn.setAttribute("data-state", "trash");
+          btn.setAttribute("title", label);
+          btn.setAttribute("data-original-title", label);
+        }
+        return clone.outerHTML;
+      }
+
       function render(users) {
         if (!indicator) return;
         container.innerHTML = "";
@@ -118,39 +154,28 @@ const showCheckedIn = isAdminOrSuperAdmin(currentRole);
             "rounded-md border border-gray-200 bg-gray-50 p-2 text-sm dark:border-gray-700 dark:bg-gray-800";
 
           const where = u.address || u.location || "Location unavailable";
+          const stopButtonHTML = u.timeEntryId ? buildStopButtonHTML(u.timeEntryId, u.name) : "";
           row.innerHTML = `
             <div class="flex items-start justify-between gap-2">
               <div class="min-w-0">
-                <div class="truncate font-medium text-gray-900 dark:text-white">${u.name || "Unknown user"}</div>
-                <div class="text-xs text-gray-600 dark:text-gray-300">${u.durationFormatted || ""}</div>
-                <div class="mt-1 break-words text-xs text-gray-500 dark:text-gray-400">${where}</div>
+                <div class="truncate font-medium text-gray-900 dark:text-white">${escapeHtml(u.name || "Unknown user")}</div>
+                <div class="text-xs text-gray-600 dark:text-gray-300">${escapeHtml(u.durationFormatted || "")}</div>
+                <div class="mt-1 break-words text-xs text-gray-500 dark:text-gray-400">${escapeHtml(where)}</div>
               </div>
-              ${
-                u.timeEntryId
-                  ? `<button
-                type="button"
-                class="inline-flex items-center rounded-md bg-red-600 px-2 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-red-700 dark:hover:bg-red-800"
-                data-stop-time-entry-id="${u.timeEntryId}"
-                title="Stop timer for ${u.name || "this user"}"
-              >
-                Stop
-              </button>`
-                  : ""
-              }
+              ${stopButtonHTML}
             </div>
           `;
           container.appendChild(row);
         });
       }
 
-      async function stopTimerForEntry(entryId, triggerEl) {
-        if (!entryId) return;
-        const shouldStop = window.confirm("Stop this active timer?");
-        if (!shouldStop) return;
-        const button = triggerEl instanceof HTMLButtonElement ? triggerEl : null;
-        if (button) button.disabled = true;
+      // Global callback invoked by DeleteConfirmButton after the 2-step confirm completes.
+      // Receives the time-entry id passed via data-item-id on the cloned button.
+      window["stopActiveTimer"] = async (entryId) => {
+        const id = Number.parseInt(String(entryId == null ? "" : entryId), 10);
+        if (!Number.isFinite(id)) return;
         try {
-          const res = await fetch(`/api/time-entries/${entryId}`, {
+          const res = await fetch(`/api/time-entries/${id}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
@@ -171,10 +196,8 @@ const showCheckedIn = isAdminOrSuperAdmin(currentRole);
               4000
             );
           }
-        } finally {
-          if (button) button.disabled = false;
         }
-      }
+      };
 
       async function load() {
         if (!canPoll()) return;
@@ -192,17 +215,6 @@ const showCheckedIn = isAdminOrSuperAdmin(currentRole);
         clearInterval(pollInterval);
         pollInterval = null;
       }
-
-      container.addEventListener("click", (event) => {
-        const target = event.target;
-        if (!(target instanceof HTMLElement)) return;
-        const stopBtn = target.closest("[data-stop-time-entry-id]");
-        if (!(stopBtn instanceof HTMLButtonElement)) return;
-        const timeEntryIdRaw = stopBtn.getAttribute("data-stop-time-entry-id");
-        const timeEntryId = Number.parseInt(timeEntryIdRaw || "", 10);
-        if (!Number.isFinite(timeEntryId)) return;
-        stopTimerForEntry(timeEntryId, stopBtn);
-      });
 
       load();
       startPolling();

@@ -1,0 +1,51 @@
+---
+description: "Protocol for live DB schema/data changes via Supabase MCP across multi-site deployments."
+alwaysApply: true
+---
+
+# Live DB Changes Protocol
+
+This repo deploys multiple sites (CAPCO, Rothco, MAVSAFE, …) and **all of them point at live Supabase projects**. Any schema change or non-idempotent `UPDATE` applied via the Supabase MCP hits production immediately, while the deployed Railway code is still running the old version. **Stop and confirm before doing this.**
+
+## When this rule fires
+
+Anything that mutates a live Supabase project, including:
+
+- `apply_migration` (MCP) on a live project
+- `execute_sql` with `ALTER`, `CREATE`, `DROP`, `RENAME`, `UPDATE`, `DELETE`, `INSERT`, `TRUNCATE`
+- `ALTER TABLE` renames, column drops, type changes
+- Bulk data updates (anything beyond a single-row read)
+
+`SELECT`-only diagnostics are fine without the protocol.
+
+## Required protocol
+
+Before executing the change, **pause and ask the user** which option they want:
+
+**Option A — code-first, then schema (preferred for renames/drops):**
+1. Commit + push the related code (or stage it ready to push).
+2. Wait for Railway to deploy on every affected site (~6 min — see `mcp-site-check-urls.mdc`).
+3. Apply the schema change via MCP.
+4. Verify live sites still respond.
+
+**Option B — backwards-compatible (zero downtime, the gold standard):**
+1. `ADD COLUMN` new name, copy data.
+2. Deploy code that reads new with fallback to old.
+3. Once verified live, deploy code that uses new only.
+4. `DROP COLUMN` old name.
+
+**Option C — accept downtime (only with explicit user approval):**
+1. Warn the user: "this will break live sites until next deploy completes (~code push + Railway deploy time)."
+2. Have the code commit pre-staged so the window is minimal.
+3. Apply schema, immediately commit + push, monitor Railway deploys for all sites.
+
+## What NOT to do
+
+- Do **not** apply a `RENAME COLUMN` or `DROP COLUMN` while the related code is still uncommitted in the working tree — that guarantees a broken-prod window.
+- Do **not** run `UPDATE` against live tables without first showing the user the `SELECT` preview of affected rows.
+- Do **not** assume "small site = no risk" — admins may be mid-workflow.
+- Do **not** apply migrations to only one of the three Supabase projects when the change is repo-wide; if you skip any, that site breaks on deploy.
+
+## Multi-site reminder
+
+Every migration must be applied to **all** live Supabase projects (currently MAVSAFE, Rothco, CAPCo Auth, plus any added). After applying, do the MCP site check (`mcp-site-check-urls.mdc`).

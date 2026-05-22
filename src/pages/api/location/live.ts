@@ -176,7 +176,7 @@ export const GET: APIRoute = async ({ request, cookies }): Promise<Response> => 
           projectId,
           projectTitle,
           projectAddress,
-          timeEntryId: p.timeEntryId,
+          timeEntryId: p.timeEntryId ?? null,
           lastPingAt: p.createdAt,
           address: address || null,
           startedAt,
