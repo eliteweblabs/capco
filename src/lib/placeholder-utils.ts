@@ -718,6 +718,33 @@ export async function replacePlaceholders(
     }
   }
 
+  // NFPA 25 ITM report placeholders
+  const itmYear = new Date().getFullYear().toString();
+  const itmCopyright = `Copyright ${itmYear} ${companyData.globalCompanyName || "Company"}`;
+  const itmReplacements: Record<string, string> = {
+    ITM_PROPERTY_NAME: projectTitle,
+    ITM_PROPERTY_ADDRESS: address,
+    ITM_INSPECTION_DATE: currentDate,
+    ITM_PRINT_DATE: currentDate,
+    ITM_CONDUCTED_BY: assignedStaffName,
+    ITM_INSPECTION_TYPE: "Annual NFPA 25",
+    ITM_CONTRACTOR_LICENSE: "",
+    ITM_COPYRIGHT: itmCopyright,
+    ITM_PAGE_COUNT: "",
+    ITM_WET1_NEXT_ASSESSMENT_DATE: "unknown",
+    ITM_DRY1_NEXT_ASSESSMENT_DATE: "unknown",
+    ITM_DRY1_LOW_AIR_PRESSURE: "",
+    ITM_DRY_VALVE_INFO: "",
+    ITM_ACCELERATOR_INFO: "",
+    ITM_VISIT_PHOTOS: "",
+    ITM_DEFICIENCY_6_PHOTO: "",
+  };
+  for (const [key, value] of Object.entries(itmReplacements)) {
+    const beforeReplace = result;
+    result = result.replace(new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, "g"), value);
+    if (result !== beforeReplace) placeholderApplied = true;
+  }
+
   // Company placeholders
   if (companyData.globalCompanyAddress) {
     const beforeReplace = result;
