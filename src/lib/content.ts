@@ -147,6 +147,126 @@ function mergeJsonConfig(
   }
 }
 
+/** Field ids for recurring inspection — always prefer repo config-*.json over stale SITE_CONFIG env. */
+const RECURRING_INSPECTION_FIELD_IDS = [
+  "is-inspection",
+  "inspection-period",
+  "inspection-start-date",
+];
+
+function slugifyConfigKey(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .trim();
+}
+
+/** Load public/data/config-*.json (or dist copy) for the current deployment. */
+function loadSiteDataConfigFromFiles(
+  companyData: { globalCompanyName?: string } | null
+): Record<string, any> | null {
+  const companyName = companyData?.globalCompanyName || "";
+  const companySlug =
+    companyName && companyName !== "Company Name Not Set" ? slugifyConfigKey(companyName) : "";
+  const railwaySlug = slugifyConfigKey(process.env.RAILWAY_PROJECT_NAME || "");
+  const dataDir = join(process.cwd(), "public", "data");
+  const distDataDir = join(process.cwd(), "dist", "client", "data");
+  const dirs = [dataDir, distDataDir];
+  const fallbackCandidates: string[] = [];
+  if (railwaySlug) fallbackCandidates.push(`config-${railwaySlug}.json`);
+  if (companySlug && companySlug !== railwaySlug) {
+    fallbackCandidates.push(`config-${companySlug}.json`);
+  }
+  const knownFallbacks: Record<string, string> = {
+    "rothco-built": "rothco-built-llc",
+    "rothco-firstbranch": "rothco-built-llc",
+    rothco: "rothco-built-llc",
+    capco: "capco-design-group",
+  };
+  const fallbackSlug =
+    railwaySlug &&
+    (knownFallbacks[railwaySlug] ??
+      (railwaySlug.startsWith("rothco-") ? "rothco-built-llc" : null));
+  if (fallbackSlug) fallbackCandidates.push(`config-${fallbackSlug}.json`);
+  fallbackCandidates.push("config.json");
+
+  for (const dir of dirs) {
+    for (const name of fallbackCandidates) {
+      const p = join(dir, name);
+      if (!existsSync(p)) continue;
+      try {
+        return JSON.parse(readFileSync(p, "utf-8"));
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * When SITE_CONFIG env replaces projectForm with an older schema, merge in fields
+ * from config-*.json (especially recurring inspection toggle + period + start date).
+ */
+function mergeProjectFormFieldsFromFile(
+  config: SiteConfig & Record<string, any>,
+  fileConfig: Record<string, any> | null
+): void {
+  const fileStep = fileConfig?.projectForm?.steps?.[0];
+  const fileFields = fileStep?.fields;
+  if (!Array.isArray(fileFields) || fileFields.length === 0) return;
+
+  if (!config.projectForm?.steps?.[0]) {
+    config.projectForm = fileConfig!.projectForm;
+    return;
+  }
+
+  const envStep = config.projectForm.steps[0];
+  const envFields = Array.isArray(envStep.fields) ? envStep.fields : [];
+  const envById = new Map<string, any>();
+  for (const f of envFields) {
+    if (f?.id) envById.set(f.id, f);
+  }
+
+  const missingFromEnv = fileFields.some((f: any) => f?.id && !envById.has(f.id));
+  const recurringStale = RECURRING_INSPECTION_FIELD_IDS.some((id) => {
+    const fileField = fileFields.find((f: any) => f?.id === id);
+    const envField = envById.get(id);
+    if (!fileField) return false;
+    if (!envField) return true;
+    return (
+      envField.type !== fileField.type ||
+      envField.component !== fileField.component ||
+      JSON.stringify(envField.options ?? null) !== JSON.stringify(fileField.options ?? null)
+    );
+  });
+
+  if (!missingFromEnv && !recurringStale) return;
+
+  const mergedFields = fileFields.map((fileField: any) => {
+    if (fileField?.id && RECURRING_INSPECTION_FIELD_IDS.includes(fileField.id)) {
+      return fileField;
+    }
+    if (fileField?.id && envById.has(fileField.id)) {
+      return envById.get(fileField.id);
+    }
+    return fileField;
+  });
+
+  for (const f of envFields) {
+    if (f?.id && !mergedFields.some((m: any) => m?.id === f.id)) {
+      mergedFields.push(f);
+    }
+  }
+
+  config.projectForm = {
+    ...config.projectForm,
+    steps: [{ ...envStep, fields: mergedFields }],
+  };
+}
+
 /**
  * Get site configuration
  * Priority: SITE_CONFIG or SITE_CONFIG_JSON env var > site-config.json file > minimal defaults
@@ -573,6 +693,10 @@ export async function getSiteConfig(): Promise<SiteConfig> {
         break;
     }
   }
+
+  // Fallback: SITE_CONFIG env often replaces projectForm with an older copy missing
+  // recurring inspection fields. Always merge from config-*.json in the repo/deploy bundle.
+  mergeProjectFormFieldsFromFile(config, loadSiteDataConfigFromFiles(companyData));
 
   cache.set(cacheKey, config);
   siteConfigCacheTimestamp = now;

@@ -36,6 +36,14 @@ module.exports = {
     "snap-end",
     "snap-center",
     "snap-align-none",
+    // SlideToggle peer utilities (dynamic colorClass strings)
+    "peer-checked:bg-primary-500",
+    "peer-checked:bg-secondary-600",
+    "peer-checked:after:translate-x-full",
+    "peer-checked:after:translate-x-8",
+    "peer-checked:after:border-white",
+    "peer-focus:ring-primary-300",
+    "dark:peer-focus:ring-primary-800",
     // Sidebar classes
     "sm:ml-64",
     "ml-64",

@@ -165,8 +165,19 @@ export async function getContactFormConfig(
 }
 
 function isSuperAdminRole(userRole?: string | null): boolean {
-  const r = (userRole || "").toLowerCase().replace(/[^a-z]/g, "");
+  const r = normalizeRoleKey(userRole);
   return r === "superadmin";
+}
+
+function normalizeRoleKey(userRole?: string | null): string {
+  return (userRole || "").toLowerCase().replace(/[^a-z]/g, "");
+}
+
+function roleAllowed(allowList: string[] | undefined, userRole?: string | null): boolean {
+  if (!allowList?.length) return true;
+  if (!userRole) return true;
+  const r = normalizeRoleKey(userRole);
+  return allowList.some((a) => normalizeRoleKey(a) === r);
 }
 
 function isProjectAddressField(field: { id?: string; name?: string }): boolean {
@@ -187,10 +198,7 @@ export async function getProjectFormConfig(
   const superAdmin = isSuperAdminRole(userRole);
   const fields = (step?.fields ?? []).filter((f: any) => {
     if (!f || typeof f !== "object") return false;
-    if (f.allow?.length && userRole) {
-      const r = userRole.toLowerCase();
-      if (!f.allow.some((a: string) => a.toLowerCase() === r)) return false;
-    }
+    if (!roleAllowed(f.allow, userRole)) return false;
     const status = isNewProject ? 0 : projectStatus;
     if (
       f.hideAtStatus?.length &&
@@ -204,10 +212,7 @@ export async function getProjectFormConfig(
   });
   const buttons = (step?.buttons ?? []).filter((b: any) => {
     if (!b || typeof b !== "object") return false;
-    if (b.allow?.length && userRole) {
-      const r = userRole.toLowerCase();
-      if (!b.allow.some((a: string) => a.toLowerCase() === r)) return false;
-    }
+    if (!roleAllowed(b.allow, userRole)) return false;
     const status = isNewProject ? 0 : projectStatus;
     if (b.hideAtStatus?.length && status != null && b.hideAtStatus.includes(status)) return false;
     return true;

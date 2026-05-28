@@ -7,7 +7,16 @@ export const partial = true;
 // Detect if this is being used as a partial
 const isPartial = Astro.request.headers.has("x-toggle-id");
 
-let id, name, label, icon, color, checked, size, className, dataAttributes;
+let id: string | undefined;
+let name: string | undefined;
+let label: string | undefined;
+let icon: string | undefined;
+let color: string;
+let checked: boolean;
+let size: string;
+let className: string;
+let dataAttributes: Record<string, string>;
+let disabled = false;
 
 if (isPartial) {
   // Extract props from headers when used as partial
@@ -21,7 +30,7 @@ if (isPartial) {
   className = Astro.request.headers.get("x-toggle-class") || "";
 
   // Extract data attributes from headers
-  dataAttributes = {} as Record<string, string>;
+  dataAttributes = {};
   for (const [key, value] of Astro.request.headers.entries()) {
     if (key.startsWith("x-toggle-data-")) {
       const dataKey = key.replace("x-toggle-data-", "").replace(/-/g, "-");
@@ -40,6 +49,7 @@ if (isPartial) {
   size = props.size || "md";
   className = props.class || "";
   dataAttributes = props.dataAttributes || {};
+  disabled = props.disabled || props.readOnly || false;
 }
 
 // Map color to Tailwind classes
@@ -58,7 +68,12 @@ const colorClasses = {
 const colorClass = colorClasses[color as keyof typeof colorClasses] || colorClasses.primary;
 ---
 
-<label class="toggle-wrapper flex cursor-pointer items-center gap-3">
+<label
+  class:list={[
+    "toggle-wrapper flex items-center gap-3",
+    disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
+  ]}
+>
   <span
     class:list={[
       "text-gray-700 dark:text-gray-300",
@@ -74,12 +89,13 @@ const colorClass = colorClasses[color as keyof typeof colorClasses] || colorClas
       {id}
       {name}
       class={`toggle-input peer sr-only ${className}`}
-      {checked}
+      checked={checked}
+      disabled={disabled}
       {...dataAttributes}
     />
     <div
       class:list={[
-        "rounded-full bg-gray-200 after:absolute after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-['']",
+        "relative rounded-full bg-gray-200 after:absolute after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-['']",
         "peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 dark:border-gray-600 dark:bg-gray-700",
         colorClass,
         size === "xl"
