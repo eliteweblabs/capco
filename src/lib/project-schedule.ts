@@ -9,20 +9,40 @@
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export type Period = "quarterly" | "semi_annual" | "yearly" | "biennial";
+export type Period =
+  | "quarterly"
+  | "semi_annual"
+  | "yearly"
+  | "2_year"
+  | "3_year"
+  | "4_year"
+  | "5_year";
 
-export const PERIOD_MONTHS: Record<Period, number> = {
+/** Legacy DB values; still expanded on calendar until migrated. */
+export type LegacyPeriod = "biennial";
+
+export type PeriodOrLegacy = Period | LegacyPeriod;
+
+export const PERIOD_MONTHS: Record<PeriodOrLegacy, number> = {
   quarterly: 3,
   semi_annual: 6,
   yearly: 12,
+  "2_year": 24,
+  "3_year": 36,
+  "4_year": 48,
+  "5_year": 60,
   biennial: 24,
 };
 
-export const PERIOD_LABELS: Record<Period, string> = {
+export const PERIOD_LABELS: Record<PeriodOrLegacy, string> = {
   quarterly: "Quarterly",
   semi_annual: "Semi-Annual",
-  yearly: "Yearly",
-  biennial: "Biennial",
+  yearly: "1 Year",
+  "2_year": "2 Year",
+  "3_year": "3 Year",
+  "4_year": "4 Year",
+  "5_year": "5 Year",
+  biennial: "2 Year",
 };
 
 const MAX_OCCURRENCES_PER_PROJECT = 64;
@@ -37,7 +57,7 @@ export interface ScheduleEvent {
   statusName: string | null;
   date: string;
   isRecurring: boolean;
-  inspectionPeriod: Period | null;
+  inspectionPeriod: PeriodOrLegacy | null;
   occurrenceIndex?: number;
   /**
    * The iCal-style DTSTART for the series. Present on inspection events so the
@@ -100,6 +120,12 @@ function addMonthsIso(iso: string, months: number): string {
   return next.toISOString();
 }
 
+function advancePeriodIso(iso: string, period: PeriodOrLegacy): string {
+  const months = PERIOD_MONTHS[period];
+  if (!months) return iso;
+  return addMonthsIso(iso, months);
+}
+
 export function expandInspectionOccurrences(
   project: ScheduleProjectRow,
   range: ScheduleRange
@@ -107,9 +133,8 @@ export function expandInspectionOccurrences(
   if (!project.isInspection || !project.inspectionPeriod || !project.nextInspectionAt) {
     return [];
   }
-  const period = project.inspectionPeriod as Period;
-  const months = PERIOD_MONTHS[period];
-  if (!months) return [];
+  const period = project.inspectionPeriod as PeriodOrLegacy;
+  if (PERIOD_MONTHS[period] == null) return [];
 
   const events: ScheduleEvent[] = [];
   let occurrenceIso = project.nextInspectionAt;
@@ -120,7 +145,7 @@ export function expandInspectionOccurrences(
   // Wind forward to (or just past) the range start so we don't emit historical occurrences.
   let i = 0;
   while (occurrenceMs < rangeStartMs && i < MAX_OCCURRENCES_PER_PROJECT) {
-    occurrenceIso = addMonthsIso(occurrenceIso, months);
+    occurrenceIso = advancePeriodIso(occurrenceIso, period);
     occurrenceMs = new Date(occurrenceIso).getTime();
     i++;
   }
@@ -140,7 +165,7 @@ export function expandInspectionOccurrences(
       occurrenceIndex: events.length,
       anchorDate: anchorIso,
     });
-    occurrenceIso = addMonthsIso(occurrenceIso, months);
+    occurrenceIso = advancePeriodIso(occurrenceIso, period);
     occurrenceMs = new Date(occurrenceIso).getTime();
   }
   return events;

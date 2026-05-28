@@ -43,7 +43,9 @@ function chipClasses(ev: ScheduleEvent): string {
 
 function eventLabel(ev: ScheduleEvent): string {
   if (ev.type === "due") return "Due";
-  const period = ev.inspectionPeriod ? PERIOD_LABELS[ev.inspectionPeriod as Period] : "Recurring";
+  const period = ev.inspectionPeriod
+    ? (PERIOD_LABELS[ev.inspectionPeriod as keyof typeof PERIOD_LABELS] ?? ev.inspectionPeriod)
+    : "Recurring";
   return `Inspection · ${period}`;
 }
 
