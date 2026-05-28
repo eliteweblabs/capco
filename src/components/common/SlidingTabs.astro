@@ -174,16 +174,26 @@ const filteredItems = items.filter((item) => {
 
     let lastTouchActivationAt = 0;
 
-    function activateButton(button) {
-      // Prefer declarative target switching to avoid relying only on inline onclick handlers.
+    function invokeTabSwitch(button: HTMLElement) {
+      const handlerName = nav.getAttribute("data-switch-handler") || "switchTab";
+      const fn = window[handlerName as keyof Window];
+      if (typeof fn !== "function") return;
+
       const switchTarget = button.getAttribute("data-switch-target");
       if (switchTarget) {
-        const handlerName = nav.getAttribute("data-switch-handler") || "switchTab";
-        const fn = window[handlerName];
-        if (typeof fn === "function") {
-          fn(switchTarget);
-        }
+        fn(switchTarget);
+        return;
       }
+
+      const onclick = button.getAttribute("onclick");
+      const match = onclick?.match(/switchTab\s*\(\s*['"]([^'"]+)['"]\s*\)/);
+      if (match?.[1]) {
+        fn(match[1]);
+      }
+    }
+
+    function activateButton(button) {
+      invokeTabSwitch(button);
 
       updateActiveButton(button);
       updateSlidingTabsIndicator(button);

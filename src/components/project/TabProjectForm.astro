@@ -1,5 +1,6 @@
 ---
 import ProjectForm from "./ProjectForm.astro";
+import { projectTabPanelClass } from "../../lib/project-tab-panel";
 
 interface Props {
   project: any;
@@ -8,6 +9,7 @@ interface Props {
   globalInputClasses?: string;
   secondaryTextClasses?: string;
   primaryTextClasses?: string;
+  isActiveTab?: boolean;
 }
 
 const {
@@ -17,13 +19,16 @@ const {
   globalInputClasses,
   secondaryTextClasses,
   primaryTextClasses,
+  isActiveTab = false,
 } = Astro.props;
+
+const panelClass = projectTabPanelClass(
+  isActiveTab,
+  "tab-content color-background relative mb-16 min-h-[calc(100dvh-24rem)] p-4 shadow-lg"
+);
 ---
 
-<div
-  id="content-project-form"
-  class="tab-content color-background relative mb-16 min-h-[calc(100dvh-24rem)] p-4 shadow-lg"
->
+<div id="content-project-form" class={panelClass}>
   <ProjectForm
     {project}
     isNewProject={false}

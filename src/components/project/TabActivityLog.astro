@@ -1,5 +1,6 @@
 ---
 import SimpleProjectLog from "./SimpleProjectLog.astro";
+import { projectTabPanelClass } from "../../lib/project-tab-panel";
 
 interface Props {
   project?: any;
@@ -9,6 +10,7 @@ interface Props {
   primaryTextClasses?: string;
   globalInputClasses?: string;
   statusData?: any;
+  isActiveTab?: boolean;
 }
 
 const {
@@ -18,10 +20,15 @@ const {
   primaryTextClasses,
   globalInputClasses,
   statusData,
+  isActiveTab = false,
 } = Astro.props;
 
 const currentRole = currentUser?.profile?.role;
 const projectId = project?.id;
+const panelClass = projectTabPanelClass(
+  isActiveTab,
+  "tab-content color-background relative min-h-[calc(100dvh-24rem)] p-4 shadow-lg"
+);
 if (currentRole === "Client") {
   return;
 }
@@ -29,10 +36,7 @@ if (currentRole === "Client") {
 
 {
   (currentRole === "Admin" || currentRole === "Staff" || currentRole === "superAdmin") && (
-    <div
-      id="content-activity-log"
-      class="tab-content color-background relative min-h-[calc(100dvh-24rem)] p-4 shadow-lg"
-    >
+    <div id="content-activity-log" class={panelClass}>
       <SimpleProjectLog
         projectId={projectId}
         globalInputClasses={globalInputClasses}

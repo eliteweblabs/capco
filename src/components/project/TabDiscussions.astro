@@ -1,5 +1,6 @@
 ---
 import Discussions from "../form/Discussions.astro";
+import { projectTabPanelClass } from "../../lib/project-tab-panel";
 
 interface Props {
   currentUser?: any;
@@ -7,19 +8,27 @@ interface Props {
   globalInputClasses?: string;
   secondaryTextClasses?: string;
   primaryTextClasses?: string;
+  isActiveTab?: boolean;
 }
 
-const { currentUser, project, globalInputClasses, secondaryTextClasses, primaryTextClasses } =
-  Astro.props;
+const {
+  currentUser,
+  project,
+  globalInputClasses,
+  secondaryTextClasses,
+  primaryTextClasses,
+  isActiveTab = false,
+} = Astro.props;
 
 const currentRole = currentUser?.profile?.role;
 const projectId = project?.id;
+const panelClass = projectTabPanelClass(
+  isActiveTab,
+  "tab-content color-background relative mb-16 min-h-[calc(100dvh-24rem)] p-4 shadow-lg"
+);
 ---
 
-<div
-  id="content-discussion"
-  class="tab-content color-background relative mb-16 min-h-[calc(100dvh-24rem)] p-4 shadow-lg"
->
+<div id="content-discussion" class={panelClass}>
   <Discussions
     {project}
     {currentUser}

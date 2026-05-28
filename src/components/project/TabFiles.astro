@@ -7,11 +7,13 @@ interface Props {
   primaryTextClasses?: string;
   globalInputClasses?: string;
   statusData?: any;
+  isActiveTab?: boolean;
 }
 
 import FileManager from "./FileManager.astro";
 import Button from "../common/Button.astro";
 import StickyActions from "./StickyActions.astro";
+import { projectTabPanelClass } from "../../lib/project-tab-panel";
 
 const {
   project,
@@ -21,6 +23,7 @@ const {
   primaryTextClasses,
   globalInputClasses,
   statusData,
+  isActiveTab = false,
 } = Astro.props;
 
 const projectId = project?.id;
@@ -31,12 +34,13 @@ const normalizedRole = String(currentUser?.profile?.role || "")
 const canSubmitFilesForReview =
   normalizedProjectStatus === 10 &&
   ["client", "admin", "staff", "superadmin"].includes(normalizedRole);
+const panelClass = projectTabPanelClass(
+  isActiveTab,
+  "tab-content color-background relative mb-16 min-h-[calc(100dvh-24rem)] p-4 shadow-lg"
+);
 ---
 
-<div
-  id="content-files"
-  class="tab-content color-background relative mb-16 min-h-[calc(100dvh-24rem)] p-4 shadow-lg"
->
+<div id="content-files" class={panelClass}>
   <!-- <div class="mx-auto max-w-7xl"> -->
   <!-- File Manager for all users - PDF preview works for everyone -->
   <FileManager

@@ -1,5 +1,10 @@
 ---
 import { globalClasses } from "../../pages/api/global/global-classes";
+import SimpleIcon from "../common/SimpleIcon.astro";
+import Button from "../common/Button.astro";
+import StickyActions from "./StickyActions.astro";
+import LoadingSpinner from "../ui/LoadingSpinner.astro";
+import { projectTabPanelClass } from "../../lib/project-tab-panel";
 
 const { globalTextH3 } = globalClasses();
 
@@ -9,29 +14,32 @@ interface Props {
   secondaryTextClasses?: string;
   primaryTextClasses?: string;
   globalInputClasses?: string;
+  isActiveTab?: boolean;
 }
 
-import SimpleIcon from "../common/SimpleIcon.astro";
-import Button from "../common/Button.astro";
-import StickyActions from "./StickyActions.astro";
-import LoadingSpinner from "../ui/LoadingSpinner.astro";
-
-const { project, currentUser, secondaryTextClasses, primaryTextClasses, globalInputClasses } =
-  Astro.props;
+const {
+  project,
+  currentUser,
+  secondaryTextClasses,
+  primaryTextClasses,
+  globalInputClasses,
+  isActiveTab = false,
+} = Astro.props;
 
 const currentRole = currentUser?.profile?.role;
 const isAdminOrStaff =
   currentRole === "Admin" || currentRole === "Staff" || currentRole === "superAdmin";
+const panelClass = projectTabPanelClass(
+  isActiveTab,
+  "tab-content color-background relative mb-16 min-h-[calc(100dvh-24rem)] p-4 shadow-lg"
+);
 
 // Only allow Admin/Staff to access this tab
 ---
 
 {isAdminOrStaff && (
 <>
-<div
-  id="content-marketing"
-  class="tab-content color-background relative mb-16 min-h-[calc(100dvh-24rem)] p-4 shadow-lg"
->
+<div id="content-marketing" class={panelClass}>
   <div class="space-y-6">
     {/* Header */}
     <div class="border-b border-gray-200 pb-4 dark:border-gray-700">

@@ -1,6 +1,7 @@
 ---
 import ContractEditor from "../admin/ContractEditor.astro";
 import Alert from "../partials/Alert.astro";
+import { projectTabPanelClass } from "../../lib/project-tab-panel";
 
 interface Props {
   project: any;
@@ -13,6 +14,7 @@ interface Props {
   currentUser?: any;
   statusData?: any;
   statusAlert?: string;
+  isActiveTab?: boolean;
 }
 
 const {
@@ -25,6 +27,7 @@ const {
   primaryTextClasses,
   globalInputClasses,
   statusData,
+  isActiveTab = false,
 } = Astro.props;
 
 const projectId = project.id;
@@ -73,12 +76,13 @@ function getStatusAlert() {
 }
 
 const statusAlert = getStatusAlert();
+const panelClass = projectTabPanelClass(
+  isActiveTab,
+  "tab-content color-background relative mb-16 min-h-[calc(100dvh-24rem)] p-4 shadow-lg"
+);
 ---
 
-<div
-  id="content-contract"
-  class="tab-content color-background relative mb-16 min-h-[calc(100dvh-24rem)] p-4 shadow-lg"
->
+<div id="content-contract" class={panelClass}>
   <Alert title={statusAlert} />
 
   {

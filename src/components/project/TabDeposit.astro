@@ -4,6 +4,7 @@ import SimpleIcon from "../common/SimpleIcon.astro";
 import PaymentForm from "./PaymentForm.astro";
 import Alert from "../partials/Alert.astro";
 import PaymentsManager from "./PaymentsManager.astro";
+import { projectTabPanelClass } from "../../lib/project-tab-panel";
 
 interface Props {
   project?: any;
@@ -14,6 +15,7 @@ interface Props {
   primaryTextClasses?: string;
   globalInputClasses?: string;
   statusData?: any;
+  isActiveTab?: boolean;
 }
 
 const {
@@ -25,6 +27,7 @@ const {
   primaryTextClasses,
   globalInputClasses,
   statusData,
+  isActiveTab = false,
 } = Astro.props;
 
 const currentRole = currentUser?.profile?.role;
@@ -157,12 +160,13 @@ function getStatusAlert() {
 //       : null;
 // }
 const statusAlert = getStatusAlert();
+const panelClass = projectTabPanelClass(
+  isActiveTab,
+  "tab-content color-background relative min-h-[calc(100dvh-24rem)] bg-gray-50 p-4 shadow-lg"
+);
 ---
 
-<div
-  id="content-deposit"
-  class="tab-content color-background relative min-h-[calc(100dvh-24rem)] bg-gray-50 p-4 shadow-lg"
->
+<div id="content-deposit" class={panelClass}>
   {statusAlert && <Alert type="info" title={statusAlert} />}
 
   {

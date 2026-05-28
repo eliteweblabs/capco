@@ -86,7 +86,19 @@ function filterTabsForHero(role: string | undefined, items: NavItem[]): NavItem[
 
 function navSlug(item: NavItem): string | null {
   const m = item.onclick?.match(/switchTab\('([^']+)'\)/);
-  return m?.[1] ?? null;
+  return m?.[1] ?? item.dataAttributes?.["data-switch-target"] ?? null;
+}
+
+/** Nav item with declarative tab switch target (SlidingTabs + switchTab). */
+function projectTabNav(slug: string, item: NavItem): NavItem {
+  return {
+    ...item,
+    onclick: `window.switchTab('${slug}')`,
+    dataAttributes: {
+      ...(item.dataAttributes ?? {}),
+      "data-switch-target": slug,
+    },
+  };
 }
 
 /** Field staff: roster hours tab */
@@ -95,115 +107,103 @@ const showTeamHoursTab = laborRole === "Staff";
 const showBillingTab = isAdminOrSuperAdmin(laborRole);
 
 const projectTabNavItems: NavItem[] = [
-  {
+  projectTabNav("project-form", {
     id: "status-project-form",
     showLabel: true,
     label: "Project Form",
     icon: "edit",
     variant: "tab",
-    onclick: "window.switchTab('project-form')",
-  },
-  {
+  }),
+  projectTabNav("discussion", {
     id: "status-discussion",
     showLabel: true,
     label: "Discussion",
     icon: "message-rounded-dots",
     variant: "tab",
     dataAttributes: { "data-count": "0" },
-    onclick: "window.switchTab('discussion')",
-  },
-  {
+  }),
+  projectTabNav("files", {
     id: "status-files",
     showLabel: true,
     label: "Files",
     icon: "file",
     variant: "tab",
-    onclick: "window.switchTab('files')",
-  },
-  {
+  }),
+  projectTabNav("proposal", {
     id: "status-proposal",
     showLabel: true,
     label: "Proposal",
     icon: "grid",
     variant: "tab",
-    onclick: "window.switchTab('proposal')",
-  },
-  {
+  }),
+  projectTabNav("contract", {
     id: "status-contract",
     showLabel: true,
     label: "Contract",
     icon: "pencil",
     variant: "tab",
-    onclick: "window.switchTab('contract')",
-  },
-  {
+  }),
+  projectTabNav("deposit", {
     id: "status-deposit",
     showLabel: true,
     label: "Deposit",
     icon: "credit-card",
     variant: "tab",
-    onclick: "window.switchTab('deposit')",
-  },
-  {
+  }),
+  projectTabNav("activity-log", {
     id: "status-activity-log",
     showLabel: true,
     label: "Activity Log",
     icon: "history",
     variant: "tab",
-    onclick: "window.switchTab('activity-log')",
     clientHide: true,
-  },
+  }),
   ...(showTeamHoursTab
     ? [
-        {
+        projectTabNav("team-hours", {
           id: "status-team-hours",
           showLabel: true,
           label: "Team hours",
           icon: "clock",
           variant: "tab" as const,
-          onclick: "window.switchTab('team-hours')",
-        },
+        }),
       ]
     : []),
   ...(showBillingTab
     ? [
-        {
+        projectTabNav("billing", {
           id: "status-billing",
           showLabel: true,
           label: "Billing & logs",
           icon: "receipt",
           variant: "tab" as const,
-          onclick: "window.switchTab('billing')",
-        },
+        }),
       ]
     : []),
-  {
+  projectTabNav("generate-pdf", {
     id: "status-generate-pdf",
     showLabel: true,
     label: "Generate PDF",
     icon: "adobe",
     variant: "tab",
-    onclick: "window.switchTab('generate-pdf')",
     clientHide: true,
-  },
-  {
+  }),
+  projectTabNav("marketing", {
     id: "status-marketing",
     showLabel: true,
     label: "Marketing",
     icon: "palette",
     variant: "tab",
-    onclick: "window.switchTab('marketing')",
     clientHide: true,
-  },
-  {
+  }),
+  projectTabNav("deliverables", {
     id: "status-deliverables",
     showLabel: true,
     label: "Deliverables",
     icon: "file-blank",
     variant: "tab",
-    onclick: "window.switchTab('deliverables')",
     clientHide: true,
-  },
+  }),
 ];
 
 const filteredHeroTabs = filterTabsForHero(currentUser?.profile?.role, projectTabNavItems);
@@ -396,6 +396,7 @@ if (currentStatusInt && statusData[currentStatusInt]) {
 
   <!-- <div class="transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1) px-4 transition-all duration-200"> -->
   <TabProjectForm
+    isActiveTab={activeSlug === "project-form"}
     {project}
     projectStatus={currentStatusInt}
     projectStatusLabel={currentStatusName || undefined}
@@ -407,6 +408,7 @@ if (currentStatusInt && statusData[currentStatusInt]) {
   <!-- Discussion Tab -->
 
   <TabDiscussions
+    isActiveTab={activeSlug === "discussion"}
     {project}
     {currentUser}
     {globalInputClasses}
@@ -416,6 +418,7 @@ if (currentStatusInt && statusData[currentStatusInt]) {
 
   <!-- Documents Tab -->
   <TabFiles
+    isActiveTab={activeSlug === "files"}
     {project}
     {currentUser}
     projectStatus={currentStatusInt}
@@ -427,6 +430,7 @@ if (currentStatusInt && statusData[currentStatusInt]) {
 
   <!-- Proposal Tab -->
   <TabProposal
+    isActiveTab={activeSlug === "proposal"}
     {project}
     projectStatus={currentStatusInt}
     {currentUser}
@@ -438,6 +442,7 @@ if (currentStatusInt && statusData[currentStatusInt]) {
 
   <!-- Contract Tab -->
   <TabContract
+    isActiveTab={activeSlug === "contract"}
     {project}
     {currentUser}
     projectStatus={currentStatusInt}
@@ -449,6 +454,7 @@ if (currentStatusInt && statusData[currentStatusInt]) {
 
   <!-- Deposit Tab -->
   <TabDeposit
+    isActiveTab={activeSlug === "deposit"}
     {project}
     {currentUser}
     projectStatus={currentStatusInt}
@@ -460,6 +466,7 @@ if (currentStatusInt && statusData[currentStatusInt]) {
 
   <!-- Final Invoice Tab -->
   <TabFinalInvoice
+    isActiveTab={activeSlug === "final-invoice"}
     {project}
     projectStatus={currentStatusInt}
     {secondaryTextClasses}
@@ -469,6 +476,7 @@ if (currentStatusInt && statusData[currentStatusInt]) {
   />
 
   <TabActivityLog
+    isActiveTab={activeSlug === "activity-log"}
     {secondaryTextClasses}
     {primaryTextClasses}
     {globalInputClasses}
@@ -479,6 +487,7 @@ if (currentStatusInt && statusData[currentStatusInt]) {
 
   <TabTeamHours
     variant="staff"
+    isActiveTab={activeSlug === "team-hours"}
     {project}
     {currentUser}
     {secondaryTextClasses}
@@ -487,6 +496,7 @@ if (currentStatusInt && statusData[currentStatusInt]) {
   />
   <TabTeamHours
     variant="billing"
+    isActiveTab={activeSlug === "billing"}
     {project}
     {currentUser}
     {secondaryTextClasses}
@@ -495,6 +505,7 @@ if (currentStatusInt && statusData[currentStatusInt]) {
   />
 
   <TabGeneratePdf
+    isActiveTab={activeSlug === "generate-pdf"}
     {secondaryTextClasses}
     {primaryTextClasses}
     {globalInputClasses}
@@ -505,6 +516,7 @@ if (currentStatusInt && statusData[currentStatusInt]) {
   />
 
   <TabMarketing
+    isActiveTab={activeSlug === "marketing"}
     {project}
     {currentUser}
     {secondaryTextClasses}
@@ -512,7 +524,7 @@ if (currentStatusInt && statusData[currentStatusInt]) {
     {globalInputClasses}
   />
 
-  <TabDeliverables {project} {currentUser} {globalInputClasses} />
+  <TabDeliverables isActiveTab={activeSlug === "deliverables"} {project} {currentUser} {globalInputClasses} />
   <!-- </div> -->
 </LayoutFullWidth>
 
@@ -695,6 +707,30 @@ if (currentStatusInt && statusData[currentStatusInt]) {
 
     console.log(`✅ [SWITCH-TAB] Switched to: ${baseTabName}`);
   };
+
+  const PROJECT_VALID_TABS = [
+    "project-form",
+    "discussion",
+    "files",
+    "proposal",
+    "contract",
+    "deposit",
+    "final-invoice",
+    "activity-log",
+    "team-hours",
+    "billing",
+    "generate-pdf",
+    "marketing",
+    "deliverables",
+  ];
+
+  document.addEventListener("astro:page-load", () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const statusFromUrl = urlParams.get("status");
+    const tab =
+      statusFromUrl && PROJECT_VALID_TABS.includes(statusFromUrl) ? statusFromUrl : "project-form";
+    if (window.switchTab) window.switchTab(tab);
+  });
 
   // Initialize Discussion tab function
   (window as any).initializeDiscussion = async function () {

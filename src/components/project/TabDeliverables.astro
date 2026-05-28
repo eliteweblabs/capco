@@ -2,6 +2,7 @@
 import { globalClasses } from "../../pages/api/global/global-classes";
 import { DELIVERABLE_SHORTCODE_ROWS } from "../../lib/project-deliverables-shortcodes";
 import SimpleIcon from "../common/SimpleIcon.astro";
+import { projectTabPanelClass } from "../../lib/project-tab-panel";
 
 const {
   globalCardStyle,
@@ -18,10 +19,15 @@ interface Props {
   project?: any;
   currentUser?: any;
   globalInputClasses?: string;
+  isActiveTab?: boolean;
 }
 
-const { project, currentUser, globalInputClasses } = Astro.props;
+const { project, currentUser, globalInputClasses, isActiveTab = false } = Astro.props;
 const currentRole = currentUser?.profile?.role;
+const panelClass = projectTabPanelClass(
+  isActiveTab,
+  "tab-content color-background relative mb-16 min-h-[calc(100dvh-24rem)] p-4 shadow-lg"
+);
 
 if (currentRole === "Client") {
   return;
@@ -30,10 +36,7 @@ if (currentRole === "Client") {
 const projectId = project?.id ?? 0;
 ---
 
-<div
-  id="content-deliverables"
-  class="tab-content color-background relative mb-16 min-h-[calc(100dvh-24rem)] p-4 shadow-lg"
->
+<div id="content-deliverables" class={panelClass}>
   <div class="space-y-6">
     <div class={globalSectionHeaderBar}>
       <div>

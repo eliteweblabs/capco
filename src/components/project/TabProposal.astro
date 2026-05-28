@@ -1,6 +1,7 @@
 ---
 import Alert from "../partials/Alert.astro";
 import ProposalManager from "./ProposalManager.astro";
+import { projectTabPanelClass } from "../../lib/project-tab-panel";
 
 interface Props {
   project: any;
@@ -12,6 +13,7 @@ interface Props {
   statusData?: any;
   existingInvoice?: any;
   invoiceId?: any;
+  isActiveTab?: boolean;
 }
 
 const {
@@ -22,6 +24,7 @@ const {
   secondaryTextClasses,
   primaryTextClasses,
   statusData,
+  isActiveTab = false,
 } = Astro.props;
 
 const currentRole = currentUser?.profile?.role;
@@ -99,12 +102,13 @@ function getStatusAlert() {
   return null;
 }
 const statusAlert = getStatusAlert();
+const panelClass = projectTabPanelClass(
+  isActiveTab,
+  "tab-content color-background relative mb-16 min-h-[calc(100dvh-24rem)] p-4 shadow-lg"
+);
 ---
 
-<div
-  id="content-proposal"
-  class="tab-content color-background relative mb-16 min-h-[calc(100dvh-24rem)] p-4 shadow-lg"
->
+<div id="content-proposal" class={panelClass}>
   {statusAlert && <Alert type="info" title={statusAlert} />}
 
   {
