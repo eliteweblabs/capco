@@ -293,10 +293,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (uploadError) {
       console.error("❌ [FILES-UPLOAD] Error uploading file to storage:", uploadError);
+      const bucketMissing =
+        uploadError.message?.includes("Bucket not found") ||
+        uploadError.message?.includes("bucket not found");
       return json(
         {
           error: "Failed to upload file",
           details: uploadError.message,
+          ...(bucketMissing && {
+            hint: `Storage bucket "${bucketName}" does not exist. Run: node scripts/ensure-storage-buckets.mjs`,
+          }),
         },
         500
       );

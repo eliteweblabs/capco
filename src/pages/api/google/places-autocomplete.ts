@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { getGoogleMapsApiKey } from "../../../lib/google-maps-api-key";
 
 // Helper function to clean address by removing ", USA" suffix
 function cleanAddress(address: string | undefined): string {
@@ -6,9 +7,8 @@ function cleanAddress(address: string | undefined): string {
   return address.replace(/, USA$/i, "").trim();
 }
 
-// 🚧 DEAD STOP - 2024-12-19: Potentially unused API endpoint
-// If you see this log after a few days, this endpoint can likely be deleted
-console.log("🚧 [DEAD-STOP-2024-12-19] places-autocomplete.ts accessed - may be unused");
+const PLACES_AUTOCOMPLETE_FIELD_MASK =
+  "suggestions.placePrediction.placeId,suggestions.placePrediction.text.text";
 
 export const GET: APIRoute = async ({ url }) => {
   try {
@@ -40,18 +40,19 @@ export const GET: APIRoute = async ({ url }) => {
       );
     }
 
-    // Get API key from environment variables
-    const apiKey = import.meta.env.GOOGLE_MAPS_API_KEY;
-
-    console.log("🔍 [PLACES-PROXY] API key:", apiKey);
+    const apiKey = getGoogleMapsApiKey();
 
     if (!apiKey) {
+      console.error(
+        "🚨 [PLACES-PROXY] No API key — set GOOGLE_MAPS_API_KEY or GOOGLE_PLACES_API_KEY in .env"
+      );
       return new Response(
         JSON.stringify({
           error: "Google Maps API key not configured",
+          hint: "Set GOOGLE_MAPS_API_KEY or GOOGLE_PLACES_API_KEY in your environment",
         }),
         {
-          status: 500,
+          status: 503,
           headers: {
             "Content-Type": "application/json",
           },
@@ -59,45 +60,43 @@ export const GET: APIRoute = async ({ url }) => {
       );
     }
 
-    // Build the Google Places API URL (New Places API)
     const googleApiUrl = new URL("https://places.googleapis.com/v1/places:autocomplete");
 
-    // Prepare request body for new API using passed parameters
-    const requestBody: any = {
+    const requestBody: Record<string, unknown> = {
       input: input,
     };
 
-    // Handle components parameter (e.g., "country:us" -> ["us"])
     if (components && components.includes("country:")) {
       const countryCode = components.split(":")[1];
       requestBody.includedRegionCodes = [countryCode];
     }
 
-    // Handle types parameter if provided
-    if (types && types !== "address") {
+    if (types === "address") {
+      requestBody.includedPrimaryTypes = ["street_address", "premise"];
+    } else if (types) {
       requestBody.includedPrimaryTypes = [types];
     }
 
-    // Add location bias: use client-provided, else env default (avoids server-IP bias e.g. DC/VA on Railway)
-    const defaultBias = import.meta.env.GOOGLE_PLACES_DEFAULT_BIAS; // "lat,lng" e.g. "42.3601,-71.0589"
+    const defaultBias =
+      import.meta.env.GOOGLE_PLACES_DEFAULT_BIAS ||
+      (typeof process !== "undefined" ? process.env.GOOGLE_PLACES_DEFAULT_BIAS : undefined);
     const biasSource = locationBias || defaultBias;
     if (defaultBias && !locationBias) {
       console.log("🔍 [PLACES-PROXY] Using GOOGLE_PLACES_DEFAULT_BIAS (no client bias)");
     }
 
     if (biasSource) {
-      let lat: string, lng: string;
+      let lat: string | undefined;
+      let lng: string | undefined;
       if (biasSource.includes("@")) {
-        // Old format: circle:100@42.3601,-71.0589
         const parts = biasSource.split("@");
         [lat, lng] = parts[1].split(",");
       } else {
-        // New format: 42.3601,-71.0589
         [lat, lng] = biasSource.split(",");
       }
 
-      const latNum = parseFloat(lat?.trim());
-      const lngNum = parseFloat(lng?.trim());
+      const latNum = parseFloat(lat?.trim() ?? "");
+      const lngNum = parseFloat(lng?.trim() ?? "");
       if (!Number.isNaN(latNum) && !Number.isNaN(lngNum)) {
         requestBody.locationBias = {
           circle: {
@@ -105,39 +104,45 @@ export const GET: APIRoute = async ({ url }) => {
               latitude: latNum,
               longitude: lngNum,
             },
-            radius: 50000, // 50km radius
+            radius: 50000,
           },
         };
       }
     }
 
-    console.log(
-      "🔍 [PLACES-PROXY] Making request to Google Places API (New):",
-      googleApiUrl.toString()
-    );
-
-    // Make the request to Google Places API (New API uses POST)
     const response = await fetch(googleApiUrl.toString(), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": PLACES_AUTOCOMPLETE_FIELD_MASK,
       },
       body: JSON.stringify(requestBody),
     });
     const data = await response.json();
 
-    console.log("🔍 [PLACES-PROXY] Google Places API response:", {
-      status: data.error ? "ERROR" : "OK",
-      totalSuggestions: data.suggestions?.length || 0,
-      maxResults: maxResults,
-      willReturn: Math.min(data.suggestions?.length || 0, maxResults),
-      fullResponse: data, // Log the full response to see what we're getting
-    });
+    if (!response.ok || data.error) {
+      console.error("🚨 [PLACES-PROXY] Google API error:", data);
+      return new Response(
+        JSON.stringify({
+          status: "REQUEST_DENIED",
+          predictions: [],
+          errorMessage: data.error?.message || `Google Places API error (${response.status})`,
+        }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type",
+          },
+        }
+      );
+    }
 
-    // Convert new API response to legacy format for compatibility
     const allPredictions =
-      data.suggestions?.map((suggestion: any) => {
+      data.suggestions?.map((suggestion: { placePrediction?: { placeId?: string; text?: { text?: string } } }) => {
         const description = cleanAddress(suggestion.placePrediction?.text?.text);
         return {
           place_id: suggestion.placePrediction?.placeId,
@@ -149,13 +154,12 @@ export const GET: APIRoute = async ({ url }) => {
         };
       }) || [];
 
-    // Limit results to maxResults parameter
     const limitedPredictions = allPredictions.slice(0, maxResults);
 
     const legacyResponse = {
-      status: data.error ? "REQUEST_DENIED" : "OK",
+      status: "OK",
       predictions: limitedPredictions,
-      errorMessage: data.error?.message || null,
+      errorMessage: null,
     };
 
     return new Response(JSON.stringify(legacyResponse), {

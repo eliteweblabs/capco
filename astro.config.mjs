@@ -121,6 +121,7 @@ export default defineConfig({
       "process.env.RAILWAY_PROJECT_NAME": JSON.stringify(env.RAILWAY_PROJECT_NAME),
       "process.env.GOOGLE_MAPS_API_KEY": JSON.stringify(env.GOOGLE_MAPS_API_KEY),
       "process.env.GOOGLE_PLACES_API_KEY": JSON.stringify(env.GOOGLE_PLACES_API_KEY),
+      "process.env.GOOGLE_PLACES_DEFAULT_BIAS": JSON.stringify(env.GOOGLE_PLACES_DEFAULT_BIAS),
       "process.env.GOOGLE_PLACES_API_SECRET_KEY": JSON.stringify(env.GOOGLE_PLACES_API_SECRET_KEY),
       "process.env.MAILGUN_API": JSON.stringify(env.MAILGUN_API),
       "process.env.MAILGUN_BASE_URL": JSON.stringify(env.MAILGUN_BASE_URL),

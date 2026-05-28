@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { getGoogleMapsApiKey } from "../../../lib/google-maps-api-key";
 
 // Helper function to clean address by removing ", USA" suffix
 function cleanAddress(address: string | undefined): string {
@@ -32,16 +33,16 @@ export const GET: APIRoute = async ({ url }) => {
       );
     }
 
-    // Get API key from environment variables
-    const apiKey = import.meta.env.GOOGLE_MAPS_API_KEY;
+    const apiKey = getGoogleMapsApiKey();
 
     if (!apiKey) {
       return new Response(
         JSON.stringify({
           error: "Google Maps API key not configured",
+          hint: "Set GOOGLE_MAPS_API_KEY or GOOGLE_PLACES_API_KEY in your environment",
         }),
         {
-          status: 500,
+          status: 503,
           headers: {
             "Content-Type": "application/json",
           },

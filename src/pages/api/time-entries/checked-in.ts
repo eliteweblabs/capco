@@ -9,7 +9,8 @@ import { isAdminOrSuperAdmin } from "../../../lib/user-utils";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
 
 async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
-  const apiKey = import.meta.env.GOOGLE_MAPS_API_KEY;
+  const { getGoogleMapsApiKey } = await import("../../../lib/google-maps-api-key");
+  const apiKey = getGoogleMapsApiKey();
   if (!apiKey) return null;
   const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`;
   const res = await fetch(url);
