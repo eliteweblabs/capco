@@ -164,6 +164,15 @@ export async function getContactFormConfig(
   return withAction;
 }
 
+function isSuperAdminRole(userRole?: string | null): boolean {
+  const r = (userRole || "").toLowerCase().replace(/[^a-z]/g, "");
+  return r === "superadmin";
+}
+
+function isProjectAddressField(field: { id?: string; name?: string }): boolean {
+  return field.id === "address-input" || field.name === "address";
+}
+
 export async function getProjectFormConfig(
   userRole?: string | null,
   isNewProject?: boolean,
@@ -175,6 +184,7 @@ export async function getProjectFormConfig(
 
   const merged = mergeFormButtonDefaults(config, pf);
   const step = pf.steps[0];
+  const superAdmin = isSuperAdminRole(userRole);
   const fields = (step?.fields ?? []).filter((f: any) => {
     if (!f || typeof f !== "object") return false;
     if (f.allow?.length && userRole) {
@@ -182,7 +192,14 @@ export async function getProjectFormConfig(
       if (!f.allow.some((a: string) => a.toLowerCase() === r)) return false;
     }
     const status = isNewProject ? 0 : projectStatus;
-    if (f.hideAtStatus?.length && status != null && f.hideAtStatus.includes(status)) return false;
+    if (
+      f.hideAtStatus?.length &&
+      status != null &&
+      f.hideAtStatus.includes(status) &&
+      !(superAdmin && isProjectAddressField(f))
+    ) {
+      return false;
+    }
     return true;
   });
   const buttons = (step?.buttons ?? []).filter((b: any) => {

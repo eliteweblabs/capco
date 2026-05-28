@@ -30,10 +30,13 @@ const {
 
 const currentRole = currentUser?.profile?.role;
 const normalizedRole = (currentRole || "").toLowerCase().replace(/[^a-z]/g, "");
+const isSuperAdmin = normalizedRole === "superadmin";
 const canManageClientSelection = ["admin", "staff", "superadmin"].includes(normalizedRole);
+const showAddressField = isNewProject || isSuperAdmin;
 const projectId = project?.id;
 const globalClassesResult = globalClasses();
 const globalFormClasses = globalClassesResult.globalFormClasses;
+const globalFormLabel = globalClassesResult.globalFormLabel;
 const themeInputClasses = globalClassesResult.globalInputClasses;
 // Generate a temporary ID for new projects
 const formId = isNewProject ? `${Date.now()}` : projectId || "";
@@ -54,12 +57,15 @@ function fieldForRenderer(
   field: any,
   projectStatusVal: number | null,
   formIdVal: string,
-  projectData: Record<string, any>
+  projectData: Record<string, any>,
+  superAdmin = false
 ) {
-  const readOnly =
+  const isAddressField = field.id === "address-input" || field.name === "address";
+  let readOnly =
     field.readOnlyAtStatus?.length && projectStatusVal != null
       ? field.readOnlyAtStatus.includes(projectStatusVal)
       : false;
+  if (superAdmin && isAddressField) readOnly = false;
   let componentProps = { ...(field.componentProps || {}), readOnly };
   if (field.component === "UnitSlider") {
     componentProps = { ...componentProps, projectId: formIdVal };
@@ -111,8 +117,14 @@ function fieldForRenderer(
             const columnClass = getColumnClasses(field.columns);
             return (
               <div class={`relative ${columnClass}`}>
-                {isNewProject ? (
-                  <div class="col-span-12 md:col-span-6 ">
+                {showAddressField ? (
+                  <div class="col-span-12 md:col-span-6">
+                    {!isNewProject && field.label && (
+                      <label for="address-search-input" class={globalFormLabel}>
+                        {field.label}
+                        {field.required ? <span class="text-red-500"> *</span> : null}
+                      </label>
+                    )}
                     <InlineAddressSearch
                       id="address"
                       fetchApiEndpoint="/api/google/places-autocomplete"
@@ -126,9 +138,7 @@ function fieldForRenderer(
                       currentLocation={true}
                     />
                   </div>
-                ) : null /* Address is read-only after creation and already
-                    shown in the page hero; omit from the form entirely so
-                    the upsert PUT does not touch the address column. */}
+                ) : null}
                 {isNewProject && canManageClientSelection && (
                   <IsNewOrExistingClient
                     globalInputClasses={globalInputClasses ?? themeInputClasses}
@@ -139,7 +149,7 @@ function fieldForRenderer(
               </div>
             );
           }
-          const enrichedField = fieldForRenderer(field, projectStatus, formId, project);
+          const enrichedField = fieldForRenderer(field, projectStatus, formId, project, isSuperAdmin);
           return (
             <FormFieldRenderer
               field={enrichedField}
@@ -190,6 +200,28 @@ function fieldForRenderer(
     const pageIsNewProject =
       form.hasAttribute("data-is-new-project") &&
       !["false", "0", "no"].includes(pageIsNewProjectAttr);
+    const pageRole = (form.getAttribute("data-current-role") || "").toLowerCase();
+    const pageIsSuperAdmin = pageRole === "superadmin";
+
+    if (pageIsSuperAdmin && !pageIsNewProject) {
+      let projectData: { address?: string } = {};
+      try {
+        projectData = JSON.parse(form.getAttribute("data-project-data") || "{}");
+      } catch {
+        /* ignore */
+      }
+      const existingAddress = (projectData.address || "").trim();
+      if (existingAddress) {
+        const seed = () => {
+          const hidden = document.getElementById("address-value") as HTMLInputElement | null;
+          const search = document.getElementById("address-search-input") as HTMLInputElement | null;
+          if (hidden) hidden.value = existingAddress;
+          if (search) search.value = existingAddress;
+        };
+        seed();
+        document.addEventListener("astro:page-load", seed, { once: true });
+      }
+    }
 
     // Form submission handler
     async function handleFormSubmit(event) {
