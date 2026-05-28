@@ -413,6 +413,13 @@ export function initTanStackDataTable<T extends Record<string, unknown>>(
 
 function initAll() {
   document.querySelectorAll<HTMLElement>("[data-tanstack-table-init]").forEach((el) => {
+    const root = el.closest(".tanstack-data-table");
+    if (
+      root instanceof HTMLElement &&
+      (root.classList.contains("hidden") || root.hasAttribute("hidden"))
+    ) {
+      return;
+    }
     const raw = el.getAttribute("data-tanstack-config");
     if (!raw) return;
     try {

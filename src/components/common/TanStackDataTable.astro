@@ -16,6 +16,7 @@
  * />
  */
 import { globalClasses } from "../../pages/api/global/global-classes";
+import { showTanStackTablePreview } from "../../lib/show-tanstack-table-preview";
 
 export interface TanStackColumnMeta {
   icon?: string;
@@ -49,6 +50,8 @@ interface Props<T = unknown> {
   reorderCallback?: string;
   /** Key for reorder API id (e.g. "id" for uuid); defaults to getRowIdKey */
   getReorderIdKey?: keyof T & string;
+  /** Override global showTanStackTablePreview (e.g. design demo pages) */
+  visible?: boolean;
 }
 
 const {
@@ -64,6 +67,7 @@ const {
   expandLinkedAccordionId,
   reorderCallback,
   getReorderIdKey,
+  visible = showTanStackTablePreview,
 } = Astro.props;
 
 const {
@@ -98,7 +102,11 @@ const config = {
 };
 ---
 
-<div class={`tanstack-data-table ${dataTableCardClasses}`}>
+<div
+  class:list={["tanstack-data-table", dataTableCardClasses, !visible && "hidden"]}
+  aria-hidden={!visible ? "true" : undefined}
+  hidden={!visible ? true : undefined}
+>
   {
     (title || description) && (
       <div class={dataTableHeaderBarClasses}>

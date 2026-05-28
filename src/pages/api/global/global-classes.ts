@@ -116,7 +116,7 @@ export const globalClasses = () => {
     globalSidebarClasses:
       "bg-gray-50/90 dark:bg-gray-950/90 backdrop-blur-sm transition-duration-[350ms] overflow-y-scroll no-scrollbar",
     navAnchorClasses:
-      "font-secondary lowercase hover:bg-gray-300 dark:hover:bg-gray-700 flex w-full align-center rounded-lg px-3 py-2 whitespace-nowrap",
+      "font-secondary hover:bg-gray-300 dark:hover:bg-gray-700 flex w-full align-center rounded-lg px-3 py-2 whitespace-nowrap",
     navActiveClasses: "font-secondary bg-gray-300 dark:bg-gray-700 font-bold",
     navSvgClasses: "h-4 w-4 flex-shrink-0 text-gray-900 dark:text-gray-400",
   };
