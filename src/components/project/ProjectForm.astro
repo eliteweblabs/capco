@@ -3,6 +3,11 @@ import { getProjectFormConfig } from "../../lib/forms/form-config-from-site";
 import { getColumnClasses, globalClasses } from "../../pages/api/global/global-classes";
 import { checkAuth } from "../../lib/auth";
 import FormFieldRenderer from "../../features/forms/components/FormFieldRenderer.astro";
+import {
+  inspectionStartDateForForm,
+  isInspectionEnabled,
+  todayDateInputValue,
+} from "../../lib/inspection-start-date";
 
 import IsNewOrExistingClient from "./IsNewOrExistingClient.astro";
 import Button from "../common/Button.astro";
@@ -83,6 +88,9 @@ function fieldForRenderer(
         dataValue: o.value,
       })),
     };
+  }
+  if (field.name === "inspectionStartDate" && isInspectionEnabled(projectData?.isInspection)) {
+    out = { ...out, value: inspectionStartDateForForm(projectData) };
   }
   return out;
 }
@@ -191,6 +199,8 @@ function fieldForRenderer(
 
 
 <script>
+  import { todayDateInputValue } from "../../lib/inspection-start-date";
+
   // Initialize project form
   document.addEventListener("DOMContentLoaded", async function () {
     const form = document.querySelector("form[data-project-id]");
@@ -290,6 +300,14 @@ function fieldForRenderer(
           projectData[toggleName] = cb.checked;
         }
       });
+
+      if (
+        projectData.isInspection &&
+        (!projectData.inspectionStartDate ||
+          String(projectData.inspectionStartDate).trim() === "")
+      ) {
+        projectData.inspectionStartDate = todayDateInputValue();
+      }
 
       try {
         const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement | null;
@@ -475,6 +493,16 @@ function fieldForRenderer(
       return "value" in input && typeof input.value === "string" ? input.value : "";
     }
 
+    function ensureInspectionStartDateDefault() {
+      const toggle = form.querySelector('input[type="checkbox"][name="isInspection"]');
+      const dateInput = form.querySelector('input[name="inspectionStartDate"]');
+      if (!(toggle instanceof HTMLInputElement) || !(dateInput instanceof HTMLInputElement)) {
+        return;
+      }
+      if (!toggle.checked || dateInput.value.trim() !== "") return;
+      dateInput.value = todayDateInputValue();
+    }
+
     function refresh() {
       const wrappers = form.querySelectorAll("[data-conditional-field]");
       wrappers.forEach((wrapper) => {
@@ -491,6 +519,7 @@ function fieldForRenderer(
         const visible = required.includes(current);
         wrapper.style.display = visible ? "" : "none";
       });
+      ensureInspectionStartDateDefault();
     }
 
     form.addEventListener("input", refresh);

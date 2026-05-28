@@ -6,6 +6,7 @@ import { supabase } from "../../../lib/supabase";
 import { supabaseAdmin } from "../../../lib/supabase-admin";
 import { getApiBaseUrl } from "../../../lib/url-utils";
 import { applyProjectTemplates } from "../../../lib/apply-project-templates";
+import { resolveInspectionStartDate } from "../../../lib/inspection-start-date";
 import { isClientOrSuperAdmin, isNotClientOrSuperAdmin } from "../../../lib/user-utils";
 
 interface ProjectData {
@@ -294,10 +295,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       newConstruction: body.newConstruction === "on" || body.newConstruction === true,
       isInspection: body.isInspection === "on" || body.isInspection === true,
       inspectionPeriod: normalizeRadioToggleValue(body.inspectionPeriod),
-      inspectionStartDate:
-        typeof body.inspectionStartDate === "string" && body.inspectionStartDate.trim() !== ""
-          ? body.inspectionStartDate.trim()
-          : null,
+      inspectionStartDate: resolveInspectionStartDate(
+        body.isInspection === "on" || body.isInspection === true,
+        body.inspectionStartDate
+      ),
       nextInspectionAt:
         typeof body.nextInspectionAt === "string" && body.nextInspectionAt.trim() !== ""
           ? body.nextInspectionAt.trim()
@@ -525,6 +526,12 @@ export const PUT: APIRoute = async ({ request, cookies, params }) => {
       if (dateKey in updateData && typeof updateData[dateKey] === "string" && updateData[dateKey].trim() === "") {
         updateData[dateKey] = null;
       }
+    }
+    if (updateData.isInspection === true && "inspectionStartDate" in updateData) {
+      updateData.inspectionStartDate = resolveInspectionStartDate(
+        true,
+        updateData.inspectionStartDate
+      );
     }
     if (Object.keys(updateData).length === 0) {
       return createErrorResponse("No fields to update", 400);
