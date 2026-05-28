@@ -10,20 +10,39 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type Period =
+  | "3_months"
+  | "6_months"
+  | "12_months"
+  | "18_months"
+  | "24_months"
+  | "36_months"
+  | "60_months";
+
+/** Legacy DB values; still expanded on calendar until migrated. */
+export type LegacyPeriod =
   | "quarterly"
   | "semi_annual"
   | "yearly"
   | "2_year"
   | "3_year"
   | "4_year"
-  | "5_year";
-
-/** Legacy DB values; still expanded on calendar until migrated. */
-export type LegacyPeriod = "biennial";
+  | "5_year"
+  | "biennial"
+  | "2x_year"
+  | "3x_year"
+  | "4x_year"
+  | "5x_year";
 
 export type PeriodOrLegacy = Period | LegacyPeriod;
 
 export const PERIOD_MONTHS: Record<PeriodOrLegacy, number> = {
+  "3_months": 3,
+  "6_months": 6,
+  "12_months": 12,
+  "18_months": 18,
+  "24_months": 24,
+  "36_months": 36,
+  "60_months": 60,
   quarterly: 3,
   semi_annual: 6,
   yearly: 12,
@@ -32,17 +51,32 @@ export const PERIOD_MONTHS: Record<PeriodOrLegacy, number> = {
   "4_year": 48,
   "5_year": 60,
   biennial: 24,
+  "2x_year": 6,
+  "3x_year": 4,
+  "4x_year": 3,
+  "5x_year": 2,
 };
 
 export const PERIOD_LABELS: Record<PeriodOrLegacy, string> = {
-  quarterly: "Quarterly",
-  semi_annual: "Semi-Annual",
-  yearly: "1 Year",
-  "2_year": "2 Year",
-  "3_year": "3 Year",
-  "4_year": "4 Year",
-  "5_year": "5 Year",
-  biennial: "2 Year",
+  "3_months": "3 Months",
+  "6_months": "6 Months",
+  "12_months": "12 Months",
+  "18_months": "18 Months",
+  "24_months": "24 Months",
+  "36_months": "36 Months",
+  "60_months": "60 Months",
+  quarterly: "3 Months",
+  semi_annual: "6 Months",
+  yearly: "12 Months",
+  "2_year": "24 Months",
+  "3_year": "36 Months",
+  "4_year": "48 Months",
+  "5_year": "60 Months",
+  biennial: "24 Months",
+  "2x_year": "6 Months",
+  "3x_year": "3 Months",
+  "4x_year": "3 Months",
+  "5x_year": "2 Months",
 };
 
 const MAX_OCCURRENCES_PER_PROJECT = 64;

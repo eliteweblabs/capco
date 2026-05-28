@@ -1,19 +1,16 @@
--- MavSafe recurring inspection periods: year-interval options (1–5 years between inspections).
--- Apply to every live Supabase project (MAVSAFE, CAPCo, Rothco, …) after deploy.
+-- MavSafe recurring inspection periods: fixed month intervals between inspections.
+-- Apply to every live Supabase project (MAVSAFE, CAPCo, Rothco, …).
 -- Code: public/data/config-mavsafe.json, src/lib/project-schedule.ts
 
-UPDATE "public"."projects"
-SET "inspectionPeriod" = '2_year'
-WHERE "inspectionPeriod" = 'biennial';
-
--- If a mistaken per-year deploy saved these values, map to closest intervals
-UPDATE "public"."projects"
-SET "inspectionPeriod" = 'semi_annual'
-WHERE "inspectionPeriod" = '2x_year';
-
-UPDATE "public"."projects"
-SET "inspectionPeriod" = 'quarterly'
-WHERE "inspectionPeriod" IN ('3x_year', '4x_year', '5x_year');
+UPDATE "public"."projects" SET "inspectionPeriod" = '3_months' WHERE "inspectionPeriod" = 'quarterly';
+UPDATE "public"."projects" SET "inspectionPeriod" = '6_months' WHERE "inspectionPeriod" = 'semi_annual';
+UPDATE "public"."projects" SET "inspectionPeriod" = '12_months' WHERE "inspectionPeriod" = 'yearly';
+UPDATE "public"."projects" SET "inspectionPeriod" = '24_months' WHERE "inspectionPeriod" IN ('2_year', 'biennial');
+UPDATE "public"."projects" SET "inspectionPeriod" = '36_months' WHERE "inspectionPeriod" = '3_year';
+UPDATE "public"."projects" SET "inspectionPeriod" = '60_months' WHERE "inspectionPeriod" IN ('4_year', '5_year');
+UPDATE "public"."projects" SET "inspectionPeriod" = '6_months' WHERE "inspectionPeriod" = '2x_year';
+UPDATE "public"."projects" SET "inspectionPeriod" = '3_months' WHERE "inspectionPeriod" IN ('3x_year', '4x_year');
+UPDATE "public"."projects" SET "inspectionPeriod" = '6_months' WHERE "inspectionPeriod" = '5x_year';
 
 ALTER TABLE "public"."projects"
   DROP CONSTRAINT IF EXISTS "projects_inspectionPeriod_check";
@@ -23,15 +20,15 @@ ALTER TABLE "public"."projects"
   CHECK (
     "inspectionPeriod" IS NULL
     OR "inspectionPeriod" IN (
-      'quarterly',
-      'semi_annual',
-      'yearly',
-      '2_year',
-      '3_year',
-      '4_year',
-      '5_year'
+      '3_months',
+      '6_months',
+      '12_months',
+      '18_months',
+      '24_months',
+      '36_months',
+      '60_months'
     )
   );
 
 COMMENT ON COLUMN "public"."projects"."inspectionPeriod" IS
-  'Recurrence interval: quarterly, semi_annual, yearly (1 yr), 2_year … 5_year (N years between inspections).';
+  'Recurrence interval in months: 3_months, 6_months, 12_months, 18_months, 24_months, 36_months, 60_months.';
