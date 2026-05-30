@@ -174,25 +174,50 @@ const filteredItems = items.filter((item) => {
 
     let lastTouchActivationAt = 0;
 
+    function getSwitchTarget(button: HTMLElement, handlerName: string): string {
+      const fromAttr = button.getAttribute("data-switch-target");
+      if (fromAttr) return fromAttr;
+
+      const onclick = button.getAttribute("onclick") || "";
+      const escapedHandler = handlerName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const handlerCall = new RegExp(
+        `(?:window\\.)?${escapedHandler}\\?\\.\\(\\s*['"]([^'"]+)['"]\\s*\\)|(?:window\\.)?${escapedHandler}\\s*\\(\\s*['"]([^'"]+)['"]\\s*\\)`
+      );
+      const handlerMatch = onclick.match(handlerCall);
+      if (handlerMatch?.[1] || handlerMatch?.[2]) {
+        return handlerMatch[1] || handlerMatch[2] || "";
+      }
+
+      const urlParam = nav.getAttribute("data-url-param") || "";
+      const buttonId = button.id || "";
+      if (urlParam && buttonId.startsWith(`${urlParam}-`)) {
+        return buttonId.slice(urlParam.length + 1);
+      }
+      if (buttonId.startsWith("tab-")) {
+        return buttonId.slice(4);
+      }
+      if (buttonId.startsWith("status-")) {
+        return buttonId.slice(7);
+      }
+
+      return "";
+    }
+
     function invokeTabSwitch(button: HTMLElement) {
       const handlerName = nav.getAttribute("data-switch-handler") || "switchTab";
       const fn = window[handlerName as keyof Window];
       if (typeof fn !== "function") return;
 
-      const switchTarget = button.getAttribute("data-switch-target");
+      const switchTarget = getSwitchTarget(button, handlerName);
       if (switchTarget) {
         fn(switchTarget);
-        return;
-      }
-
-      const onclick = button.getAttribute("onclick");
-      const match = onclick?.match(/switchTab\s*\(\s*['"]([^'"]+)['"]\s*\)/);
-      if (match?.[1]) {
-        fn(match[1]);
       }
     }
 
     function activateButton(button) {
+      const handlerName = nav.getAttribute("data-switch-handler") || "switchTab";
+      const switchTarget = getSwitchTarget(button, handlerName);
+
       invokeTabSwitch(button);
 
       updateActiveButton(button);
@@ -204,7 +229,7 @@ const filteredItems = items.filter((item) => {
           bubbles: true,
           detail: {
             index: Number.isNaN(index) ? -1 : index,
-            switchTarget: switchTarget || "",
+            switchTarget,
           },
         })
       );
@@ -212,6 +237,14 @@ const filteredItems = items.filter((item) => {
 
     // Handle button activation for click + iOS touch interactions.
     buttons.forEach((button) => {
+      const handlerName = nav.getAttribute("data-switch-handler") || "switchTab";
+      const switchTarget = getSwitchTarget(button, handlerName);
+      if (switchTarget && !button.getAttribute("data-switch-target")) {
+        button.setAttribute("data-switch-target", switchTarget);
+      }
+      // SlidingTabs owns tab switching; inline onclick would double-fire on desktop (Windows/macOS).
+      button.removeAttribute("onclick");
+
       button.addEventListener("touchend", function (event) {
         // iOS Safari can skip click handlers in some nested/wrapped tab layouts.
         if (event.cancelable) event.preventDefault();
