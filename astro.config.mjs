@@ -9,7 +9,6 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// import studiocms from "studiocms"; // Disabled - not in use, causing SDK initialization errors
 
 // Load environment variables (merge with process.env so Railway build args are available when .env is missing)
 import { loadEnv } from "vite";
