@@ -922,24 +922,28 @@ export function createMultiStepFormHandler(
       });
     });
 
-    // SMS checkbox change listener - update next button data-next (dataNext when checked, data-skip when unchecked)
-    const smsCheckbox = form.querySelector('input[name="smsAlerts"]') as HTMLInputElement;
-    if (smsCheckbox) {
-      const smsStep = smsCheckbox.closest(".step-content");
-      const smsNextBtn = smsStep?.querySelector("[data-skip]") as HTMLElement;
+    // SMS checkbox (SlideToggle): next must go to carrier step only when opted in — use data-skip when off.
+    // Scope to each step that contains the checkbox so we never bind the wrong step's Next button.
+    form.querySelectorAll(".step-content").forEach((stepEl) => {
+      const smsCheckbox = stepEl.querySelector(
+        'input[name="smsAlerts"][type="checkbox"]'
+      ) as HTMLInputElement | null;
+      if (!smsCheckbox) return;
+      const smsNextBtn = stepEl.querySelector("button.next-step[data-skip]") as HTMLElement | null;
       const updateSmsButtonDest = () => {
         if (!smsNextBtn) return;
         const skipDest = smsNextBtn.getAttribute("data-skip");
+        const stepNum = parseInt(stepEl.getAttribute("data-step") || "0", 10);
         const validDest = options.formConfig?.steps
-          ?.find((s: any) => s.stepNumber === parseInt(smsStep?.getAttribute("data-step") || "0"))
+          ?.find((s: any) => s.stepNumber === stepNum)
           ?.buttons?.find((b: any) => b.type === "next")?.dataNext;
         if (validDest != null && skipDest != null) {
           smsNextBtn.setAttribute("data-next", smsCheckbox.checked ? String(validDest) : skipDest);
         }
       };
       smsCheckbox.addEventListener("change", updateSmsButtonDest);
-      updateSmsButtonDest(); // Set initial state
-    }
+      updateSmsButtonDest();
+    });
 
     // Address input change listener - update button text and icon with validLabel
     window.addEventListener("inline-address-select", (e: any) => {
@@ -1370,6 +1374,16 @@ export function createMultiStepFormHandler(
           nextStep = parseInt(skipDest!);
         } else {
           nextStep = parseInt(nextBtn.getAttribute("data-next") || "1");
+        }
+
+        // SMS opt-in (SlideToggle): if user did not enable SMS, never send them to the carrier step —
+        // use data-skip even when data-next was left stale (e.g. listener missed the toggle).
+        const stepContentForNext = nextBtn.closest(".step-content");
+        const smsToggle = stepContentForNext?.querySelector(
+          'input[name="smsAlerts"][type="checkbox"]'
+        ) as HTMLInputElement | null;
+        if (smsToggle && !smsToggle.checked && skipDest != null) {
+          nextStep = parseInt(skipDest, 10);
         }
 
         // Check if this is submit button
