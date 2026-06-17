@@ -60,18 +60,18 @@ const {
 
 <script define:vars={{ inputId: `${id}-input`, refuseId: `${id}-refuse` }}>
   document.addEventListener("DOMContentLoaded", () => {
-    const module = document.querySelector(
+    const consentRoot = document.querySelector(
       `[data-age-consent-id="${inputId.replace("-input", "")}"]`
     );
-    if (!module) return;
-    const input = module.querySelector(`#${inputId}`) as HTMLInputElement;
-    const refuseEl = module.querySelector(`#${refuseId}`) as HTMLElement;
-    const yesBtn = module.querySelector(".age-consent-yes");
-    const noBtn = module.querySelector(".age-consent-no");
+    if (!consentRoot) return;
+    const input = consentRoot.querySelector(`#${inputId}`) as HTMLInputElement;
+    const refuseEl = consentRoot.querySelector(`#${refuseId}`) as HTMLElement;
+    const yesBtn = consentRoot.querySelector(".age-consent-yes");
+    const noBtn = consentRoot.querySelector(".age-consent-no");
     if (!input || !yesBtn || !noBtn) return;
 
     // Wall: disable and hide Next until user confirms Yes
-    const stepContent = module.closest(".step-content");
+    const stepContent = consentRoot.closest(".step-content");
     const nextBtn = stepContent?.querySelector(
       "button.next-step, button.submit-step"
     ) as HTMLButtonElement;
@@ -84,7 +84,7 @@ const {
     yesBtn.addEventListener("click", () => {
       input.value = "true";
       refuseEl?.classList.add("hidden");
-      const nextBtnEl = module
+      const nextBtnEl = consentRoot
         .closest(".step-content")
         ?.querySelector("button.next-step, button.submit-step") as HTMLButtonElement;
       if (nextBtnEl) {

@@ -1,0 +1,2046 @@
+---
+import { globalClasses } from "../../pages/api/global/global-classes";
+import { readdirSync } from "node:fs";
+import { join } from "node:path";
+
+const { globalFormLabel, mutedTextSmClasses } = globalClasses();
+
+// Same /test-drawings discovery as SimpleScanStripped — keeps the picker in sync.
+const drawingsDir = join(process.cwd(), "public", "test-drawings");
+let testDrawings: { label: string; file: string }[] = [];
+try {
+  testDrawings = readdirSync(drawingsDir)
+    .filter((f) => f.toLowerCase().endsWith(".pdf"))
+    .sort()
+    .map((f) => ({
+      label: f
+        .replace(/\s*FP\.pdf$/i, "")
+        .replace(/\.pdf$/i, "")
+        .trim(),
+      file: f,
+    }));
+} catch {
+  // folder missing or unreadable — fall back to empty list
+}
+---
+
+<div class="flex min-h-0 min-w-0 flex-1 flex-col">
+  {/* ── Top bar ── */}
+  <div
+    class="flex flex-wrap items-end gap-4 border-b border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-900"
+  >
+    <div class="min-w-[180px]">
+      <label for="cv-test-select" class={globalFormLabel}>Drawing</label>
+      <select
+        id="cv-test-select"
+        class="block w-full rounded border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+      >
+        {
+          testDrawings.map((d, i) => (
+            <option value={`/test-drawings/${d.file}`} selected={i === 0}>
+              {d.label}
+            </option>
+          ))
+        }
+      </select>
+    </div>
+    <div>
+      <label for="cv-file" class={globalFormLabel}>Upload</label>
+      <input id="cv-file" type="file" accept=".pdf,image/*" class="block text-sm" />
+    </div>
+    <div>
+      <label for="cv-longedge" class={globalFormLabel}>Working size (long edge px)</label>
+      <select
+        id="cv-longedge"
+        class="block rounded border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+      >
+        <option value="1100">1100 (fast)</option>
+        <option value="1500" selected>1500</option>
+        <option value="2000">2000 (slow)</option>
+      </select>
+    </div>
+    <button
+      id="cv-inspect"
+      type="button"
+      class="rounded bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700"
+    >
+      Inspect vectors (fast)
+    </button>
+    <button
+      id="cv-start"
+      type="button"
+      class="rounded bg-primary-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-600"
+    >
+      Start step-by-step
+    </button>
+    <p id="cv-status" class={`${mutedTextSmClasses} break-words`}>Loading…</p>
+  </div>
+
+  {/* ── Vector inspector + single-column step wizard ── */}
+  <div class="min-h-0 flex-1 overflow-auto bg-gray-50 p-4 dark:bg-gray-950">
+    <div id="cv-vector" class="mb-4"></div>
+    <div id="cv-wizard"></div>
+  </div>
+</div>
+
+<script src="/js/pdf.min.js" defer></script>
+<script>
+  import {
+    binarizeInkSoft,
+    binarizeInkHard,
+    isolateLines,
+    scoreRegions,
+    detectHeadsByColor,
+    countOnes,
+    maskToImageData,
+    type Bbox,
+    type Component,
+  } from "./cv-pipeline";
+  import {
+    analyzeVector,
+    getFormInstances,
+    getTextLabels,
+    getOutlinedTextRegions,
+    renderPageWithoutText,
+    renderPageVector,
+    getPageSvgElement,
+    detectRepeatedSymbols,
+    renderLayerDecomposition,
+    renderSemanticLayers,
+    type VectorStats,
+    type TextLabel,
+    type VBox,
+    type GlyphCandidate,
+    type SymbolGroup,
+    type DecompLayer,
+    type DecompResult,
+    type SemanticResult,
+  } from "./vector-extract";
+
+  const $ = (id: string) => document.getElementById(id);
+  const statusEl = $("cv-status");
+  const wizardEl = $("cv-wizard");
+  const vectorEl = $("cv-vector");
+  const selectEl = $("cv-test-select") as HTMLSelectElement | null;
+  const fileEl = $("cv-file") as HTMLInputElement | null;
+  const longEdgeEl = $("cv-longedge") as HTMLSelectElement | null;
+  const startBtn = $("cv-start") as HTMLButtonElement | null;
+  const inspectBtn = $("cv-inspect") as HTMLButtonElement | null;
+
+  const getPdfLib = () => (window as any)["pdfjsLib"];
+  const setStatus = (s: string) => {
+    if (statusEl) statusEl.textContent = s;
+  };
+
+  // ── small helpers ──────────────────────────────────────────────────────────
+  function cloneImageData(src: ImageData): ImageData {
+    return new ImageData(new Uint8ClampedArray(src.data), src.width, src.height);
+  }
+  function whiteRect(img: ImageData, x: number, y: number, w: number, h: number) {
+    const x0 = Math.max(0, Math.floor(x));
+    const y0 = Math.max(0, Math.floor(y));
+    const x1 = Math.min(img.width, Math.ceil(x + w));
+    const y1 = Math.min(img.height, Math.ceil(y + h));
+    for (let yy = y0; yy < y1; yy++) {
+      let i = (yy * img.width + x0) * 4;
+      for (let xx = x0; xx < x1; xx++, i += 4) {
+        img.data[i] = 255;
+        img.data[i + 1] = 255;
+        img.data[i + 2] = 255;
+        img.data[i + 3] = 255;
+      }
+    }
+  }
+  function keepOnlyBoxes(src: ImageData, boxes: Bbox[]): ImageData {
+    const out = cloneImageData(src);
+    const { width: w, height: h } = src;
+    const keep = new Uint8Array(w * h);
+    for (const b of boxes) {
+      const y0 = Math.max(0, Math.floor(b.y)),
+        y1 = Math.min(h, Math.ceil(b.y + b.h));
+      const x0 = Math.max(0, Math.floor(b.x)),
+        x1 = Math.min(w, Math.ceil(b.x + b.w));
+      for (let y = y0; y < y1; y++) {
+        const row = y * w;
+        for (let x = x0; x < x1; x++) keep[row + x] = 1;
+      }
+    }
+    for (let p = 0, i = 0; p < keep.length; p++, i += 4) {
+      if (!keep[p]) {
+        out.data[i] = 255;
+        out.data[i + 1] = 255;
+        out.data[i + 2] = 255;
+        out.data[i + 3] = 255;
+      }
+    }
+    return out;
+  }
+
+  /** Decide the brightness cutoff that separates TEXT ink from HEAD/line ink.
+   *  Acrobat selects text glyphs only; the head that sits inside a word's
+   *  bounding rect is NOT text and is a different (darker) ink. So we learn the
+   *  head darkness and the typical text darkness, and split between them. Pixels
+   *  brighter than the cutoff are text (erase); pixels at/below it are head or
+   *  linework (keep). Returns null when there are no labels to key against. */
+  function measureStripCutoff(img: ImageData, labels: TextLabel[]): number | null {
+    if (!labels.length) return null;
+    const { width: W, height: H } = img;
+    const d = img.data;
+    // Head darkness: the level shared by the most repeating compact symbols.
+    const headColor = detectHeadsByColor(img, { minRepeat: 2 }).color;
+    // Sample ink luminance inside the text boxes (ignore paper + anything as dark
+    // as / darker than the heads, so heads don't drag the text estimate down).
+    const lums: number[] = [];
+    for (const l of labels) {
+      const x0 = Math.max(0, Math.floor(l.x)),
+        y0 = Math.max(0, Math.floor(l.y));
+      const x1 = Math.min(W, Math.ceil(l.x + l.w)),
+        y1 = Math.min(H, Math.ceil(l.y + l.h));
+      for (let y = y0; y < y1; y++) {
+        let i = (y * W + x0) * 4;
+        for (let x = x0; x < x1; x++, i += 4) {
+          const g = d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
+          if (g >= 235) continue; // paper
+          if (headColor !== null && g <= headColor + 2) continue; // head-dark
+          lums.push(g);
+        }
+      }
+    }
+    let textColor: number | null = null;
+    if (lums.length) {
+      lums.sort((a, b) => a - b);
+      textColor = lums[Math.floor(lums.length / 2)]; // median text ink
+    }
+    if (headColor !== null && textColor !== null && textColor > headColor + 12) {
+      return Math.round((headColor + textColor) / 2); // split the two inks
+    }
+    if (headColor !== null) return headColor + 28; // heads found, weak text signal
+    return null; // no heads to protect → caller may blunt-fill
+  }
+
+  /** Remove every selectable-text box from an image. We know each text run's
+   *  exact rectangle from the vector layer, but a head can sit inside a word's
+   *  rect (e.g. the head at the end of "KITCHEN"). So within each rect we only
+   *  whiten pixels brighter than `cutoff` (the text ink) and leave darker pixels
+   *  (heads / linework) untouched — surgical, like Acrobat selecting text only.
+   *  When `cutoff` is null (no heads to protect) we blunt-fill the rect. */
+  function stripLabelsFromImage(
+    img: ImageData,
+    labels: TextLabel[],
+    cutoff: number | null,
+    pad = 1
+  ) {
+    if (cutoff === null) {
+      for (const l of labels) {
+        whiteRect(img, l.x - pad, l.y - pad, l.w + pad * 2, l.h + pad * 2);
+      }
+      return;
+    }
+    const { width: W, height: H } = img;
+    const d = img.data;
+    for (const l of labels) {
+      const x0 = Math.max(0, Math.floor(l.x - pad)),
+        y0 = Math.max(0, Math.floor(l.y - pad));
+      const x1 = Math.min(W, Math.ceil(l.x + l.w + pad)),
+        y1 = Math.min(H, Math.ceil(l.y + l.h + pad));
+      for (let y = y0; y < y1; y++) {
+        let i = (y * W + x0) * 4;
+        for (let x = x0; x < x1; x++, i += 4) {
+          const g = d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
+          if (g > cutoff) {
+            d[i] = d[i + 1] = d[i + 2] = 255;
+            d[i + 3] = 255;
+          }
+        }
+      }
+    }
+  }
+
+  /** Reassemble the selectable-text items into human-readable lines (getTextContent
+   *  fragments a label like "TOTAL HEADS  142" into 3 items). Groups items on the
+   *  same baseline row, sorts left→right, and joins them. */
+  function reconstructLines(labels: TextLabel[]): string[] {
+    if (!labels.length) return [];
+    const items = labels
+      .map((l) => ({ s: (l.str || "").trim(), cx: l.x, cy: l.y + l.h / 2, h: l.h }))
+      .filter((i) => i.s);
+    items.sort((a, b) => a.cy - b.cy || a.cx - b.cx);
+    const lines: string[] = [];
+    let row: typeof items = [];
+    let rowY = -1e9;
+    const flush = () => {
+      if (!row.length) return;
+      row.sort((a, b) => a.cx - b.cx);
+      lines.push(
+        row
+          .map((r) => r.s)
+          .join(" ")
+          .replace(/\s+/g, " ")
+          .trim()
+      );
+      row = [];
+    };
+    for (const it of items) {
+      const tol = Math.max(3, it.h * 0.6);
+      if (Math.abs(it.cy - rowY) > tol) {
+        flush();
+        rowY = it.cy;
+      }
+      row.push(it);
+    }
+    flush();
+    return lines;
+  }
+
+  /** Scan reconstructed lines for a stated sprinkler-head count in the legend /
+   *  schedule (e.g. "TOTAL HEADS 142", "SPRINKLER COUNT: 87"). Returns the lines
+   *  that mention heads/sprinklers + a best-guess count, for the user to confirm. */
+  function findHeadCountInfo(labels: TextLabel[]): {
+    lines: string[];
+    bestCount: number | null;
+  } {
+    const lines = reconstructLines(labels);
+    // Candidate lines that mention heads/sprinklers AND a number — shown to the
+    // user so they can eyeball the legend even when we can't parse a clean count.
+    const hit = lines.filter((l) => /sprinkler|head/i.test(l) && /\d/.test(l));
+    // STRICT count parse: only trust an explicit "quantity of heads" statement.
+    // Patterns like "TOTAL (SPRINKLER) HEADS: 142", "QTY 142 HEADS", "142 HEADS".
+    // Reject numbers attached to units/codes (PSI, GPM, K=, NFPA, years, pipe
+    // sizes, table refs) so "...test at 200 PSI" never reads as a head count.
+    const unit = /(psi|gpm|gph|"|''|in\b|ft\b|°|k\s*=|nfpa|edition|table|figure|\d{4})/i;
+    const patterns: RegExp[] = [
+      /(?:total|no\.?|number|qty|quantity)\s+(?:of\s+)?(?:sprinkler\s+)?heads?\D{0,8}(\d{1,4})/i,
+      /(\d{1,4})\s+(?:total\s+)?(?:sprinkler\s+)?heads?\b/i,
+      /head\s*count\D{0,8}(\d{1,4})/i,
+    ];
+    let bestCount: number | null = null;
+    for (const l of lines) {
+      for (const re of patterns) {
+        const m = l.match(re);
+        if (!m) continue;
+        const n = parseInt(m[1], 10);
+        // Guard against unit-bearing matches (look just past the number).
+        const tail = l.slice((m.index ?? 0) + m[0].length, (m.index ?? 0) + m[0].length + 6);
+        if (n > 0 && n < 5000 && !unit.test(tail)) {
+          if (bestCount === null || n > bestCount) bestCount = n;
+        }
+      }
+    }
+    return { lines: hit, bestCount };
+  }
+
+  /** Paint numbered region boxes over a base image (green = kept, red dashed +
+   *  tint = excluded) so the user can see which R# is which while toggling. */
+  function buildRegionOverlay(
+    base: ImageData,
+    boxes: Bbox[],
+    excluded: Set<number>
+  ): HTMLCanvasElement {
+    const c = imageDataToCanvas(base);
+    const ctx = c.getContext("2d");
+    if (!ctx) return c;
+    const big = Math.max(c.width, c.height);
+    const lw = Math.max(2, Math.round(big / 400));
+    const r = Math.max(12, Math.round(big / 55));
+    boxes.forEach((b, i) => {
+      const ex = excluded.has(i);
+      const color = ex ? "#dc2626" : "#059669";
+      if (ex) {
+        ctx.fillStyle = "rgba(220,38,38,0.18)";
+        ctx.fillRect(b.x, b.y, b.w, b.h);
+      }
+      ctx.lineWidth = lw;
+      ctx.strokeStyle = color;
+      ctx.setLineDash(ex ? [lw * 3, lw * 2] : []);
+      ctx.strokeRect(b.x, b.y, b.w, b.h);
+      ctx.setLineDash([]);
+      const cx = b.x + r + lw;
+      const cy = b.y + r + lw;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.font = `bold ${Math.round(r * 1.2)}px sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(`${i + 1}`, cx, cy);
+    });
+    return c;
+  }
+
+  /** Ring each detected sprinkler head so the user can confirm the pattern. */
+  // Collision suppression: the seed pass and the template-completion pass can each
+  // emit a detection for the SAME head, slightly offset — drawing both yields
+  // interlocking rings (the "Audi logo" effect). Greedily keep the strongest
+  // (largest-area) detection in each cluster and drop any later detection whose
+  // centre sits within ~0.7× a head footprint of one already kept.
+  function dedupeHeads(heads: Component[], footprint: number | null, factor = 1.4): Component[] {
+    if (heads.length < 2 || factor <= 0) return heads;
+    const sorted = [...heads].sort((a, b) => b.area - a.area);
+    const kept: Component[] = [];
+    for (const h of sorted) {
+      const hcx = h.x + h.w / 2;
+      const hcy = h.y + h.h / 2;
+      const hs = Math.max(h.w, h.h);
+      let collides = false;
+      for (const k of kept) {
+        const kcx = k.x + k.w / 2;
+        const kcy = k.y + k.h / 2;
+        const ks = Math.max(k.w, k.h);
+        // Threshold scales with the symbol size: prefer the learned footprint,
+        // else the average of the two boxes, × the (tunable) factor. Larger factor
+        // merges more aggressively (collapses interlocking "Audi" rings); smaller
+        // keeps genuinely adjacent heads (spaced ~1 footprint apart).
+        const minDist = (footprint && footprint > 0 ? footprint : (hs + ks) / 2) * factor;
+        if (Math.hypot(hcx - kcx, hcy - kcy) < minDist) {
+          collides = true;
+          break;
+        }
+      }
+      if (!collides) kept.push(h);
+    }
+    return kept;
+  }
+
+  function buildHeadOverlay(base: ImageData, heads: Component[]): HTMLCanvasElement {
+    const c = imageDataToCanvas(base);
+    const ctx = c.getContext("2d");
+    if (!ctx || !heads.length) return c;
+    const lw = Math.max(2, Math.round(Math.max(c.width, c.height) / 500));
+    ctx.lineWidth = lw;
+    ctx.strokeStyle = "#059669";
+    for (const hd of heads) {
+      const cx = hd.x + hd.w / 2;
+      const cy = hd.y + hd.h / 2;
+      const r = Math.max(hd.w, hd.h) / 2 + lw * 2.5;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    return c;
+  }
+
+  /** Stamp a color legend panel onto the decomposition image so the user can map
+   *  each overlay color → layer (count / size / native CAD color). */
+  function stampLegend(img: ImageData, layers: DecompLayer[]): ImageData {
+    const c = imageDataToCanvas(img);
+    const ctx = c.getContext("2d");
+    if (!ctx) return img;
+    const rows = layers.filter((l) => l.kind === "symbol").slice(0, 12);
+    const wall = layers.find((l) => l.kind === "wall");
+    const detail = layers.find((l) => l.kind === "detail");
+    const extra = [wall, detail].filter(Boolean) as DecompLayer[];
+    const rh = 18;
+    const panelW = 320;
+    const panelH = 10 + (rows.length + extra.length + 1) * rh + 6;
+    ctx.fillStyle = "rgba(255,255,255,0.93)";
+    ctx.fillRect(6, 6, panelW, panelH);
+    ctx.strokeStyle = "#94a3b8";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(6, 6, panelW, panelH);
+    ctx.textBaseline = "middle";
+    ctx.font = "bold 12px sans-serif";
+    ctx.fillStyle = "#0f172a";
+    let y = 6 + 10 + rh / 2;
+    ctx.fillText("Repeated groups (same color = same shape):", 16, y);
+    y += rh;
+    ctx.font = "12px sans-serif";
+    for (const l of rows) {
+      ctx.fillStyle = l.color;
+      ctx.fillRect(16, y - 6, 12, 12);
+      ctx.strokeStyle = "#334155";
+      ctx.strokeRect(16, y - 6, 12, 12);
+      ctx.fillStyle = "#111827";
+      ctx.fillText(
+        `${l.label}: ${l.count}× · ${l.w}×${l.h}px · ${l.npts}pt · ${l.srcColor}`,
+        34,
+        y
+      );
+      y += rh;
+    }
+    for (const l of extra) {
+      ctx.fillStyle = l.color;
+      ctx.fillRect(16, y - 6, 12, 12);
+      ctx.strokeStyle = "#334155";
+      ctx.strokeRect(16, y - 6, 12, 12);
+      ctx.fillStyle = "#111827";
+      ctx.fillText(`${l.label}: ${l.count}×`, 34, y);
+      y += rh;
+    }
+    return ctx.getImageData(0, 0, c.width, c.height);
+  }
+
+  /** Stamp the fixed semantic palette legend (Text / walls / pipes / heads …). */
+  function stampSemanticLegend(
+    img: ImageData,
+    legend: { label: string; color: string; count: number }[]
+  ): ImageData {
+    const c = imageDataToCanvas(img);
+    const ctx = c.getContext("2d");
+    if (!ctx) return img;
+    const rh = 18;
+    const panelW = 240;
+    const panelH = 10 + (legend.length + 1) * rh + 6;
+    ctx.fillStyle = "rgba(255,255,255,0.93)";
+    ctx.fillRect(6, 6, panelW, panelH);
+    ctx.strokeStyle = "#94a3b8";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(6, 6, panelW, panelH);
+    ctx.textBaseline = "middle";
+    ctx.font = "bold 12px sans-serif";
+    ctx.fillStyle = "#0f172a";
+    let y = 6 + 10 + rh / 2;
+    ctx.fillText("Semantic layers (best-effort):", 16, y);
+    y += rh;
+    ctx.font = "12px sans-serif";
+    for (const l of legend) {
+      ctx.fillStyle = l.color;
+      ctx.fillRect(16, y - 6, 12, 12);
+      ctx.strokeStyle = "#334155";
+      ctx.strokeRect(16, y - 6, 12, 12);
+      ctx.fillStyle = "#111827";
+      ctx.fillText(`${l.label}: ${l.count.toLocaleString()}`, 34, y);
+      y += rh;
+    }
+    return ctx.getImageData(0, 0, c.width, c.height);
+  }
+
+  function grayscaleImageData(src: ImageData): ImageData {
+    const out = new ImageData(src.width, src.height);
+    for (let i = 0; i < src.data.length; i += 4) {
+      const g = Math.round(src.data[i] * 0.299 + src.data[i + 1] * 0.587 + src.data[i + 2] * 0.114);
+      out.data[i] = g;
+      out.data[i + 1] = g;
+      out.data[i + 2] = g;
+      out.data[i + 3] = 255;
+    }
+    return out;
+  }
+
+  // ── PDF / image loading ──────────────────────────────────────────────────
+  let pendingUploadDataUrl: string | null = null;
+
+  // Parity with /admin/simple-scan: it detects the viable area on a 5000px
+  // long-edge render (PDF_RENDER_TARGET_LONG_PX). Connected-component region
+  // detection is highly resolution-sensitive, so we run the viable-area pass at
+  // the SAME resolution here, then scale the resulting boxes down to the working
+  // canvas. Without this, a 1500px working raster yields different regions.
+  const REGION_DETECT_LONG_PX = 5000;
+  const REGION_DETECT_MAX_PX = 60_000_000; // ~240 MB — mirrors PDF_RENDER_MAX_PIXELS
+
+  async function loadPdfPage(longEdge: number): Promise<{ page: any; viewport: any } | null> {
+    const file = fileEl?.files?.[0];
+    const isPdfUpload = file && file.type === "application/pdf";
+    if (!isPdfUpload && file) return null;
+    const pdfLib = getPdfLib();
+    if (!pdfLib) {
+      setStatus("pdf.js not loaded yet — try again in a moment.");
+      return null;
+    }
+    let bytes: ArrayBuffer;
+    if (isPdfUpload) bytes = await file!.arrayBuffer();
+    else if (selectEl?.value) {
+      const res = await fetch(selectEl.value);
+      if (!res.ok) {
+        setStatus(`Failed to fetch ${selectEl.value} (${res.status}).`);
+        return null;
+      }
+      bytes = await res.arrayBuffer();
+    } else return null;
+    const pdf = await pdfLib.getDocument({ data: bytes.slice(0) }).promise;
+    const page = await pdf.getPage(1);
+    const vp1 = page.getViewport({ scale: 1 });
+    const scale = longEdge / Math.max(vp1.width, vp1.height);
+    return { page, viewport: page.getViewport({ scale }) };
+  }
+
+  /** Rasterize a pdf.js page (already at target viewport) to ImageData. */
+  async function rasterizePage(page: any, viewport: any): Promise<ImageData | null> {
+    const c = document.createElement("canvas");
+    c.width = Math.max(1, Math.floor(viewport.width));
+    c.height = Math.max(1, Math.floor(viewport.height));
+    const ctx = c.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return null;
+    await page.render({ canvasContext: ctx, viewport }).promise;
+    return ctx.getImageData(0, 0, c.width, c.height);
+  }
+
+  async function rasterizeImageUpload(longEdge: number): Promise<ImageData | null> {
+    if (!pendingUploadDataUrl) return null;
+    const img = await new Promise<HTMLImageElement | null>((resolve) => {
+      const im = new Image();
+      im.onload = () => resolve(im);
+      im.onerror = () => resolve(null);
+      im.src = pendingUploadDataUrl as string;
+    });
+    if (!img) return null;
+    const scale = Math.min(1, longEdge / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(img.naturalWidth * scale));
+    c.height = Math.max(1, Math.round(img.naturalHeight * scale));
+    const ctx = c.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return null;
+    ctx.drawImage(img, 0, 0, c.width, c.height);
+    return ctx.getImageData(0, 0, c.width, c.height);
+  }
+
+  /** Render a pdf.js page at the viable-area detection resolution (5000px long
+   *  edge, capped by REGION_DETECT_MAX_PX) — matches /admin/simple-scan. */
+  /** High-res viable-area render via SVGGraphics (reusing the shared op list) so
+   *  PDFs never call page.render() — see the worker-wedge note in startWizard. */
+  async function renderRegionVector(
+    page: any,
+    opList: { fnArray: number[]; argsArray: any[] }
+  ): Promise<ImageData | null> {
+    const vp1 = page.getViewport({ scale: 1 });
+    let scale = REGION_DETECT_LONG_PX / Math.max(vp1.width, vp1.height);
+    const px = vp1.width * scale * (vp1.height * scale);
+    if (px > REGION_DETECT_MAX_PX) scale *= Math.sqrt(REGION_DETECT_MAX_PX / px);
+    return renderPageVector(page, page.getViewport({ scale }), opList);
+  }
+
+  /** Run the app's viable-area heuristic (seed mask + scoreRegions) on a
+   *  high-res raster, then scale the selected boxes into the working canvas. */
+  function regionBoxesFrom(hi: ImageData, targetW: number, targetH: number): Bbox[] {
+    const mask = binarizeInkSoft(hi);
+    const { selected } = scoreRegions(mask, hi.width, hi.height);
+    const sx = targetW / hi.width;
+    const sy = targetH / hi.height;
+    return selected.map((b) => ({
+      x: Math.round(b.x * sx),
+      y: Math.round(b.y * sy),
+      w: Math.round(b.w * sx),
+      h: Math.round(b.h * sy),
+    }));
+  }
+
+  // ── Step definitions (subtractive: each Accept feeds the next) ─────────────
+  type Param = {
+    key: string;
+    label: string;
+    min: number;
+    max: number;
+    step: number;
+    value: number;
+    /** "range" (default) renders a slider; "toggle" renders a checkbox (0/1). */
+    type?: "range" | "toggle";
+  };
+  type StepCtx = {
+    labels: TextLabel[];
+    glyphs: GlyphCandidate[];
+    regionBoxes: Bbox[];
+    w: number;
+    h: number;
+  };
+  type StepDef = {
+    id: string;
+    title: string;
+    caption: string;
+    params: Param[];
+    compute: (
+      working: ImageData,
+      p: Record<string, number>,
+      ctx: StepCtx
+    ) => { after: ImageData; metric: string };
+    /** Optional overlay drawn on the Before/After panels (e.g. head rings).
+     *  Runs after compute(), so it can read compute side-effects. */
+    decorate?: (img: ImageData, which: "before" | "after") => HTMLCanvasElement | null;
+  };
+
+  const STEPS: StepDef[] = [
+    {
+      id: "viable-area",
+      title: "Find viable drawing area",
+      caption:
+        "Runs FIRST to cut overhead. Detected at full resolution (5000px long edge) using the EXACT same heuristic as /admin/simple-scan, then scaled to the working canvas — so the regions match Simple Scan. Keeps the dense drawing region(s); whites out the sheet border, title block, and legend strips. Increase keep-pad if real content gets clipped.",
+      params: [{ key: "pad", label: "Keep-pad (px)", min: 0, max: 80, step: 2, value: 12 }],
+      compute: (working, p, ctx) => {
+        // Regions are precomputed once (in startWizard) at Simple Scan's
+        // resolution; here we drop the user-excluded ones, then re-apply the
+        // keep-pad and mask. Re-running is cheap so toggles/slider stay instant.
+        const kept = ctx.regionBoxes.filter((_, i) => !excludedRegions.has(i));
+        const source = ctx.regionBoxes.length ? kept : [{ x: 0, y: 0, w: ctx.w, h: ctx.h }];
+        const boxes: Bbox[] = source.map((b) => ({
+          x: Math.max(0, b.x - p.pad),
+          y: Math.max(0, b.y - p.pad),
+          w: Math.min(ctx.w, b.w + p.pad * 2),
+          h: Math.min(ctx.h, b.h + p.pad * 2),
+        }));
+        const after = keepOnlyBoxes(working, boxes);
+        const excl = excludedRegions.size;
+        return {
+          after,
+          metric: `${boxes.length} of ${ctx.regionBoxes.length} viable region(s) kept${
+            excl ? `, ${excl} removed` : ""
+          } (detected @ ${REGION_DETECT_LONG_PX}px, like Simple Scan); everything outside stripped.`,
+        };
+      },
+    },
+    {
+      id: "decompose",
+      title: "Decompose into groups (color-coded)",
+      caption:
+        "Basic grouping: every vector path gets a translation-invariant shape signature, and any shape that repeats becomes a GROUP painted its own color. Unique one-off paths stay grey. No labels or guessing — identical building blocks (head motif, door swing, fixture, wall tick, dimension mark…) simply light up in matching colors so the flattened drawing separates into its repeated parts.",
+      params: [],
+      compute: (working) => {
+        const d = prep?.decomp;
+        if (!d) {
+          return {
+            after: cloneImageData(working),
+            metric: "No vector decomposition (image upload or render failed).",
+          };
+        }
+        const after = stampLegend(d.image, d.layers);
+        const top = d.layers
+          .slice(0, 8)
+          .map((l) => `${l.count}×(${l.w}×${l.h})`)
+          .join("  ");
+        return {
+          after,
+          metric: `${d.groups} repeated groups colored (${d.coloredInstances.toLocaleString()} instances); ${d.singles.toLocaleString()} unique paths grey. Largest groups: ${top}`,
+        };
+      },
+    },
+    {
+      id: "semantic",
+      title: "Semantic layers (perfect-world view)",
+      caption:
+        "Best-effort reconstruction of the layers a CAD original would have: TEXT (exact boxes), EXTERIOR/INTERIOR WALL (long thin dark runs — exterior = on the drawing's outer hull), MAIN/BRANCH PIPE (long thin SPOT-COLORED runs — main = trunk-length, branch = short spurs), HEAD TYPE A/B (the most-repeated small symbol motifs), and DOORS (curved, door-sized swings). Heads/doors/pipes are solid from geometry+color; exterior-vs-interior and main-vs-branch are first-cut approximations until the wall-connectivity graph lands.",
+      params: [],
+      compute: (working) => {
+        const s = prep?.semantic;
+        if (!s) {
+          return {
+            after: cloneImageData(working),
+            metric: "No semantic decomposition (image upload or render failed).",
+          };
+        }
+        const after = stampSemanticLegend(s.image, s.legend);
+        const summary = s.legend.map((l) => `${l.label} ${l.count.toLocaleString()}`).join(" · ");
+        return { after, metric: summary };
+      },
+    },
+    {
+      id: "detect-heads",
+      title: "Detect sprinkler heads",
+      caption:
+        "Counts heads from the VECTOR geometry, not pixels: on a flattened sheet each head is the same little path motif stamped at every location, so we group identical path shapes and keep the repeated, head-sized, scattered one. Green rings = detected heads. The legend count (if stated) is trusted over the visual count. Only instances inside the kept viable region(s) are counted (the lone legend example is excluded).",
+      params: [
+        {
+          key: "minCount",
+          label: "Min repeats to treat a path motif as a head (2+)",
+          min: 2,
+          max: 20,
+          step: 1,
+          value: 3,
+        },
+        {
+          key: "minSize",
+          label: "Min head symbol size (px) — rejects dimension dots / grid marks",
+          min: 2,
+          max: 20,
+          step: 1,
+          value: 6,
+        },
+        {
+          key: "maxSize",
+          label: "Max head symbol size (px)",
+          min: 10,
+          max: 60,
+          step: 1,
+          value: 26,
+        },
+        {
+          key: "mergeDist",
+          label: "Merge distance (× symbol size) — collapses coincident instances",
+          min: 0,
+          max: 4,
+          step: 0.1,
+          value: 1.2,
+        },
+      ],
+      compute: (working, p, ctx) => {
+        const after = cloneImageData(working);
+        const symbols = prep?.symbols ?? [];
+        const span = Math.min(ctx.w, ctx.h);
+        const minCount = p.minCount ?? 3;
+        const legend = prep?.headInfo?.bestCount ?? null;
+
+        // Restrict counted instances to the kept viable region(s) so the lone
+        // legend/key example doesn't inflate the count.
+        const keptBoxes = ctx.regionBoxes.filter((_, i) => !excludedRegions.has(i));
+        const inPlan = (x: number, y: number) =>
+          !keptBoxes.length ||
+          keptBoxes.some((b) => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h);
+
+        // Candidate head motifs: repeated enough + scattered across the sheet
+        // (a packed hatch fill has tiny spread and is rejected).
+        const cands = symbols.filter((s) => s.count >= minCount && s.spread >= span * 0.1);
+        // A sprinkler head renders as a recognizable symbol (~6–26px here), not a
+        // 2–4px speck (those are dimension dots / grid marks / hatch). Prefer the
+        // head-sized band; only fall back to all candidates if the band is empty.
+        const sizeBand = (s: SymbolGroup) =>
+          s.h >= p.minSize && s.h <= p.maxSize && s.w >= p.minSize && s.w <= p.maxSize;
+        const banded = cands.filter(sizeBand);
+        const pool = banded.length ? banded : cands;
+        let head: SymbolGroup | null = null;
+        let usedFallback = false;
+        if (pool.length) {
+          if (legend !== null) {
+            // Trust the legend: pick the motif whose count is closest to it.
+            head = pool.reduce((best, s) =>
+              Math.abs(s.count - legend) < Math.abs(best.count - legend) ? s : best
+            );
+          } else {
+            // Most-repeated head-sized motif, with a mild bump for complex
+            // (circle/cross-like) shapes over simple 2-point ticks.
+            head = pool
+              .map((s) => ({ s, score: s.count * (s.npts >= 6 ? 1.3 : 1) }))
+              .sort((a, b) => b.score - a.score)[0].s;
+          }
+        }
+
+        if (head) {
+          const hg = head;
+          detectedHeads = hg.centers
+            .filter((c) => inPlan(c.x, c.y))
+            .map((c) => ({
+              x: c.x - hg.w / 2,
+              y: c.y - hg.h / 2,
+              w: hg.w,
+              h: hg.h,
+              area: hg.w * hg.h,
+            }));
+          detectedHeads = dedupeHeads(detectedHeads, hg.h, p.mergeDist ?? 1.2);
+        } else {
+          // No vector symbols (image upload / scanned sheet) → pixel detector.
+          const headRes = detectHeadsByColor(after, { minRepeat: minCount });
+          detectedHeads = dedupeHeads(headRes.heads, headRes.footprint, p.mergeDist ?? 1.4);
+          usedFallback = true;
+        }
+
+        const top =
+          symbols
+            .slice(0, 5)
+            .map((s) => `${s.count}×(${s.w}×${s.h}, ${s.npts}pt)`)
+            .join("  ") || "—";
+        const legendPart =
+          legend !== null
+            ? ` · legend states ${legend} (Δ ${detectedHeads.length - legend})`
+            : prep?.headInfo?.lines?.length
+              ? ` · legend lines: "${prep.headInfo.lines.slice(0, 2).join('" | "')}"`
+              : " · no legend count";
+        const how = usedFallback
+          ? "pixel fallback"
+          : head
+            ? `vector motif ${head.w}×${head.h}px, ${head.npts}pt, ×${head.count}`
+            : "no repeated motif found";
+        return {
+          after,
+          metric: `${detectedHeads.length} sprinkler heads (${how})${legendPart}. Top repeated motifs: ${top}`,
+        };
+      },
+      decorate: (img, which) => (which === "after" ? buildHeadOverlay(img, detectedHeads) : null),
+    },
+    {
+      id: "isolate-lines",
+      title: "Isolate line-work (pipes live here)",
+      caption:
+        "Morphological opening keeps long straight runs (pipe network, structural lines) and drops short marks. Lower the threshold to catch faint CAD lines; raise the kernel divisor to keep shorter segments.",
+      params: [
+        { key: "threshold", label: "Ink threshold", min: 80, max: 230, step: 2, value: 170 },
+        { key: "divisor", label: "Line kernel divisor", min: 20, max: 160, step: 2, value: 90 },
+      ],
+      compute: (working, p, ctx) => {
+        const hard = binarizeInkHard(working, p.threshold);
+        const lines = isolateLines(hard, ctx.w, ctx.h, p.divisor);
+        const after = maskToImageData(lines.combined, ctx.w, ctx.h, [17, 24, 39]);
+        const kept = countOnes(lines.combined);
+        return { after, metric: `${kept.toLocaleString()} line px isolated.` };
+      },
+    },
+  ];
+
+  // ── Wizard state ──────────────────────────────────────────────────────────
+  let prep: {
+    source: ImageData;
+    original: ImageData;
+    labels: TextLabel[];
+    glyphs: GlyphCandidate[];
+    symbols: SymbolGroup[];
+    decomp: DecompResult | null;
+    semantic: SemanticResult | null;
+    vectorTextRemoved: boolean;
+    regionBoxes: Bbox[];
+    headInfo: { lines: string[]; bestCount: number | null };
+    w: number;
+    h: number;
+  } | null = null;
+  let working: ImageData | null = null;
+  let stepIndex = 0;
+  // Region indices the user has marked non-viable in the "Find viable drawing
+  // area" step (mirrors Simple Scan's excludedRegionIndexes). Read by that
+  // step's compute(); persists across Back so toggles are remembered.
+  const excludedRegions = new Set<number>();
+  // detectedHeads drives the green ring overlay; populated by the detect-heads
+  // step from the repeated vector symbol instances.
+  let detectedHeads: Component[] = [];
+  const history: ImageData[] = [];
+  let pendingAfter: ImageData | null = null;
+  let currentParams: Record<string, number> = {};
+  let busy = false;
+  // Deferred-analysis context: the loaded vector page is kept so the heavy passes
+  // (symbols / decomposition / semantic) can run AFTER the user sets viable
+  // regions — never before. Null for image uploads (no vector to defer).
+  let pdfCtx: { page: any; viewport: any; opList: any } | null = null;
+  // Signature of the region set the analysis last ran for; re-run only when the
+  // kept regions / pad actually change.
+  let analysisKey = "";
+  // Immutable Original reference — captured ONCE at load, never touched by steps.
+  // PDFs: native SVG (crisp at any zoom). Image uploads: one offscreen bitmap.
+  let originalVector: { svg: SVGElement; w: number; h: number } | null = null;
+  let originalBitmapOff: HTMLCanvasElement | null = null;
+
+  // ── Zoom / pan ─────────────────────────────────────────────────────────────
+  type ZoomPanel = { canvas: HTMLCanvasElement; off: HTMLCanvasElement };
+  type VectorOriginalView = {
+    host: HTMLDivElement;
+    inner: HTMLDivElement;
+    w: number;
+    h: number;
+  };
+  // Before/After share zoomState so you can compare the same region.
+  let zoomState = { zoom: 1, fx: 0, fy: 0 };
+  // Original has its own zoom — pipeline zoom must not pan the reference sheet.
+  let origZoomState = { zoom: 1, fx: 0, fy: 0 };
+  let zoomPanels: ZoomPanel[] = [];
+  let vectorOriginalView: VectorOriginalView | null = null;
+  let zoomReadout: HTMLElement | null = null;
+  const DISPLAY_H = 640;
+  let activeBATab: "original" | "before" | "after" = "after";
+
+  function imageDataToCanvas(img: ImageData): HTMLCanvasElement {
+    const c = document.createElement("canvas");
+    c.width = img.width;
+    c.height = img.height;
+    c.getContext("2d")?.putImageData(img, 0, 0);
+    return c;
+  }
+
+  const baseFit = (p: ZoomPanel) =>
+    Math.min(p.canvas.width / p.off.width, p.canvas.height / p.off.height) || 1;
+  const scaleOf = (p: ZoomPanel) => baseFit(p) * zoomState.zoom;
+
+  const vectorBaseFit = (v: VectorOriginalView) =>
+    Math.min(v.host.clientWidth / v.w, v.host.clientHeight / v.h) || 1;
+  const vectorScaleOf = (v: VectorOriginalView) => vectorBaseFit(v) * origZoomState.zoom;
+
+  function clampRasterFocus(p: ZoomPanel) {
+    zoomState.fx = Math.max(0, Math.min(p.off.width, zoomState.fx));
+    zoomState.fy = Math.max(0, Math.min(p.off.height, zoomState.fy));
+  }
+
+  function clampVectorFocus(v: VectorOriginalView) {
+    origZoomState.fx = Math.max(0, Math.min(v.w, origZoomState.fx));
+    origZoomState.fy = Math.max(0, Math.min(v.h, origZoomState.fy));
+  }
+
+  function drawZoomPanel(p: ZoomPanel) {
+    const ctx = p.canvas.getContext("2d");
+    if (!ctx) return;
+    const dispW = p.canvas.width;
+    const dispH = p.canvas.height;
+    const s = scaleOf(p);
+    const tx = dispW / 2 - zoomState.fx * s;
+    const ty = dispH / 2 - zoomState.fy * s;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, dispW, dispH);
+    // Crisp nearest-neighbor upscale — these are working-resolution pipeline pixels.
+    ctx.imageSmoothingEnabled = zoomState.zoom <= 1;
+    (ctx as any).imageSmoothingQuality = "high";
+    ctx.setTransform(s, 0, 0, s, tx, ty);
+    ctx.drawImage(p.off, 0, 0);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+  }
+
+  function drawVectorOriginal(v: VectorOriginalView) {
+    const hostW = Math.max(1, v.host.clientWidth);
+    const hostH = Math.max(1, v.host.clientHeight);
+    const s = vectorScaleOf(v);
+    const tx = hostW / 2 - origZoomState.fx * s;
+    const ty = hostH / 2 - origZoomState.fy * s;
+    v.inner.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
+  }
+
+  function updateZoomReadout() {
+    if (!zoomReadout) return;
+    const pct =
+      activeBATab === "original" && vectorOriginalView ? origZoomState.zoom : zoomState.zoom;
+    zoomReadout.textContent = `${Math.round(pct * 100)}%`;
+  }
+
+  function redrawRasterPanels() {
+    for (const p of zoomPanels) drawZoomPanel(p);
+    updateZoomReadout();
+  }
+
+  function redrawActiveView() {
+    if (activeBATab === "original" && vectorOriginalView) {
+      drawVectorOriginal(vectorOriginalView);
+      updateZoomReadout();
+    } else {
+      redrawRasterPanels();
+    }
+  }
+
+  function zoomRasterAt(p: ZoomPanel, mx: number, my: number, factor: number) {
+    const dispW = p.canvas.width;
+    const dispH = p.canvas.height;
+    const s = scaleOf(p);
+    const srcX = (mx - (dispW / 2 - zoomState.fx * s)) / s;
+    const srcY = (my - (dispH / 2 - zoomState.fy * s)) / s;
+    const newZoom = Math.max(1, Math.min(24, zoomState.zoom * factor));
+    const ns = baseFit(p) * newZoom;
+    zoomState.zoom = newZoom;
+    zoomState.fx = srcX - (mx - dispW / 2) / ns;
+    zoomState.fy = srcY - (my - dispH / 2) / ns;
+    clampRasterFocus(p);
+    redrawRasterPanels();
+  }
+
+  function zoomVectorAt(v: VectorOriginalView, mx: number, my: number, factor: number) {
+    const hostW = Math.max(1, v.host.clientWidth);
+    const hostH = Math.max(1, v.host.clientHeight);
+    const s = vectorScaleOf(v);
+    const srcX = (mx - (hostW / 2 - origZoomState.fx * s)) / s;
+    const srcY = (my - (hostH / 2 - origZoomState.fy * s)) / s;
+    const newZoom = Math.max(1, Math.min(24, origZoomState.zoom * factor));
+    const ns = vectorBaseFit(v) * newZoom;
+    origZoomState.zoom = newZoom;
+    origZoomState.fx = srcX - (mx - hostW / 2) / ns;
+    origZoomState.fy = srcY - (my - hostH / 2) / ns;
+    clampVectorFocus(v);
+    drawVectorOriginal(v);
+    updateZoomReadout();
+  }
+
+  function resetActiveZoom() {
+    if (activeBATab === "original" && vectorOriginalView) {
+      origZoomState.zoom = 1;
+      origZoomState.fx = vectorOriginalView.w / 2;
+      origZoomState.fy = vectorOriginalView.h / 2;
+      drawVectorOriginal(vectorOriginalView);
+    } else {
+      const p = zoomPanels[0];
+      zoomState.zoom = 1;
+      zoomState.fx = p ? p.off.width / 2 : 0;
+      zoomState.fy = p ? p.off.height / 2 : 0;
+      redrawRasterPanels();
+    }
+    updateZoomReadout();
+  }
+
+  function zoomActiveCenter(factor: number) {
+    if (activeBATab === "original" && vectorOriginalView) {
+      zoomVectorAt(
+        vectorOriginalView,
+        vectorOriginalView.host.clientWidth / 2,
+        vectorOriginalView.host.clientHeight / 2,
+        factor
+      );
+    } else {
+      const p = zoomPanels[0];
+      if (p) zoomRasterAt(p, p.canvas.width / 2, p.canvas.height / 2, factor);
+    }
+  }
+
+  function attachZoom(p: ZoomPanel) {
+    const c = p.canvas;
+    c.style.cursor = "grab";
+    (c.style as any).touchAction = "none";
+    c.addEventListener(
+      "wheel",
+      (e: WheelEvent) => {
+        e.preventDefault();
+        const rect = c.getBoundingClientRect();
+        zoomRasterAt(
+          p,
+          e.clientX - rect.left,
+          e.clientY - rect.top,
+          e.deltaY < 0 ? 1.15 : 1 / 1.15
+        );
+      },
+      { passive: false }
+    );
+    c.addEventListener("mousedown", (e: MouseEvent) => {
+      e.preventDefault();
+      c.style.cursor = "grabbing";
+      let lx = e.clientX;
+      let ly = e.clientY;
+      const onMove = (ev: MouseEvent) => {
+        const s = scaleOf(p);
+        zoomState.fx -= (ev.clientX - lx) / s;
+        zoomState.fy -= (ev.clientY - ly) / s;
+        lx = ev.clientX;
+        ly = ev.clientY;
+        clampRasterFocus(p);
+        redrawRasterPanels();
+      };
+      const onUp = () => {
+        c.style.cursor = "grab";
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
+      };
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
+    });
+    c.addEventListener("dblclick", (e: MouseEvent) => {
+      const rect = c.getBoundingClientRect();
+      zoomRasterAt(p, e.clientX - rect.left, e.clientY - rect.top, 2);
+    });
+  }
+
+  function attachVectorZoom(v: VectorOriginalView) {
+    const h = v.host;
+    h.style.cursor = "grab";
+    (h.style as any).touchAction = "none";
+    h.addEventListener(
+      "wheel",
+      (e: WheelEvent) => {
+        e.preventDefault();
+        const rect = h.getBoundingClientRect();
+        zoomVectorAt(
+          v,
+          e.clientX - rect.left,
+          e.clientY - rect.top,
+          e.deltaY < 0 ? 1.15 : 1 / 1.15
+        );
+      },
+      { passive: false }
+    );
+    h.addEventListener("mousedown", (e: MouseEvent) => {
+      e.preventDefault();
+      h.style.cursor = "grabbing";
+      let lx = e.clientX;
+      let ly = e.clientY;
+      const onMove = (ev: MouseEvent) => {
+        const s = vectorScaleOf(v);
+        origZoomState.fx -= (ev.clientX - lx) / s;
+        origZoomState.fy -= (ev.clientY - ly) / s;
+        lx = ev.clientX;
+        ly = ev.clientY;
+        clampVectorFocus(v);
+        drawVectorOriginal(v);
+        updateZoomReadout();
+      };
+      const onUp = () => {
+        h.style.cursor = "grab";
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
+      };
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
+    });
+    h.addEventListener("dblclick", (e: MouseEvent) => {
+      const rect = h.getBoundingClientRect();
+      zoomVectorAt(v, e.clientX - rect.left, e.clientY - rect.top, 2);
+    });
+  }
+
+  /** Mount the immutable Original SVG (clone of the once-captured reference). */
+  function mountOriginalVector(host: HTMLDivElement): VectorOriginalView | null {
+    if (!originalVector) return null;
+    host.innerHTML = "";
+    host.className =
+      "relative block w-full overflow-hidden rounded border border-slate-200 bg-white dark:border-slate-700";
+    host.style.height = DISPLAY_H + "px";
+    const inner = document.createElement("div");
+    inner.style.position = "absolute";
+    inner.style.left = "0";
+    inner.style.top = "0";
+    inner.style.transformOrigin = "0 0";
+    inner.style.willChange = "transform";
+    const svg = originalVector.svg.cloneNode(true) as SVGElement;
+    svg.setAttribute("width", String(originalVector.w));
+    svg.setAttribute("height", String(originalVector.h));
+    svg.style.display = "block";
+    inner.appendChild(svg);
+    host.appendChild(inner);
+    return { host, inner, w: originalVector.w, h: originalVector.h };
+  }
+
+  /** Size a display canvas backing store to its laid-out width and a fixed height. */
+  function sizeDisplayCanvas(c: HTMLCanvasElement, hpx: number) {
+    c.width = Math.max(1, Math.round(c.clientWidth));
+    c.height = hpx;
+  }
+
+  /** Build the shared zoom toolbar (zoom out / fit / in + % readout + hint). */
+  function buildZoomToolbar(): HTMLElement {
+    const bar = document.createElement("div");
+    bar.className = "mb-2 flex items-center gap-2";
+    const mk = (txt: string, title: string, fn: () => void) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = txt;
+      b.title = title;
+      b.className =
+        "rounded border border-gray-300 px-2 py-0.5 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200";
+      b.addEventListener("click", fn);
+      return b;
+    };
+    const center = (factor: number) => zoomActiveCenter(factor);
+    zoomReadout = document.createElement("span");
+    zoomReadout.className =
+      "min-w-[3rem] text-center font-mono text-xs text-gray-600 dark:text-gray-300";
+    zoomReadout.textContent = "100%";
+    const hint = document.createElement("span");
+    hint.className = "ml-2 text-[11px] text-gray-400 dark:text-gray-500";
+    hint.textContent = "scroll = zoom · drag = pan · Original = native vector (crisp at any zoom)";
+    bar.append(
+      mk("−", "Zoom out", () => center(1 / 1.4)),
+      mk("Fit", "Reset to fit", resetActiveZoom),
+      mk("+", "Zoom in", () => center(1.4)),
+      zoomReadout,
+      hint
+    );
+    return bar;
+  }
+
+  function recompute(afterPanel: ZoomPanel, metricEl: HTMLElement, refreshBefore?: () => void) {
+    if (!working || !prep) return;
+    const step = STEPS[stepIndex];
+    const { after, metric } = step.compute(working, currentParams, {
+      labels: prep.labels,
+      glyphs: prep.glyphs,
+      regionBoxes: prep.regionBoxes,
+      w: prep.w,
+      h: prep.h,
+    });
+    pendingAfter = after;
+    afterPanel.off = step.decorate
+      ? step.decorate(after, "after") || imageDataToCanvas(after)
+      : imageDataToCanvas(after);
+    drawZoomPanel(afterPanel);
+    metricEl.textContent = metric;
+    // The Before overlay may depend on compute() side-effects (e.g. detected
+    // heads), so refresh it after compute runs.
+    refreshBefore?.();
+  }
+
+  let debounceT: number | undefined;
+  function renderStep() {
+    if (!wizardEl || !working || !prep) return;
+    if (stepIndex >= STEPS.length) {
+      renderDone();
+      return;
+    }
+    const step = STEPS[stepIndex];
+    currentParams = {};
+    step.params.forEach((p) => (currentParams[p.key] = p.value));
+
+    wizardEl.innerHTML = "";
+    const card = document.createElement("div");
+    card.className =
+      "rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900";
+
+    const head = document.createElement("div");
+    head.className = "mb-3 flex items-center justify-between gap-3";
+    head.innerHTML = `<div><span class="text-xs font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-400">Step ${stepIndex + 1} of ${STEPS.length}</span><h3 class="text-base font-semibold text-gray-900 dark:text-white">${step.title}</h3></div>`;
+    card.appendChild(head);
+
+    const cap = document.createElement("p");
+    cap.className = "mb-3 text-sm text-gray-500 dark:text-gray-400";
+    cap.textContent = step.caption;
+    card.appendChild(cap);
+
+    // shared zoom toolbar + tabbed before / after (each sits full-width so wide
+    // sheets are legible; zoom & pan stay synced across both tabs).
+    zoomPanels = [];
+    card.appendChild(buildZoomToolbar());
+
+    const tabBar = document.createElement("div");
+    tabBar.className = "mb-2 flex gap-1 border-b border-gray-200 dark:border-gray-700";
+    const originalTab = document.createElement("button");
+    const beforeTab = document.createElement("button");
+    const afterTab = document.createElement("button");
+    originalTab.type = "button";
+    beforeTab.type = "button";
+    afterTab.type = "button";
+    originalTab.textContent = originalVector ? "Original (vector)" : "Original";
+    beforeTab.textContent = "Before";
+    afterTab.textContent = "After";
+    const tabCls = (active: boolean, accent: "emerald" | "primary" | "slate") =>
+      `-mb-px rounded-t border-b-2 px-4 py-1.5 text-sm font-semibold transition-colors ${
+        active
+          ? accent === "emerald"
+            ? "border-emerald-500 text-emerald-700 dark:text-emerald-400"
+            : accent === "primary"
+              ? "border-primary-500 text-primary-700 dark:text-primary-400"
+              : "border-slate-500 text-slate-700 dark:text-slate-300"
+          : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+      }`;
+    tabBar.append(originalTab, beforeTab, afterTab);
+    card.appendChild(tabBar);
+
+    const panes = document.createElement("div");
+    panes.className = "w-full";
+    const mkCanvas = (border: string) => {
+      const c = document.createElement("canvas");
+      c.className = `block w-full rounded border ${border} bg-white`;
+      c.style.height = DISPLAY_H + "px";
+      const w = document.createElement("div");
+      w.className = "w-full";
+      w.appendChild(c);
+      return { wrap: w, canvas: c };
+    };
+    const orig = mkCanvas("border-slate-200 dark:border-slate-700");
+    const bef = mkCanvas("border-gray-100 dark:border-gray-800");
+    const aft = mkCanvas("border-emerald-100 dark:border-emerald-900");
+    panes.append(orig.wrap, bef.wrap, aft.wrap);
+    card.appendChild(panes);
+
+    // Original = immutable reference captured once at load. PDFs use native SVG
+    // (never re-rasterized, never touched by pipeline steps). Image uploads fall
+    // back to a persistent offscreen bitmap.
+    vectorOriginalView = null;
+    let originalPanel: ZoomPanel | null = null;
+    if (originalVector) {
+      orig.canvas.remove();
+      vectorOriginalView = mountOriginalVector(orig.wrap);
+      if (vectorOriginalView) attachVectorZoom(vectorOriginalView);
+    } else {
+      const off = originalBitmapOff || imageDataToCanvas(prep.original);
+      originalPanel = { canvas: orig.canvas, off };
+      attachZoom(originalPanel);
+    }
+
+    const beforePanel: ZoomPanel = { canvas: bef.canvas, off: imageDataToCanvas(working) };
+    const afterPanel: ZoomPanel = { canvas: aft.canvas, off: imageDataToCanvas(working) };
+    zoomPanels = originalPanel
+      ? [originalPanel, beforePanel, afterPanel]
+      : [beforePanel, afterPanel];
+    attachZoom(beforePanel);
+    attachZoom(afterPanel);
+
+    const showTab = (which: "original" | "before" | "after") => {
+      activeBATab = which;
+      orig.wrap.classList.toggle("hidden", which !== "original");
+      bef.wrap.classList.toggle("hidden", which !== "before");
+      aft.wrap.classList.toggle("hidden", which !== "after");
+      originalTab.className = tabCls(which === "original", "slate");
+      beforeTab.className = tabCls(which === "before", "primary");
+      afterTab.className = tabCls(which === "after", "emerald");
+      if (which === "original" && vectorOriginalView) {
+        drawVectorOriginal(vectorOriginalView);
+      } else if (which === "original" && originalPanel) {
+        sizeDisplayCanvas(originalPanel.canvas, DISPLAY_H);
+        drawZoomPanel(originalPanel);
+      } else {
+        const panel = which === "before" ? beforePanel : afterPanel;
+        sizeDisplayCanvas(panel.canvas, DISPLAY_H);
+        drawZoomPanel(panel);
+      }
+      updateZoomReadout();
+    };
+    originalTab.addEventListener("click", () => showTab("original"));
+    beforeTab.addEventListener("click", () => showTab("before"));
+    afterTab.addEventListener("click", () => showTab("after"));
+
+    // The viable-area step overlays numbered region boxes on Before so the user
+    // can see which R# to exclude; other steps may supply a decorate() overlay.
+    const isViable = step.id === "viable-area";
+    const refreshBefore = () => {
+      if (isViable && prep!.regionBoxes.length) {
+        beforePanel.off = buildRegionOverlay(working!, prep!.regionBoxes, excludedRegions);
+      } else if (step.decorate) {
+        beforePanel.off = step.decorate(working!, "before") || imageDataToCanvas(working!);
+      } else {
+        beforePanel.off = imageDataToCanvas(working!);
+      }
+      drawZoomPanel(beforePanel);
+    };
+
+    const metricEl = document.createElement("p");
+    metricEl.className = "mt-2 font-mono text-[11px] text-gray-600 dark:text-gray-300";
+    card.appendChild(metricEl);
+
+    // controls
+    const controls = document.createElement("div");
+    controls.className = "mt-3 flex flex-wrap items-end gap-4";
+    step.params.forEach((p) => {
+      const wrap = document.createElement("div");
+      if (p.type === "toggle") {
+        const lab = document.createElement("label");
+        lab.className =
+          "flex max-w-xs items-center gap-2 text-xs font-medium text-gray-700 dark:text-gray-300";
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = p.value >= 1;
+        cb.className = "h-4 w-4 shrink-0";
+        cb.addEventListener("change", () => {
+          currentParams[p.key] = cb.checked ? 1 : 0;
+          recompute(afterPanel, metricEl, refreshBefore);
+        });
+        lab.append(cb, p.label);
+        wrap.append(lab);
+        controls.appendChild(wrap);
+        return;
+      }
+      const val = document.createElement("span");
+      val.className = "font-mono text-gray-900 dark:text-white";
+      val.textContent = String(p.value);
+      const lab = document.createElement("label");
+      lab.className = "block text-xs font-medium text-gray-700 dark:text-gray-300";
+      lab.append(`${p.label} (`, val, ")");
+      const range = document.createElement("input");
+      range.type = "range";
+      range.min = String(p.min);
+      range.max = String(p.max);
+      range.step = String(p.step);
+      range.value = String(p.value);
+      range.className = "block w-44";
+      range.addEventListener("input", () => {
+        currentParams[p.key] = parseFloat(range.value);
+        val.textContent = range.value;
+        window.clearTimeout(debounceT);
+        debounceT = window.setTimeout(() => recompute(afterPanel, metricEl, refreshBefore), 120);
+      });
+      wrap.append(lab, range);
+      controls.appendChild(wrap);
+    });
+    card.appendChild(controls);
+
+    // region include/exclude toggles (viable-area step only) — mirrors Simple
+    // Scan's region picker so non-viable sections can be removed, not just kept.
+    if (isViable && prep.regionBoxes.length) {
+      const regWrap = document.createElement("div");
+      regWrap.className = "mt-3 w-full";
+      regWrap.innerHTML =
+        '<p class="mb-1 text-xs font-medium text-gray-700 dark:text-gray-300">Regions — click a box to exclude a non-viable section (legend, title block, stray cluster). R# matches the numbered overlay on Before.</p>';
+      const btnRow = document.createElement("div");
+      btnRow.className = "flex flex-wrap gap-2";
+      prep.regionBoxes.forEach((b, i) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        const paint = () => {
+          const ex = excludedRegions.has(i);
+          btn.className = ex
+            ? "rounded border border-red-300 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700 line-through dark:border-red-800 dark:bg-red-950 dark:text-red-300"
+            : "rounded border border-emerald-300 bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300";
+          btn.textContent = `R${i + 1} · ${b.w}×${b.h}px${ex ? " — removed" : ""}`;
+        };
+        paint();
+        btn.addEventListener("click", () => {
+          if (excludedRegions.has(i)) excludedRegions.delete(i);
+          else excludedRegions.add(i);
+          paint();
+          recompute(afterPanel, metricEl, refreshBefore);
+        });
+        btnRow.appendChild(btn);
+      });
+      regWrap.appendChild(btnRow);
+      card.appendChild(regWrap);
+    }
+
+    // actions
+    const actions = document.createElement("div");
+    actions.className = "mt-4 flex items-center gap-3";
+    const back = document.createElement("button");
+    back.type = "button";
+    back.textContent = "← Back";
+    back.disabled = stepIndex === 0;
+    back.className =
+      "rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-700 enabled:hover:bg-gray-100 disabled:opacity-40 dark:border-gray-600 dark:text-gray-200";
+    back.addEventListener("click", () => {
+      if (stepIndex === 0) return;
+      stepIndex--;
+      working = history.pop() || prep!.source;
+      renderStep();
+    });
+    const accept = document.createElement("button");
+    accept.type = "button";
+    accept.textContent = "Accept & continue →";
+    accept.className =
+      "rounded bg-emerald-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-emerald-700";
+    accept.addEventListener("click", () => {
+      void (async () => {
+        if (!pendingAfter || !working || busy) return;
+        // Leaving the viable-area step is the trigger to actually scan the
+        // document — and only inside the regions just accepted. Block the button
+        // while the (now region-scoped) analysis runs, then advance.
+        if (STEPS[stepIndex].id === "viable-area") {
+          busy = true;
+          accept.disabled = true;
+          accept.textContent = "Analyzing region(s)…";
+          try {
+            await runAnalysisForRegions(currentParams.pad ?? 12);
+          } finally {
+            busy = false;
+            accept.disabled = false;
+          }
+        }
+        history.push(working);
+        working = pendingAfter;
+        stepIndex++;
+        renderStep();
+      })();
+    });
+    actions.append(back, accept);
+    card.appendChild(actions);
+
+    wizardEl.appendChild(card);
+
+    // Size raster panes; vector Original sizes from its host div.
+    sizeDisplayCanvas(bef.canvas, DISPLAY_H);
+    sizeDisplayCanvas(aft.canvas, DISPLAY_H);
+    if (originalPanel) sizeDisplayCanvas(originalPanel.canvas, DISPLAY_H);
+    if (zoomState.fx === 0 && zoomState.fy === 0) {
+      zoomState.fx = beforePanel.off.width / 2;
+      zoomState.fy = beforePanel.off.height / 2;
+    }
+    if (origZoomState.fx === 0 && origZoomState.fy === 0 && vectorOriginalView) {
+      origZoomState.fx = vectorOriginalView.w / 2;
+      origZoomState.fy = vectorOriginalView.h / 2;
+    }
+    recompute(afterPanel, metricEl, refreshBefore);
+    showTab(activeBATab);
+  }
+
+  function renderDone() {
+    if (!wizardEl || !working) return;
+    vectorOriginalView = null;
+    activeBATab = "after";
+    wizardEl.innerHTML = "";
+    const card = document.createElement("div");
+    card.className =
+      "rounded-lg border border-emerald-200 bg-white p-4 shadow-sm dark:border-emerald-800 dark:bg-gray-900";
+    card.innerHTML =
+      '<h3 class="mb-2 text-base font-semibold text-emerald-700 dark:text-emerald-400">Result — all steps accepted</h3><p class="mb-3 text-sm text-gray-500 dark:text-gray-400">This is what survived the strip sequence. Use Back to revisit a step, or Start over.</p>';
+    zoomPanels = [];
+    card.appendChild(buildZoomToolbar());
+    const canvas = document.createElement("canvas");
+    canvas.className = "block w-full rounded border border-gray-100 bg-white dark:border-gray-800";
+    canvas.style.height = "560px";
+    card.appendChild(canvas);
+    const donePanel: ZoomPanel = { canvas, off: imageDataToCanvas(working) };
+    zoomPanels = [donePanel];
+    attachZoom(donePanel);
+    const actions = document.createElement("div");
+    actions.className = "mt-4 flex gap-3";
+    const back = document.createElement("button");
+    back.type = "button";
+    back.textContent = "← Back";
+    back.className =
+      "rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200";
+    back.addEventListener("click", () => {
+      stepIndex = STEPS.length - 1;
+      working = history.pop() || prep!.source;
+      renderStep();
+    });
+    const over = document.createElement("button");
+    over.type = "button";
+    over.textContent = "Start over";
+    over.className =
+      "rounded bg-primary-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-600";
+    over.addEventListener("click", () => void startWizard());
+    actions.append(back, over);
+    card.appendChild(actions);
+    wizardEl.appendChild(card);
+    sizeDisplayCanvas(canvas, 560);
+    if (zoomState.fx === 0 && zoomState.fy === 0) {
+      zoomState.fx = donePanel.off.width / 2;
+      zoomState.fy = donePanel.off.height / 2;
+    }
+    drawZoomPanel(donePanel);
+    setStatus("Step sequence complete.");
+  }
+
+  /** The kept viable region boxes (after exclusions + keep-pad), in working px —
+   *  the SAME boxes the viable-area step masks to, reused to clip analysis. */
+  function keptViableBoxes(pad: number): Bbox[] {
+    if (!prep) return [];
+    const w = prep.w;
+    const h = prep.h;
+    const kept = prep.regionBoxes.filter((_, i) => !excludedRegions.has(i));
+    const src = prep.regionBoxes.length ? kept : [{ x: 0, y: 0, w, h }];
+    return src.map((b) => ({
+      x: Math.max(0, b.x - pad),
+      y: Math.max(0, b.y - pad),
+      w: Math.min(w, b.w + pad * 2),
+      h: Math.min(h, b.h + pad * 2),
+    }));
+  }
+
+  /** PHASE 2 — run the heavy vector analysis (symbols / decomposition / semantic)
+   *  scoped to the kept viable regions. Called only AFTER the user accepts the
+   *  viable-area step, never on load. Cheap to call again; it no-ops when the
+   *  region set is unchanged. Returns true once prep has analysis populated. */
+  async function runAnalysisForRegions(pad: number): Promise<boolean> {
+    if (!prep) return false;
+    // Image uploads have no vector context — nothing to defer, leave empty.
+    if (!pdfCtx) {
+      analysisKey = "image";
+      return true;
+    }
+    const boxes = keptViableBoxes(pad);
+    const key = boxes.map((b) => `${b.x}|${b.y}|${b.w}|${b.h}`).join("~");
+    if (key === analysisKey && prep.semantic) return true;
+    const { page, viewport, opList } = pdfCtx;
+    const clip = boxes as { x: number; y: number; w: number; h: number }[];
+    try {
+      setStatus("Analyzing viable region(s): repeated symbols…");
+      prep.symbols = await detectRepeatedSymbols(page, viewport, { clip }, opList);
+    } catch (e) {
+      console.error("[cv-debug] symbol detect failed:", e);
+      prep.symbols = [];
+    }
+    try {
+      setStatus("Analyzing viable region(s): group decomposition…");
+      prep.decomp = await renderLayerDecomposition(page, viewport, { clip }, opList);
+    } catch (e) {
+      console.error("[cv-debug] layer decomposition failed:", e);
+      prep.decomp = null;
+    }
+    try {
+      setStatus("Analyzing viable region(s): semantic layers…");
+      prep.semantic = await renderSemanticLayers(
+        page,
+        viewport,
+        prep.labels,
+        prep.symbols,
+        { clip },
+        opList
+      );
+    } catch (e) {
+      console.error("[cv-debug] semantic layers failed:", e);
+      prep.semantic = null;
+    }
+    analysisKey = key;
+    setStatus(
+      `Analyzed ${boxes.length} viable region(s) — ${prep.symbols.length} repeated symbol group(s). Step ${stepIndex + 1} of ${STEPS.length}.`
+    );
+    return true;
+  }
+
+  async function startWizard() {
+    if (busy) return;
+    busy = true;
+    if (startBtn) startBtn.disabled = true;
+    // New run: drop any prior deferred-analysis context so we never reuse a stale
+    // page or skip re-scanning a freshly loaded drawing.
+    pdfCtx = null;
+    analysisKey = "";
+    originalVector = null;
+    originalBitmapOff = null;
+    vectorOriginalView = null;
+    origZoomState = { zoom: 1, fx: 0, fy: 0 };
+    try {
+      const longEdge = parseInt(longEdgeEl?.value || "1500", 10);
+      const file = fileEl?.files?.[0];
+      let source: ImageData | null = null;
+      let labels: TextLabel[] = [];
+      const glyphs: GlyphCandidate[] = [];
+      let regionBoxes: Bbox[] = [];
+      // Analysis is deferred to runAnalysisForRegions() (after viable regions are
+      // set), so these start empty and stay empty through Step 1.
+      const symbols: SymbolGroup[] = [];
+      const decomp: DecompResult | null = null;
+      const semantic: SemanticResult | null = null;
+      // When the page is real vector, `source` is rendered text-free in vector
+      // space (no pixel scrubbing). `originalVector` keeps the WITH-text native
+      // SVG for the Original tab. For image uploads these stay null and we
+      // fall back to the pixel text-strip + a frozen bitmap Original.
+      let vectorTextRemoved = false;
+
+      if (file && file.type.startsWith("image/")) {
+        setStatus("Rasterizing image…");
+        source = await rasterizeImageUpload(longEdge);
+        if (source) {
+          setStatus("Detecting viable area at full resolution…");
+          try {
+            const hi =
+              longEdge >= REGION_DETECT_LONG_PX
+                ? source
+                : (await rasterizeImageUpload(REGION_DETECT_LONG_PX)) || source;
+            regionBoxes = regionBoxesFrom(hi, source.width, source.height);
+          } catch (e) {
+            console.error("[cv-debug] region detect (image) failed:", e);
+          }
+        }
+      } else {
+        const loaded = await loadPdfPage(longEdge);
+        if (!loaded) {
+          setStatus("Could not load a drawing to step through.");
+          return;
+        }
+        // CRITICAL pdf.js 2.16 constraint: mixing `page.render()` with
+        // `getOperatorList()` on the same page wedges the shared worker. So for
+        // PDFs we fetch the operator list ONCE and route EVERY render through
+        // SVGGraphics (renderPageVector / renderPageWithoutText) — never
+        // page.render(). getTextContent is on a separate path and is safe.
+        setStatus("Reading vector text + geometry…");
+        try {
+          labels = await getTextLabels(loaded.page, loaded.viewport);
+        } catch {
+          labels = [];
+        }
+        let opList: { fnArray: number[]; argsArray: any[] } | null = null;
+        try {
+          opList = await loaded.page.getOperatorList();
+        } catch (e) {
+          console.error("[cv-debug] getOperatorList failed:", e);
+        }
+        if (opList) {
+          // DEFERRED ANALYSIS: do NOT detect symbols / decompose / build semantic
+          // layers here. There's no point scanning the document until the user has
+          // set the viable regions — that happens in Step 1. We only RENDER the
+          // sheet (so it can be shown + region-detected) and stash the vector
+          // context so runAnalysisForRegions() can scan inside the kept regions
+          // once they're accepted.
+          pdfCtx = { page: loaded.page, viewport: loaded.viewport, opList };
+          // Immutable Original: capture native SVG ONCE (full page, text included).
+          // Never rasterize or re-process this for the Original tab.
+          setStatus("Capturing original vector reference…");
+          try {
+            const svg = await getPageSvgElement(loaded.page, loaded.viewport, opList);
+            originalVector = {
+              svg,
+              w: Math.max(1, Math.round(loaded.viewport.width)),
+              h: Math.max(1, Math.round(loaded.viewport.height)),
+            };
+          } catch (e) {
+            console.error("[cv-debug] original SVG capture failed:", e);
+            originalVector = null;
+          }
+          // Working render (text-free) + region detect still need raster at working size.
+          setStatus("Rendering sheet (vector, text removed)…");
+          try {
+            source = await renderPageWithoutText(loaded.page, loaded.viewport, opList);
+            vectorTextRemoved = true;
+          } catch (e) {
+            console.error("[cv-debug] vector text-removal render failed:", e);
+            try {
+              source = await renderPageVector(loaded.page, loaded.viewport, opList);
+            } catch (e2) {
+              console.error("[cv-debug] vector fallback render failed:", e2);
+              source = null;
+            }
+          }
+          if (source) {
+            setStatus(`Detecting viable area @ ${REGION_DETECT_LONG_PX}px (matches Simple Scan)…`);
+            try {
+              const hi =
+                longEdge >= REGION_DETECT_LONG_PX
+                  ? (await renderPageVector(loaded.page, loaded.viewport, opList)) || source
+                  : (await renderRegionVector(loaded.page, opList)) || source;
+              regionBoxes = regionBoxesFrom(hi, source.width, source.height);
+            } catch (e) {
+              console.error("[cv-debug] region detect (pdf) failed:", e);
+            }
+          }
+        } else {
+          // No operator list — fall back to a single raster render.
+          setStatus("Rendering sheet…");
+          source = await rasterizePage(loaded.page, loaded.viewport);
+        }
+      }
+      if (!source) {
+        setStatus("Render failed.");
+        return;
+      }
+      const headInfo = findHeadCountInfo(labels);
+      // Original reference for prep / image-upload fallback (PDF Original tab uses SVG).
+      const original = cloneImageData(source);
+      if (!originalVector) {
+        originalBitmapOff = imageDataToCanvas(original);
+      }
+      // Text removal: vector PDFs already had text dropped at render (no pixels
+      // touched). Only image uploads / vector-render failures fall back to the
+      // head-safe pixel strip (erase text-colored pixels inside each label rect).
+      let stripCutoff: number | null = null;
+      if (!vectorTextRemoved && labels.length) {
+        stripCutoff = measureStripCutoff(source, labels);
+        stripLabelsFromImage(source, labels, stripCutoff);
+      }
+      prep = {
+        source,
+        original,
+        labels,
+        glyphs,
+        symbols,
+        decomp,
+        semantic,
+        vectorTextRemoved,
+        regionBoxes,
+        headInfo,
+        w: source.width,
+        h: source.height,
+      };
+      // Expose internals for live inspection (page console / CDP). Lets us compare
+      // the wizard's actual label data against a fresh computation to catch stale
+      // modules or coordinate drift.
+      try {
+        let lminx = Infinity,
+          lminy = Infinity,
+          lmaxx = -Infinity,
+          lmaxy = -Infinity;
+        for (const l of labels) {
+          if (l.x < lminx) lminx = l.x;
+          if (l.y < lminy) lminy = l.y;
+          if (l.x + l.w > lmaxx) lmaxx = l.x + l.w;
+          if (l.y + l.h > lmaxy) lmaxy = l.y + l.h;
+        }
+        (window as any).__cv = {
+          prep,
+          working,
+          labelCount: labels.length,
+          labelRange: { lminx, lminy, lmaxx, lmaxy },
+          sampleLabels: labels.slice(0, 3),
+          sourceDims: { w: source.width, h: source.height },
+          vectorTextRemoved,
+          decompLayers: decomp?.layers.map((l) => ({
+            id: l.id,
+            color: l.color,
+            count: l.count,
+            kind: l.kind,
+            w: l.w,
+            h: l.h,
+            npts: l.npts,
+            srcColor: l.srcColor,
+          })),
+          topSymbols: symbols.slice(0, 12).map((s) => ({
+            count: s.count,
+            w: s.w,
+            h: s.h,
+            npts: s.npts,
+            spread: s.spread,
+          })),
+        };
+      } catch {
+        /* diagnostics only */
+      }
+      working = cloneImageData(source);
+      stepIndex = 0;
+      history.length = 0;
+      excludedRegions.clear();
+      detectedHeads = [];
+      zoomState = { zoom: 1, fx: source.width / 2, fy: source.height / 2 };
+      const headMsg =
+        headInfo.bestCount !== null
+          ? ` · legend head count ≈ ${headInfo.bestCount}`
+          : headInfo.lines.length
+            ? ` · ${headInfo.lines.length} head/sprinkler legend line(s) found`
+            : "";
+      const cutMsg = vectorTextRemoved
+        ? ` (vector: ${labels.length} text op-runs dropped — never painted)`
+        : stripCutoff === null
+          ? ` (pixel fallback: ${labels.length} labels)`
+          : ` (pixel fallback: kept ink darker than ${stripCutoff})`;
+      const scanMsg = pdfCtx
+        ? " · analysis deferred until viable regions are set"
+        : symbols.length
+          ? ` · ${symbols.length} repeated vector symbols`
+          : "";
+      setStatus(
+        `Ready — ${source.width}×${source.height}, ${regionBoxes.length} viable region(s) detected; set them first${cutMsg}${scanMsg}${headMsg}. Step 1 of ${STEPS.length}.`
+      );
+      renderStep();
+    } catch (err: any) {
+      console.error("[cv-debug] startWizard failed:", err);
+      setStatus(`Error: ${err?.message ?? err}`);
+    } finally {
+      busy = false;
+      if (startBtn) startBtn.disabled = false;
+    }
+  }
+
+  // ── Vector inspector (fast: parses geometry, no slow rasterize) ─────────────
+  const VERDICT_STYLE: Record<string, { bg: string; label: string }> = {
+    structured: { bg: "bg-emerald-600", label: "STRUCTURED · symbols are reusable blocks" },
+    flattened: { bg: "bg-amber-600", label: "FLATTENED · symbols exploded to segments" },
+    mixed: { bg: "bg-sky-600", label: "MIXED · blocks + flattened paths" },
+    raster: { bg: "bg-rose-600", label: "RASTER · no vector data (scanned image)" },
+    empty: { bg: "bg-gray-500", label: "EMPTY · no drawable content" },
+  };
+
+  function renderVector(
+    stats: VectorStats,
+    forms: Array<{ id: string; count: number }>,
+    labels: TextLabel[],
+    textBoxes: VBox[],
+    vpW: number,
+    vpH: number
+  ) {
+    if (!vectorEl) return;
+    const v = VERDICT_STYLE[stats.verdict] ?? VERDICT_STYLE.mixed;
+    const rows: Array<[string, string]> = [
+      ["Total vector ops", stats.totalOps.toLocaleString()],
+      ["Raw paths", stats.pathCount.toLocaleString()],
+      ["Distinct path shapes", stats.distinctPathShapes.toLocaleString()],
+      [
+        "Paths that repeat (≥5×)",
+        `${stats.repeatedPathInstances.toLocaleString()} (${stats.pctPathRepeated}%)`,
+      ],
+      [
+        "Reusable blocks (Form XObjects)",
+        `${stats.formXObjects} distinct / ${stats.formXObjectPaints} placements`,
+      ],
+      ["Embedded images", String(stats.imageXObjects)],
+      ["Text labels (exact positions)", stats.textItems.toLocaleString()],
+    ];
+    vectorEl.innerHTML = "";
+    const card = document.createElement("div");
+    card.className =
+      "rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900";
+    const banner = document.createElement("div");
+    banner.className = `mb-3 inline-block rounded px-3 py-1 text-sm font-semibold text-white ${v.bg}`;
+    banner.textContent = v.label;
+    card.appendChild(banner);
+    const detail = document.createElement("p");
+    detail.className = "mb-3 text-sm text-gray-700 dark:text-gray-300";
+    detail.textContent = stats.verdictDetail;
+    card.appendChild(detail);
+    const grid = document.createElement("div");
+    grid.className = "grid grid-cols-1 gap-4 md:grid-cols-2";
+    const tbl = document.createElement("table");
+    tbl.className = "w-full text-sm";
+    tbl.innerHTML = rows
+      .map(
+        ([k, val]) =>
+          `<tr class="border-b border-gray-100 dark:border-gray-800"><td class="py-1 pr-3 text-gray-500 dark:text-gray-400">${k}</td><td class="py-1 text-right font-mono text-gray-900 dark:text-white">${val}</td></tr>`
+      )
+      .join("");
+    const tblWrap = document.createElement("div");
+    tblWrap.appendChild(tbl);
+    if (forms.length) {
+      const fh = document.createElement("p");
+      fh.className = "mt-3 text-xs font-semibold text-gray-700 dark:text-gray-300";
+      fh.textContent = "Most-placed reusable blocks:";
+      const fl = document.createElement("ul");
+      fl.className = "mt-1 font-mono text-[11px] text-gray-600 dark:text-gray-300";
+      fl.innerHTML = forms
+        .slice(0, 8)
+        .map((f) => `<li>${f.id} — ${f.count}×</li>`)
+        .join("");
+      tblWrap.append(fh, fl);
+    }
+    grid.appendChild(tblWrap);
+    const overlayWrap = document.createElement("div");
+    overlayWrap.innerHTML = `<p class="mb-1 text-xs text-gray-500 dark:text-gray-400">What Step 1 strips: <span class="text-emerald-600">real text (${labels.length})</span> + <span class="text-rose-500">outlined-text rows (${textBoxes.length})</span> — exact vector positions, no render.</p>`;
+    const canvas = document.createElement("canvas");
+    canvas.className = "block w-full rounded border border-gray-100 dark:border-gray-800";
+    canvas.width = vpW;
+    canvas.height = vpH;
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, vpW, vpH);
+      ctx.lineWidth = 1;
+      // outlined-text rows (the dominant case on these flattened sheets)
+      ctx.strokeStyle = "rgba(244,63,94,0.85)";
+      ctx.fillStyle = "rgba(244,63,94,0.12)";
+      for (const b of textBoxes) {
+        ctx.fillRect(b.x, b.y, b.w, b.h);
+        ctx.strokeRect(b.x, b.y, b.w, b.h);
+      }
+      // real PDF text boxes
+      ctx.strokeStyle = "rgba(16,185,129,0.9)";
+      ctx.fillStyle = "rgba(16,185,129,0.18)";
+      for (const l of labels) {
+        ctx.fillRect(l.x, l.y, l.w, l.h);
+        ctx.strokeRect(l.x, l.y, l.w, l.h);
+      }
+    }
+    overlayWrap.appendChild(canvas);
+    grid.appendChild(overlayWrap);
+    card.appendChild(grid);
+    vectorEl.appendChild(card);
+  }
+
+  let inspecting = false;
+  async function inspect() {
+    if (inspecting) return;
+    inspecting = true;
+    if (inspectBtn) inspectBtn.disabled = true;
+    try {
+      const longEdge = parseInt(longEdgeEl?.value || "1500", 10);
+      const file = fileEl?.files?.[0];
+      if (file && file.type !== "application/pdf") {
+        if (vectorEl)
+          vectorEl.innerHTML =
+            '<div class="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-200">Uploaded file is a raster image — no vector data to inspect.</div>';
+        setStatus("Image upload has no vector data.");
+        return;
+      }
+      setStatus("Parsing vector geometry…");
+      const loaded = await loadPdfPage(longEdge);
+      if (!loaded) {
+        setStatus("Could not load a PDF page to inspect.");
+        return;
+      }
+      const { page, viewport } = loaded;
+      const [stats, forms, labels, textBoxes] = await Promise.all([
+        analyzeVector(page),
+        getFormInstances(page),
+        getTextLabels(page, viewport),
+        getOutlinedTextRegions(page, viewport, {}),
+      ]);
+      renderVector(
+        stats,
+        forms,
+        labels,
+        textBoxes,
+        Math.max(1, Math.floor(viewport.width)),
+        Math.max(1, Math.floor(viewport.height))
+      );
+      setStatus(
+        `Vector verdict: ${stats.verdict} · ${stats.pathCount.toLocaleString()} paths · ${labels.length} real text + ${textBoxes.length} outlined-text rows`
+      );
+    } catch (err: any) {
+      console.error("[cv-debug] inspect failed:", err);
+      setStatus(`Inspect error: ${err?.message ?? err}`);
+    } finally {
+      inspecting = false;
+      if (inspectBtn) inspectBtn.disabled = false;
+    }
+  }
+
+  // ── wiring ──────────────────────────────────────────────────────────────
+  fileEl?.addEventListener("change", () => {
+    const f = fileEl.files?.[0];
+    if (!f) return;
+    if (f.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        pendingUploadDataUrl = String(reader.result || "");
+      };
+      reader.readAsDataURL(f);
+    } else {
+      pendingUploadDataUrl = null;
+    }
+    void inspect();
+  });
+  selectEl?.addEventListener("change", () => {
+    pendingUploadDataUrl = null;
+    void inspect();
+  });
+  inspectBtn?.addEventListener("click", () => void inspect());
+  startBtn?.addEventListener("click", () => void startWizard());
+
+  // Auto-run the FAST vector inspector once pdf.js is available.
+  (function waitForPdf(tries = 0) {
+    if (getPdfLib()) {
+      setStatus("Ready. Inspecting vectors…");
+      void inspect();
+      return;
+    }
+    if (tries > 60) {
+      setStatus("pdf.js failed to load. Upload an image instead, or refresh.");
+      return;
+    }
+    setTimeout(() => waitForPdf(tries + 1), 100);
+  })();
+</script>

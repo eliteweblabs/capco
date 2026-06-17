@@ -72,6 +72,18 @@ try {
     <p id="simple-scan-status" class={`${mutedTextSmClasses} break-words`}>
       Loading default drawing...
     </p>
+    {/* AI metadata health strip — reflects last /analyze-metadata call without needing DevTools */}
+    <button
+      id="simple-scan-ai-health"
+      type="button"
+      title="AI drawing analysis status — click for details"
+      class="inline-flex items-center gap-1.5 rounded-full border border-gray-300 bg-gray-50 px-2.5 py-1 text-[11px] font-medium text-gray-600 transition-colors hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+    >
+      <span
+        id="simple-scan-ai-health-dot"
+        class="inline-block h-2 w-2 shrink-0 rounded-full bg-gray-400"></span>
+      <span id="simple-scan-ai-health-label">AI: idle</span>
+    </button>
     {
       libraryMatchLab ? (
         <p
@@ -80,7 +92,9 @@ try {
           Library lab — full sheet. Build <strong class="font-semibold">Symbols</strong> and
           <strong class="font-semibold"> Clutter</strong> in the side panel (💧 ✂️ 🧹); × twice on a
           card to delete. Saves to the server; clutter uses a suppressed copy for matching — toggle
-          <strong class="font-semibold">Preview removals</strong> / <strong class="font-semibold">After clutter removal</strong> to see it. <strong class="font-semibold">Commit</strong> whitens approved symbols on the sheet.
+          <strong class="font-semibold">Preview removals</strong> /{" "}
+          <strong class="font-semibold">After clutter removal</strong> to see it.{" "}
+          <strong class="font-semibold">Commit</strong> whitens approved symbols on the sheet.
         </p>
       ) : null
     }
@@ -90,36 +104,8 @@ try {
   <section class="flex min-h-0 overflow-hidden" style={`height:${mainPanelHeight}`}>
     {/* ── Full-screen floor plan area ── */}
     <div class="relative min-w-0 flex-1">
-      {/* ── Top-right controls: fit + zoom + info ── */}
+      {/* ── Top-right controls: panel toggle (zoom is mouse-wheel only) ── */}
       <div class="absolute right-3 top-3 z-50 flex items-center gap-1">
-        <div
-          class="flex items-center overflow-hidden rounded-lg bg-gray-900/80 shadow-lg backdrop-blur dark:bg-gray-100/80"
-        >
-          <button
-            id="zoom-out-btn"
-            type="button"
-            class="flex h-8 w-7 items-center justify-center text-lg font-bold text-white transition-colors hover:bg-white/10 dark:text-gray-900 dark:hover:bg-black/10"
-            title="Zoom out (−)">−</button
-          >
-          <span
-            id="zoom-level-label"
-            class="w-11 select-none text-center text-[11px] font-semibold tabular-nums text-white dark:text-gray-900"
-            >100%</span
-          >
-          <button
-            id="zoom-in-btn"
-            type="button"
-            class="flex h-8 w-7 items-center justify-center text-lg font-bold text-white transition-colors hover:bg-white/10 dark:text-gray-900 dark:hover:bg-black/10"
-            title="Zoom in (+)">+</button
-          >
-          <div class="mx-0.5 h-5 w-px bg-white/20 dark:bg-black/20"></div>
-          <button
-            id="zoom-reset"
-            type="button"
-            class="flex h-8 items-center justify-center px-2 text-[11px] font-semibold text-white transition-colors hover:bg-white/10 dark:text-gray-900 dark:hover:bg-black/10"
-            title="Fit to view">Fit</button
-          >
-        </div>
         <button
           id="drawer-toggle"
           type="button"
@@ -141,64 +127,60 @@ try {
       </div>
       <canvas id="simple-scan-canvas" class="hidden"></canvas>
 
-      {/* ── Wizard tab bar (shown after regions confirmed, floats at top of canvas) ── */}
-      <div
-        id="scan-tab-bar"
-        class="absolute top-0 left-0 right-0 z-20 hidden items-center gap-0 bg-gray-950/90 backdrop-blur-sm border-b border-gray-700/60"
-        style="display:none"
-      >
-        <div class="flex flex-1 gap-1 px-3 py-1.5">
-          <button
-            id="tab-pipes-btn"
-            type="button"
-            class="flex-1 rounded-md px-4 py-1 text-[12px] font-bold tracking-wide transition-colors"
-          >Pipes</button>
-          <button
-            id="tab-sprinklers-btn"
-            type="button"
-            class="flex-1 rounded-md px-4 py-1 text-[12px] font-bold tracking-wide transition-colors"
-          >Sprinklers</button>
-        </div>
-        <div id="tab-status-chip" class="shrink-0 px-3 text-[10px] text-gray-500"></div>
-      </div>
-
       <div
         id="scan-zoom-scroll"
         class="relative h-full w-full cursor-grab select-none overflow-hidden"
       >
-        <div
-          id="simple-scan-pipeline-steps"
-          class="w-full"
-          style="transform-origin:0 0;will-change:transform"
-        >
+        {/* No will-change:transform — it caches a GPU texture at the unzoomed size and
+            magnifies that on zoom (pixelation). Without it the browser re-rasterizes the
+            high-res source <img> at each zoom level, keeping lines crisp. */}
+        <div id="simple-scan-pipeline-steps" class="w-full" style="transform-origin:0 0">
         </div>
       </div>
-      {/* ── Processing overlay ── */}
+      {
+        /* ── Processing overlay: spin on a wrapper DIV (Tailwind rotate on raw <svg> is flaky); shimmer gives motion during long main-thread work ── */
+      }
       <div
         id="scan-overlay"
         class="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-white/70 opacity-0 backdrop-blur-sm transition-opacity duration-200 dark:bg-gray-900/70"
         aria-hidden="true"
       >
-        <div class="flex flex-col items-center gap-3">
-          <svg
-            class="h-10 w-10 animate-spin text-primary-600"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            ><circle
-              class="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              stroke-width="4"></circle><path
-              class="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg
+        <div
+          class="flex max-w-md flex-col items-center gap-4 rounded-2xl border border-gray-200/80 bg-white/95 px-10 py-7 shadow-xl dark:border-gray-600/60 dark:bg-gray-950/95"
+        >
+          <div
+            class="flex h-10 w-10 shrink-0 items-center justify-center motion-safe:animate-spin"
+            aria-hidden="true"
           >
-          <p id="scan-overlay-msg" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <svg
+              class="h-full w-full text-primary-600"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              ><circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"></circle><path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg
+            >
+          </div>
+          <p
+            id="scan-overlay-msg"
+            class="text-center text-sm font-medium text-gray-700 dark:text-gray-300"
+            aria-live="polite"
+          >
             Processing…
           </p>
+          <div
+            class="simple-scan-overlay-pulse h-1 w-full overflow-hidden rounded-full"
+            aria-hidden="true"
+          >
+          </div>
         </div>
       </div>
     </div>
@@ -248,78 +230,17 @@ try {
     }
   }
 
-  // ── Wizard tab bar (full-width strip above the canvas) ──────────────────
-  const tabBarEl = document.getElementById("scan-tab-bar") as HTMLDivElement | null;
-
-  const TAB_BAR_H = 40; // px — must match the tab bar's rendered height
-
+  // ── Wizard tab bar removed ──────────────────────────────────────────────
+  // The old floating Pipes/Sprinklers tab strip conflicted with the right sidebar,
+  // which already lists every result layer (with visibility checkboxes) and shows
+  // both Pipes + Sprinklers summaries. These remain as no-ops so existing call
+  // sites stay valid; visibility + review now live entirely in the sidebar.
   function renderWizardTabBar() {
-    if (!tabBarEl) return;
-    if (!wizardActive) {
-      tabBarEl.style.display = "none";
-      if (scrollEl) scrollEl.style.paddingTop = "";
-      return;
-    }
-    tabBarEl.style.display = "flex";
-    // Push canvas content down so it isn't hidden under the tab bar
-    if (scrollEl) scrollEl.style.paddingTop = `${TAB_BAR_H}px`;
-
-    // Style active/inactive tabs
-    const pipesBtn   = tabBarEl.querySelector("#tab-pipes-btn") as HTMLButtonElement | null;
-    const sprklBtn   = tabBarEl.querySelector("#tab-sprinklers-btn") as HTMLButtonElement | null;
-    const statusChip = tabBarEl.querySelector("#tab-status-chip") as HTMLElement | null;
-
-    const pipesDone     = pipeWizardStep >= PIPE_STEPS.length;
-    const sprinklersDone = sprinklerWizardStep >= SPRINKLER_STEPS.length;
-
-    if (pipesBtn) {
-      const active = wizardTab === "pipes";
-      pipesBtn.className = [
-        "flex-1 rounded-md px-4 py-1 text-[12px] font-bold tracking-wide transition-colors",
-        active
-          ? "bg-sky-600 text-white shadow"
-          : "bg-gray-800/60 text-gray-400 hover:text-gray-200 hover:bg-gray-700/60",
-      ].join(" ");
-      pipesBtn.textContent = pipesDone ? "Pipes ✓" : "Pipes";
-    }
-
-    if (sprklBtn) {
-      const active = wizardTab === "sprinklers";
-      sprklBtn.className = [
-        "flex-1 rounded-md px-4 py-1 text-[12px] font-bold tracking-wide transition-colors",
-        active
-          ? "bg-violet-600 text-white shadow"
-          : "bg-gray-800/60 text-gray-400 hover:text-gray-200 hover:bg-gray-700/60",
-      ].join(" ");
-      sprklBtn.textContent = sprinklersDone ? "Sprinklers ✓" : "Sprinklers";
-    }
-
-    const totalDone  = (pipesDone ? PIPE_STEPS.length : pipeWizardStep < 0 ? 0 : pipeWizardStep)
-                     + (sprinklersDone ? SPRINKLER_STEPS.length : sprinklerWizardStep < 0 ? 0 : sprinklerWizardStep);
-    const totalSteps = PIPE_STEPS.length + SPRINKLER_STEPS.length;
-    if (statusChip) {
-      statusChip.textContent = pipesDone && sprinklersDone
-        ? "Analysis complete"
-        : `${totalDone} / ${totalSteps} steps`;
-    }
+    /* no-op: tab bar removed; sidebar is the single control surface */
   }
 
   function wireWizardTabBar() {
-    if (!tabBarEl) return;
-
-    tabBarEl.querySelector("#tab-pipes-btn")?.addEventListener("click", () => {
-      wizardTab = "pipes";
-      renderWizardTabBar();
-      renderWizardStepPanel();
-      setTabLayerVisibility();
-    });
-
-    tabBarEl.querySelector("#tab-sprinklers-btn")?.addEventListener("click", () => {
-      wizardTab = "sprinklers";
-      renderWizardTabBar();
-      renderWizardStepPanel();
-      setTabLayerVisibility();
-    });
+    /* no-op: tab bar removed */
   }
 
   // ── Pan + Zoom engine ──────────────────────────────────────────────────
@@ -332,11 +253,6 @@ try {
     contentNatH = 0;
 
   const scrollEl = document.getElementById("scan-zoom-scroll") as HTMLDivElement | null;
-  const zoomLabel = document.getElementById("zoom-level-label") as HTMLElement | null;
-
-  function updateZoomLabel() {
-    if (zoomLabel) zoomLabel.textContent = `${Math.round(zoom * 100)}%`;
-  }
 
   /**
    * Clamp pan so the content never fully disappears off-screen.
@@ -356,7 +272,6 @@ try {
   function applyTransform() {
     if (pipelineStepsEl)
       pipelineStepsEl.style.transform = `translate(${panX}px,${panY}px) scale(${zoom})`;
-    updateZoomLabel();
   }
 
   // Center the content after a rebuild.
@@ -390,31 +305,7 @@ try {
     applyTransform();
   }
 
-  // Fit button
-  document.getElementById("zoom-reset")?.addEventListener("click", () => {
-    if (contentNatW > 0) fitAndCenter(contentNatW, contentNatH);
-    else {
-      zoom = 1;
-      panX = 0;
-      panY = 0;
-      applyTransform();
-    }
-  });
-
-  // +/− step buttons (25% steps, centered on viewport)
-  document.getElementById("zoom-in-btn")?.addEventListener("click", () => {
-    if (!scrollEl) return;
-    const cx = scrollEl.clientWidth / 2,
-      cy = scrollEl.clientHeight / 2;
-    zoomToward(1.25, cx, cy);
-  });
-  document.getElementById("zoom-out-btn")?.addEventListener("click", () => {
-    if (!scrollEl) return;
-    const cx = scrollEl.clientWidth / 2,
-      cy = scrollEl.clientHeight / 2;
-    zoomToward(1 / 1.25, cx, cy);
-  });
-
+  // Zoom is mouse-wheel only (the +/−/Fit control was removed).
   // Wheel zoom toward cursor.
   // Use Math.exp so the same pixel-delta produces the same fractional zoom change
   // regardless of whether it arrives as one big event or many small ones (trackpad).
@@ -927,7 +818,9 @@ try {
     // Determine accent color
     const sub = pipeSubLayers.find((s) => s.name === activeLayerName);
     const rgb = sub ? `rgb(${sub.color.join(",")})` : "#f59e0b";
-    if (!imgEl?.parentElement) return;
+    // Mount on the (non-transformed) viewport, NOT the zoomed pipeline-steps element,
+    // so the toolbar keeps a fixed on-screen size/position independent of canvas zoom.
+    if (!imgEl || !scrollEl) return;
 
     const bar = existing ?? document.createElement("div");
     bar.id = "active-layer-indicator";
@@ -962,7 +855,7 @@ try {
       <button id="al-done" title="Deactivate (ESC)" style="border:none;background:rgba(220,50,50,0.6);color:#fff;border-radius:8px;padding:3px 7px;font-size:10px;font-weight:700;cursor:pointer">✕ Done</button>
     `;
 
-    if (!existing) imgEl.parentElement.appendChild(bar);
+    if (!existing) scrollEl.appendChild(bar);
 
     // Wire toolbar buttons (inside the indicator element)
     bar.querySelector("#al-tool-fill")?.addEventListener("click", () => {
@@ -1939,6 +1832,9 @@ try {
   let drawingLegend: LegendRow[] | null = null; // symbol key / legend
   let metadataLoading = false;
   let metadataError: string | null = null;
+  // Opt-in AI: the original image is stashed here on load, but the (paid) Anthropic
+  // call only fires when the user explicitly clicks "Analyze drawing info (AI)".
+  let pendingMetadataImage: ImageData | null = null;
   let _tooltipCloseHandler: ((e: MouseEvent) => void) | null = null;
 
   // Illustrator-style layer selection — independent of the paint activeLayerName
@@ -2065,6 +1961,13 @@ try {
     }
   }
 
+  /** Double rAF so the browser can paint the overlay/spinner before long synchronous work. */
+  function yieldForPaint(): Promise<void> {
+    return new Promise((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    });
+  }
+
   const toast = window as any;
   function toastInfo(title: string, msg: string, duration = 3000) {
     toast.showInfo?.(title, msg, duration);
@@ -2075,6 +1978,39 @@ try {
   function toastError(title: string, msg: string, duration = 5000) {
     toast.showError?.(title, msg, duration);
   }
+
+  // ── AI health strip ────────────────────────────────────────────────
+  // Single source of truth for the last /api/drawing-analyzer/analyze-metadata
+  // outcome so the user can verify the AI path without opening DevTools.
+  const aiHealthDot = document.getElementById(
+    "simple-scan-ai-health-dot"
+  ) as HTMLSpanElement | null;
+  const aiHealthLabel = document.getElementById(
+    "simple-scan-ai-health-label"
+  ) as HTMLSpanElement | null;
+  const aiHealthBtn = document.getElementById("simple-scan-ai-health") as HTMLButtonElement | null;
+  let aiHealthDetail = "No AI analysis run yet.";
+
+  const AI_HEALTH_DOT: Record<string, string> = {
+    idle: "bg-gray-400",
+    loading: "bg-amber-400 motion-safe:animate-pulse",
+    ok: "bg-emerald-500",
+    error: "bg-red-500",
+  };
+
+  function setAiHealth(state: "idle" | "loading" | "ok" | "error", label: string, detail?: string) {
+    if (aiHealthDot)
+      aiHealthDot.className = `inline-block h-2 w-2 shrink-0 rounded-full ${AI_HEALTH_DOT[state]}`;
+    if (aiHealthLabel) aiHealthLabel.textContent = label;
+    aiHealthDetail = detail ?? label;
+    if (aiHealthBtn)
+      aiHealthBtn.title = `AI drawing analysis — ${aiHealthDetail} (click for details)`;
+  }
+
+  aiHealthBtn?.addEventListener("click", () => {
+    const ok = aiHealthDetail.toLowerCase().includes("ok") || aiHealthDetail.includes("200");
+    (ok ? toastInfo : toastError)("AI Drawing Analysis", aiHealthDetail, 6000);
+  });
 
   function getImageScale(): { pxPerImgX: number; pxPerImgY: number } {
     if (!drawingState) return { pxPerImgX: 1, pxPerImgY: 1 };
@@ -4643,21 +4579,12 @@ try {
       return;
     }
     const origLayer = getLayerByName("Original");
-    const dims =
-      origLayer?.rawImageData ?? workingImageData ?? lastCroppedImageData;
-    if (
-      !dims ||
-      preview.width !== dims.width ||
-      preview.height !== dims.height
-    ) {
+    const dims = origLayer?.rawImageData ?? workingImageData ?? lastCroppedImageData;
+    if (!dims || preview.width !== dims.width || preview.height !== dims.height) {
       updateCompositeImage();
       return;
     }
-    const copy = new ImageData(
-      new Uint8ClampedArray(preview.data),
-      preview.width,
-      preview.height
-    );
+    const copy = new ImageData(new Uint8ClampedArray(preview.data), preview.width, preview.height);
     let px = 0;
     for (let i = 3; i < copy.data.length; i += 4) {
       if (copy.data[i] > 0) px++;
@@ -4720,6 +4647,12 @@ try {
     sig: LibraryItemSig | null;
     /** Clutter only: tight ink-bbox pixels for ink-shape matching (same crop as previews). */
     templateImageData?: ImageData | null;
+    /**
+     * Symbols (heads) only: L2-normalized ink grid of the template, for shape/template
+     * matching when *searching* the sheet for heads (findLibraryHeadsOnSheet), not just
+     * labeling pre-detected motifs. Built from the same tight ink crop as `sig`.
+     */
+    headGrid?: Float32Array | null;
     /** Clutter only: data URL of templateImageData for sidebar thumbnails (avoids raw marquee whitespace). */
     clutterPreviewDataUrl?: string;
     /** When true, template is used to erase matching ink on the scan source before motif detection — not for head matching. */
@@ -4824,8 +4757,8 @@ try {
   /** True after the run button is clicked for the current step (before Confirm). */
   let wizardStepRan = false;
   /** Per-step tunable params (persisted in localStorage). */
-  let wizardColoredSat = 15;   // % saturation min for extractColored (maps to 0–1)
-  let wizardObliqueDeg = 20;   // tenths of degrees (20 = 2.0°) for extractObliqueLines epsDeg
+  let wizardColoredSat = 15; // % saturation min for extractColored (maps to 0–1)
+  let wizardObliqueDeg = 20; // tenths of degrees (20 = 2.0°) for extractObliqueLines epsDeg
 
   /** When on, last run stores per-component scores (sidebar). */
   let clutterMatchDebug = false;
@@ -6835,8 +6768,7 @@ try {
     }
     const shifts = stripPlanPhase ? CLUTTER_STRIP_PLAN_PHASE_SHIFTS : [[0, 0] as const];
     for (const [sdx, sdy] of shifts) {
-      const patch =
-        sdx === 0 && sdy === 0 ? crop : translateImageDataFillWhite(crop, sdx, sdy);
+      const patch = sdx === 0 && sdy === 0 ? crop : translateImageDataFillWhite(crop, sdx, sdy);
       for (let q = 0; q < nQ; q++) {
         let oriented = patch;
         for (let r = 0; r < q; r++) oriented = rotateImageData90CW(oriented);
@@ -7102,8 +7034,7 @@ try {
       let eraseRect: { x0: number; y0: number; w: number; h: number } | null = null;
       let triedStrongCrop = false;
       let debugRows = evMain.perTemplate;
-      let evStrongForHit: { matched: boolean; perTemplate: ClutterPerTemplateEval[] } | null =
-        null;
+      let evStrongForHit: { matched: boolean; perTemplate: ClutterPerTemplateEval[] } | null = null;
 
       if (!shouldErase) {
         const strong = trimImageDataToStrongInkBounds(crop, CLUTTER_STRONG_INK_GRAY, 1);
@@ -7122,8 +7053,7 @@ try {
             };
           } else if (
             clutterMatchDebug &&
-            maxUnskippedTemplateScore(evStrong.perTemplate) >
-              maxUnskippedTemplateScore(debugRows)
+            maxUnskippedTemplateScore(evStrong.perTemplate) > maxUnskippedTemplateScore(debugRows)
           ) {
             debugRows = evStrong.perTemplate;
           }
@@ -7244,11 +7174,7 @@ try {
       `applyClutterSuppressionToScanImage: ${clutterComponentHits} hit(s) / ${comps.length} component(s), erased ${erasedPx} px (templates=${clutterLibraryItems.length}, grids=${tmplInkGrids.size}, fuzz=${clutterMatchFuzziness}, strictPair=${clutterMatchStrictPair}); clutter-mask ink ${neutralInkBefore} → ${neutralInkAfter}`
     );
     if (erasedPx > 0) {
-      lastClutterSuppressionPreviewImage = new ImageData(
-        new Uint8ClampedArray(out.data),
-        w,
-        h
-      );
+      lastClutterSuppressionPreviewImage = new ImageData(new Uint8ClampedArray(out.data), w, h);
     } else {
       lastClutterSuppressionPreviewImage = null;
     }
@@ -7574,6 +7500,11 @@ try {
           } else {
             item.templateImageData = null;
             item.clutterPreviewDataUrl = undefined;
+            // Symbol template grid for library-driven sheet search (shape match, not just sig).
+            item.headGrid =
+              basis && basis.width >= 2 && basis.height >= 2
+                ? normalizeInkToUnitGrid(basis, CLUTTER_INK_GRID, CLUTTER_INK_GRAY_MAX)
+                : null;
           }
         })
       );
@@ -7946,6 +7877,143 @@ try {
 
     log(`runLibraryMatchPass: tagged ${tagged} existing candidates above threshold`);
     return tagged;
+  }
+
+  /**
+   * Library-DRIVEN head search (vs. runLibraryMatchPass which only labels motifs the
+   * geometric detector already found). Sweeps the whole sheet:
+   *   1. Propose — loose connected-components on the Original ink mask.
+   *   2. Verify — score each proposal vs every head template with clutterInkShapeScore
+   *      (quarter-turn + multi-scale ink-grid cosine — a real shape match, not aspect/fill/diam).
+   *   3. Merge — union verified hits with existing candidates, dedup by center distance.
+   * New heads flow into symbolScanResults.candidates so counts / sub-layers / connections update.
+   * Returns the number of NEW heads added.
+   */
+  function findLibraryHeadsOnSheet(): number {
+    if (!workingImageData) {
+      toastError("Find heads", "No drawing loaded.");
+      return 0;
+    }
+    const templates = itemLibraryItems.filter((it) => it.headGrid && it.sig);
+    if (templates.length === 0) {
+      toastInfo(
+        "Find heads",
+        "No symbol templates with shape data. Add a head with ✂️ Symbol, then try again."
+      );
+      return 0;
+    }
+    const src =
+      getLayerByName("Original")?.rawImageData ?? lastCroppedImageData ?? workingImageData;
+    const W = src.width,
+      H = src.height;
+
+    // Expected head size: prefer the median of any heads already detected; else template-scaled guess.
+    const tmplDiams = templates.map((t) => t.sig!.diameter).sort((a, b) => a - b);
+    const tmplMedianDiam = tmplDiams[Math.floor(tmplDiams.length / 2)] || 32;
+    const detected: any[] = symbolScanResults?.candidates ?? [];
+    const detDiams = detected.map((c) => Math.min(c.w, c.h)).sort((a, b) => a - b);
+    const detMedianDiam = detDiams.length ? detDiams[Math.floor(detDiams.length / 2)] : 0;
+    const expectedDiam =
+      detMedianDiam > 0 ? detMedianDiam : Math.max(10, Math.round(Math.min(W, H) * 0.012));
+
+    // Proposal pool — loose connected components on Original ink.
+    const { mask } = imageDataToInkMask(src);
+    const minArea = Math.max(12, Math.round((expectedDiam * 0.35) ** 2));
+    const maxArea = Math.round((expectedDiam * 3.0) ** 2);
+    const comps = getComponents(mask, W, H, minArea, maxArea, false, true);
+
+    const minD = expectedDiam * 0.45;
+    const maxD = expectedDiam * 2.6;
+    const inkGrayMax = CLUTTER_INK_GRAY_MAX;
+    const fuzz = Math.max(0, Math.min(100, Number(clutterMatchFuzziness) || 0));
+    // Confidence slider drives the cosine cutoff, but floor it: cosine ink-grid scores
+    // run higher than the geometric label heuristic, so the 10% default would flood.
+    const accept = Math.max(0.35, libraryMatchThreshold);
+    const PAD = Math.max(2, Math.round(expectedDiam * 0.15));
+    const SCORE_CAP = 6000;
+
+    log(
+      `findLibraryHeadsOnSheet: ${comps.length} proposals, expectedDiam=${expectedDiam.toFixed(1)}, tmplMedianDiam=${tmplMedianDiam.toFixed(1)}, accept=${accept}`
+    );
+
+    const found: any[] = [];
+    let scored = 0;
+    for (const comp of comps) {
+      if (scored >= SCORE_CAP) break;
+      const d = Math.min(comp.w, comp.h);
+      const big = Math.max(comp.w, comp.h);
+      if (d < minD || big > maxD) continue;
+      const aspect = comp.w / Math.max(1, comp.h);
+      if (aspect > 2.4 || aspect < 1 / 2.4) continue;
+      const x0 = Math.max(0, comp.x - PAD);
+      const y0 = Math.max(0, comp.y - PAD);
+      const cw = Math.min(W - x0, comp.w + PAD * 2);
+      const ch = Math.min(H - y0, comp.h + PAD * 2);
+      const crop = cropImageDataRect(src, x0, y0, cw, ch);
+      if (!crop) continue;
+      scored++;
+      let best = 0;
+      let bestItem: LibraryItem | null = null;
+      for (const t of templates) {
+        const s = clutterInkShapeScore(crop, t.headGrid!, true, true, inkGrayMax, fuzz, false);
+        if (s > best) {
+          best = s;
+          bestItem = t;
+        }
+      }
+      if (best < accept || !bestItem) continue;
+      const cx = comp.x + comp.w / 2;
+      const cy = comp.y + comp.h / 2;
+      found.push({
+        x: comp.x,
+        y: comp.y,
+        w: comp.w,
+        h: comp.h,
+        cx,
+        cy,
+        cxPct: (cx / W) * 100,
+        cyPct: (cy / H) * 100,
+        symbolName: bestItem.displayName,
+        score: best,
+        libraryMatch: {
+          fileName: bestItem.fileName,
+          displayName: bestItem.displayName,
+          score: best,
+        },
+        foundByLibrary: true,
+      });
+    }
+
+    // Merge into existing candidates, dedup by center distance.
+    const merged: any[] = symbolScanResults?.candidates ? [...symbolScanResults.candidates] : [];
+    let added = 0;
+    for (const f of found) {
+      const r = Math.max(8, Math.min(f.w, f.h) * 0.6);
+      const dup = merged.some((k) => {
+        const kcx = k.cx ?? k.x + k.w / 2;
+        const kcy = k.cy ?? k.y + k.h / 2;
+        return Math.hypot(f.cx - kcx, f.cy - kcy) <= r;
+      });
+      if (dup) continue;
+      merged.push(f);
+      added++;
+    }
+
+    symbolScanResults = {
+      candidates: merged.sort((a, b) => (b.score ?? 0) - (a.score ?? 0)),
+      groupCount: symbolScanResults?.groupCount ?? 0,
+      componentCount: symbolScanResults?.componentCount ?? comps.length,
+    };
+
+    log(`findLibraryHeadsOnSheet: scored ${scored}, matched ${found.length}, added ${added} new`);
+
+    // Rebuild head sub-layers + counts + canvas from the merged candidate set.
+    const padPct = getLayerByName("Sprinkler Heads")?.threshold ?? 15;
+    createSprinklerHeadLayer(padPct);
+    renderInlineLayerPanel();
+    updateCompositeImage();
+
+    return added;
   }
 
   /**
@@ -8399,7 +8467,9 @@ try {
               log(`runSymbolScan: library scan found ${found} potential matches`);
               if (found > 0) {
                 autoCommittedLibrary = commitLibraryMatches();
-                log(`runSymbolScan: auto-committed ${autoCommittedLibrary} of ${found} library match(es)`);
+                log(
+                  `runSymbolScan: auto-committed ${autoCommittedLibrary} of ${found} library match(es)`
+                );
                 if (autoCommittedLibrary > 0) {
                   // Re-run pipe analysis: committed matches erase their pixels from the pipe layer.
                   pipeAnalysisResults = analyzePipeLayer();
@@ -9392,8 +9462,27 @@ try {
     },
   ] as const;
 
+  /**
+   * Dispatcher: with the top tab bar gone, the sidebar shows BOTH Pipes and
+   * Sprinklers summaries once analysis is complete. While a section is mid-run
+   * (e.g. after "Re-run … steps"), show just that section's step card.
+   */
   function buildWizardStepPanelHtml(): string {
-    const tab = wizardTab;
+    const pipesDone = pipeWizardStep >= PIPE_STEPS.length;
+    const sprinklersDone = sprinklerWizardStep >= SPRINKLER_STEPS.length;
+    if (pipesDone && sprinklersDone) {
+      return `<div class="space-y-4">${buildWizardTabHtml("pipes")}${buildWizardTabHtml("sprinklers")}</div>`;
+    }
+    // One (or both) sections still running/stepping — show the active section.
+    const activeTab: WizardTab = !pipesDone && (wizardTab === "pipes" || sprinklersDone)
+      ? "pipes"
+      : !sprinklersDone && (wizardTab === "sprinklers" || pipesDone)
+        ? "sprinklers"
+        : wizardTab;
+    return buildWizardTabHtml(activeTab);
+  }
+
+  function buildWizardTabHtml(tab: WizardTab): string {
     const steps = tab === "pipes" ? PIPE_STEPS : SPRINKLER_STEPS;
     const stepIdx = tab === "pipes" ? pipeWizardStep : sprinklerWizardStep;
     const totalSteps = steps.length;
@@ -9416,13 +9505,18 @@ try {
           ["Open endpoints", endpoints.length],
         ] as [string, number][];
         resultsHtml = `
-          <div class="rounded-xl border border-sky-700 bg-sky-950/40 p-3">
-            <p class="text-[10px] font-bold uppercase tracking-wide text-sky-300 mb-2">Pipe Network</p>
+          <div class="rounded-xl border border-sky-400/80 bg-sky-50 p-3 dark:border-sky-600 dark:bg-sky-950/90">
+            <p class="mb-2 text-[10px] font-bold uppercase tracking-wide text-sky-800 dark:text-sky-300">Pipe Network</p>
             <table class="w-full text-[11px]">
-              ${rows.map(([label, n]) => `<tr><td class="text-gray-400 py-0.5">${label}</td><td class="text-right font-bold text-white">${n}</td></tr>`).join("")}
+              ${rows
+                .map(
+                  ([label, n]) =>
+                    `<tr><td class="py-0.5 text-sky-950/90 dark:text-sky-100">${label}</td><td class="text-right font-bold text-sky-950 tabular-nums dark:text-white">${n}</td></tr>`
+                )
+                .join("")}
             </table>
           </div>
-          <button id="wiz-restart-tab" class="mt-2 w-full rounded px-3 py-1.5 text-[11px] font-semibold bg-gray-700 hover:bg-gray-600 text-white transition-colors">↺ Re-run Pipe steps</button>`;
+          <button id="wiz-restart-pipes" class="mt-2 w-full rounded px-3 py-1.5 text-[11px] font-semibold bg-gray-700 hover:bg-gray-600 text-white transition-colors">↺ Re-run Pipe steps</button>`;
       } else if (tab === "sprinklers") {
         const headCount = symbolScanResults?.candidates.length ?? 0;
         const committed = libraryLayers.reduce((s, ll) => s + ll.candidates.length, 0);
@@ -9435,13 +9529,18 @@ try {
           ["Branch heads", branch],
         ];
         resultsHtml = `
-          <div class="rounded-xl border border-violet-700 bg-violet-950/40 p-3">
-            <p class="text-[10px] font-bold uppercase tracking-wide text-violet-300 mb-2">Sprinkler Heads</p>
+          <div class="rounded-xl border border-violet-400/80 bg-violet-50 p-3 dark:border-violet-600 dark:bg-violet-950/90">
+            <p class="mb-2 text-[10px] font-bold uppercase tracking-wide text-violet-800 dark:text-violet-300">Sprinkler Heads</p>
             <table class="w-full text-[11px]">
-              ${rows.map(([label, n]) => `<tr><td class="text-gray-400 py-0.5">${label}</td><td class="text-right font-bold text-white">${n}</td></tr>`).join("")}
+              ${rows
+                .map(
+                  ([label, n]) =>
+                    `<tr><td class="py-0.5 text-violet-950/90 dark:text-violet-100">${label}</td><td class="text-right font-bold text-violet-950 tabular-nums dark:text-white">${n}</td></tr>`
+                )
+                .join("")}
             </table>
           </div>
-          <button id="wiz-restart-tab" class="mt-2 w-full rounded px-3 py-1.5 text-[11px] font-semibold bg-gray-700 hover:bg-gray-600 text-white transition-colors">↺ Re-run Sprinkler steps</button>`;
+          <button id="wiz-restart-sprinklers" class="mt-2 w-full rounded px-3 py-1.5 text-[11px] font-semibold bg-gray-700 hover:bg-gray-600 text-white transition-colors">↺ Re-run Sprinkler steps</button>`;
       }
       return heading + resultsHtml;
     }
@@ -9461,7 +9560,8 @@ try {
     const step = steps[stepIdx >= 0 ? stepIdx : 0];
     const showStep = stepIdx >= 0;
 
-    const sliderHtml = showStep && step.slider ? `<div class="mt-2 mb-1">${step.slider()}</div>` : "";
+    const sliderHtml =
+      showStep && step.slider ? `<div class="mt-2 mb-1">${step.slider()}</div>` : "";
     const runBtnLabel = wizardStepRunning ? "Running…" : wizardStepRan ? "Re-run" : "Run step";
     const runBtnDisabled = wizardStepRunning ? "disabled" : "";
     const runBtnCls = wizardStepRunning
@@ -9482,12 +9582,14 @@ try {
                class="flex-1 rounded px-3 py-1.5 text-[11px] font-semibold text-white transition-colors ${runBtnCls}">
                ${runBtnLabel}
              </button>
-             ${wizardStepRan
-               ? `<button id="wiz-confirm-step"
+             ${
+               wizardStepRan
+                 ? `<button id="wiz-confirm-step"
                     class="flex-1 rounded px-3 py-1.5 text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors">
                     Confirm →
                   </button>`
-               : ""}
+                 : ""
+             }
            </div>
          </div>`
       : `<button id="wiz-begin-tab"
@@ -9520,9 +9622,14 @@ try {
       const obliqueSlider = el.querySelector("#wiz-oblique-deg") as HTMLInputElement | null;
       if (obliqueSlider) wizardObliqueDeg = Number(obliqueSlider.value);
       const fuzzSlider = el.querySelector("#wiz-scan-fuzz") as HTMLInputElement | null;
-      if (fuzzSlider) { symbolScanFuzz = Number(fuzzSlider.value); localStorage.setItem("simple-scan-symbol-fuzz", String(symbolScanFuzz)); }
+      if (fuzzSlider) {
+        symbolScanFuzz = Number(fuzzSlider.value);
+        localStorage.setItem("simple-scan-symbol-fuzz", String(symbolScanFuzz));
+      }
       const thrSlider = el.querySelector("#wiz-lib-threshold") as HTMLInputElement | null;
-      if (thrSlider) { libraryMatchThreshold = Number(thrSlider.value) / 100; }
+      if (thrSlider) {
+        libraryMatchThreshold = Number(thrSlider.value) / 100;
+      }
       if (wizardTab === "pipes") runCurrentPipeStep();
       else runCurrentSprinklerStep();
     });
@@ -9536,32 +9643,31 @@ try {
       }
       renderWizardStepPanel();
     });
-    el.querySelector("#wiz-restart-tab")?.addEventListener("click", () => {
-      if (wizardTab === "pipes") {
-        // Reset pipe state and re-run all pipe steps automatically
-        pipeWizardStep = -1;
-        pipeAnalysisResults = null;
-        pipeSubLayers = [];
-        initWorkingImage();
-        layers = layers.filter((l) => l.name === "Original");
-        runAllPipeSteps().then(() => {
-          hideOverlay();
-          renderInlineLayerPanel();
-          renderWizardStepPanel();
-          renderWizardTabBar();
-        });
-        return;
-      } else {
-        sprinklerWizardStep = 0;
-        sprinklerSubLayers = [];
-        sprinklerConnections = [];
-        symbolScanResults = null;
-        removeSymbolResultsLayer();
-        libraryLayers = [];
-        pendingLibraryMatches = [];
-        renderSymbolMarkers();
-        updateCompositeImage();
-      }
+    el.querySelector("#wiz-restart-pipes")?.addEventListener("click", () => {
+      wizardTab = "pipes";
+      // Reset pipe state and re-run all pipe steps automatically
+      pipeWizardStep = -1;
+      pipeAnalysisResults = null;
+      pipeSubLayers = [];
+      initWorkingImage();
+      layers = layers.filter((l) => l.name === "Original");
+      runAllPipeSteps().then(() => {
+        hideOverlay();
+        renderInlineLayerPanel();
+        renderWizardStepPanel();
+      });
+    });
+    el.querySelector("#wiz-restart-sprinklers")?.addEventListener("click", () => {
+      wizardTab = "sprinklers";
+      sprinklerWizardStep = 0;
+      sprinklerSubLayers = [];
+      sprinklerConnections = [];
+      symbolScanResults = null;
+      removeSymbolResultsLayer();
+      libraryLayers = [];
+      pendingLibraryMatches = [];
+      renderSymbolMarkers();
+      updateCompositeImage();
       wizardStepRan = false;
       renderWizardStepPanel();
     });
@@ -9576,10 +9682,20 @@ try {
       requestAnimationFrame(() => {
         try {
           switch (pipeWizardStep) {
-            case 0: extractColored(wizardColoredSat / 100); break;
-            case 1: extractObliqueLines(180, { epsDeg: wizardObliqueDeg / 10 }); break;
-            case 2: extractMidtones(); extractText(); extractDashedRectangles(); break;
-            case 3: extractRemaining(); break;
+            case 0:
+              extractColored(wizardColoredSat / 100);
+              break;
+            case 1:
+              extractObliqueLines(180, { epsDeg: wizardObliqueDeg / 10 });
+              break;
+            case 2:
+              extractMidtones();
+              extractText();
+              extractDashedRectangles();
+              break;
+            case 3:
+              extractRemaining();
+              break;
             case 4: {
               pipeAnalysisResults = analyzePipeLayer();
               createPipeSubLayers();
@@ -9612,11 +9728,24 @@ try {
       showOverlay(stepLabels[i]);
       await new Promise<void>((r) => setTimeout(r, 0)); // let overlay paint
       switch (i) {
-        case 0: extractColored(wizardColoredSat / 100); break;
-        case 1: extractObliqueLines(180, { epsDeg: wizardObliqueDeg / 10 }); break;
-        case 2: extractMidtones(); extractText(); extractDashedRectangles(); break;
-        case 3: extractRemaining(); break;
-        case 4: pipeAnalysisResults = analyzePipeLayer(); createPipeSubLayers(); break;
+        case 0:
+          extractColored(wizardColoredSat / 100);
+          break;
+        case 1:
+          extractObliqueLines(180, { epsDeg: wizardObliqueDeg / 10 });
+          break;
+        case 2:
+          extractMidtones();
+          extractText();
+          extractDashedRectangles();
+          break;
+        case 3:
+          extractRemaining();
+          break;
+        case 4:
+          pipeAnalysisResults = analyzePipeLayer();
+          createPipeSubLayers();
+          break;
       }
       pipeWizardStep = i + 1;
     }
@@ -9635,9 +9764,10 @@ try {
           switch (sprinklerWizardStep) {
             case 0: {
               const origSrc = getLayerByName("Original")?.rawImageData ?? lastCroppedImageData!;
-              const suppressed = clutterLibraryItems.length > 0
-                ? applyClutterSuppressionToScanImage(origSrc)
-                : origSrc;
+              const suppressed =
+                clutterLibraryItems.length > 0
+                  ? applyClutterSuppressionToScanImage(origSrc)
+                  : origSrc;
               symbolScanResults = detectRepeatedMotifs(
                 suppressed,
                 Math.max(0, Math.min(1, symbolScanFuzz / 100)),
@@ -9691,9 +9821,8 @@ try {
     const origSrc = getLayerByName("Original")?.rawImageData ?? lastCroppedImageData!;
     // Clutter suppression was already applied to workingImageData at init;
     // the Original layer still holds the clean baseline for motif detection.
-    const scanSrc = clutterLibraryItems.length > 0
-      ? applyClutterSuppressionToScanImage(origSrc)
-      : origSrc;
+    const scanSrc =
+      clutterLibraryItems.length > 0 ? applyClutterSuppressionToScanImage(origSrc) : origSrc;
 
     for (let i = 0; i < SPRINKLER_STEPS.length; i++) {
       showOverlay(stepLabels[i]);
@@ -9735,28 +9864,32 @@ try {
   function setTabLayerVisibility() {
     if (!wizardActive) return;
 
-    // Layer names that belong to each tab
-    const PIPE_LAYER_NAMES = new Set(["Pipes", "Remaining"]);
-    const SPRINKLER_LAYER_NAMES = new Set(["Symbol Results", "Sprinkler Heads"]);
-    // Extraction/stripping layers — never shown as overlays in either tab
-    const STRIP_LAYER_NAMES = new Set([
-      "Oblique / Curves", "Text", "Dark Lines", "Midtones / Gray",
-      "Colored", "Dashed", "Dashed Rectangles",
+    // Tab bar is gone — the sidebar drives per-layer visibility. Default state:
+    // show the Pipes + Sprinklers result layers together; hide the intermediate
+    // extraction/stripping layers and the noisy "Remaining" leftover.
+    const HIDE_BY_DEFAULT = new Set([
+      "Oblique / Curves",
+      "Text",
+      "Dark Lines",
+      "Midtones / Gray",
+      "Colored",
+      "Dashed",
+      "Dashed Rectangles",
+      "Remaining",
     ]);
 
     layers.forEach((layer) => {
-      if (layer.name === "Original") { layer.visible = true; return; }
-      if (STRIP_LAYER_NAMES.has(layer.name)) { layer.visible = false; return; }
-      if (wizardTab === "pipes") {
-        layer.visible = PIPE_LAYER_NAMES.has(layer.name);
-      } else {
-        layer.visible = SPRINKLER_LAYER_NAMES.has(layer.name);
+      if (layer.name === "Original") {
+        layer.visible = true;
+        return;
       }
+      layer.visible = !HIDE_BY_DEFAULT.has(layer.name);
     });
 
-    // Pipe sublayer visibility mirrors the "Pipes" layer
-    const pipesVisible = wizardTab === "pipes";
-    pipeSubLayers.forEach((s) => { s.visible = pipesVisible; });
+    // Pipe sublayers are result overlays — visible by default.
+    pipeSubLayers.forEach((s) => {
+      s.visible = true;
+    });
 
     updateCompositeImage();
   }
@@ -9779,7 +9912,12 @@ try {
       it.imageUrl ||
       it.svgImageUrl ||
       "";
-    const libraryPreviewBlock = (src: string, alt: string, extraImgClass: string, extraImgStyle = "") =>
+    const libraryPreviewBlock = (
+      src: string,
+      alt: string,
+      extraImgClass: string,
+      extraImgStyle = ""
+    ) =>
       src
         ? `<img src="${escA(src)}" alt="${escA(alt)}" loading="lazy" decoding="async"
             class="${extraImgClass} bg-white ring-1 ring-gray-200/90 dark:bg-gray-950 dark:ring-gray-700"${extraImgStyle ? ` style="${extraImgStyle}"` : ""} />`
@@ -9952,7 +10090,8 @@ try {
             ▶ Run scan
           </button>
         </div>`
-      : `<div class="flex gap-1.5 mt-0.5">
+      : `<div class="mt-0.5 space-y-1.5">
+          <div class="flex gap-1.5">
             <button type="button" id="puzzle-fit-btn" ${!hasAnalysis ? "disabled" : ""}
               class="flex-1 rounded px-2 py-1.5 text-[11px] font-semibold text-white transition-colors
                 ${hasAnalysis ? "bg-violet-600 hover:bg-violet-700 cursor-pointer" : "bg-gray-400 cursor-not-allowed opacity-60"}">
@@ -9966,7 +10105,14 @@ try {
               class="flex-1 rounded px-2 py-1.5 text-[11px] font-semibold bg-amber-600 hover:bg-amber-700 text-white transition-colors">
               🧹 Clutter
             </button>
-          </div>`;
+          </div>
+          <button type="button" id="library-find-heads-btn" ${itemLibraryItems.length === 0 ? "disabled" : ""}
+            title="Search the WHOLE sheet for heads using saved symbol templates (shape match), then add new ones to the count. Tune with the confidence slider above."
+            class="w-full rounded px-2 py-1.5 text-[11px] font-semibold text-white transition-colors
+              ${itemLibraryItems.length > 0 ? "bg-teal-600 hover:bg-teal-700 cursor-pointer" : "bg-gray-400 cursor-not-allowed opacity-60"}">
+            🔎 Find heads from library
+          </button>
+        </div>`;
 
     const symbolFuzzVal = Math.round(Math.max(0, Math.min(100, Number(symbolScanFuzz) || 0)));
 
@@ -10133,7 +10279,10 @@ try {
     }
     const rows = layers
       .map(
-        (layer, i) => `<label class="flex cursor-pointer items-center gap-2 rounded py-0.5 px-1 hover:bg-slate-100 dark:hover:bg-slate-800/80">
+        (
+          layer,
+          i
+        ) => `<label class="flex cursor-pointer items-center gap-2 rounded py-0.5 px-1 hover:bg-slate-100 dark:hover:bg-slate-800/80">
           <input type="checkbox" data-lab-layer-toggle="${i}" ${layer.visible ? "checked" : ""} class="rounded flex-shrink-0" />
           <span class="min-w-0 flex-1 text-[11px] font-medium text-slate-800 dark:text-slate-200">${esc(layer.name)}</span>
         </label>`
@@ -10495,8 +10644,9 @@ try {
     const renderLayer = (layer: ExtractedLayer, forPass2: boolean) => {
       if (!layer.visible) return;
       const alpha = layer.opacity ?? 1;
-      const useKnockout =
-        Boolean(forPass2 && knockoutPass2 && !LAYERS_SKIP_CLUTTER_KNOCKOUT.has(layer.name));
+      const useKnockout = Boolean(
+        forPass2 && knockoutPass2 && !LAYERS_SKIP_CLUTTER_KNOCKOUT.has(layer.name)
+      );
       if (layer.name === "Pipes" && pipeSubLayers.length > 0) {
         const prevAlpha = ctx.globalAlpha;
         ctx.globalAlpha = alpha;
@@ -10823,9 +10973,7 @@ try {
       ch.visible = (e.target as HTMLInputElement).checked;
       const idx = layers.findIndex((l) => l.name === CLUTTER_PREVIEW_LAYER_NAME);
       if (idx >= 0) {
-        const mainCb = el.querySelector(
-          `[data-layer-toggle="${idx}"]`
-        ) as HTMLInputElement | null;
+        const mainCb = el.querySelector(`[data-layer-toggle="${idx}"]`) as HTMLInputElement | null;
         if (mainCb) mainCb.checked = ch.visible;
         const labCb = el.querySelector(
           `[data-lab-layer-toggle="${idx}"]`
@@ -10884,7 +11032,9 @@ try {
       } catch {
         /* ignore */
       }
-      clutterLibraryItems = clutterLibraryItems.filter((t) => t.fileName !== GLOBAL_CLUTTER_DIAGONAL_FILE);
+      clutterLibraryItems = clutterLibraryItems.filter(
+        (t) => t.fileName !== GLOBAL_CLUTTER_DIAGONAL_FILE
+      );
       if (on) clutterLibraryItems.push(makeGlobalDiagonalClutterItem());
       if (LIBRARY_MATCH_LAB) void runLibraryLabAutoRescan();
       else {
@@ -10977,6 +11127,37 @@ try {
     const puzzleFitBtn = el.querySelector("#puzzle-fit-btn") as HTMLButtonElement | null;
     puzzleFitBtn?.addEventListener("click", () => {
       void runPuzzleFit();
+    });
+
+    // ── Library-driven head search — sweep the sheet with symbol templates ──
+    const findHeadsBtn = el.querySelector("#library-find-heads-btn") as HTMLButtonElement | null;
+    findHeadsBtn?.addEventListener("click", async () => {
+      if (itemLibraryItems.length === 0) {
+        toastInfo("Find heads", "Add a head template with ✂️ Symbol first.");
+        return;
+      }
+      const before = symbolScanResults?.candidates.length ?? 0;
+      showOverlay("Searching sheet for heads from library…");
+      await yieldForPaint();
+      try {
+        const added = findLibraryHeadsOnSheet();
+        const total = symbolScanResults?.candidates.length ?? before;
+        if (added > 0) {
+          toastSuccess(
+            "Find heads",
+            `Added ${added} head${added === 1 ? "" : "s"} from library — ${total} total.`
+          );
+        } else {
+          toastInfo(
+            "Find heads",
+            `No new heads matched. Try raising the confidence slider, or capture a cleaner ✂️ Symbol.`
+          );
+        }
+      } catch (err) {
+        toastError("Find heads", String(err));
+      } finally {
+        hideOverlay();
+      }
     });
 
     // ── Library Match Lab — Photoshop-style pick (connected ink blob) ───
@@ -11420,14 +11601,15 @@ try {
           // Auto-identify sprinkler heads now that everything else is stripped
           await runAllSprinklerSteps();
 
-          // Default to Pipes tab view on completion
           wizardTab = "pipes";
           setTabLayerVisibility();
           hideOverlay();
           renderPipelineSteps({ sourceImageData, regions, selectedRegions });
-          renderWizardTabBar();
-          wireWizardTabBar();
-          toastSuccess("Analysis complete", "Review Pipes and Sprinklers results in the tabs above.");
+          openDrawer();
+          toastSuccess(
+            "Analysis complete",
+            "Review Pipes and Sprinklers results in the sidebar on the right."
+          );
         })();
         return;
       }
@@ -11753,14 +11935,32 @@ try {
     }
 
     if (!drawingMetadata) {
-      if (metadataError) {
-        panel.innerHTML = `<div class="mb-3 rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2 dark:border-amber-800 dark:bg-amber-950/40">
-          <p class="text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">Drawing Info</p>
-          <p class="mt-0.5 text-[10px] text-amber-500 dark:text-amber-400">Could not analyze: ${metadataError}</p>
-        </div>`;
-      } else {
+      if (!pendingMetadataImage) {
         panel.innerHTML = "";
+        return;
       }
+      const errLine = metadataError
+        ? `<p class="mt-1 text-[10px] text-amber-500 dark:text-amber-400">Last attempt failed: ${metadataError}</p>`
+        : "";
+      const btnLabel = metadataError ? "Retry AI analysis" : "Analyze drawing info (AI)";
+      panel.innerHTML = `
+        <div class="mb-3 rounded-lg border border-sky-200 bg-sky-50/60 px-3 py-3 dark:border-sky-800 dark:bg-sky-950/40">
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-400">Drawing Info</p>
+          <p class="mt-1 text-[10px] text-gray-500 dark:text-gray-400">
+            Optional: send one downscaled image to the AI to read the title block, schedule, and legend.
+            This is the only paid API call and runs only when you click.
+          </p>
+          ${errLine}
+          <button id="simple-scan-analyze-ai-btn" type="button"
+            class="mt-2 inline-flex items-center gap-1.5 rounded-md bg-sky-600 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-400">
+            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2 11 6l4 1.5L11 9l-1.5 4L8 9 4 7.5 8 6z"/><path d="m18 14 .9 2.4L21 17l-2.1.6L18 20l-.9-2.4L15 17l2.1-.6z"/></svg>
+            ${btnLabel}
+          </button>
+        </div>`;
+      const btn = panel.querySelector<HTMLButtonElement>("#simple-scan-analyze-ai-btn");
+      btn?.addEventListener("click", () => {
+        if (pendingMetadataImage) void analyzeDrawingMetadata(pendingMetadataImage);
+      });
       return;
     }
 
@@ -11878,8 +12078,9 @@ try {
   }
 
   // Scales the rendered drawing before sending to the API.
-  // Larger = better text recognition but bigger payload; 1800px is a good balance for CAD drawings.
-  function resizeForAnalysis(imageData: ImageData, maxSide = 1800): string {
+  // 1568px matches Anthropic's internal max long-edge: anything larger is downscaled
+  // server-side anyway, so this caps upload size / token cost with zero quality loss.
+  function resizeForAnalysis(imageData: ImageData, maxSide = 1568): string {
     const scale = Math.min(1, maxSide / Math.max(imageData.width, imageData.height));
     const w = Math.round(imageData.width * scale);
     const h = Math.round(imageData.height * scale);
@@ -11906,12 +12107,14 @@ try {
     sprinklerSchedule = null;
     drawingLegend = null;
     renderDrawingInfoPanel();
+    setAiHealth("loading", "AI: analyzing…", "Sending drawing to /analyze-metadata…");
 
     try {
       const imageDataUrl = resizeForAnalysis(imageData);
       if (!imageDataUrl) {
         metadataLoading = false;
         renderDrawingInfoPanel();
+        setAiHealth("error", "AI: no image", "Could not build a JPEG to send for analysis.");
         return;
       }
 
@@ -11923,6 +12126,11 @@ try {
       const json = await res.json();
       if (!res.ok) {
         metadataError = json?.error ?? `HTTP ${res.status}`;
+        setAiHealth(
+          "error",
+          `AI: error (${res.status})`,
+          `HTTP ${res.status} — ${json?.error ?? "request failed"}${json?.hint ? ` · ${json.hint}` : ""}`
+        );
       } else {
         drawingMetadata = json.summary ?? null;
         sprinklerSchedule =
@@ -11933,10 +12141,18 @@ try {
           Array.isArray(json.legend) && json.legend.length > 0
             ? (json.legend as LegendRow[])
             : null;
+        const sched = sprinklerSchedule?.length ?? 0;
+        const leg = drawingLegend?.length ?? 0;
+        setAiHealth(
+          "ok",
+          "AI: OK (200)",
+          `200 OK — ${drawingMetadata ? "summary ✓" : "no summary"}, schedule: ${sched} row(s), legend: ${leg} entr${leg === 1 ? "y" : "ies"}.`
+        );
       }
     } catch (err: any) {
       log("analyzeDrawingMetadata failed:", err);
       metadataError = err?.message ?? "Network error";
+      setAiHealth("error", "AI: network", `Network error — ${metadataError}`);
     } finally {
       metadataLoading = false;
       renderDrawingInfoPanel();
@@ -12067,6 +12283,7 @@ try {
     );
     setStatus("Rendering drawing...");
     showOverlay("Rendering drawing…");
+    await yieldForPaint();
     lastPdfRenderScale = 0;
     lastPdfDoc = null;
     lastPdfPage = null;
@@ -12108,6 +12325,7 @@ try {
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     showOverlay(LIBRARY_MATCH_LAB ? "Preparing full sheet…" : "Detecting regions…");
+    await yieldForPaint();
     log("handleDrawingUpload: imageData captured, building seed mask...");
     drawingState = {
       width: canvas.width,
@@ -12144,9 +12362,16 @@ try {
     lastClutterSuppressionStats = null;
     if (drawerControlsEl) drawerControlsEl.innerHTML = "";
 
-    // Kick off metadata analysis on the original image (before any layer extraction).
-    // Fire-and-forget — the info panel updates itself when the response arrives.
-    analyzeDrawingMetadata(imageData);
+    // Opt-in AI: stash the original image but DO NOT call the (paid) Anthropic API
+    // automatically. The user triggers it via the "Analyze drawing info (AI)" button
+    // in the Drawing Info panel. This prevents any background/surprise API spend.
+    pendingMetadataImage = imageData;
+    drawingMetadata = null;
+    metadataError = null;
+    sprinklerSchedule = null;
+    drawingLegend = null;
+    setAiHealth("idle", "AI: idle", "Click “Analyze drawing info (AI)” to send one downscaled image for analysis.");
+    renderDrawingInfoPanel();
 
     log("handleDrawingUpload: calling renderProcessingOnlyView...");
     renderProcessingOnlyView();
@@ -12180,6 +12405,7 @@ try {
     log("loadSelectedDrawing:", label, "→", url);
     setStatus(`Loading ${label}...`);
     showOverlay(`Loading ${label}…`);
+    await yieldForPaint();
     toastInfo("Loading Drawing", label);
     try {
       const res = await fetch(url, { cache: "no-store" });
@@ -12382,5 +12608,41 @@ try {
       linear-gradient(45deg, transparent 75%, #1f2937 75%),
       linear-gradient(-45deg, transparent 75%, #1f2937 75%);
     background-color: #111827;
+  }
+
+  /* Indeterminate bar: often keeps moving during heavy main-thread JS when a lone SVG spin appears stuck */
+  @keyframes simple-scan-overlay-shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(350%);
+    }
+  }
+  .simple-scan-overlay-pulse {
+    position: relative;
+    background: rgb(0 0 0 / 0.08);
+  }
+  :global(.dark) .simple-scan-overlay-pulse {
+    background: rgb(255 255 255 / 0.1);
+  }
+  .simple-scan-overlay-pulse::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 45%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--color-primary-500, #0ea5e9) 78%, transparent),
+      transparent
+    );
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .simple-scan-overlay-pulse::after {
+      animation: simple-scan-overlay-shimmer 1.15s ease-in-out infinite;
+    }
   }
 </style>

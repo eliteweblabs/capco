@@ -839,12 +839,31 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
           ...(dbPage.frontmatter || {}),
           content: filterContent(rawContent),
         };
+
+        // Capco product homepage: MarkdownPage merges <NodesCapco /> + <LayoutProductCapco /> into
+        // CapcoHeroSection. If the CMS row kept the layout but dropped NodesCapco, the node canvas never mounts.
+        if (isHome) {
+          const body = pageContent.content || "";
+          if (/\bLayoutProductCapco\b/.test(body) && !/\bNodesCapco\b/.test(body)) {
+            const marker = /<LayoutProductCapco\b/i;
+            if (marker.test(body)) {
+              pageContent.content = body.replace(marker, "<NodesCapco />\n\n<LayoutProductCapco");
+              console.warn(
+                "⚠️ [CONTENT] Homepage CMS has <LayoutProductCapco /> without <NodesCapco />. Inserted <NodesCapco /> so CapcoHeroSection (node canvas) renders. Update the cmsPages row when convenient."
+              );
+            }
+          }
+        }
+
         cache.set(cacheKey, pageContent);
         console.log("📄 [CONTENT] Page loaded from database (cmsPages):", slug, {
           dbSlug: dbPage.slug,
           template: normalizedTemplate,
           contentLength: (pageContent.content || "").length,
           hasContactForm: (pageContent.content || "").includes("<ContactForm"),
+          hasCapcoHeroMerge:
+            (pageContent.content || "").includes("<NodesCapco") &&
+            (pageContent.content || "").includes("<LayoutProductCapco"),
         });
         if (slug === "contact" && !(pageContent.content || "").includes("<ContactForm")) {
           console.warn(

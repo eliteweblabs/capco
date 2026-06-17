@@ -9,25 +9,40 @@
 
 import type { APIRoute } from "astro";
 
-// Priority order: best vision capability first, confirmed-available fallback last
+// Accuracy-first order: strongest vision model first (best at reading small title-block
+// text → far less hallucination), cheaper models only as fallback if it's unavailable
+// (the loop below falls through on 404/not_found). Per-call cost is small because we
+// send ONE downscaled image, and the call only fires on an explicit user click — so this
+// can't run up a background bill.
 const VISION_MODELS = [
   "claude-opus-4-5",
   "claude-3-opus-20240229",
-  "claude-3-5-haiku-20241022",
   "claude-3-haiku-20240307",
 ] as const;
 
 const PROMPT = `You are analyzing a fire protection / life-safety sprinkler system drawing (CAD/PDF format).
 
+CRITICAL ACCURACY RULES — read before answering:
+- Transcribe ONLY text that is literally legible in THIS image. This is a transcription task, not a knowledge task.
+- NEVER infer, guess, complete, autocorrect, or fill in any value from outside/world knowledge or from what is "typical" for such drawings.
+- You have NO prior knowledge of any firm, address, phone number, license number, or project. If a value is not clearly readable in the image, you do not know it.
+- The image is downscaled, so small title-block text is frequently UNREADABLE. When in doubt, leave it out. A shorter, fully-accurate summary is far better than a complete-looking one with fabricated details.
+
+ABSOLUTE BANS — these are never worth the risk of hallucination, so NEVER output them under any circumstances, even if you think you can read them:
+- NO street addresses, suite numbers, city/state/ZIP.
+- NO phone, fax, or email.
+- NO stamp/license/registration numbers.
+If you find yourself about to write any of the above, omit it entirely. Do not include a "designer/engineer" or "company" bullet unless the firm/person name is unmistakably legible — and if you include it, give the NAME ONLY, with zero contact details.
+
 Respond with ONLY a valid JSON object — no markdown fences, no explanation, just the raw JSON.
 The object must have exactly two keys:
 
 1. "summary" — a rich markdown narrative (use **bold headers**, bullet points) covering:
-   - Project Overview: address, building name, designer/engineer, occupancy, scale, floor depicted
+   - Project Overview: building/project name, occupancy, scale, floor depicted (NO addresses, NO phone numbers — see ABSOLUTE BANS)
    - System Design: system type, sprinkler head type & K-factor, design method, density/flow, water supply, pipe materials
-   - Key Notes & Compliance: NFPA edition, state/local code, licensing, AHJ/fire dept submissions, special conditions
+   - Key Notes & Compliance: NFPA edition, state/local code, AHJ/fire dept submissions, special conditions (do NOT output license/registration numbers)
    - Sheet Details: sheet number, date/revision, panels on sheet
-   Extract every piece of visible text you can read. Skip a section only if truly absent.
+   Include a bullet ONLY when you can actually read its source text in the image. Omit any field you cannot read — do not write "not specified" guesses and do not fabricate. Skip an entire section if its text is absent or illegible.
 
 2. "schedule" — null if the drawing has NO symbol/sprinkler schedule or head list at all.
    If ANY table, schedule, or list of sprinkler heads/devices is present, return it — even if
@@ -63,7 +78,29 @@ The object must have exactly two keys:
    This field is separate from "schedule" — a drawing may have both, one, or neither.
 
 Example valid response (do not copy, just follow the structure):
-{"summary":"**Project Overview**\\n- Address: ...","schedule":[{"sym":"⊗","count":22,"position":"Q/R UPRIGHT","finish":"BRASS","temp":155,"k":5.60,"npt":"1/2\\"","mfg":"RELIABLE"}],"legend":[{"sym":"⊗","meaning":"Upright Sprinkler Head","category":"sprinkler"},{"sym":"solid red line","meaning":"Black Steel Pipe","category":"pipe"}]}`;
+{"summary":"**Project Overview**\\n- Building: ...\\n- Occupancy: ...","schedule":[{"sym":"⊗","count":22,"position":"Q/R UPRIGHT","finish":"BRASS","temp":155,"k":5.60,"npt":"1/2\\"","mfg":"RELIABLE"}],"legend":[{"sym":"⊗","meaning":"Upright Sprinkler Head","category":"sprinkler"},{"sym":"solid red line","meaning":"Black Steel Pipe","category":"pipe"}]}`;
+
+// Final safety net: even if the model ignores the prompt, strip any summary line that
+// looks like a street address, phone/fax/email, state+ZIP, or license/identity field.
+// Dropping whole bullets (rather than redacting substrings) avoids leaving mangled text.
+function scrubSensitive(text: string): string {
+  if (!text) return text;
+  const PHONE = /\(?\b\d{3}\)?[\s.\-]\d{3}[\s.\-]\d{4}\b/;
+  const EMAIL = /\b[\w.+-]+@[\w-]+\.[\w.-]+\b/;
+  const ZIP = /\b[A-Z]{2}\s+\d{5}(?:-\d{4})?\b/;
+  const STREET =
+    /\b\d{1,6}\s+[A-Za-z0-9.][A-Za-z0-9.\s]*\b(?:ST|STREET|AVE|AVENUE|RD|ROAD|BLVD|BOULEVARD|DR|DRIVE|LN|LANE|WAY|CT|COURT|PKWY|PARKWAY|HWY|HIGHWAY|SUITE|STE|CIRCLE|PLACE|TERRACE)\b/i;
+  const IDENTITY =
+    /^[\s>*\-•]*\**\s*(address|designer|engineer|architect|prepared by|company|firm|phone|tel|telephone|fax|email|e-mail|license|licence|registration|reg\.?\s*no|stamp)\b/i;
+  const kept = text.split(/\r?\n/).filter((line) => {
+    const t = line.trim();
+    if (!t) return true; // keep blank lines for spacing
+    if (IDENTITY.test(t)) return false;
+    if (PHONE.test(t) || EMAIL.test(t) || ZIP.test(t) || STREET.test(t)) return false;
+    return true;
+  });
+  return kept.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -73,7 +110,8 @@ export const POST: APIRoute = async ({ request }) => {
       return new Response(JSON.stringify({ error: "imageData required" }), { status: 400 });
     }
 
-    const apiKey = import.meta.env.ANTHROPIC_API_KEY;
+    // Match other API routes + astro.config Vite `define` (loads .env via loadEnv).
+    const apiKey = process.env.ANTHROPIC_API_KEY || import.meta.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "ANTHROPIC_API_KEY not configured" }), {
         status: 503,
@@ -139,6 +177,8 @@ export const POST: APIRoute = async ({ request }) => {
     if (!summary) {
       return new Response(JSON.stringify({ error: lastError }), { status: 503 });
     }
+
+    summary = scrubSensitive(summary);
 
     return new Response(JSON.stringify({ summary, schedule, legend }), {
       headers: { "Content-Type": "application/json" },

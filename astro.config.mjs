@@ -76,17 +76,6 @@ export default defineConfig({
     build: {
       target: "es2022",
       assetsInlineLimit: 0,
-      rollupOptions: {
-        external: (id) => {
-          // gray-matter uses Node APIs – exclude from client bundle
-          if (id === "gray-matter") return true;
-          return false;
-        },
-      },
-      ssr: {
-        // Bundle everything for SSR – prevents ERR_MODULE_NOT_FOUND in standalone deploy
-        noExternal: true,
-      },
     },
     optimizeDeps: {
       include: [
