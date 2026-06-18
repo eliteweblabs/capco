@@ -21,6 +21,7 @@ export function quoteClientIdForPostgrest(clientId: string): string {
 
 // Cache for performance (TTL: 2 min in production; dev skips cache for live updates)
 const cache = new Map<string, any>();
+const cacheTimestamps = new Map<string, number>();
 const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
 let siteConfigCacheTimestamp = 0;
 
@@ -771,8 +772,14 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
   const slugUpper = slug.toUpperCase().replace(/-/g, "_");
 
   // Skip cache in development for live updates
+  const now = Date.now();
   if (process.env.NODE_ENV !== "development" && cache.has(cacheKey)) {
-    return cache.get(cacheKey);
+    const ts = cacheTimestamps.get(cacheKey) ?? 0;
+    if (now - ts < CACHE_TTL_MS) {
+      return cache.get(cacheKey);
+    }
+    cache.delete(cacheKey);
+    cacheTimestamps.delete(cacheKey);
   }
 
   // Skip DB and all lookups for bot/scanner probes (wp-config.php, wp-admin, etc.) to avoid
@@ -856,6 +863,7 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
         }
 
         cache.set(cacheKey, pageContent);
+        cacheTimestamps.set(cacheKey, now);
         console.log("📄 [CONTENT] Page loaded from database (cmsPages):", slug, {
           dbSlug: dbPage.slug,
           template: normalizedTemplate,
@@ -923,6 +931,7 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
         content: filterContent(parsed.content || ""),
       };
       cache.set(cacheKey, pageContent);
+      cacheTimestamps.set(cacheKey, now);
       console.log("📄 [CONTENT] Page loaded from env PAGE_*_JSON:", slug);
       return pageContent;
     } catch (error) {
@@ -940,6 +949,7 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
       content: filterContent(envContent),
     };
     cache.set(cacheKey, pageContent);
+    cacheTimestamps.set(cacheKey, now);
     console.log("📄 [CONTENT] Page loaded from env PAGE_*_CONTENT:", slug);
     return pageContent;
   }
@@ -958,6 +968,7 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
         description: data.description != null ? filterDescription(String(data.description)) : "",
       };
       cache.set(cacheKey, pageContent);
+      cacheTimestamps.set(cacheKey, now);
       console.log("📄 [CONTENT] Page loaded from volume:", slug, volumeContentPath);
       if (slug === "contact" && !(pageContent.content || "").includes("<ContactForm")) {
         console.warn(
@@ -989,6 +1000,7 @@ export async function getPageContent(slug: string): Promise<PageContent | null> 
       hasContactForm: (defaultContent.content || "").includes("<ContactForm"),
     });
     cache.set(cacheKey, defaultContent);
+    cacheTimestamps.set(cacheKey, now);
     return defaultContent;
   }
 
