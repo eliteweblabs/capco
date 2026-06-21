@@ -6,14 +6,22 @@
  * layout's container + theme. Reusable on the homepage (as="h2") and /services (as="h1").
  */
 import SimpleIcon from "./SimpleIcon.astro";
+import Button from "./Button.astro";
 
 interface Props {
   /** Heading level for the section title. */
   as?: "h1" | "h2";
+  /** Show a call-to-action button below the cards. Accepts boolean or "true" (CMS shortcode). */
+  cta?: boolean | string;
+  /** CTA button label. */
+  ctaText?: string;
+  /** CTA destination. */
+  ctaHref?: string;
 }
 
-const { as = "h2" } = Astro.props;
+const { as = "h2", cta, ctaText = "Get Started", ctaHref = "/contact" } = Astro.props;
 const Heading = as;
+const showCta = cta === true || cta === "true";
 
 interface Service {
   icon: string;
@@ -88,3 +96,13 @@ const services: Service[] = [
     ))
   }
 </div>
+
+{
+  showCta && (
+    <div class="mt-16 flex justify-center">
+      <Button href={ctaHref} variant="primary" size="lg" icon="arrow-right" iconPosition="right">
+        {ctaText}
+      </Button>
+    </div>
+  )
+}
