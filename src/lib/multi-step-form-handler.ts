@@ -1986,6 +1986,13 @@ export function initializeMultiStepForm(
     const prevButtons = stepContent.querySelectorAll("button.prev-step, a.prev-step");
     prevButtons.forEach((btn) => btn.setAttribute("data-prev", String(prevStep)));
 
+    // SMS opt-in steps (SlideToggle) route via the JSON branch — data-next when opted in,
+    // data-skip when off — managed by the smsAlerts change listener. The phone-based
+    // skipCondition logic below must NOT overwrite that branch, or the carrier step can
+    // never be skipped when the toggle is off. Leave such steps' next/skip dests intact.
+    const hasSmsToggle = !!stepContent.querySelector('input[name="smsAlerts"][type="checkbox"]');
+    if (hasSmsToggle) return;
+
     // Next/skip buttons: data-next and data-skip = actual next valid step (handles skipped steps)
     const nextButtons = stepContent.querySelectorAll("button.next-step, button.skip-step");
     nextButtons.forEach((btn) => {
