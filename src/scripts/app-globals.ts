@@ -1408,21 +1408,8 @@ window.addEventListener("error", (e: any) => {
   }
 });
 
-// Register service worker for PWA functionality
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("/sw.js")
-      .then((registration: any) => {
-        console.log("✅ Service Worker registered successfully:", registration.scope);
-      })
-      .catch((error: any) => {
-        console.log("❌ Service Worker registration failed:", error);
-      });
-  });
-} else {
-  console.log("❌ Service Worker not supported in this browser");
-}
+// Note: No service worker is registered. There is no /sw.js in this project, so
+// registering one only produced a 404 + failed registration on every page load.
 
 // Global text trimming utilities
 (window as any).trimText = function (
