@@ -519,20 +519,20 @@ export function createMultiStepFormHandler(
         }
       }
     };
-    const ua = window.navigator.userAgent;
-    const isIOSDevice = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const isTouchDevice =
+      typeof window !== "undefined" &&
+      ("ontouchstart" in window || (navigator.maxTouchPoints ?? 0) > 0);
     const hasTypewriter = targetStep.classList.contains("has-typewriter");
 
-    // Typeform-style iOS flow: don't attempt delayed programmatic input focus.
-    // iOS only opens the keyboard from direct user gesture; MultiStepForm arms
-    // first-tap focus for the newly active step.
-    if (isIOSDevice) {
+    // Touch devices: don't attempt delayed programmatic input focus. Mobile browsers
+    // only open the keyboard from a direct user gesture; MultiStepForm's single tap
+    // handler owns that. Focusing an SMS choice button is safe (no keyboard) so we keep it.
+    if (isTouchDevice) {
       const smsChoiceButtons = targetStep.querySelectorAll("button.sms-choice");
       if (smsChoiceButtons.length > 0) {
-        // Safe on iOS: focusing a button doesn't require opening software keyboard.
         doFocus();
       } else {
-        console.log("[MULTISTEP-FOCUS] iOS detected: skipping delayed input autofocus", {
+        console.log("[MULTISTEP-FOCUS] touch device: skipping delayed input autofocus", {
           stepNumber,
           hasTypewriter,
         });

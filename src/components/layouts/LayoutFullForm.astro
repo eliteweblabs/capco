@@ -36,6 +36,10 @@ import PixelGrid from "../ui/PixelGrid.astro";
     var root = document.querySelector("[data-ios-focus-root]");
     if (!root) return;
 
+    // Multi-step forms own mobile focus via their single tap handler
+    // (MultiStepForm.astro). Don't add a second mechanism on top of them.
+    if (root.querySelector("[data-multi-step-form]")) return;
+
     // iOS only opens the keyboard from a <button> click handler — not from
     // taps on divs or non-interactive elements.
     // Strategy: overlay an invisible <button> on the first visible input.
