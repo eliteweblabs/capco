@@ -1,14 +1,11 @@
 ---
 /**
  * CapcoServices — "What We Do" services section.
- * Dark navy feature band with eyebrow, serif heading, and numbered service cards
- * (number, icon, title, description, outlined tag pills). Matches the services screenshots.
- * Reusable on the homepage (as="h2") and the dedicated /services page (as="h1").
+ * Content-only (no background band/wrapper): eyebrow, heading, and numbered service
+ * cards (number, icon, title, description, outlined tag pills). Inherits the page
+ * layout's container + theme. Reusable on the homepage (as="h2") and /services (as="h1").
  */
-import { globalClasses } from "../../pages/api/global/global-classes";
 import SimpleIcon from "./SimpleIcon.astro";
-
-const { globalContainer } = globalClasses();
 
 interface Props {
   /** Heading level for the section title. */
@@ -50,48 +47,44 @@ const services: Service[] = [
 ];
 ---
 
-<section class="w-full bg-[#0f1827] py-20 text-white md:py-28">
-  <div class={globalContainer}>
-    {/* Section header */}
-    <div class="mb-16 max-w-2xl">
-      <p
-        class="mb-5 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary-500"
-      >
-        <span class="inline-block h-px w-10 bg-primary-500"></span>
-        What We Do
-      </p>
-      <Heading class="mb-5 text-4xl font-bold leading-[1.1] md:text-5xl">
-        Engineering services built for the built world.
-      </Heading>
-      <p class="text-lg leading-relaxed text-gray-400">
-        Boutique expertise across fire protection, MEP systems, and civil infrastructure — all
-        delivered with principal-level attention.
-      </p>
-    </div>
+{/* Section header */}
+<div class="mb-12 max-w-2xl">
+  <p
+    class="mb-5 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary-600 dark:text-primary-500"
+  >
+    <span class="inline-block h-px w-10 bg-primary-600 dark:bg-primary-500"></span>
+    What We Do
+  </p>
+  <Heading class="mb-5 text-4xl font-bold leading-[1.1] text-gray-900 dark:text-white md:text-5xl">
+    Engineering services built for the built world.
+  </Heading>
+  <p class="text-lg leading-relaxed text-gray-600 dark:text-gray-400">
+    Boutique expertise across fire protection, MEP systems, and civil infrastructure — all delivered
+    with principal-level attention.
+  </p>
+</div>
 
-    {/* Numbered service cards */}
-    <div class="grid gap-12 md:grid-cols-3 md:gap-10">
-      {
-        services.map((service, index) => (
-          <div class="flex flex-col border-t border-white/10 pt-8">
-            <span class="mb-6 text-sm font-semibold tracking-widest text-primary-500">
-              {String(index + 1).padStart(2, "0")}
+{/* Numbered service cards */}
+<div class="grid gap-12 md:grid-cols-3 md:gap-10">
+  {
+    services.map((service, index) => (
+      <div class="flex flex-col border-t border-gray-200 pt-8 dark:border-gray-700">
+        <span class="mb-6 text-sm font-semibold tracking-widest text-primary-600 dark:text-primary-500">
+          {String(index + 1).padStart(2, "0")}
+        </span>
+        <span class="mb-6 inline-flex h-12 w-12 items-center justify-center text-primary-600 dark:text-primary-500">
+          <SimpleIcon name={service.icon} size="2xl" color="currentColor" />
+        </span>
+        <h3 class="mb-4 text-2xl font-bold text-gray-900 dark:text-white">{service.title}</h3>
+        <p class="mb-6 leading-relaxed text-gray-600 dark:text-gray-400">{service.description}</p>
+        <div class="mt-auto flex flex-wrap gap-2">
+          {service.tags.map((tag) => (
+            <span class="border-primary-500/50 inline-flex items-center rounded-md border px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-wider text-primary-600 dark:text-primary-400">
+              {tag}
             </span>
-            <span class="mb-6 inline-flex h-12 w-12 items-center justify-center text-primary-500">
-              <SimpleIcon name={service.icon} size="2xl" color="currentColor" />
-            </span>
-            <h3 class="mb-4 text-2xl font-bold">{service.title}</h3>
-            <p class="mb-6 leading-relaxed text-gray-400">{service.description}</p>
-            <div class="mt-auto flex flex-wrap gap-2">
-              {service.tags.map((tag) => (
-                <span class="border-primary-500/50 inline-flex items-center rounded-md border px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-wider text-primary-400">
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
-        ))
-      }
-    </div>
-  </div>
-</section>
+          ))}
+        </div>
+      </div>
+    ))
+  }
+</div>
