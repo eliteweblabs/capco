@@ -3,6 +3,7 @@
 import Button, { type Props as ButtonProps } from "./Button.astro";
 import SimpleIcon from "./SimpleIcon.astro";
 import Tooltip from "../ui/Tooltip.astro";
+import { splitTabLabel } from "../../lib/tab-label";
 
 type ButtonVariant = NonNullable<ButtonProps["variant"]>;
 
@@ -31,6 +32,10 @@ interface Props {
   /** When true, show tooltips on tab buttons. Default false. */
   showTooltips?: boolean;
   currentUser?: any; // Current user object to check role
+  /** Collapse long inactive labels to a word count + ellipsis; expand when active. */
+  collapseLongLabels?: boolean;
+  /** Word count kept on inactive collapsed labels (default 2). */
+  collapseWordLimit?: number;
 }
 
 const {
@@ -44,6 +49,8 @@ const {
   compact = false,
   showTooltips = false,
   currentUser,
+  collapseLongLabels = false,
+  collapseWordLimit = 2,
 } = Astro.props;
 
 // Filter items based on clientHide parameter (clients only — Staff / Admin / superAdmin see all passed items)
@@ -61,6 +68,7 @@ const filteredItems = items.filter((item) => {
   data-active-item={activeItem}
   data-url-param={urlParam || ""}
   data-switch-handler={switchHandler}
+  data-collapse-labels={collapseLongLabels ? "true" : "false"}
 >
   <!-- Sliding tabs indicator: visible on server when activeItem is 0 so tabbing works before hydration -->
   <div
@@ -77,6 +85,8 @@ const filteredItems = items.filter((item) => {
     filteredItems.map((item: NavItem, index: number) => {
       const tooltipText = item.tooltipText !== undefined ? item.tooltipText : item.label;
       const showItemTooltip = showTooltips && tooltipText !== "";
+      const split = collapseLongLabels ? splitTabLabel(item.label, collapseWordLimit) : null;
+      const showFullLabel = item.showLabel ?? !item.icon;
       const button = (
         <Button
           id={item.id}
@@ -84,16 +94,31 @@ const filteredItems = items.filter((item) => {
           size="sm"
           class={compact ? "relative z-10 px-4 py-2" : "relative z-10 px-5 py-2.5"}
           data-active={index === activeItem ? "true" : "false"}
+          title={split?.truncated ? item.label : undefined}
+          ariaLabel={split?.truncated ? item.label : undefined}
           dataAttributes={{
             ...(item.dataAttributes || {}),
             "data-index": String(index),
             "data-active": index === activeItem ? "true" : "false",
+            ...(split?.truncated ? { "data-full-label": item.label } : {}),
           }}
           onclick={item.onclick}
         >
           {item.icon && <SimpleIcon name={item.icon} size="sm" class="mr-0 sm:mr-2" />}
-          {(item.showLabel ?? !item.icon) ? (
-            <span>{item.label}</span>
+          {showFullLabel ? (
+            split?.truncated ? (
+              <span class="tab-label">
+                <span class="tab-label-stem">{split.stem}</span>
+                <span class="tab-label-ellipsis" aria-hidden="true">
+                  …
+                </span>
+                <span class="tab-label-rest-wrap">
+                  <span class="tab-label-rest">{`\u00A0${split.rest}`}</span>
+                </span>
+              </span>
+            ) : (
+              <span>{item.label}</span>
+            )
           ) : (
             <span class="sr-only">{item.label}</span>
           )}
@@ -139,9 +164,10 @@ const filteredItems = items.filter((item) => {
     }
 
     // Update sliding tabs indicator position
-    function updateSlidingTabsIndicator(activeButton) {
+    function updateSlidingTabsIndicator(activeButton, options) {
       if (!tabsIndicator || !activeButton || !nav) return;
 
+      const scroll = options?.scroll !== false;
       const navRect = nav.getBoundingClientRect();
       const buttonRect = activeButton.getBoundingClientRect();
 
@@ -152,6 +178,8 @@ const filteredItems = items.filter((item) => {
       // Update indicator position and size
       tabsIndicator.style.left = `${left}px`;
       tabsIndicator.style.width = `${width}px`;
+
+      if (!scroll) return;
 
       // Always try to center the active item
       setTimeout(() => {
@@ -170,6 +198,26 @@ const filteredItems = items.filter((item) => {
           behavior: "smooth",
         });
       }, 300);
+    }
+
+    // Keep the pill aligned while collapsed labels expand/collapse
+    function trackIndicatorToButton(activeButton) {
+      updateSlidingTabsIndicator(activeButton, { scroll: true });
+      if (nav.getAttribute("data-collapse-labels") !== "true") return;
+
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (reduceMotion) {
+        requestAnimationFrame(() => updateSlidingTabsIndicator(activeButton, { scroll: false }));
+        return;
+      }
+
+      const start = performance.now();
+      const duration = 420;
+      function frame(now) {
+        updateSlidingTabsIndicator(activeButton, { scroll: false });
+        if (now - start < duration) requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
     }
 
     let lastTouchActivationAt = 0;
@@ -221,7 +269,7 @@ const filteredItems = items.filter((item) => {
       invokeTabSwitch(button);
 
       updateActiveButton(button);
-      updateSlidingTabsIndicator(button);
+      trackIndicatorToButton(button);
 
       const index = parseInt(button.getAttribute("data-index") || "-1", 10);
       nav.dispatchEvent(
@@ -330,7 +378,7 @@ const filteredItems = items.filter((item) => {
 
       if (activeButton) {
         updateActiveButton(activeButton);
-        updateSlidingTabsIndicator(activeButton);
+        trackIndicatorToButton(activeButton);
       }
     }, 300);
 

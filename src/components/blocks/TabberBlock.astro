@@ -14,17 +14,29 @@
  * <TabberBlock
  *   tab1Label="Overview"
  *   tab1Content="<p>Overview content...</p>"
+ *   tab1ButtonText="Learn More"
+ *   tab1ButtonHref="/contact"
  *   tab2Label="Details"
  *   tab2Content="<p>Details content...</p>"
  * />
  */
 import SlidingTabs from "../common/SlidingTabs.astro";
+import Button from "../common/Button.astro";
+import { extractTabCta, type TabCta } from "../../lib/tabber-cta";
 import { parseJsonProp, buildArrayFromFlatProps } from "./BlockRegistry";
 
 interface TabItem {
   label: string;
   content?: string;
   icon?: string;
+  buttonText?: string;
+  buttonHref?: string;
+  buttonVariant?: string;
+}
+
+interface PreparedTab extends TabItem {
+  html: string;
+  cta?: TabCta;
 }
 
 interface Props {
@@ -34,21 +46,39 @@ interface Props {
   tab1Label?: string;
   tab1Content?: string;
   tab1Icon?: string;
+  tab1ButtonText?: string;
+  tab1ButtonHref?: string;
+  tab1ButtonVariant?: string;
   tab2Label?: string;
   tab2Content?: string;
   tab2Icon?: string;
+  tab2ButtonText?: string;
+  tab2ButtonHref?: string;
+  tab2ButtonVariant?: string;
   tab3Label?: string;
   tab3Content?: string;
   tab3Icon?: string;
+  tab3ButtonText?: string;
+  tab3ButtonHref?: string;
+  tab3ButtonVariant?: string;
   tab4Label?: string;
   tab4Content?: string;
   tab4Icon?: string;
+  tab4ButtonText?: string;
+  tab4ButtonHref?: string;
+  tab4ButtonVariant?: string;
   tab5Label?: string;
   tab5Content?: string;
   tab5Icon?: string;
+  tab5ButtonText?: string;
+  tab5ButtonHref?: string;
+  tab5ButtonVariant?: string;
   tab6Label?: string;
   tab6Content?: string;
   tab6Icon?: string;
+  tab6ButtonText?: string;
+  tab6ButtonHref?: string;
+  tab6ButtonVariant?: string;
 
   className?: string;
   id?: string;
@@ -69,17 +99,31 @@ let tabs: TabItem[] = [];
 if (props.tabs) {
   tabs = parseJsonProp<TabItem[]>(props.tabs, []);
 } else {
-  tabs = buildArrayFromFlatProps<TabItem>(props, "tab", ["label", "content", "icon"], 6);
+  tabs = buildArrayFromFlatProps<TabItem>(
+    props,
+    "tab",
+    ["label", "content", "icon", "buttonText", "buttonHref", "buttonVariant"],
+    6
+  );
 }
 
 tabs = tabs.filter((t) => t.label);
+
+const preparedTabs: PreparedTab[] = tabs.map((tab) => {
+  const extracted = extractTabCta(tab.content || "", {
+    text: tab.buttonText,
+    href: tab.buttonHref,
+    variant: tab.buttonVariant as TabCta["variant"] | undefined,
+  });
+  return { ...tab, html: extracted.html, cta: extracted.cta };
+});
 
 // Unique ID for this tabber instance
 const blockId = id || `tabber-${Math.random().toString(36).slice(2, 9)}`;
 const navId = propsNavId || `${blockId}-nav`;
 
 // SlidingTabs expects NavItem shape
-const navItems = tabs.map((t) => ({
+const navItems = preparedTabs.map((t) => ({
   label: t.label,
   icon: t.icon,
   id: undefined,
@@ -102,22 +146,31 @@ top: -38px;
     activeItem={activeItem}
     compact={isCompact}
     urlParam=""
+    collapseLongLabels={true}
   />
-  <div class="tabber-panels mt-6 px-4">
+  <div class="tabber-panels">
     {
       /* activeItem panel visible on server, rest hidden – see .cursor/rules/tabber-sliding-tabs-ssr.mdc */
     }
     {
-      tabs.map((tab, index) => (
+      preparedTabs.map((tab, index) => (
         <div
           data-tab-index={index}
           data-tabber-panel
           class:list={[
-            "tabber-panel prose max-w-none dark:prose-invert",
+            "tabber-panel prose max-w-none whitespace-normal dark:prose-invert",
             index === activeItem ? "" : "hidden",
           ]}
-          set:html={tab.content || ""}
-        />
+        >
+          {tab.html ? <Fragment set:html={tab.html} /> : null}
+          {tab.cta ? (
+            <div class="not-prose mt-6">
+              <Button href={tab.cta.href} variant={tab.cta.variant} size="md">
+                {tab.cta.text}
+              </Button>
+            </div>
+          ) : null}
+        </div>
       ))
     }
   </div>
@@ -156,3 +209,123 @@ top: -38px;
 
   document.addEventListener("astro:page-load", initTabberPanels);
 </script>
+
+<style>
+  .tabber-block :global(nav) {
+    align-items: stretch;
+  }
+
+  .tabber-block :global([data-sliding-tabs-indicator]) {
+    top: 0;
+    bottom: -1px;
+    height: auto;
+    border: none;
+    outline: none;
+    box-shadow: none;
+    background-color: #fff;
+  }
+
+  .tabber-block :global(.tab-button) {
+    flex: 0 0 auto;
+    border: none;
+    box-shadow: none;
+    outline: none;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.25;
+    color: #fff;
+  }
+
+  .tabber-block :global(.tab-button:hover),
+  .tabber-block :global(.tab-button:focus-visible) {
+    color: #fff;
+  }
+
+  .tabber-block :global(.tab-button[data-active="true"]) {
+    color: rgb(55 65 81);
+  }
+
+  .tabber-block :global(.tab-label) {
+    display: inline-flex;
+    align-items: baseline;
+    min-width: 0;
+  }
+
+  .tabber-block :global(.tab-label-rest-wrap) {
+    display: inline-block;
+    overflow: hidden;
+    max-width: 0;
+    vertical-align: baseline;
+    transition: max-width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .tabber-block :global(.tab-label-rest) {
+    display: inline-block;
+    white-space: nowrap;
+  }
+
+  .tabber-block :global(.tab-button[data-active="true"] .tab-label-rest-wrap) {
+    max-width: 28rem;
+  }
+
+  .tabber-block :global(.tab-label-ellipsis) {
+    display: inline-block;
+    overflow: hidden;
+    max-width: 1em;
+    opacity: 1;
+    transition:
+      max-width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+      opacity 0.2s ease;
+  }
+
+  .tabber-block :global(.tab-button[data-active="true"] .tab-label-ellipsis) {
+    max-width: 0;
+    opacity: 0;
+  }
+
+  .tabber-block :global(.tabber-panels) {
+    padding: 2rem 1.25rem 2.75rem;
+  }
+
+  @media (min-width: 768px) {
+    .tabber-block :global(.tabber-panels) {
+      padding: 2.5rem 2.25rem 3.25rem;
+    }
+
+    .tabber-block :global(.tabber-panel.hidden) {
+      display: none;
+    }
+
+    .tabber-block :global(.tabber-panel:has(> ul):not(.hidden)) {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      column-gap: 2rem;
+      row-gap: 1.25rem;
+      align-items: start;
+    }
+
+    .tabber-block :global(.tabber-panel:has(> ul) > ul) {
+      grid-column: 1;
+      grid-row: 1 / -1;
+      margin-top: 0;
+    }
+
+    .tabber-block :global(.tabber-panel:has(> ul) > p) {
+      grid-column: 2;
+      grid-row: 1;
+      margin-top: 0;
+    }
+
+    .tabber-block :global(.tabber-panel:has(> ul) > :not(ul):not(p)) {
+      grid-column: 2;
+      grid-row: 2;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tabber-block :global(.tab-label-rest-wrap),
+    .tabber-block :global(.tab-label-ellipsis) {
+      transition: none;
+    }
+  }
+</style>
