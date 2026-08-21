@@ -8,47 +8,16 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.join(__dirname, "..", "static-html");
-const SCRIPT_ID = "cookie-consent-persist";
+const ROOTS = [
+  path.join(__dirname, "..", "static-html"),
+  path.join(__dirname, "..", "..", "rothcollc-static"),
+];
+const SCRIPT_SRC = "/scripts/cookie-consent.js";
+const HEAD_MARK = "cookie-consent-early-hide";
 
-const SCRIPT = `<script id="${SCRIPT_ID}">
-(function () {
-  var KEY = "cookie-consent";
-  var banner = document.getElementById("cookie-banner");
-  if (!banner) return;
-  function hide() {
-    banner.classList.add("hidden", "translate-y-full");
-  }
-  function show() {
-    banner.classList.remove("hidden", "translate-y-full");
-  }
-  function save(consent) {
-    try { localStorage.setItem(KEY, JSON.stringify(consent)); } catch (e) {}
-    hide();
-  }
-  function choose(allOn) {
-    save({
-      essential: true,
-      analytics: allOn,
-      marketing: allOn,
-      functional: allOn,
-      timestamp: new Date().toISOString()
-    });
-  }
-  var existing = null;
-  try { existing = localStorage.getItem(KEY); } catch (e) {}
-  if (existing) hide();
-  else setTimeout(show, 1000);
-  function bind(id, allOn) {
-    var el = document.getElementById(id);
-    if (el) el.addEventListener("click", function () { choose(allOn); });
-  }
-  bind("accept-all-btn", true);
-  bind("accept-all-preferences-btn", true);
-  bind("decline-all-btn", false);
-  bind("reject-all-btn", false);
-})();
-</script>`;
+const HEAD = `<script id="${HEAD_MARK}">
+(function(){try{if(localStorage.getItem("cookie-consent"))document.documentElement.setAttribute("data-cookie-consent","1")}catch(e){}})();
+</script><style id="cookie-consent-early-hide-style">html[data-cookie-consent="1"] #cookie-banner{display:none!important}</style>`;
 
 async function walk(dir) {
   const out = [];
@@ -75,15 +44,24 @@ function patchBannerClass(html) {
 }
 
 async function main() {
-  for (const file of await walk(ROOT)) {
-    let html = await readFile(file, "utf8");
-    if (!html.includes('id="cookie-banner"')) continue;
-    html = patchBannerClass(html);
-    if (!html.includes(`id="${SCRIPT_ID}"`)) {
-      html = html.replace("</body>", `${SCRIPT}</body>`);
+  for (const root of ROOTS) {
+    for (const file of await walk(root)) {
+      let html = await readFile(file, "utf8");
+      if (!html.includes('id="cookie-banner"')) continue;
+      html = patchBannerClass(html);
+      html = html.replace(
+        /<script id="cookie-consent-persist">[\s\S]*?<\/script>/,
+        ""
+      );
+      if (!html.includes(`id="${HEAD_MARK}"`)) {
+        html = html.replace("<head>", `<head>\n${HEAD}`);
+      }
+      if (!html.includes(SCRIPT_SRC)) {
+        html = html.replace("</body>", `<script src="${SCRIPT_SRC}"></script></body>`);
+      }
+      await writeFile(file, html);
+      console.log("patched", path.relative(root, file));
     }
-    await writeFile(file, html);
-    console.log("patched", path.relative(ROOT, file));
   }
 }
 
