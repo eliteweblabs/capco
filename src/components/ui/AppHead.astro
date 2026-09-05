@@ -75,6 +75,15 @@ const displayName =
 const normalizedTitle = safeTitle.trim();
 const normalizedDisplayName = displayName.trim();
 
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: displayName,
+  url: canonicalUrl.split("?")[0].split("#")[0],
+  description: safeDescription,
+  ...(ogImageSrc ? { logo: ogImageSrc, image: ogImageSrc } : {}),
+};
+
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -132,6 +141,7 @@ const ogImageAlt = `${normalizedDisplayName} - ${safeDescription}`;
 <title>{titleWithBrand}</title>
 <link rel="canonical" href={canonicalUrl} />
 <link rel="manifest" href="/manifest.json" />
+<script type="application/ld+json" set:html={JSON.stringify(organizationSchema)} />
 
 <!-- Preconnect for performance -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
